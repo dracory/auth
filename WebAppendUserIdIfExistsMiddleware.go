@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/gouniverse/utils"
+	"github.com/dracory/req"
 )
 
 // WebAppendUserIdIfExistsMiddleware appends the user ID to the context
@@ -24,7 +24,7 @@ func (a Auth) WebAppendUserIdIfExistsMiddleware(next http.Handler) http.Handler 
 
 		if authToken != "" {
 			userID, err := a.funcUserFindByAuthToken(authToken, UserAuthOptions{
-				UserIp:    utils.IP(r),
+				UserIp:    req.GetIP(r),
 				UserAgent: r.UserAgent(),
 			})
 

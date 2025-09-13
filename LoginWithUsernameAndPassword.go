@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"github.com/gouniverse/utils"
+	"github.com/dracory/str"
 	validator "github.com/gouniverse/validator"
 )
 
@@ -39,7 +39,7 @@ func (a Auth) LoginWithUsernameAndPassword(email string, password string, option
 		return response
 	}
 
-	token := utils.StrRandom(32)
+	token := str.RandomFromGamma(32, LoginCodeGamma)
 
 	errSession := a.funcUserStoreAuthToken(token, userID, options)
 

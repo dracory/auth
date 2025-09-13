@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"github.com/gouniverse/hb"
+	"github.com/dracory/hb"
 	"github.com/gouniverse/uncdn"
 )
 

@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/gouniverse/api"
-	"github.com/gouniverse/utils"
+	"github.com/dracory/api"
+	"github.com/dracory/req"
 )
 
 // ApiAuthOrErrorMiddleware checks that an authentication token
@@ -23,7 +23,7 @@ func (a Auth) ApiAuthOrErrorMiddleware(next http.Handler) http.Handler {
 		}
 
 		userID, err := a.funcUserFindByAuthToken(authToken, UserAuthOptions{
-			UserIp:    utils.IP(r),
+			UserIp:    req.GetIP(r),
 			UserAgent: r.UserAgent(),
 		})
 

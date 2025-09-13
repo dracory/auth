@@ -3,10 +3,9 @@ package auth
 import (
 	"log"
 	"net/http"
-	"strings"
 
-	"github.com/gouniverse/api"
-	"github.com/gouniverse/utils"
+	"github.com/dracory/api"
+	"github.com/dracory/req"
 	validator "github.com/gouniverse/validator"
 )
 
@@ -19,7 +18,7 @@ func (a Auth) apiLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a Auth) apiLoginPasswordless(w http.ResponseWriter, r *http.Request) {
-	email := strings.Trim(utils.Req(r, "email", ""), " ")
+	email := req.GetStringTrimmed(r, "email")
 
 	if email == "" {
 		api.Respond(w, r, api.Error("Email is required field"))
@@ -31,7 +30,7 @@ func (a Auth) apiLoginPasswordless(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	verificationCode := utils.StrRandomFromGamma(LoginCodeLength, LoginCodeGamma)
+	verificationCode := req.GetStringTrimmed(r, "verification_code")
 
 	errTempTokenSave := a.funcTemporaryKeySet(verificationCode, email, 3600)
 
@@ -41,7 +40,7 @@ func (a Auth) apiLoginPasswordless(w http.ResponseWriter, r *http.Request) {
 	}
 
 	emailContent := a.passwordlessFuncEmailTemplateLoginCode(email, verificationCode, UserAuthOptions{
-		UserIp:    utils.IP(r),
+		UserIp:    req.GetIP(r),
 		UserAgent: r.UserAgent(),
 	})
 
@@ -57,11 +56,11 @@ func (a Auth) apiLoginPasswordless(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a Auth) apiLoginUsernameAndPassword(w http.ResponseWriter, r *http.Request) {
-	email := strings.Trim(utils.Req(r, "email", ""), " ")
-	password := strings.Trim(utils.Req(r, "password", ""), " ")
+	email := req.GetStringTrimmed(r, "email")
+	password := req.GetStringTrimmed(r, "password")
 
 	response := a.LoginWithUsernameAndPassword(email, password, UserAuthOptions{
-		UserIp:    utils.IP(r),
+		UserIp:    req.GetIP(r),
 		UserAgent: r.UserAgent(),
 	})
 

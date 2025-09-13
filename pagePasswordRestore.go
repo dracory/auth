@@ -3,7 +3,7 @@ package auth
 import (
 	"net/http"
 
-	"github.com/gouniverse/hb"
+	"github.com/dracory/hb"
 )
 
 func (a Auth) pagePasswordRestore(w http.ResponseWriter, r *http.Request) {

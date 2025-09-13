@@ -1,9 +1,10 @@
 package auth
 
 import (
+	"encoding/json"
 	"log"
 
-	"github.com/gouniverse/utils"
+	"github.com/dracory/str"
 	validator "github.com/gouniverse/validator"
 )
 
@@ -56,9 +57,9 @@ func (a Auth) RegisterWithUsernameAndPassword(email string, password string, fir
 		return response
 	}
 
-	verificationCode := utils.StrRandomFromGamma(LoginCodeLength, LoginCodeGamma)
+	verificationCode := str.RandomFromGamma(LoginCodeLength, LoginCodeGamma)
 
-	json, errJson := utils.ToJSON(map[string]string{
+	json, errJson := json.Marshal(map[string]string{
 		"email":      email,
 		"first_name": firstName,
 		"last_name":  lastName,
@@ -70,7 +71,7 @@ func (a Auth) RegisterWithUsernameAndPassword(email string, password string, fir
 		return response
 	}
 
-	errTempTokenSave := a.funcTemporaryKeySet(verificationCode, json, 3600)
+	errTempTokenSave := a.funcTemporaryKeySet(verificationCode, string(json), 3600)
 
 	if errTempTokenSave != nil {
 		response.ErrorMessage = "token store failed. " + errTempTokenSave.Error()

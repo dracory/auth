@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/gouniverse/utils"
+	"github.com/dracory/req"
 )
 
 // WebAuthOrRedirectMiddleware checks that an authentication token
@@ -26,7 +26,7 @@ func (a Auth) WebAuthOrRedirectMiddleware(next http.Handler) http.Handler {
 		}
 
 		userID, err := a.funcUserFindByAuthToken(authToken, UserAuthOptions{
-			UserIp:    utils.IP(r),
+			UserIp:    req.GetIP(r),
 			UserAgent: r.UserAgent(),
 		})
 

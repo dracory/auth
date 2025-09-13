@@ -10,17 +10,16 @@ import (
 
 	"github.com/darkoatanasovski/htmltags"
 	"github.com/dracory/auth/development/scribble"
+	"github.com/dracory/env"
 	"github.com/jordan-wright/email"
 
 	"github.com/dracory/auth"
-
-	"github.com/gouniverse/utils"
 )
 
 func main() {
-	os.Remove(utils.Env("DB_DATABASE")) // remove database
+	os.Remove(env.GetString("DB_DATABASE")) // remove database
 	log.Println("1. Initializing environment variables...")
-	utils.EnvInitialize(".env")
+	env.Load(".env")
 
 	log.Println("2. Initializing database...")
 	var err error
@@ -31,7 +30,7 @@ func main() {
 	}
 
 	authUsernameAndPassword, errUsernameAndPassword := auth.NewUsernameAndPasswordAuth(auth.ConfigUsernameAndPassword{
-		Endpoint:                utils.Env("APP_URL") + "/auth-username-and-password",
+		Endpoint:                env.GetString("APP_URL") + "/auth-username-and-password",
 		UrlRedirectOnSuccess:    "/user/dashboard-after-username-and-password",
 		FuncEmailSend:           emailSend,
 		FuncUserFindByAuthToken: userFindByAuthToken,
@@ -53,7 +52,7 @@ func main() {
 	}
 
 	authPasswordless, errPasswordless := auth.NewPasswordlessAuth(auth.ConfigPasswordless{
-		Endpoint:             utils.Env("APP_URL") + "/auth-passwordless",
+		Endpoint:             env.GetString("APP_URL") + "/auth-passwordless",
 		UrlRedirectOnSuccess: "/user/dashboard-after-passwordless",
 
 		EnableRegistration: true,
@@ -87,16 +86,16 @@ func main() {
 	mux.HandleFunc("/auth-passwordless/", authPasswordless.AuthHandler)
 	mux.Handle("/user/dashboard-after-passwordless", authPasswordless.AuthMiddleware(messageHandler("<html>User page. Logout at: <a href='"+authPasswordless.LinkLogout()+"'>"+authPasswordless.LinkLogout()+"</a>")))
 
-	log.Println("4. Starting server on http://" + utils.Env("SERVER_HOST") + ":" + utils.Env("SERVER_PORT") + " ...")
-	if strings.HasPrefix(utils.Env("APP_URL"), "https://") {
-		log.Println(utils.Env("APP_URL") + " ...")
+	log.Println("4. Starting server on http://" + env.GetString("SERVER_HOST") + ":" + env.GetString("SERVER_PORT") + " ...")
+	if strings.HasPrefix(env.GetString("APP_URL"), "https://") {
+		log.Println(env.GetString("APP_URL") + " ...")
 	} else {
-		log.Println("URL: http://" + utils.Env("APP_URL") + " ...")
+		log.Println("URL: http://" + env.GetString("APP_URL") + " ...")
 	}
 
 	srv := &http.Server{
 		Handler: mux,
-		Addr:    utils.Env("SERVER_HOST") + ":" + utils.Env("SERVER_PORT"),
+		Addr:    env.GetString("SERVER_HOST") + ":" + env.GetString("SERVER_PORT"),
 		// Good practice: enforce timeouts for servers you create!
 		WriteTimeout:      15 * time.Second,
 		ReadTimeout:       15 * time.Second,
@@ -150,10 +149,10 @@ func messageHandler(message string) http.Handler {
 // EmailSend sends an email
 func emailSendTo(from string, to []string, subject string, htmlMessage string) (bool, error) {
 	//drvr := os.Getenv("MAIL_DRIVER")
-	host := utils.Env("MAIL_HOST")
-	port := utils.Env("MAIL_PORT")
-	user := utils.Env("MAIL_USERNAME")
-	pass := utils.Env("MAIL_PASSWORD")
+	host := env.GetString("MAIL_HOST")
+	port := env.GetString("MAIL_PORT")
+	user := env.GetString("MAIL_USERNAME")
+	pass := env.GetString("MAIL_PASSWORD")
 	addr := host + ":" + port
 
 	nodes, errStripped := htmltags.Strip(htmlMessage, []string{}, true)

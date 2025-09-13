@@ -5,7 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gouniverse/utils"
+	"github.com/dracory/req"
+	"github.com/dracory/str"
 )
 
 func (a Auth) Handler() http.Handler {
@@ -22,7 +23,7 @@ func (a Auth) Router() *http.ServeMux {
 
 // Router routes the requests
 func (a Auth) AuthHandler(w http.ResponseWriter, r *http.Request) {
-	path := utils.Req(r, "path", "home")
+	path := req.GetStringOr(r, "path", "home")
 	uri := r.RequestURI
 
 	if r.RequestURI == "" && r.URL.Path != "" {
@@ -32,7 +33,7 @@ func (a Auth) AuthHandler(w http.ResponseWriter, r *http.Request) {
 	uri = strings.TrimSuffix(uri, "/") // Remove trailing slash
 
 	if strings.Contains(uri, "?") {
-		uri = utils.StrLeftFrom(uri, "?")
+		uri = str.LeftFrom(uri, "?")
 	}
 
 	if strings.HasSuffix(uri, PathApiLogin) {

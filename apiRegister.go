@@ -1,12 +1,13 @@
 package auth
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
-	"strings"
 
-	"github.com/gouniverse/api"
-	"github.com/gouniverse/utils"
+	"github.com/dracory/api"
+	"github.com/dracory/req"
+	"github.com/dracory/str"
 )
 
 func (a Auth) apiRegister(w http.ResponseWriter, r *http.Request) {
@@ -18,9 +19,9 @@ func (a Auth) apiRegister(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a Auth) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
-	email := strings.Trim(utils.Req(r, "email", ""), " ")
-	first_name := strings.Trim(utils.Req(r, "first_name", ""), " ")
-	last_name := strings.Trim(utils.Req(r, "last_name", ""), " ")
+	email := req.GetStringTrimmed(r, "email")
+	first_name := req.GetStringTrimmed(r, "first_name")
+	last_name := req.GetStringTrimmed(r, "last_name")
 
 	if first_name == "" {
 		api.Respond(w, r, api.Error("First name is required field"))
@@ -37,9 +38,9 @@ func (a Auth) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	verificationCode := utils.StrRandomFromGamma(LoginCodeLength, LoginCodeGamma)
+	verificationCode := str.RandomFromGamma(LoginCodeLength, LoginCodeGamma)
 
-	json, errJson := utils.ToJSON(map[string]string{
+	json, errJson := json.Marshal(map[string]string{
 		"email":      email,
 		"first_name": first_name,
 		"last_name":  last_name,
@@ -50,7 +51,7 @@ func (a Auth) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	errTempTokenSave := a.funcTemporaryKeySet(verificationCode, json, 3600)
+	errTempTokenSave := a.funcTemporaryKeySet(verificationCode, string(json), 3600)
 
 	if errTempTokenSave != nil {
 		api.Respond(w, r, api.Error("token store failed. "+errTempTokenSave.Error()))
@@ -58,7 +59,7 @@ func (a Auth) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
 	}
 
 	emailContent := a.passwordlessFuncEmailTemplateRegisterCode(email, verificationCode, UserAuthOptions{
-		UserIp:    utils.IP(r),
+		UserIp:    req.GetIP(r),
 		UserAgent: r.UserAgent(),
 	})
 
@@ -74,13 +75,13 @@ func (a Auth) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a Auth) apiRegisterUsernameAndPassword(w http.ResponseWriter, r *http.Request) {
-	email := strings.Trim(utils.Req(r, "email", ""), " ")
-	password := strings.Trim(utils.Req(r, "password", ""), " ")
-	first_name := strings.Trim(utils.Req(r, "first_name", ""), " ")
-	last_name := strings.Trim(utils.Req(r, "last_name", ""), " ")
+	email := req.GetStringTrimmed(r, "email")
+	password := req.GetStringTrimmed(r, "password")
+	first_name := req.GetStringTrimmed(r, "first_name")
+	last_name := req.GetStringTrimmed(r, "last_name")
 
 	response := a.RegisterWithUsernameAndPassword(email, password, first_name, last_name, UserAuthOptions{
-		UserIp:    utils.IP(r),
+		UserIp:    req.GetIP(r),
 		UserAgent: r.UserAgent(),
 	})
 

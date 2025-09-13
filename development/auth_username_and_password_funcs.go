@@ -4,11 +4,11 @@ import (
 	"errors"
 
 	"github.com/dracory/auth"
-	"github.com/gouniverse/utils"
+	"github.com/dracory/str"
 )
 
 func userFindByUsername(username string, firstName string, lastName string, options auth.UserAuthOptions) (userID string, err error) {
-	slug := utils.StrSlugify(username, rune('_'))
+	slug := str.Slugify(username, rune('_'))
 	var user map[string]string
 	err = jsonStore.Read("users", slug, &user)
 	if err != nil {
@@ -30,7 +30,7 @@ func userPasswordChange(userID string, password string, options auth.UserAuthOpt
 
 	user["password"] = password
 
-	slug := utils.StrSlugify(user["username"], rune('_'))
+	slug := str.Slugify(user["username"], rune('_'))
 	errSave := jsonStore.Write("users", slug, user)
 	if errSave != nil {
 		return errSave
@@ -42,9 +42,9 @@ func userPasswordChange(userID string, password string, options auth.UserAuthOpt
 }
 
 func userRegister(username string, password string, first_name string, last_name string, options auth.UserAuthOptions) error {
-	slug := utils.StrSlugify(username, rune('_'))
+	slug := str.Slugify(username, rune('_'))
 	err := jsonStore.Write("users", slug, map[string]string{
-		"id":         utils.StrRandomFromGamma(16, "abcdef0123456789"),
+		"id":         str.RandomFromGamma(16, "abcdef0123456789"),
 		"username":   username,
 		"password":   password,
 		"first_name": first_name,

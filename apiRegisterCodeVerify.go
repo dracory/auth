@@ -1,15 +1,16 @@
 package auth
 
 import (
+	"encoding/json"
 	"net/http"
-	"strings"
 
-	"github.com/gouniverse/api"
-	"github.com/gouniverse/utils"
+	"github.com/dracory/api"
+	"github.com/dracory/req"
+	"github.com/dracory/str"
 )
 
 func (a Auth) apiRegisterCodeVerify(w http.ResponseWriter, r *http.Request) {
-	verificationCode := strings.Trim(utils.Req(r, "verification_code", ""), " ")
+	verificationCode := req.GetStringTrimmed(r, "verification_code")
 
 	if verificationCode == "" {
 		api.Respond(w, r, api.Error("Verification code is required field"))
@@ -21,7 +22,7 @@ func (a Auth) apiRegisterCodeVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !utils.StrContainsOnlySpecifiedCharacters(verificationCode, LoginCodeGamma) {
+	if !str.ContainsOnly(verificationCode, LoginCodeGamma) {
 		api.Respond(w, r, api.Error("Verification code contains invalid characters"))
 		return
 	}
@@ -33,14 +34,14 @@ func (a Auth) apiRegisterCodeVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	register, errJSON := utils.FromJSON(registerJSON, nil)
+	// Unmarshal the stored JSON (string) into a map
+	registerMap := map[string]interface{}{}
+	errJSON := json.Unmarshal([]byte(registerJSON), &registerMap)
 
 	if errJSON != nil {
 		api.Respond(w, r, api.Error("Serialized format is malformed"))
 		return
 	}
-
-	registerMap := register.(map[string]interface{})
 
 	email := ""
 	if val, ok := registerMap["email"]; ok {
@@ -66,12 +67,12 @@ func (a Auth) apiRegisterCodeVerify(w http.ResponseWriter, r *http.Request) {
 
 	if a.passwordless {
 		errRegister = a.passwordlessFuncUserRegister(email, firstName, lastName, UserAuthOptions{
-			UserIp:    utils.IP(r),
+			UserIp:    req.GetIP(r),
 			UserAgent: r.UserAgent(),
 		})
 	} else {
 		errRegister = a.funcUserRegister(email, password, firstName, lastName, UserAuthOptions{
-			UserIp:    utils.IP(r),
+			UserIp:    req.GetIP(r),
 			UserAgent: r.UserAgent(),
 		})
 	}

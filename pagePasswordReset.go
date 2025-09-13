@@ -3,12 +3,12 @@ package auth
 import (
 	"net/http"
 
-	"github.com/gouniverse/hb"
-	"github.com/gouniverse/utils"
+	"github.com/dracory/hb"
+	"github.com/dracory/req"
 )
 
 func (a Auth) pagePasswordReset(w http.ResponseWriter, r *http.Request) {
-	token := utils.Req(r, "t", "")
+	token := req.GetString(r, "t")
 	errorMessage := ""
 
 	if token == "" {

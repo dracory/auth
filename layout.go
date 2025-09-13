@@ -1,6 +1,6 @@
 package auth
 
-import "github.com/gouniverse/hb"
+import "github.com/dracory/hb"
 
 func (a Auth) layout(content string) string {
 	font := hb.NewStyleURL("https://fonts.bunny.net/css?family=Nunito").ToHTML()

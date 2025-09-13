@@ -3,8 +3,7 @@ package auth
 import (
 	"net/http"
 
-	"github.com/gouniverse/hb"
-	"github.com/gouniverse/icons"
+	"github.com/dracory/hb"
 )
 
 func (a Auth) pageLogin(w http.ResponseWriter, r *http.Request) {
@@ -36,13 +35,13 @@ func (a Auth) pageLoginPasswordlessContent() string {
 	emailInput := hb.NewInput().Class("form-control").Name("email").Placeholder("Enter e-mail address")
 	emailFormGroup := hb.NewDiv().Class("form-group mt-3").Child(emailLabel).Child(emailInput)
 	buttonLogin := hb.NewButton().Class("ButtonLogin btn btn-lg btn-success btn-block w-100").OnClick("loginFormValidate()").Children([]hb.TagInterface{
-		icons.Icon("bi-send", 18, 18, "white").Style("margin-right:8px;margin-top:-2px;"),
+		hb.NewI().Class("bi bi-send").Style("margin-right:8px;margin-top:-2px;"),
 		hb.NewSpan().Text("Send me a login code"),
 		hb.NewDiv().Class("ImgLoading spinner-border spinner-border-sm text-light").Style("display:none;margin-left:10px;"),
 	})
 	buttonLoginFormGroup := hb.NewDiv().Class("form-group mt-3 mb-3").Child(buttonLogin)
 	buttonRegister := hb.NewHyperlink().Class("btn btn-info text-white float-start").Children([]hb.TagInterface{
-		icons.Icon("bi-person-circle", 16, 16, "white").Style("margin-right:8px;margin-top:-2px;"),
+		hb.NewI().Class("bi bi-person-circle").Style("margin-right:8px;margin-top:-2px;"),
 		hb.NewSpan().Text("Register"),
 	}).Href(a.LinkRegister())
 
@@ -170,7 +169,7 @@ func (a Auth) pageLoginContent() string {
 	buttonLogin := hb.NewButton().
 		Class("ButtonLogin btn btn-lg btn-success text-white btn-block w-100").
 		Children([]hb.TagInterface{
-			icons.Icon("bi-door-open", 18, 18, "white").Style("margin-right:8px;margin-top:-2px;"),
+			hb.NewI().Class("bi bi-door-open").Style("margin-right:8px;margin-top:-2px;"),
 			hb.NewSpan().
 				HTML("Log in"),
 			hb.NewDiv().
@@ -184,7 +183,7 @@ func (a Auth) pageLoginContent() string {
 	buttonRegister := hb.NewHyperlink().
 		Class("btn btn-info text-white float-start").
 		Children([]hb.TagInterface{
-			icons.Icon("bi-person-circle", 16, 16, "white").Style("margin-right:8px;margin-top:-2px;"),
+			hb.NewI().Class("bi bi-person-circle").Style("margin-right:8px;margin-top:-2px;"),
 			hb.NewSpan().Text("Register"),
 		}).
 		Href(a.LinkRegister())
@@ -192,7 +191,7 @@ func (a Auth) pageLoginContent() string {
 	buttonForgotPassword := hb.NewHyperlink().
 		Class("btn btn-warning text-white float-end").
 		Children([]hb.TagInterface{
-			icons.Icon("bi-pass", 16, 16, "white").Style("margin-right:8px;margin-top:-2px;"),
+			hb.NewI().Class("bi bi-pass").Style("margin-right:8px;margin-top:-2px;"),
 			hb.NewSpan().Text("Forgot password?"),
 		}).Href(a.LinkPasswordRestore())
 

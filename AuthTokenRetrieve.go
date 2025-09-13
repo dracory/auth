@@ -3,7 +3,7 @@ package auth
 import (
 	"net/http"
 
-	"github.com/gouniverse/utils"
+	"github.com/dracory/req"
 )
 
 // authTokenRetrieve retrieves the auth token from the request
@@ -26,14 +26,14 @@ func AuthTokenRetrieve(r *http.Request, useCookies bool) string {
 	}
 
 	// 3. API key
-	apiKeyFromRequest := utils.Req(r, "api_key", "")
+	apiKeyFromRequest := req.GetStringTrimmed(r, "api_key")
 
 	if apiKeyFromRequest != "" {
 		return apiKeyFromRequest
 	}
 
 	// 4. Token
-	tokenFromRequest := utils.Req(r, "token", "")
+	tokenFromRequest := req.GetStringTrimmed(r, "token")
 
 	if tokenFromRequest != "" {
 		return tokenFromRequest

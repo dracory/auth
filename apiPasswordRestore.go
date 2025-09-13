@@ -3,16 +3,16 @@ package auth
 import (
 	"log"
 	"net/http"
-	"strings"
 
-	"github.com/gouniverse/api"
-	"github.com/gouniverse/utils"
+	"github.com/dracory/api"
+	"github.com/dracory/req"
+	"github.com/dracory/str"
 )
 
 func (a Auth) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
-	email := strings.Trim(utils.Req(r, "email", ""), " ")
-	firstName := strings.Trim(utils.Req(r, "first_name", ""), " ")
-	lastName := strings.Trim(utils.Req(r, "last_name", ""), " ")
+	email := req.GetStringTrimmed(r, "email")
+	firstName := req.GetStringTrimmed(r, "first_name")
+	lastName := req.GetStringTrimmed(r, "last_name")
 
 	if email == "" {
 		api.Respond(w, r, api.Error("Email is required field"))
@@ -30,7 +30,7 @@ func (a Auth) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID, err := a.funcUserFindByUsername(email, firstName, lastName, UserAuthOptions{
-		UserIp:    utils.IP(r),
+		UserIp:    req.GetIP(r),
 		UserAgent: r.UserAgent(),
 	})
 
@@ -55,7 +55,7 @@ func (a Auth) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 
-	token := utils.StrRandomFromGamma(32, "BCDFGHJKLMNPQRSTVXYZ")
+	token := str.RandomFromGamma(32, "BCDFGHJKLMNPQRSTVXYZ")
 
 	errTempTokenSave := a.funcTemporaryKeySet(token, userID, 3600)
 
@@ -65,7 +65,7 @@ func (a Auth) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	emailContent := a.funcEmailTemplatePasswordRestore(userID, a.LinkPasswordReset(token), UserAuthOptions{
-		UserIp:    utils.IP(r),
+		UserIp:    req.GetIP(r),
 		UserAgent: r.UserAgent(),
 	})
 

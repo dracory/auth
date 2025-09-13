@@ -2,15 +2,15 @@ package auth
 
 import (
 	"net/http"
-	"strings"
 
-	"github.com/gouniverse/api"
-	"github.com/gouniverse/utils"
+	"github.com/dracory/api"
+	"github.com/dracory/req"
+	"github.com/dracory/str"
 )
 
 // apiLoginCodeVerify used for passwordless login code verification
 func (a Auth) apiLoginCodeVerify(w http.ResponseWriter, r *http.Request) {
-	verificationCode := strings.Trim(utils.Req(r, "verification_code", ""), " ")
+	verificationCode := req.GetStringTrimmed(r, "verification_code")
 
 	if verificationCode == "" {
 		api.Respond(w, r, api.Error("Verification code is required field"))
@@ -22,7 +22,7 @@ func (a Auth) apiLoginCodeVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !utils.StrContainsOnlySpecifiedCharacters(verificationCode, LoginCodeGamma) {
+	if !str.ContainsOnly(verificationCode, LoginCodeGamma) {
 		api.Respond(w, r, api.Error("Verification code contains invalid characters"))
 		return
 	}
@@ -46,12 +46,12 @@ func (a Auth) authenticateViaUsername(w http.ResponseWriter, r *http.Request, us
 	var errUser error
 	if a.passwordless {
 		userID, errUser = a.passwordlessFuncUserFindByEmail(username, UserAuthOptions{
-			UserIp:    utils.IP(r),
+			UserIp:    req.GetIP(r),
 			UserAgent: r.UserAgent(),
 		})
 	} else {
 		userID, errUser = a.funcUserFindByUsername(username, firstName, lastName, UserAuthOptions{
-			UserIp:    utils.IP(r),
+			UserIp:    req.GetIP(r),
 			UserAgent: r.UserAgent(),
 		})
 	}
@@ -66,10 +66,10 @@ func (a Auth) authenticateViaUsername(w http.ResponseWriter, r *http.Request, us
 		return
 	}
 
-	token := utils.StrRandom(32)
+	token := str.RandomFromGamma(32, "BCDFGHJKLMNPQRSTVXYZ")
 
 	errSession := a.funcUserStoreAuthToken(token, userID, UserAuthOptions{
-		UserIp:    utils.IP(r),
+		UserIp:    req.GetIP(r),
 		UserAgent: r.UserAgent(),
 	})
 

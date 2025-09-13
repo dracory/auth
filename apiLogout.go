@@ -3,8 +3,8 @@ package auth
 import (
 	"net/http"
 
-	"github.com/gouniverse/api"
-	"github.com/gouniverse/utils"
+	"github.com/dracory/api"
+	"github.com/dracory/req"
 )
 
 func (a Auth) apiLogout(w http.ResponseWriter, r *http.Request) {
@@ -15,7 +15,7 @@ func (a Auth) apiLogout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID, errToken := a.funcUserFindByAuthToken(authToken, UserAuthOptions{
-		UserIp:    utils.IP(r),
+		UserIp:    req.GetIP(r),
 		UserAgent: r.UserAgent(),
 	})
 
@@ -26,7 +26,7 @@ func (a Auth) apiLogout(w http.ResponseWriter, r *http.Request) {
 
 	if userID != "" {
 		errLogout := a.funcUserLogout(userID, UserAuthOptions{
-			UserIp:    utils.IP(r),
+			UserIp:    req.GetIP(r),
 			UserAgent: r.UserAgent(),
 		})
 

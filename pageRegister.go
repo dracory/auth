@@ -3,8 +3,7 @@ package auth
 import (
 	"net/http"
 
-	"github.com/gouniverse/hb"
-	"github.com/gouniverse/icons"
+	"github.com/dracory/hb"
 )
 
 func (a Auth) pageRegister(w http.ResponseWriter, r *http.Request) {
@@ -46,14 +45,14 @@ func (a Auth) pageRegisterPasswordlessContent() string {
 	emailFormGroup := hb.NewDiv().Class("form-group mt-3").AddChild(emailLabel).AddChild(emailInput)
 
 	buttonRegister := hb.NewButton().Class("btn btn-lg btn-success btn-block w-100").Children([]hb.TagInterface{
-		icons.Icon("bi-person-circle", 24, 24, "white").Style("margin-right:8px;margin-top:-2px;"),
+		hb.NewI().Class("bi bi-person-circle").Style("margin-right:8px;margin-top:-2px;"),
 		hb.NewSpan().Text("Register"),
 	}).OnClick("registerFormValidate()")
 
 	buttonRegisterFormGroup := hb.NewDiv().Class("form-group mt-3 mb-3").Child(buttonRegister)
 
 	buttonLogin := hb.NewHyperlink().Class("btn btn-info text-white float-start").Children([]hb.TagInterface{
-		icons.Icon("bi-send", 16, 16, "white").Style("margin-right:8px;margin-top:-2px;"),
+		hb.NewI().Class("bi bi-send").Style("margin-right:8px;margin-top:-2px;"),
 		hb.NewSpan().Text("Login"),
 	}).Href(a.LinkLogin())
 

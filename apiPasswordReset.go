@@ -2,16 +2,15 @@ package auth
 
 import (
 	"net/http"
-	"strings"
 
-	"github.com/gouniverse/api"
-	"github.com/gouniverse/utils"
+	"github.com/dracory/api"
+	"github.com/dracory/req"
 )
 
 func (a Auth) apiPasswordReset(w http.ResponseWriter, r *http.Request) {
-	token := strings.Trim(utils.Req(r, "token", ""), " ")
-	password := strings.Trim(utils.Req(r, "password", ""), " ")
-	passwordConfirm := strings.Trim(utils.Req(r, "password_confirm", ""), " ")
+	token := req.GetStringTrimmed(r, "token")
+	password := req.GetStringTrimmed(r, "password")
+	passwordConfirm := req.GetStringTrimmed(r, "password_confirm")
 
 	if token == "" {
 		api.Respond(w, r, api.Error("Token is required field"))
@@ -41,7 +40,7 @@ func (a Auth) apiPasswordReset(w http.ResponseWriter, r *http.Request) {
 	}
 
 	errPasswordChange := a.funcUserPasswordChange(userID, password, UserAuthOptions{
-		UserIp:    utils.IP(r),
+		UserIp:    req.GetIP(r),
 		UserAgent: r.UserAgent(),
 	})
 

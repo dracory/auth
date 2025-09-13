@@ -8,7 +8,8 @@ import (
 
 	"github.com/dracory/auth"
 	"github.com/dracory/auth/development/scribble"
-	"github.com/gouniverse/utils"
+	"github.com/dracory/str"
+	"github.com/spf13/cast"
 )
 
 var jsonStore *scribble.Driver
@@ -19,7 +20,7 @@ func emailSend(userID string, subject string, body string) error {
 }
 
 func userLogin(username string, password string, options auth.UserAuthOptions) (userID string, err error) {
-	slug := utils.StrSlugify(username, rune('_'))
+	slug := str.Slugify(username, rune('_'))
 	var user map[string]string
 	err = jsonStore.Read("users", slug, &user)
 	if err != nil {
@@ -42,7 +43,7 @@ func userLogout(username string, options auth.UserAuthOptions) error {
 }
 
 func userFindByAuthToken(token string, options auth.UserAuthOptions) (userID string, err error) {
-	slug := utils.StrSlugify(token, rune('_'))
+	slug := str.Slugify(token, rune('_'))
 	err = jsonStore.Read("tokens", slug, &userID)
 	if err != nil {
 		return "not found err", err
@@ -103,7 +104,7 @@ func userFindByID(userID string) (user map[string]string, err error) {
 }
 
 func userStoreAuthToken(token string, userID string, options auth.UserAuthOptions) error {
-	slug := utils.StrSlugify(token, rune('_'))
+	slug := str.Slugify(token, rune('_'))
 	err := jsonStore.Write("tokens", slug, userID)
 	if err != nil {
 		return err
@@ -127,7 +128,7 @@ func userStoreAuthToken(token string, userID string, options auth.UserAuthOption
 // }
 
 func temporaryKeyGet(key string) (value string, err error) {
-	slug := utils.StrSlugify(key, rune('_'))
+	slug := str.Slugify(key, rune('_'))
 	var record map[string]string
 	err = jsonStore.Read("temp", slug, &record)
 	if err != nil {
@@ -137,13 +138,13 @@ func temporaryKeyGet(key string) (value string, err error) {
 }
 
 func temporaryKeySet(key string, value string, expiresSeconds int) (err error) {
-	slug := utils.StrSlugify(key, rune('_'))
+	slug := str.Slugify(key, rune('_'))
 	expiresAt := time.Now().Add(time.Duration(expiresSeconds))
 	err = jsonStore.Write("temp", slug, map[string]string{
-		"id":           utils.StrRandomFromGamma(16, "abcdef0123456789"),
+		"id":           str.RandomFromGamma(16, "abcdef0123456789"),
 		"value":        value,
-		"expires":      utils.ToString(expiresSeconds),
-		"expires_time": utils.ToString(expiresAt),
+		"expires":      cast.ToString(expiresSeconds),
+		"expires_time": cast.ToString(expiresAt),
 	})
 	if err != nil {
 		return err

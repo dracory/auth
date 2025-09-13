@@ -3,8 +3,7 @@ package auth
 import (
 	"net/http"
 
-	"github.com/gouniverse/hb"
-	"github.com/gouniverse/icons"
+	"github.com/dracory/hb"
 )
 
 func (a Auth) pageLoginCodeVerify(w http.ResponseWriter, r *http.Request) {
@@ -27,13 +26,13 @@ func (a Auth) pageLoginCodeVerifyContent() string {
 	verificationCodeInput := hb.NewInput().Class("form-control").Name("verification_code").Placeholder("Enter verification code")
 	verificationCodeFormGroup := hb.NewDiv().Class("form-group mt-3").Child(verificationCodeLabel).AddChild(verificationCodeInput)
 	buttonLogin := hb.NewButton().Class("ButtonLogin btn btn-lg btn-success btn-block w-100 text-white").Children([]hb.TagInterface{
-		icons.Icon("bi-send", 18, 18, "white").Style("margin-right:8px;margin-top:-2px;"),
+		hb.NewI().Class("bi bi-send").Style("margin-right:8px;margin-top:-2px;"),
 		hb.NewSpan().Text("Login"),
 		hb.NewDiv().Class("ImgLoading spinner-border spinner-border-sm text-light").Style("display:none;margin-left:10px;"),
 	}).OnClick("loginFormValidate()")
 	buttonLoginFormGroup := hb.NewDiv().Class("form-group mt-3 mb-3").AddChild(buttonLogin)
 	buttonBack := hb.NewHyperlink().Class("btn btn-info text-white float-start").Children([]hb.TagInterface{
-		icons.Icon("bi-chevron-left", 16, 16, "white").Style("margin-right:8px;margin-top:-2px;"),
+		hb.NewI().Class("bi bi-chevron-left").Style("margin-right:8px;margin-top:-2px;"),
 		hb.NewSpan().Text("Resend code"),
 	}).Href(a.LinkLogin())
 
