@@ -1,4 +1,4 @@
-module github.com/gouniverse/auth
+module github.com/dracory/auth
 
 go 1.23.0
 
@@ -6,7 +6,7 @@ require (
 	github.com/gouniverse/icons v1.3.1
 	github.com/gouniverse/uncdn v0.7.4
 	github.com/jcelliott/lumber v0.0.0-20160324203708-dd349441af25
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 )
 
 require (

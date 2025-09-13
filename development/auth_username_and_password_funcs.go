@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 
-	"github.com/gouniverse/auth"
+	"github.com/dracory/auth"
 	"github.com/gouniverse/utils"
 )
 

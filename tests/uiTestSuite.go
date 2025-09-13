@@ -3,7 +3,7 @@ package tests
 import (
 	"net/url"
 
-	"github.com/gouniverse/auth"
+	"github.com/dracory/auth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )

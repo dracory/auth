@@ -1,8 +1,8 @@
-# Auth <a href="https://gitpod.io/#https://github.com/gouniverse/auth" style="float:right:"><img src="https://gitpod.io/button/open-in-gitpod.svg" alt="Open in Gitpod" loading="lazy"></a>
+# Auth <a href="https://gitpod.io/#https://github.com/dracory/auth" style="float:right:"><img src="https://gitpod.io/button/open-in-gitpod.svg" alt="Open in Gitpod" loading="lazy"></a>
 
-[![Tests Status](https://github.com/gouniverse/auth/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/gouniverse/auth/actions/workflows/test.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/gouniverse/auth)](https://goreportcard.com/report/github.com/gouniverse/auth)
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/gouniverse/auth)](https://pkg.go.dev/github.com/gouniverse/auth)
+[![Tests Status](https://github.com/dracory/auth/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/dracory/auth/actions/workflows/test.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/dracory/auth)](https://goreportcard.com/report/github.com/dracory/auth)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/dracory/auth)](https://pkg.go.dev/github.com/dracory/auth)
 
 <img src="logo.jpg" width="100%" />
 
@@ -25,7 +25,7 @@ It will then leave the actual implementation to you - where to save the tokens, 
 ## Installation
 
 ```sh
-go get github.com/gouniverse/auth
+go get github.com/dracory/auth
 ```
 
 ## Usage of the Username/email and Password Flow

@@ -6,8 +6,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/gouniverse/auth"
-	"github.com/gouniverse/auth/development/scribble"
+	"github.com/dracory/auth"
+	"github.com/dracory/auth/development/scribble"
 	"github.com/gouniverse/utils"
 )
 

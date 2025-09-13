@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/darkoatanasovski/htmltags"
-	"github.com/gouniverse/auth/development/scribble"
+	"github.com/dracory/auth/development/scribble"
 	"github.com/jordan-wright/email"
 
-	"github.com/gouniverse/auth"
+	"github.com/dracory/auth"
 
 	"github.com/gouniverse/utils"
 )
