@@ -2,7 +2,7 @@ package auth
 
 import (
 	"github.com/dracory/hb"
-	"github.com/gouniverse/uncdn"
+	"github.com/dracory/uncdn"
 )
 
 // webpage returns the webpage template for the website

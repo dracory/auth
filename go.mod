@@ -8,7 +8,7 @@ require (
 	github.com/dracory/hb v1.88.0
 	github.com/dracory/req v0.1.0
 	github.com/dracory/str v0.3.0
-	github.com/gouniverse/uncdn v0.7.4
+	github.com/dracory/uncdn v0.9.0
 	github.com/jcelliott/lumber v0.0.0-20160324203708-dd349441af25
 	github.com/spf13/cast v1.10.0
 	github.com/stretchr/testify v1.11.1
