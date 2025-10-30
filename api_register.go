@@ -38,7 +38,12 @@ func (a Auth) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	verificationCode := str.RandomFromGamma(LoginCodeLength, LoginCodeGamma)
+	verificationCode, errRandomFromGamma := str.RandomFromGamma(LoginCodeLength, LoginCodeGamma)
+
+	if errRandomFromGamma != nil {
+		api.Respond(w, r, api.Error("Error generating random string"))
+		return
+	}
 
 	json, errJson := json.Marshal(map[string]string{
 		"email":      email,

@@ -39,7 +39,11 @@ func (a Auth) LoginWithUsernameAndPassword(email string, password string, option
 		return response
 	}
 
-	token := str.RandomFromGamma(32, LoginCodeGamma)
+	token, errRandom := str.RandomFromGamma(32, LoginCodeGamma)
+	if errRandom != nil {
+		response.ErrorMessage = "token generation failed. " + errRandom.Error()
+		return response
+	}
 
 	errSession := a.funcUserStoreAuthToken(token, userID, options)
 

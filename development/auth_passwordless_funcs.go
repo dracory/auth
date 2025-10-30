@@ -10,8 +10,12 @@ import (
 
 func passwordlessUserRegister(username string, first_name string, last_name string, options auth.UserAuthOptions) error {
 	slug := str.Slugify(username, rune('_'))
+	id, errRandom := str.RandomFromGamma(16, "abcdef0123456789")
+	if errRandom != nil {
+		return errRandom
+	}
 	err := jsonStore.Write("users", slug, map[string]string{
-		"id":         str.RandomFromGamma(16, "abcdef0123456789"),
+		"id":         id,
 		"username":   username,
 		"password":   "passwordless_registered", // no need for password
 		"first_name": first_name,

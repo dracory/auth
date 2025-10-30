@@ -140,8 +140,12 @@ func temporaryKeyGet(key string) (value string, err error) {
 func temporaryKeySet(key string, value string, expiresSeconds int) (err error) {
 	slug := str.Slugify(key, rune('_'))
 	expiresAt := time.Now().Add(time.Duration(expiresSeconds))
+	id, errRandom := str.RandomFromGamma(16, "abcdef0123456789")
+	if errRandom != nil {
+		return errRandom
+	}
 	err = jsonStore.Write("temp", slug, map[string]string{
-		"id":           str.RandomFromGamma(16, "abcdef0123456789"),
+		"id":           id,
 		"value":        value,
 		"expires":      cast.ToString(expiresSeconds),
 		"expires_time": cast.ToString(expiresAt),

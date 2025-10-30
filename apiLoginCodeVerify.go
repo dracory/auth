@@ -66,7 +66,12 @@ func (a Auth) authenticateViaUsername(w http.ResponseWriter, r *http.Request, us
 		return
 	}
 
-	token := str.RandomFromGamma(32, "BCDFGHJKLMNPQRSTVXYZ")
+	token, errRandomFromGamma := str.RandomFromGamma(32, "BCDFGHJKLMNPQRSTVXYZ")
+
+	if errRandomFromGamma != nil {
+		api.Respond(w, r, api.Error("Error generating random string"))
+		return
+	}
 
 	errSession := a.funcUserStoreAuthToken(token, userID, UserAuthOptions{
 		UserIp:    req.GetIP(r),

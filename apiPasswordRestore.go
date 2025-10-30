@@ -55,7 +55,12 @@ func (a Auth) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 
-	token := str.RandomFromGamma(32, "BCDFGHJKLMNPQRSTVXYZ")
+	token, errRandomFromGamma := str.RandomFromGamma(32, "BCDFGHJKLMNPQRSTVXYZ")
+
+	if errRandomFromGamma != nil {
+		api.Respond(w, r, api.Error("Error generating random string"))
+		return
+	}
 
 	errTempTokenSave := a.funcTemporaryKeySet(token, userID, 3600)
 

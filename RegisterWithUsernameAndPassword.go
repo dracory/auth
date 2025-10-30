@@ -57,7 +57,11 @@ func (a Auth) RegisterWithUsernameAndPassword(email string, password string, fir
 		return response
 	}
 
-	verificationCode := str.RandomFromGamma(LoginCodeLength, LoginCodeGamma)
+	verificationCode, errRandom := str.RandomFromGamma(LoginCodeLength, LoginCodeGamma)
+	if errRandom != nil {
+		response.ErrorMessage = "Error generating random string"
+		return response
+	}
 
 	json, errJson := json.Marshal(map[string]string{
 		"email":      email,
