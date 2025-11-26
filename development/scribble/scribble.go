@@ -19,88 +19,18 @@ var (
 	ErrMissingCollection = errors.New("missing collection - no place to save record")
 )
 
-type (
-	// Logger is a generic logger interface
-	Logger interface {
-		Fatal(string, ...interface{})
-		Error(string, ...interface{})
-		Warn(string, ...interface{})
-		Info(string, ...interface{})
-		Debug(string, ...interface{})
-		Trace(string, ...interface{})
-	}
-
-	// Driver is what is used to interact with the scribble database. It runs
-	// transactions, and provides log output
-	Driver struct {
-		mutex   sync.Mutex
-		mutexes map[string]*sync.Mutex
-		dir     string // the directory where scribble will create the database
-		log     Logger // the logger scribble will log to
-	}
-)
-
-type stdLogger struct {
-	l *slog.Logger
-}
-
-func newStdLogger() stdLogger {
-	return stdLogger{l: slog.Default()}
-}
-
-func (l stdLogger) Fatal(format string, args ...interface{}) {
-	logger := l.l
-	if logger == nil {
-		logger = slog.Default()
-	}
-	msg := fmt.Sprintf(format, args...)
-	logger.Error(msg)
-	os.Exit(1)
-}
-
-func (l stdLogger) Error(format string, args ...interface{}) {
-	logger := l.l
-	if logger == nil {
-		logger = slog.Default()
-	}
-	logger.Error(fmt.Sprintf(format, args...))
-}
-
-func (l stdLogger) Warn(format string, args ...interface{}) {
-	logger := l.l
-	if logger == nil {
-		logger = slog.Default()
-	}
-	logger.Warn(fmt.Sprintf(format, args...))
-}
-
-func (l stdLogger) Info(format string, args ...interface{}) {
-	logger := l.l
-	if logger == nil {
-		logger = slog.Default()
-	}
-	logger.Info(fmt.Sprintf(format, args...))
-}
-
-func (l stdLogger) Debug(format string, args ...interface{}) {
-	logger := l.l
-	if logger == nil {
-		logger = slog.Default()
-	}
-	logger.Debug(fmt.Sprintf(format, args...))
-}
-
-func (l stdLogger) Trace(format string, args ...interface{}) {
-	logger := l.l
-	if logger == nil {
-		logger = slog.Default()
-	}
-	logger.Debug(fmt.Sprintf(format, args...))
+// Driver is what is used to interact with the scribble database. It runs
+// transactions, and provides log output
+type Driver struct {
+	mutex   sync.Mutex
+	mutexes map[string]*sync.Mutex
+	dir     string       // the directory where scribble will create the database
+	log     *slog.Logger // the logger scribble will log to
 }
 
 // Options uses for specification of working golang-scribble
 type Options struct {
-	Logger // the logger scribble will use (configurable)
+	Logger *slog.Logger // the logger scribble will use (configurable)
 }
 
 // New creates a new scribble database at the desired directory location, and
@@ -120,7 +50,7 @@ func New(dir string, options *Options) (*Driver, error) {
 
 	// if no logger is provided, create a default
 	if opts.Logger == nil {
-		opts.Logger = newStdLogger()
+		opts.Logger = slog.Default()
 	}
 
 	//
@@ -132,12 +62,12 @@ func New(dir string, options *Options) (*Driver, error) {
 
 	// if the database already exists, just use it
 	if _, err := os.Stat(dir); err == nil {
-		opts.Logger.Debug("Using '%s' (database already exists)\n", dir)
+		opts.Logger.Debug(fmt.Sprintf("Using '%s' (database already exists)", dir))
 		return &driver, nil
 	}
 
 	// if the database doesn't exist create it
-	opts.Logger.Debug("Creating scribble database at '%s'...\n", dir)
+	opts.Logger.Debug(fmt.Sprintf("Creating scribble database at '%s'...", dir))
 	return &driver, os.MkdirAll(dir, 0755)
 }
 
@@ -280,7 +210,7 @@ func (d *Driver) Delete(collection, resource string) error {
 
 	// if fi is nil or error is not nil return
 	case fi == nil, err != nil:
-		return fmt.Errorf("Unable to find file or directory named %v\n", path)
+		return fmt.Errorf("unable to find file or directory named %v", path)
 
 	// remove directory and all contents
 	case fi.Mode().IsDir():
