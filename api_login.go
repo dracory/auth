@@ -3,10 +3,10 @@ package auth
 import (
 	"log"
 	"net/http"
+	"net/mail"
 
 	"github.com/dracory/api"
 	"github.com/dracory/req"
-	validator "github.com/gouniverse/validator"
 )
 
 func (a Auth) apiLogin(w http.ResponseWriter, r *http.Request) {
@@ -25,7 +25,7 @@ func (a Auth) apiLoginPasswordless(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !validator.IsEmail(email) {
+	if _, err := mail.ParseAddress(email); err != nil {
 		api.Respond(w, r, api.Error("This is not a valid email: "+email))
 		return
 	}

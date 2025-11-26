@@ -1,8 +1,9 @@
 package auth
 
 import (
+	"net/mail"
+
 	"github.com/dracory/str"
-	validator "github.com/gouniverse/validator"
 )
 
 type LoginUsernameAndPasswordResponse struct {
@@ -22,7 +23,7 @@ func (a Auth) LoginWithUsernameAndPassword(email string, password string, option
 		return response
 	}
 
-	if !validator.IsEmail(email) {
+	if _, err := mail.ParseAddress(email); err != nil {
 		response.ErrorMessage = "This is not a valid email: " + email
 		return response
 	}

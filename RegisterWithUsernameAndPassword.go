@@ -3,9 +3,9 @@ package auth
 import (
 	"encoding/json"
 	"log"
+	"net/mail"
 
 	"github.com/dracory/str"
-	validator "github.com/gouniverse/validator"
 )
 
 type RegisterUsernameAndPasswordResponse struct {
@@ -35,7 +35,7 @@ func (a Auth) RegisterWithUsernameAndPassword(email string, password string, fir
 		return response
 	}
 
-	if !validator.IsEmail(email) {
+	if _, err := mail.ParseAddress(email); err != nil {
 		response.ErrorMessage = "This is not a valid email: " + email
 		return response
 	}
