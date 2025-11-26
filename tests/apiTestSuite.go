@@ -199,7 +199,6 @@ func TestPasswordlessLoginCodeVerifyEndpointRequiresVerificationCode(t *testing.
 	assert.HTTPBodyContainsf(t, authentication.Router().ServeHTTP, "POST", authentication.LinkApiLoginCodeVerify(), url.Values{}, expectedErrorMessage, "%")
 }
 
-// TODO
 func TestPasswordlessLoginCodeVerifyEndpointVerifiesEmail(t *testing.T) {
 	authentication, err := newAuthPasswordless()
 
@@ -216,15 +215,15 @@ func TestPasswordlessLoginCodeVerifyEndpointVerifiesEmail(t *testing.T) {
 		"verification_code": {"12345678"},
 	}, expectedErrorMessage2, "%")
 
-	// expectedSuccess := `"status":"success"`
-	// assert.HTTPBodyContainsf(t, authentication.Router().ServeHTTP, "POST", authentication.LinkApiLoginCodeVerify(), url.Values{
-	// 	"verification_code": {"123456"},
-	// }, expectedSuccess, "%")
+	expectedSuccess := `"status":"success"`
+	assert.HTTPBodyContainsf(t, authentication.Router().ServeHTTP, "POST", authentication.LinkApiLoginCodeVerify(), url.Values{
+		"verification_code": {"BCDFGHJK"},
+	}, expectedSuccess, "%")
 
-	// expectedMessage := `"message":"Your code is correct"`
-	// assert.HTTPBodyContainsf(t, authentication.Router().ServeHTTP, "POST", authentication.LinkApiLoginCodeVerify(), url.Values{
-	// 	"email": {"123456"},
-	// }, expectedMessage, "%")
+	expectedMessage := `"message":"login success"`
+	assert.HTTPBodyContainsf(t, authentication.Router().ServeHTTP, "POST", authentication.LinkApiLoginCodeVerify(), url.Values{
+		"verification_code": {"BCDFGHJK"},
+	}, expectedMessage, "%")
 }
 
 func newAuthPasswordless() (*auth.Auth, error) {
