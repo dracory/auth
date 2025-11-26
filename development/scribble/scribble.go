@@ -5,12 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sync"
-
-	"github.com/jcelliott/lumber"
 )
 
 // Version is the current version of the project
@@ -42,6 +40,64 @@ type (
 	}
 )
 
+type stdLogger struct {
+	l *slog.Logger
+}
+
+func newStdLogger() stdLogger {
+	return stdLogger{l: slog.Default()}
+}
+
+func (l stdLogger) Fatal(format string, args ...interface{}) {
+	logger := l.l
+	if logger == nil {
+		logger = slog.Default()
+	}
+	msg := fmt.Sprintf(format, args...)
+	logger.Error(msg)
+	os.Exit(1)
+}
+
+func (l stdLogger) Error(format string, args ...interface{}) {
+	logger := l.l
+	if logger == nil {
+		logger = slog.Default()
+	}
+	logger.Error(fmt.Sprintf(format, args...))
+}
+
+func (l stdLogger) Warn(format string, args ...interface{}) {
+	logger := l.l
+	if logger == nil {
+		logger = slog.Default()
+	}
+	logger.Warn(fmt.Sprintf(format, args...))
+}
+
+func (l stdLogger) Info(format string, args ...interface{}) {
+	logger := l.l
+	if logger == nil {
+		logger = slog.Default()
+	}
+	logger.Info(fmt.Sprintf(format, args...))
+}
+
+func (l stdLogger) Debug(format string, args ...interface{}) {
+	logger := l.l
+	if logger == nil {
+		logger = slog.Default()
+	}
+	logger.Debug(fmt.Sprintf(format, args...))
+}
+
+func (l stdLogger) Trace(format string, args ...interface{}) {
+	logger := l.l
+	if logger == nil {
+		logger = slog.Default()
+	}
+	logger.Debug(fmt.Sprintf(format, args...))
+}
+
 // Options uses for specification of working golang-scribble
 type Options struct {
 	Logger // the logger scribble will use (configurable)
@@ -64,7 +120,7 @@ func New(dir string, options *Options) (*Driver, error) {
 
 	// if no logger is provided, create a default
 	if opts.Logger == nil {
-		opts.Logger = lumber.NewConsoleLogger(lumber.INFO)
+		opts.Logger = newStdLogger()
 	}
 
 	//
@@ -125,7 +181,7 @@ func write(dir, tmpPath, dstPath string, v interface{}) error {
 	}
 
 	// write marshaled data to the temp file
-	if err := ioutil.WriteFile(tmpPath, b, 0644); err != nil {
+	if err := os.WriteFile(tmpPath, b, 0644); err != nil {
 		return err
 	}
 
@@ -155,7 +211,7 @@ func (d *Driver) Read(collection, resource string, v interface{}) error {
 
 func read(record string, v interface{}) error {
 
-	b, err := ioutil.ReadFile(record + ".json")
+	b, err := os.ReadFile(record + ".json")
 	if err != nil {
 		return err
 	}
@@ -178,7 +234,7 @@ func (d *Driver) ReadAll(collection string) ([][]byte, error) {
 
 	// read all the files in the transaction.Collection; an error here just means
 	// the collection is either empty or doesn't exist
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +242,7 @@ func (d *Driver) ReadAll(collection string) ([][]byte, error) {
 	return readAll(files, dir)
 }
 
-func readAll(files []os.FileInfo, dir string) ([][]byte, error) {
+func readAll(files []os.DirEntry, dir string) ([][]byte, error) {
 	// the files read from the database
 	var records [][]byte
 
@@ -194,7 +250,7 @@ func readAll(files []os.FileInfo, dir string) ([][]byte, error) {
 	// append the files to the collection of read
 	for _, file := range files {
 
-		b, err := ioutil.ReadFile(filepath.Join(dir, file.Name()))
+		b, err := os.ReadFile(filepath.Join(dir, file.Name()))
 
 		if err != nil {
 			return nil, err
@@ -238,7 +294,6 @@ func (d *Driver) Delete(collection, resource string) error {
 	return nil
 }
 
-//
 func stat(path string) (fi os.FileInfo, err error) {
 
 	// check for dir, if path isn't a directory check to see if it's a file
