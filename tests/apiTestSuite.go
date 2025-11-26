@@ -2,153 +2,145 @@ package tests
 
 import (
 	"net/url"
+	"testing"
 
 	"github.com/dracory/auth"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/suite"
+	assert "github.com/dracory/auth/tests/testassert"
 )
 
-type apiTestSuite struct {
-	suite.Suite
-}
+func TestLoginEndpointRequiresEmail(t *testing.T) {
+	authentication, err := newAuthWithRegistrationDisabled()
 
-func (suite *apiTestSuite) SetupTest() {
-	// config.SetupTests()
-}
-
-func (suite *apiTestSuite) TestLoginEndpointRequiresEmail() {
-	authentication, err := suite.newAuthWithRegistrationDisabled()
-
-	assert.Nil(suite.T(), err)
-	assert.NotNil(suite.T(), authentication)
+	assert.Nil(t, err)
+	assert.NotNil(t, authentication)
 
 	expectedError := `"status":"error"`
-	assert.HTTPBodyContainsf(suite.T(), authentication.Router().ServeHTTP, "POST", authentication.LinkApiLogin(), url.Values{}, expectedError, "%")
+	assert.HTTPBodyContainsf(t, authentication.Router().ServeHTTP, "POST", authentication.LinkApiLogin(), url.Values{}, expectedError, "%")
 
 	expectedErrorMessage := `"message":"Email is required field"`
-	assert.HTTPBodyContainsf(suite.T(), authentication.Router().ServeHTTP, "POST", authentication.LinkApiLogin(), url.Values{}, expectedErrorMessage, "%")
+	assert.HTTPBodyContainsf(t, authentication.Router().ServeHTTP, "POST", authentication.LinkApiLogin(), url.Values{}, expectedErrorMessage, "%")
 }
 
-func (suite *apiTestSuite) TestLoginEndpointRequiresPassword() {
-	auth, err := suite.newAuthWithRegistrationDisabled()
+func TestLoginEndpointRequiresPassword(t *testing.T) {
+	authInstance, err := newAuthWithRegistrationDisabled()
 
-	assert.Nil(suite.T(), err)
-	assert.NotNil(suite.T(), auth)
+	assert.Nil(t, err)
+	assert.NotNil(t, authInstance)
 
 	expectedError := `"status":"error"`
-	assert.HTTPBodyContainsf(suite.T(), auth.Router().ServeHTTP, "POST", auth.LinkApiLogin(), url.Values{
+	assert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogin(), url.Values{
 		"email": {"test@test.com"},
 	}, expectedError, "%")
 
 	expectedErrorMessage := `"message":"Password is required field"`
-	assert.HTTPBodyContainsf(suite.T(), auth.Router().ServeHTTP, "POST", auth.LinkApiLogin(), url.Values{
+	assert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogin(), url.Values{
 		"email": {"test@test.com"},
 	}, expectedErrorMessage, "%")
 }
 
-func (suite *apiTestSuite) TestLoginEndpointRequiresPasswords() {
-	auth, err := suite.newAuthWithRegistrationDisabled()
+func TestLoginEndpointRequiresPasswords(t *testing.T) {
+	authInstance, err := newAuthWithRegistrationDisabled()
 
-	assert.Nil(suite.T(), err)
-	assert.NotNil(suite.T(), auth)
+	assert.Nil(t, err)
+	assert.NotNil(t, authInstance)
 
 	expectedSuccess := `"status":"success"`
-	assert.HTTPBodyContainsf(suite.T(), auth.Router().ServeHTTP, "POST", auth.LinkApiLogin(), url.Values{
+	assert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogin(), url.Values{
 		"email":    {"test@test.com"},
 		"password": {"1234"},
 	}, expectedSuccess, "%")
 
 	expectedSuccessMessage := `"message":"login success"`
-	assert.HTTPBodyContainsf(suite.T(), auth.Router().ServeHTTP, "POST", auth.LinkApiLogin(), url.Values{
+	assert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogin(), url.Values{
 		"email":    {"test@test.com"},
 		"password": {"1234"},
 	}, expectedSuccessMessage, "%")
 
 	expectedToken := `"token":"`
-	assert.HTTPBodyContainsf(suite.T(), auth.Router().ServeHTTP, "POST", auth.LinkApiLogin(), url.Values{
+	assert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogin(), url.Values{
 		"email":    {"test@test.com"},
 		"password": {"1234"},
 	}, expectedToken, "%")
 }
 
-func (suite *apiTestSuite) TestRegisterEndpointRequiresFirstName() {
-	auth, err := suite.newAuthWithRegistrationDisabled()
+func TestRegisterEndpointRequiresFirstName(t *testing.T) {
+	authInstance, err := newAuthWithRegistrationDisabled()
 
-	assert.Nil(suite.T(), err)
-	assert.NotNil(suite.T(), auth)
+	assert.Nil(t, err)
+	assert.NotNil(t, authInstance)
 
 	expectedError := `"status":"error"`
-	assert.HTTPBodyContainsf(suite.T(), auth.Router().ServeHTTP, "POST", auth.LinkApiRegister(), url.Values{}, expectedError, "%")
+	assert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), url.Values{}, expectedError, "%")
 
 	expectedErrorMessage := `"message":"First name is required field"`
-	assert.HTTPBodyContainsf(suite.T(), auth.Router().ServeHTTP, "POST", auth.LinkApiRegister(), url.Values{}, expectedErrorMessage, "%")
+	assert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), url.Values{}, expectedErrorMessage, "%")
 }
 
-func (suite *apiTestSuite) TestRegisterEndpointRequiresLastName() {
-	auth, err := suite.newAuthWithRegistrationDisabled()
+func TestRegisterEndpointRequiresLastName(t *testing.T) {
+	authInstance, err := newAuthWithRegistrationDisabled()
 
-	assert.Nil(suite.T(), err)
-	assert.NotNil(suite.T(), auth)
+	assert.Nil(t, err)
+	assert.NotNil(t, authInstance)
 
 	expectedError := `"status":"error"`
-	assert.HTTPBodyContainsf(suite.T(), auth.Router().ServeHTTP, "POST", auth.LinkApiRegister(), url.Values{
+	assert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), url.Values{
 		"first_name": {"John"},
 	}, expectedError, "%")
 
 	expectedErrorMessage := `"message":"Last name is required field"`
-	assert.HTTPBodyContainsf(suite.T(), auth.Router().ServeHTTP, "POST", auth.LinkApiRegister(), url.Values{
+	assert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), url.Values{
 		"first_name": {"John"},
 	}, expectedErrorMessage, "%")
 }
 
-func (suite *apiTestSuite) TestRegisterEndpointRequiresEmail() {
-	authentication, err := suite.newAuthWithRegistrationDisabled()
+func TestRegisterEndpointRequiresEmail(t *testing.T) {
+	authentication, err := newAuthWithRegistrationDisabled()
 
-	assert.Nil(suite.T(), err)
-	assert.NotNil(suite.T(), authentication)
+	assert.Nil(t, err)
+	assert.NotNil(t, authentication)
 
 	expectedError := `"status":"error"`
-	assert.HTTPBodyContainsf(suite.T(), authentication.Router().ServeHTTP, "POST", authentication.LinkApiRegister(), url.Values{
+	assert.HTTPBodyContainsf(t, authentication.Router().ServeHTTP, "POST", authentication.LinkApiRegister(), url.Values{
 		"first_name": {"John"},
 		"last_name":  {"Doe"},
 	}, expectedError, "%")
 
 	expectedErrorMessage := `"message":"Email is required field"`
-	assert.HTTPBodyContainsf(suite.T(), authentication.Router().ServeHTTP, "POST", authentication.LinkApiRegister(), url.Values{
+	assert.HTTPBodyContainsf(t, authentication.Router().ServeHTTP, "POST", authentication.LinkApiRegister(), url.Values{
 		"first_name": {"John"},
 		"last_name":  {"Doe"},
 	}, expectedErrorMessage, "%")
 }
 
-func (suite *apiTestSuite) TestRegisterEndpointRequiresPassword() {
-	authentication, err := suite.newAuthWithRegistrationDisabled()
+func TestRegisterEndpointRequiresPassword(t *testing.T) {
+	authentication, err := newAuthWithRegistrationDisabled()
 
-	assert.Nil(suite.T(), err)
-	assert.NotNil(suite.T(), authentication)
+	assert.Nil(t, err)
+	assert.NotNil(t, authentication)
 
 	expectedError := `"status":"error"`
-	assert.HTTPBodyContainsf(suite.T(), authentication.Router().ServeHTTP, "POST", authentication.LinkApiRegister(), url.Values{
+	assert.HTTPBodyContainsf(t, authentication.Router().ServeHTTP, "POST", authentication.LinkApiRegister(), url.Values{
 		"first_name": {"John"},
 		"last_name":  {"Doe"},
 		"email":      {"test@test.com"},
 	}, expectedError, "%")
 
 	expectedErrorMessage := `"message":"Password is required field"`
-	assert.HTTPBodyContainsf(suite.T(), authentication.Router().ServeHTTP, "POST", authentication.LinkApiRegister(), url.Values{
+	assert.HTTPBodyContainsf(t, authentication.Router().ServeHTTP, "POST", authentication.LinkApiRegister(), url.Values{
 		"first_name": {"John"},
 		"last_name":  {"Doe"},
 		"email":      {"test@test.com"},
 	}, expectedErrorMessage, "%")
 }
 
-func (suite *apiTestSuite) TestRegisterEndpointRequiresPasswords() {
-	auth, err := suite.newAuthWithRegistrationEnabled()
+func TestRegisterEndpointRequiresPasswords(t *testing.T) {
+	authInstance, err := newAuthWithRegistrationEnabled()
 
-	assert.Nil(suite.T(), err)
-	assert.NotNil(suite.T(), auth)
+	assert.Nil(t, err)
+	assert.NotNil(t, authInstance)
 
 	expectedSuccess := `"status":"success"`
-	assert.HTTPBodyContainsf(suite.T(), auth.Router().ServeHTTP, "POST", auth.LinkApiRegister(), url.Values{
+	assert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), url.Values{
 		"first_name": {"John"},
 		"last_name":  {"Doe"},
 		"email":      {"test@test.com"},
@@ -156,7 +148,7 @@ func (suite *apiTestSuite) TestRegisterEndpointRequiresPasswords() {
 	}, expectedSuccess, "%")
 
 	expectedMessage := `"message":"registration success"`
-	assert.HTTPBodyContainsf(suite.T(), auth.Router().ServeHTTP, "POST", auth.LinkApiRegister(), url.Values{
+	assert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), url.Values{
 		"first_name": {"John"},
 		"last_name":  {"Doe"},
 		"email":      {"test@test.com"},
@@ -164,78 +156,78 @@ func (suite *apiTestSuite) TestRegisterEndpointRequiresPasswords() {
 	}, expectedMessage, "%")
 }
 
-func (suite *apiTestSuite) TestPasswordlessLoginEndpointRequiresEmail() {
-	authentication, err := suite.newAuthPasswordless()
+func TestPasswordlessLoginEndpointRequiresEmail(t *testing.T) {
+	authentication, err := newAuthPasswordless()
 
-	assert.Nil(suite.T(), err)
-	assert.NotNil(suite.T(), authentication)
+	assert.Nil(t, err)
+	assert.NotNil(t, authentication)
 
 	expectedError := `"status":"error"`
-	assert.HTTPBodyContainsf(suite.T(), authentication.Router().ServeHTTP, "POST", authentication.LinkApiLogin(), url.Values{}, expectedError, "%")
+	assert.HTTPBodyContainsf(t, authentication.Router().ServeHTTP, "POST", authentication.LinkApiLogin(), url.Values{}, expectedError, "%")
 
 	expectedErrorMessage := `"message":"Email is required field"`
-	assert.HTTPBodyContainsf(suite.T(), authentication.Router().ServeHTTP, "POST", authentication.LinkApiLogin(), url.Values{}, expectedErrorMessage, "%")
+	assert.HTTPBodyContainsf(t, authentication.Router().ServeHTTP, "POST", authentication.LinkApiLogin(), url.Values{}, expectedErrorMessage, "%")
 }
 
-func (suite *apiTestSuite) TestPasswordlessLoginEndpointSendsLoginCodeEmail() {
-	authentication, err := suite.newAuthPasswordless()
+func TestPasswordlessLoginEndpointSendsLoginCodeEmail(t *testing.T) {
+	authentication, err := newAuthPasswordless()
 
-	assert.Nil(suite.T(), err)
-	assert.NotNil(suite.T(), authentication)
+	assert.Nil(t, err)
+	assert.NotNil(t, authentication)
 
 	expectedSuccess := `"status":"success"`
-	assert.HTTPBodyContainsf(suite.T(), authentication.Router().ServeHTTP, "POST", authentication.LinkApiLogin(), url.Values{
+	assert.HTTPBodyContainsf(t, authentication.Router().ServeHTTP, "POST", authentication.LinkApiLogin(), url.Values{
 		"email": {"test@test.com"},
 	}, expectedSuccess, "%")
 
 	expectedMessage := `"message":"Login code was sent successfully"`
-	assert.HTTPBodyContainsf(suite.T(), authentication.Router().ServeHTTP, "POST", authentication.LinkApiLogin(), url.Values{
+	assert.HTTPBodyContainsf(t, authentication.Router().ServeHTTP, "POST", authentication.LinkApiLogin(), url.Values{
 		"email": {"test@test.com"},
 	}, expectedMessage, "%")
 }
 
-func (suite *apiTestSuite) TestPasswordlessLoginCodeVerifyEndpointRequiresVerificationCode() {
-	authentication, err := suite.newAuthPasswordless()
+func TestPasswordlessLoginCodeVerifyEndpointRequiresVerificationCode(t *testing.T) {
+	authentication, err := newAuthPasswordless()
 
-	assert.Nil(suite.T(), err)
-	assert.NotNil(suite.T(), authentication)
+	assert.Nil(t, err)
+	assert.NotNil(t, authentication)
 
 	expectedError := `"status":"error"`
-	assert.HTTPBodyContainsf(suite.T(), authentication.Router().ServeHTTP, "POST", authentication.LinkApiLoginCodeVerify(), url.Values{}, expectedError, "%")
+	assert.HTTPBodyContainsf(t, authentication.Router().ServeHTTP, "POST", authentication.LinkApiLoginCodeVerify(), url.Values{}, expectedError, "%")
 
 	expectedErrorMessage := `"message":"Verification code is required field"`
-	assert.HTTPBodyContainsf(suite.T(), authentication.Router().ServeHTTP, "POST", authentication.LinkApiLoginCodeVerify(), url.Values{}, expectedErrorMessage, "%")
+	assert.HTTPBodyContainsf(t, authentication.Router().ServeHTTP, "POST", authentication.LinkApiLoginCodeVerify(), url.Values{}, expectedErrorMessage, "%")
 }
 
 // TODO
-func (suite *apiTestSuite) TestPasswordlessLoginCodeVerifyEndpointVerifiesEmail() {
-	authentication, err := suite.newAuthPasswordless()
+func TestPasswordlessLoginCodeVerifyEndpointVerifiesEmail(t *testing.T) {
+	authentication, err := newAuthPasswordless()
 
-	assert.Nil(suite.T(), err)
-	assert.NotNil(suite.T(), authentication)
+	assert.Nil(t, err)
+	assert.NotNil(t, authentication)
 
 	expectedErrorMessage := `"message":"Verification code is invalid length"`
-	assert.HTTPBodyContainsf(suite.T(), authentication.Router().ServeHTTP, "POST", authentication.LinkApiLoginCodeVerify(), url.Values{
+	assert.HTTPBodyContainsf(t, authentication.Router().ServeHTTP, "POST", authentication.LinkApiLoginCodeVerify(), url.Values{
 		"verification_code": {"123456"},
 	}, expectedErrorMessage, "%")
 
 	expectedErrorMessage2 := `"message":"Verification code contains invalid characters"`
-	assert.HTTPBodyContainsf(suite.T(), authentication.Router().ServeHTTP, "POST", authentication.LinkApiLoginCodeVerify(), url.Values{
+	assert.HTTPBodyContainsf(t, authentication.Router().ServeHTTP, "POST", authentication.LinkApiLoginCodeVerify(), url.Values{
 		"verification_code": {"12345678"},
 	}, expectedErrorMessage2, "%")
 
 	// expectedSuccess := `"status":"success"`
-	// assert.HTTPBodyContainsf(suite.T(), authentication.Router().ServeHTTP, "POST", authentication.LinkApiLoginCodeVerify(), url.Values{
+	// assert.HTTPBodyContainsf(t, authentication.Router().ServeHTTP, "POST", authentication.LinkApiLoginCodeVerify(), url.Values{
 	// 	"verification_code": {"123456"},
 	// }, expectedSuccess, "%")
 
 	// expectedMessage := `"message":"Your code is correct"`
-	// assert.HTTPBodyContainsf(suite.T(), authentication.Router().ServeHTTP, "POST", authentication.LinkApiLoginCodeVerify(), url.Values{
+	// assert.HTTPBodyContainsf(t, authentication.Router().ServeHTTP, "POST", authentication.LinkApiLoginCodeVerify(), url.Values{
 	// 	"email": {"123456"},
 	// }, expectedMessage, "%")
 }
 
-func (suite *apiTestSuite) newAuthPasswordless() (*auth.Auth, error) {
+func newAuthPasswordless() (*auth.Auth, error) {
 	endpoint := "http://localhost"
 	return auth.NewPasswordlessAuth(auth.ConfigPasswordless{
 		Endpoint:                endpoint,
@@ -251,7 +243,7 @@ func (suite *apiTestSuite) newAuthPasswordless() (*auth.Auth, error) {
 	})
 }
 
-func (suite *apiTestSuite) newAuthWithRegistrationDisabled() (*auth.Auth, error) {
+func newAuthWithRegistrationDisabled() (*auth.Auth, error) {
 	endpoint := "http://localhost"
 	return auth.NewUsernameAndPasswordAuth(auth.ConfigUsernameAndPassword{
 		Endpoint:                endpoint,
@@ -272,7 +264,7 @@ func (suite *apiTestSuite) newAuthWithRegistrationDisabled() (*auth.Auth, error)
 	})
 }
 
-func (suite *apiTestSuite) newAuthWithRegistrationEnabled() (*auth.Auth, error) {
+func newAuthWithRegistrationEnabled() (*auth.Auth, error) {
 	endpoint := "http://localhost"
 	return auth.NewUsernameAndPasswordAuth(auth.ConfigUsernameAndPassword{
 		Endpoint:                endpoint,

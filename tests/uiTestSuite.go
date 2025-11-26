@@ -2,68 +2,60 @@ package tests
 
 import (
 	"net/url"
+	"testing"
 
 	"github.com/dracory/auth"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/suite"
+	assert "github.com/dracory/auth/tests/testassert"
 )
 
-type uiTestSuite struct {
-	suite.Suite
-}
+func TestPageLogin(t *testing.T) {
+	authentication, err := newUIAuthWithRegistrationDisabled()
 
-func (suite *uiTestSuite) SetupTest() {
-	// config.SetupTests()
-}
-
-func (suite *uiTestSuite) TestPageLogin() {
-	authentication, err := suite.newAuthWithRegistrationDisabled()
-
-	assert.Nil(suite.T(), err)
-	assert.NotNil(suite.T(), authentication)
+	assert.Nil(t, err)
+	assert.NotNil(t, authentication)
 	expected := `<title>Login</title>`
-	assert.HTTPBodyContainsf(suite.T(), authentication.Router().ServeHTTP, "POST", authentication.LinkLogin(), url.Values{}, expected, "%")
+	assert.HTTPBodyContainsf(t, authentication.Router().ServeHTTP, "POST", authentication.LinkLogin(), url.Values{}, expected, "%")
 }
 
-func (suite *uiTestSuite) TestPageRegister() {
-	authentication, err := suite.newAuthWithRegistrationEnabled()
+func TestPageRegister(t *testing.T) {
+	authentication, err := newUIAuthWithRegistrationEnabled()
 
-	assert.Nil(suite.T(), err)
-	assert.NotNil(suite.T(), authentication)
+	assert.Nil(t, err)
+	assert.NotNil(t, authentication)
 	expected := `<title>Register</title>`
-	assert.HTTPBodyContainsf(suite.T(), authentication.Router().ServeHTTP, "POST", authentication.LinkRegister(), url.Values{}, expected, "%")
+	assert.HTTPBodyContainsf(t, authentication.Router().ServeHTTP, "POST", authentication.LinkRegister(), url.Values{}, expected, "%")
 }
 
-func (suite *uiTestSuite) TestPageRegisterDisabled() {
-	authentication, err := suite.newAuthWithRegistrationDisabled()
+func TestPageRegisterDisabled(t *testing.T) {
+	authentication, err := newUIAuthWithRegistrationDisabled()
 
-	assert.Nil(suite.T(), err)
-	assert.NotNil(suite.T(), authentication)
+	assert.Nil(t, err)
+	assert.NotNil(t, authentication)
 	expectedTitle := `<title>Register</title>`
-	assert.HTTPBodyNotContainsf(suite.T(), authentication.Router().ServeHTTP, "POST", authentication.LinkRegister(), url.Values{}, expectedTitle, "%")
+	assert.HTTPBodyNotContainsf(t, authentication.Router().ServeHTTP, "POST", authentication.LinkRegister(), url.Values{}, expectedTitle, "%")
 	expectedEmpty := ""
-	assert.HTTPBodyContainsf(suite.T(), authentication.Router().ServeHTTP, "POST", authentication.LinkRegister(), url.Values{}, expectedEmpty, "%")
+	assert.HTTPBodyContainsf(t, authentication.Router().ServeHTTP, "POST", authentication.LinkRegister(), url.Values{}, expectedEmpty, "%")
 }
 
-func (suite *uiTestSuite) TestPagePasswordRestore() {
-	authentication, err := suite.newAuthWithRegistrationEnabled()
+func TestPagePasswordRestore(t *testing.T) {
+	authentication, err := newUIAuthWithRegistrationEnabled()
 
-	assert.Nil(suite.T(), err)
-	assert.NotNil(suite.T(), authentication)
+	assert.Nil(t, err)
+	assert.NotNil(t, authentication)
 	expected := `<title>Restore Password</title>`
-	assert.HTTPBodyContainsf(suite.T(), authentication.Router().ServeHTTP, "POST", authentication.LinkPasswordRestore(), url.Values{}, expected, "%")
+	assert.HTTPBodyContainsf(t, authentication.Router().ServeHTTP, "POST", authentication.LinkPasswordRestore(), url.Values{}, expected, "%")
 }
 
-func (suite *uiTestSuite) TestPagePasswordReset() {
-	authentication, err := suite.newAuthWithRegistrationEnabled()
+func TestPagePasswordReset(t *testing.T) {
+	authentication, err := newUIAuthWithRegistrationEnabled()
 
-	assert.Nil(suite.T(), err)
-	assert.NotNil(suite.T(), authentication)
+	assert.Nil(t, err)
+	assert.NotNil(t, authentication)
 	expected := `<title>Reset Password</title>`
-	assert.HTTPBodyContainsf(suite.T(), authentication.Router().ServeHTTP, "POST", authentication.LinkPasswordReset("testtoken"), url.Values{}, expected, "%")
+	assert.HTTPBodyContainsf(t, authentication.Router().ServeHTTP, "POST", authentication.LinkPasswordReset("testtoken"), url.Values{}, expected, "%")
 }
 
-func (suite *uiTestSuite) newAuthWithRegistrationDisabled() (*auth.Auth, error) {
+func newUIAuthWithRegistrationDisabled() (*auth.Auth, error) {
 	endpoint := "http://localhost/auth"
 	return auth.NewUsernameAndPasswordAuth(auth.ConfigUsernameAndPassword{
 		Endpoint:                endpoint,
@@ -84,7 +76,7 @@ func (suite *uiTestSuite) newAuthWithRegistrationDisabled() (*auth.Auth, error) 
 	})
 }
 
-func (suite *uiTestSuite) newAuthWithRegistrationEnabled() (*auth.Auth, error) {
+func newUIAuthWithRegistrationEnabled() (*auth.Auth, error) {
 	endpoint := "http://localhost/auth"
 	return auth.NewUsernameAndPasswordAuth(auth.ConfigUsernameAndPassword{
 		Endpoint:                endpoint,
