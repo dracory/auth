@@ -1,6 +1,6 @@
 module github.com/dracory/auth
 
-go 1.24.5
+go 1.25
 
 require (
 	github.com/dracory/api v1.7.0

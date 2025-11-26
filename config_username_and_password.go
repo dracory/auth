@@ -22,7 +22,7 @@ type ConfigUsernameAndPassword struct {
 	FuncEmailSend                    func(userID string, emailSubject string, emailBody string) (err error)
 	FuncUserFindByUsername           func(username string, firstName string, lastName string, options UserAuthOptions) (userID string, err error)
 	FuncUserLogin                    func(username string, password string, options UserAuthOptions) (userID string, err error)
-	FuncUserLogout                   func(username string, options UserAuthOptions) (err error)
+	FuncUserLogout                   func(userID string, options UserAuthOptions) (err error)
 	FuncUserPasswordChange           func(username string, newPassword string, options UserAuthOptions) (err error)
 	FuncUserRegister                 func(username string, password string, first_name string, last_name string, options UserAuthOptions) (err error)
 	LabelUsername                    string
