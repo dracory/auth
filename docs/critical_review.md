@@ -16,7 +16,7 @@ The `dracory/auth` library demonstrates **solid engineering fundamentals** with 
 
 | Category | Rating | Summary |
 |----------|--------|---------|
-| **Security** | 🔴 Critical Issues | No rate limiting, weak error messages expose internals, missing CSRF protection |
+| **Security** | 🔴 Critical Issues | Weak error messages expose internals; CSRF & rate limiting implemented but other gaps remain |
 | **Architecture** | 🟢 Good | Clean callback pattern, good separation of concerns |
 | **Error Handling** | 🔴 Poor | Exposes internal errors, inconsistent patterns, uses `log.Println` |
 | **Input Validation** | 🟡 Basic | Email validation present but incomplete, no password strength enforcement |
@@ -28,43 +28,6 @@ The `dracory/auth` library demonstrates **solid engineering fundamentals** with 
 ---
 
 ## 🔴 Critical Security Issues
-
-### 1. **No Rate Limiting** - ✅ **[FIXED]**
-
-**Severity:** 🔴 **CRITICAL**  
-**Impact:** Brute force attacks, credential stuffing, DoS
-
-**Status:** ✅ **FIXED** - Implemented comprehensive rate limiting with default in-memory limiter
-
-**Solution Implemented:**
-- Added `rate_limiter.go` with thread-safe in-memory rate limiter using sliding window algorithm
-- Default limits: 5 attempts per 15 minutes with automatic lockout
-- Rate limiting applied to all authentication endpoints:
-  - Login (both passwordless and username/password)
-  - Registration
-  - Password restore/reset
-  - Verification code endpoints
-- Configurable via `DisableRateLimit`, `FuncCheckRateLimit`, `MaxLoginAttempts`, and `LockoutDuration`
-- Users can provide custom rate limiting function (e.g., Redis-based for distributed systems)
-- Automatic cleanup of old records to prevent memory leaks
-
-**Configuration:**
-```go
-auth := auth.NewUsernameAndPasswordAuth(auth.ConfigUsernameAndPassword{
-    // ... other config
-    MaxLoginAttempts: 5,           // Default: 5
-    LockoutDuration: 15 * time.Minute,  // Default: 15 minutes
-    // Optional: provide custom rate limiter
-    FuncCheckRateLimit: func(ip string, endpoint string) (allowed bool, retryAfter time.Duration, err error) {
-        // Custom implementation (e.g., Redis-based)
-        return true, 0, nil
-    },
-})
-```
-
-**Risk Level:** ✅ **MITIGATED** - Production systems now protected by default
-
----
 
 ### 2. **Internal Error Exposure** - HIGH
 
@@ -116,46 +79,6 @@ if err != nil {
     return response
 }
 ```
-
----
-
-### 3. **No CSRF Protection** - HIGH [FIXED]
-
-**Severity:** 🔴 **HIGH**  
-**Impact:** Cross-site request forgery attacks
-
-**Problem:**
-When `UseCookies: true`, the library is vulnerable to CSRF attacks. No CSRF token validation is implemented.
-
-**Attack Scenario:**
-```html
-<!-- Attacker's website -->
-<form action="https://victim-site.com/auth/api/password-reset" method="POST">
-    <input name="email" value="victim@email.com">
-    <input name="first_name" value="John">
-    <input name="last_name" value="Doe">
-</form>
-<script>document.forms[0].submit();</script>
-```
-
-If victim is logged in, their password reset is triggered without consent.
-
-**Recommendation:**
-```go
-type ConfigUsernameAndPassword struct {
-    // ... existing fields
-    EnableCSRFProtection bool
-    CSRFSecret           string
-}
-
-// In handlers
-if a.enableCSRFProtection && !a.funcCSRFTokenValidate(r) {
-    api.Respond(w, r, api.Forbidden("Invalid CSRF token"))
-    return
-}
-```
-**Resolution:**
-Implemented CSRF protection using `github.com/dracory/csrf`. Added `EnableCSRFProtection` and `CSRFSecret` to configuration. Added validation check in `apiPasswordReset`.
 
 ---
 
@@ -556,15 +479,15 @@ Remove deprecated code entirely. Add migration guide to docs.
 
 | Requirement | Status | Notes |
 |-------------|--------|-------|
-| Rate Limiting | ❌ Missing | **CRITICAL** - Must implement |
-| CSRF Protection | ❌ Missing | **CRITICAL** for cookie-based auth |
+| Rate Limiting | ✅ Implemented | In-memory per-IP/per-endpoint limiter with lockout; configurable |
+| CSRF Protection | ✅ Implemented | CSRF protection via `github.com/dracory/csrf` when enabled |
 | Error Sanitization | ❌ Missing | Exposes internal errors |
 | Structured Logging | ❌ Missing | Uses `log.Println` |
 | Context Propagation | ❌ Missing | No `context.Context` support |
 | Input Validation | 🟡 Partial | Email only, no password strength |
 | Input Sanitization | ❌ Missing | XSS risk |
 | Password Strength | ❌ Missing | Accepts any password |
-| Account Lockout | ❌ Missing | No brute force protection |
+| Account Lockout | ✅ Implemented | Lockout after N failed attempts via rate limiter |
 | Session Management | 🟡 Basic | No session invalidation on password change |
 | Audit Logging | 🟡 Partial | Has IP/UserAgent but no structured logs |
 | Metrics/Monitoring | ❌ Missing | No instrumentation |
@@ -582,53 +505,47 @@ Remove deprecated code entirely. Add migration guide to docs.
 
 **Estimated Time:** 2-3 weeks
 
-1. **Implement Rate Limiting**
-   - Add rate limit callback to config
-   - Implement per-IP and per-user limits
-   - Add exponential backoff
-   - Add account lockout after N failed attempts
-
-2. **Add CSRF Protection**
-   - Implement CSRF token generation/validation
-   - Add to all state-changing endpoints
-   - Make configurable (can disable for API-only usage)
-
-3. **Sanitize Error Messages**
+1. **Sanitize Error Messages**
    - Create error code system
    - Never expose internal errors to users
    - Log detailed errors internally only
 
-4. **Implement Structured Logging**
+2. **Add Structured Logging**
    - Replace `log.Println` with `slog`
    - Add log levels (Debug, Info, Warn, Error)
    - Include context in all logs (request ID, user ID, IP)
 
-5. **Add Context Propagation**
+3. **Implement Context Propagation**
    - Add `context.Context` to all functions
    - Implement request timeouts
    - Add cancellation support
+
+4. **Enforce Password Strength and Input Sanitization**
+   - Add password strength requirements
+   - Sanitize all user inputs
+   - Validate all fields consistently
 
 ### Phase 2: Security Enhancements (SHOULD DO)
 
 **Estimated Time:** 1-2 weeks
 
-6. **Password Strength Enforcement**
+5. **Password Strength Enforcement**
    - Add configurable password requirements
    - Integrate with haveibeenpwned API (optional)
    - Add password complexity scoring
 
-7. **Input Sanitization**
+6. **Input Sanitization**
    - Sanitize all user inputs
    - Add XSS protection
    - Validate all fields consistently
 
-8. **Improve Cookie Security**
+7. **Improve Cookie Security**
    - Make cookie settings configurable
    - Set HttpOnly=true by default
    - Set SameSite=Lax by default
    - Add Secure flag for HTTPS
 
-9. **Account Enumeration Protection**
+8. **Account Enumeration Protection**
    - Standardize all error messages
    - Add timing delays to prevent timing attacks
    - Use constant-time comparisons
@@ -637,24 +554,24 @@ Remove deprecated code entirely. Add migration guide to docs.
 
 **Estimated Time:** 2-3 weeks
 
-10. **Add Metrics/Monitoring**
+9. **Add Metrics/Monitoring**
     - Instrument all endpoints
     - Add Prometheus metrics
     - Track login success/failure rates
     - Monitor verification code usage
 
-11. **Add Security Headers**
+10. **Add Security Headers**
     - CSP (Content Security Policy)
     - X-Frame-Options
     - X-Content-Type-Options
     - Strict-Transport-Security
 
-12. **Session Management**
+11. **Session Management**
     - Invalidate sessions on password change
     - Add session expiration
     - Add "logout all devices" functionality
 
-13. **Audit Logging**
+12. **Audit Logging**
     - Log all authentication events
     - Include IP, UserAgent, timestamp
     - Make logs tamper-evident
@@ -750,20 +667,17 @@ The `dracory/auth` library has a **solid foundation** with good architecture and
 - Dual authentication flow support
 
 ❌ **Critical Issues:**
-- No rate limiting (brute force vulnerable)
 - Exposes internal errors (information leakage)
-- No CSRF protection (session hijacking)
 - No context propagation (no timeouts/cancellation)
 - Poor logging (no structure, no levels)
 
 ### Final Recommendation
 
 **DO NOT use in production without:**
-1. Implementing rate limiting
-2. Adding CSRF protection
-3. Sanitizing all error messages
-4. Adding structured logging
-5. Implementing context propagation
+1. Sanitizing all error messages
+2. Adding structured logging
+3. Implementing context propagation
+4. Enforcing password strength and input sanitization
 
 **Estimated effort to production-ready:** 4-6 weeks of security hardening
 
