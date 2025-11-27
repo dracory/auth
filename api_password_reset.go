@@ -8,6 +8,11 @@ import (
 )
 
 func (a Auth) apiPasswordReset(w http.ResponseWriter, r *http.Request) {
+	// Check rate limit
+	if !a.checkRateLimit(w, r, "password_reset") {
+		return
+	}
+
 	token := req.GetStringTrimmed(r, "token")
 	password := req.GetStringTrimmed(r, "password")
 	passwordConfirm := req.GetStringTrimmed(r, "password_confirm")

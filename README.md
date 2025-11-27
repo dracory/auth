@@ -34,6 +34,11 @@
   - Bring your own email service
   - Callback-based architecture for maximum flexibility
 
+- 🚦 **Built-in Rate Limiting**
+  - Per-IP and per-endpoint limits on authentication endpoints
+  - Sensible defaults (5 attempts per 15 minutes, 15-minute lockout)
+  - Fully configurable or replaceable with a custom rate limiter
+ 
 - ✅ **Production Ready**
   - 90%+ test coverage
   - 34 comprehensive test files
@@ -197,11 +202,11 @@ authInstance, err := auth.NewPasswordlessAuth(auth.ConfigPasswordless{
     FuncEmailTemplateLoginCode:   customLoginEmailTemplate,    // optional
     FuncEmailTemplateRegisterCode: customRegisterEmailTemplate, // optional
     FuncLayout:                   customPageLayout,             // optional
+    DisableRateLimit:             false,                        // optional
+    MaxLoginAttempts:             5,                            // optional
+    LockoutDuration:              15 * time.Minute,             // optional
+    FuncCheckRateLimit:           nil,                          // optional
 })
-
-if err != nil {
-    log.Fatal(err)
-}
 ```
 
 #### Step 3: Setup Routes
@@ -313,11 +318,11 @@ authInstance, err := auth.NewUsernameAndPasswordAuth(auth.ConfigUsernameAndPassw
     FuncUserPasswordChange:           userPasswordChange,
     FuncEmailTemplatePasswordRestore: customPasswordResetEmailTemplate, // optional
     FuncLayout:                       customPageLayout,                  // optional
+    DisableRateLimit:                 false,                             // optional
+    MaxLoginAttempts:                 5,                                  // optional
+    LockoutDuration:                  15 * time.Minute,                   // optional
+    FuncCheckRateLimit:               nil,                                // optional
 })
-
-if err != nil {
-    log.Fatal(err)
-}
 ```
 
 ## 🔌 Available Endpoints
@@ -448,6 +453,42 @@ UseLocalStorage: true,
 - Client manages token storage
 - Must send token in Authorization header
 - Better for single-page applications
+
+## 🚦 Rate Limiting
+
+All authentication endpoints (login, registration, password restore/reset, verification) are protected by rate limiting.
+
+**Defaults (in-memory limiter):**
+
+- 5 attempts per IP and endpoint within a 15-minute sliding window
+- Further attempts are blocked for 15 minutes (HTTP 429 with `Retry-After` header)
+
+These options are shared by both `ConfigPasswordless` and `ConfigUsernameAndPassword`:
+
+```go
+// Rate limiting options (shared by both configs)
+DisableRateLimit   bool                                                                                 // Set to true to disable rate limiting (not recommended for production)
+FuncCheckRateLimit func(ip string, endpoint string) (allowed bool, retryAfter time.Duration, err error) // Optional: override default rate limiter
+MaxLoginAttempts   int                                                                                  // Maximum attempts before lockout (default: 5)
+LockoutDuration    time.Duration                                                                        // Duration for sliding window and lockout (default: 15 minutes)
+```
+
+**Example (username/password):**
+
+```go
+authInstance, err := auth.NewUsernameAndPasswordAuth(auth.ConfigUsernameAndPassword{
+    Endpoint:         "/auth",
+    UrlRedirectOnSuccess: "/dashboard",
+
+    MaxLoginAttempts: 5,
+    LockoutDuration:  15 * time.Minute,
+
+    // Optional: use your own distributed rate limiter (e.g., Redis-based)
+    // FuncCheckRateLimit: func(ip, endpoint string) (bool, time.Duration, error) {
+    //     // ... implement custom logic
+    // },
+})
+```
 
 ## 📖 UserAuthOptions
 

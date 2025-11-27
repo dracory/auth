@@ -10,6 +10,11 @@ import (
 )
 
 func (a Auth) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
+	// Check rate limit
+	if !a.checkRateLimit(w, r, "password_restore") {
+		return
+	}
+
 	email := req.GetStringTrimmed(r, "email")
 	firstName := req.GetStringTrimmed(r, "first_name")
 	lastName := req.GetStringTrimmed(r, "last_name")

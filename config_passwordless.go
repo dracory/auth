@@ -1,5 +1,7 @@
 package auth
 
+import "time"
+
 type ConfigPasswordless struct {
 
 	// ===== START: shared by all implementations
@@ -14,6 +16,11 @@ type ConfigPasswordless struct {
 	UrlRedirectOnSuccess    string
 	UseCookies              bool
 	UseLocalStorage         bool
+	// Rate limiting options
+	DisableRateLimit   bool                                                                                 // Set to true to disable rate limiting (not recommended for production)
+	FuncCheckRateLimit func(ip string, endpoint string) (allowed bool, retryAfter time.Duration, err error) // Optional: override default rate limiter
+	MaxLoginAttempts   int                                                                                  // Maximum attempts before lockout (default: 5)
+	LockoutDuration    time.Duration                                                                        // Duration to lock after max attempts (default: 15 minutes)
 	// ===== END: shared by all implementations
 
 	// ===== START: passwordless options

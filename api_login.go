@@ -18,6 +18,11 @@ func (a Auth) apiLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a Auth) apiLoginPasswordless(w http.ResponseWriter, r *http.Request) {
+	// Check rate limit
+	if !a.checkRateLimit(w, r, "login") {
+		return
+	}
+
 	email := req.GetStringTrimmed(r, "email")
 
 	if email == "" {
@@ -56,6 +61,11 @@ func (a Auth) apiLoginPasswordless(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a Auth) apiLoginUsernameAndPassword(w http.ResponseWriter, r *http.Request) {
+	// Check rate limit
+	if !a.checkRateLimit(w, r, "login") {
+		return
+	}
+
 	email := req.GetStringTrimmed(r, "email")
 	password := req.GetStringTrimmed(r, "password")
 

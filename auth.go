@@ -3,6 +3,7 @@ package auth
 import (
 	"net/http"
 	"strings"
+	"time"
 )
 
 type UserAuthOptions struct {
@@ -48,6 +49,12 @@ type Auth struct {
 	passwordlessFuncEmailSend                 func(email string, emailSubject string, emailBody string) (err error)
 	passwordlessFuncUserRegister              func(email string, firstName string, lastName string, options UserAuthOptions) (err error)
 	// ===== END: passwordless options
+
+	// ===== START: rate limiting
+	disableRateLimit   bool
+	funcCheckRateLimit func(ip string, endpoint string) (allowed bool, retryAfter time.Duration, err error)
+	rateLimiter        *InMemoryRateLimiter
+	// ===== END: rate limiting
 
 	// labelUsername   string
 	useCookies      bool

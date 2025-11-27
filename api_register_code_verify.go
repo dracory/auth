@@ -10,6 +10,11 @@ import (
 )
 
 func (a Auth) apiRegisterCodeVerify(w http.ResponseWriter, r *http.Request) {
+	// Check rate limit
+	if !a.checkRateLimit(w, r, "register_code_verify") {
+		return
+	}
+
 	verificationCode := req.GetStringTrimmed(r, "verification_code")
 
 	if verificationCode == "" {

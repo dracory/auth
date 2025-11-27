@@ -1,6 +1,9 @@
 package auth
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
 func NewPasswordlessAuth(config ConfigPasswordless) (*Auth, error) {
 	auth := &Auth{}
@@ -83,6 +86,26 @@ func NewPasswordlessAuth(config ConfigPasswordless) (*Auth, error) {
 	// If no user defined email template is set, use default
 	if auth.passwordlessFuncEmailTemplateRegisterCode == nil {
 		auth.passwordlessFuncEmailTemplateRegisterCode = emailRegisterCodeTemplate
+	}
+
+	// Initialize rate limiting
+	auth.disableRateLimit = config.DisableRateLimit
+	auth.funcCheckRateLimit = config.FuncCheckRateLimit
+
+	// If rate limiting is not disabled and no custom function provided, use default in-memory rate limiter
+	if !auth.disableRateLimit && auth.funcCheckRateLimit == nil {
+		// Use config values or defaults
+		maxAttempts := config.MaxLoginAttempts
+		if maxAttempts == 0 {
+			maxAttempts = 5 // Default: 5 attempts
+		}
+
+		lockoutDuration := config.LockoutDuration
+		if lockoutDuration == 0 {
+			lockoutDuration = 15 * time.Minute // Default: 15 minutes
+		}
+
+		auth.rateLimiter = NewInMemoryRateLimiter(maxAttempts, lockoutDuration, lockoutDuration)
 	}
 
 	return auth, nil

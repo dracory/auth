@@ -19,6 +19,11 @@ func (a Auth) apiRegister(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a Auth) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
+	// Check rate limit
+	if !a.checkRateLimit(w, r, "register") {
+		return
+	}
+
 	email := req.GetStringTrimmed(r, "email")
 	first_name := req.GetStringTrimmed(r, "first_name")
 	last_name := req.GetStringTrimmed(r, "last_name")
@@ -80,6 +85,11 @@ func (a Auth) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a Auth) apiRegisterUsernameAndPassword(w http.ResponseWriter, r *http.Request) {
+	// Check rate limit
+	if !a.checkRateLimit(w, r, "register") {
+		return
+	}
+
 	email := req.GetStringTrimmed(r, "email")
 	password := req.GetStringTrimmed(r, "password")
 	first_name := req.GetStringTrimmed(r, "first_name")
