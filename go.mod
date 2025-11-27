@@ -4,6 +4,7 @@ go 1.25
 
 require (
 	github.com/dracory/api v1.7.0
+	github.com/dracory/csrf v0.2.0
 	github.com/dracory/env v1.0.0
 	github.com/dracory/hb v1.88.0
 	github.com/dracory/req v0.1.0

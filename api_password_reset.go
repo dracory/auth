@@ -13,6 +13,12 @@ func (a Auth) apiPasswordReset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check CSRF token
+	if a.enableCSRFProtection && !a.funcCSRFTokenValidate(r) {
+		api.Respond(w, r, api.Forbidden("Invalid CSRF token"))
+		return
+	}
+
 	token := req.GetStringTrimmed(r, "token")
 	password := req.GetStringTrimmed(r, "password")
 	passwordConfirm := req.GetStringTrimmed(r, "password_confirm")

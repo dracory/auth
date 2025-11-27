@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"net/http"
 	"net/url"
 	"testing"
 )
@@ -111,4 +112,24 @@ func TestPasswordResetEndpointSuccess(t *testing.T) {
 		"password":         {"password123"},
 		"password_confirm": {"password123"},
 	}, expectedMessage, "%")
+}
+
+func TestPasswordResetEndpointInvalidCSRFToken(t *testing.T) {
+	authInstance, err := testSetupUsernameAndPasswordAuth()
+	Nil(t, err)
+	NotNil(t, authInstance)
+
+	authInstance.enableCSRFProtection = true
+	authInstance.funcCSRFTokenValidate = func(r *http.Request) bool {
+		return false
+	}
+
+	values := url.Values{
+		"token":            {"valid-token"},
+		"password":         {"password123"},
+		"password_confirm": {"password123"},
+	}
+
+	expectedMessage := `"message":"Invalid CSRF token"`
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordReset(), values, expectedMessage, "%")
 }

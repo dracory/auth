@@ -2,7 +2,11 @@ package auth
 
 import (
 	"errors"
+	"net/http"
 	"time"
+
+	"github.com/dracory/csrf"
+	"github.com/dracory/req"
 )
 
 func NewUsernameAndPasswordAuth(config ConfigUsernameAndPassword) (*Auth, error) {
@@ -112,6 +116,35 @@ func NewUsernameAndPasswordAuth(config ConfigUsernameAndPassword) (*Auth, error)
 		}
 
 		auth.rateLimiter = NewInMemoryRateLimiter(maxAttempts, lockoutDuration, lockoutDuration)
+	}
+
+	// Initialize CSRF protection
+	auth.enableCSRFProtection = config.EnableCSRFProtection
+	auth.csrfSecret = config.CSRFSecret
+	if auth.enableCSRFProtection {
+		if auth.csrfSecret == "" {
+			return nil, errors.New("auth: CSRFSecret is required when EnableCSRFProtection is true")
+		}
+		auth.funcCSRFTokenGenerate = func(r *http.Request) string {
+			return csrf.TokenGenerate(auth.csrfSecret, &csrf.Options{
+				Request:       r,
+				BindIP:        true,
+				BindUserAgent: true,
+				BindPath:      true,
+			})
+		}
+		auth.funcCSRFTokenValidate = func(r *http.Request) bool {
+			token := req.GetStringTrimmed(r, "csrf_token")
+			if token == "" {
+				token = r.Header.Get("X-CSRF-Token")
+			}
+			return csrf.TokenValidate(token, auth.csrfSecret, &csrf.Options{
+				Request:       r,
+				BindIP:        true,
+				BindUserAgent: true,
+				BindPath:      true,
+			})
+		}
 	}
 
 	return auth, nil

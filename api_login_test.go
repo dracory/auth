@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"net/http"
 	"net/url"
 	"testing"
 )
@@ -125,6 +126,25 @@ func TestApiLoginUsernameAndPasswordSuccess(t *testing.T) {
 
 	expectedToken := `"token":"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogin(), values, expectedToken, "%")
+}
+
+func TestApiLoginUsernameAndPasswordInvalidCSRFToken(t *testing.T) {
+	authInstance, err := testSetupUsernameAndPasswordAuth()
+	Nil(t, err)
+	NotNil(t, authInstance)
+
+	authInstance.enableCSRFProtection = true
+	authInstance.funcCSRFTokenValidate = func(r *http.Request) bool {
+		return false
+	}
+
+	values := url.Values{
+		"email":    {"test@test.com"},
+		"password": {"1234"},
+	}
+
+	expectedMessage := `"message":"Invalid CSRF token"`
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogin(), values, expectedMessage, "%")
 }
 
 func TestApiLoginPasswordlessRequiresEmail(t *testing.T) {

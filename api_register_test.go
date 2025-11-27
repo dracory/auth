@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"net/http"
 	"net/url"
 	"testing"
 )
@@ -135,6 +136,27 @@ func TestApiRegisterUsernameAndPasswordSuccess(t *testing.T) {
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedStatus, "%")
 
 	expectedMessage := `"message":"registration success"`
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
+}
+
+func TestApiRegisterUsernameAndPasswordInvalidCSRFToken(t *testing.T) {
+	authInstance, err := testSetupUsernameAndPasswordAuth()
+	Nil(t, err)
+	NotNil(t, authInstance)
+
+	authInstance.enableCSRFProtection = true
+	authInstance.funcCSRFTokenValidate = func(r *http.Request) bool {
+		return false
+	}
+
+	values := url.Values{
+		"first_name": {"John"},
+		"last_name":  {"Doe"},
+		"email":      {"test@test.com"},
+		"password":   {"1234"},
+	}
+
+	expectedMessage := `"message":"Invalid CSRF token"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
 }
 

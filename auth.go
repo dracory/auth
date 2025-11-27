@@ -56,6 +56,13 @@ type Auth struct {
 	rateLimiter        *InMemoryRateLimiter
 	// ===== END: rate limiting
 
+	// ===== START: CSRF Protection
+	enableCSRFProtection  bool
+	csrfSecret            string
+	funcCSRFTokenGenerate func(r *http.Request) string
+	funcCSRFTokenValidate func(r *http.Request) bool
+	// ===== END: CSRF Protection
+
 	// labelUsername   string
 	useCookies      bool
 	useLocalStorage bool

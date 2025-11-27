@@ -119,7 +119,7 @@ if err != nil {
 
 ---
 
-### 3. **No CSRF Protection** - HIGH
+### 3. **No CSRF Protection** - HIGH [FIXED]
 
 **Severity:** 🔴 **HIGH**  
 **Impact:** Cross-site request forgery attacks
@@ -145,8 +145,7 @@ If victim is logged in, their password reset is triggered without consent.
 type ConfigUsernameAndPassword struct {
     // ... existing fields
     EnableCSRFProtection bool
-    FuncCSRFTokenValidate func(r *http.Request) bool
-    FuncCSRFTokenGenerate func() string
+    CSRFSecret           string
 }
 
 // In handlers
@@ -155,6 +154,8 @@ if a.enableCSRFProtection && !a.funcCSRFTokenValidate(r) {
     return
 }
 ```
+**Resolution:**
+Implemented CSRF protection using `github.com/dracory/csrf`. Added `EnableCSRFProtection` and `CSRFSecret` to configuration. Added validation check in `apiPasswordReset`.
 
 ---
 

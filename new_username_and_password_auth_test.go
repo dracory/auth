@@ -240,3 +240,62 @@ func TestNewUsernameAndPasswordAuth_UseCookiesAndLocalStorageCannotBeBothTruee(t
 		t.Fatal("Auth SHOULD NOT be NULL, but found NULL")
 	}
 }
+
+func TestNewUsernameAndPasswordAuth_CSRFSecretRequiredWhenEnabled(t *testing.T) {
+	_, err := NewUsernameAndPasswordAuth(ConfigUsernameAndPassword{
+		Endpoint:                "/auth",
+		UrlRedirectOnSuccess:    "/user",
+		FuncTemporaryKeyGet:     func(key string) (value string, err error) { return "", nil },
+		FuncTemporaryKeySet:     func(key, value string, expiresSeconds int) (err error) { return nil },
+		FuncUserFindByAuthToken: func(sessionID string, options UserAuthOptions) (userID string, err error) { return "", nil },
+		FuncUserFindByUsername: func(username, firstName, lastName string, options UserAuthOptions) (userID string, err error) {
+			return "", nil
+		},
+		FuncUserLogin:          func(username, password string, options UserAuthOptions) (userID string, err error) { return "", nil },
+		FuncUserLogout:         func(userID string, options UserAuthOptions) (err error) { return nil },
+		FuncUserStoreAuthToken: func(sessionID, userID string, options UserAuthOptions) error { return nil },
+		FuncEmailSend:          func(email, emailSubject, emailBody string) (err error) { return nil },
+		UseCookies:             true,
+		UseLocalStorage:        false,
+		EnableCSRFProtection:   true,
+	})
+	if err == nil {
+		t.Fatal("Error SHOULD NOT BE NULL")
+	}
+	if err.Error() != "auth: CSRFSecret is required when EnableCSRFProtection is true" {
+		t.Fatal("Error SHOULD BE '', but found ", "'"+err.Error()+"'")
+	}
+}
+
+func TestNewUsernameAndPasswordAuth_CSRFEnabledWithSecretSucceeds(t *testing.T) {
+	auth, err := NewUsernameAndPasswordAuth(ConfigUsernameAndPassword{
+		Endpoint:                "/auth",
+		UrlRedirectOnSuccess:    "/user",
+		FuncTemporaryKeyGet:     func(key string) (value string, err error) { return "", nil },
+		FuncTemporaryKeySet:     func(key, value string, expiresSeconds int) (err error) { return nil },
+		FuncUserFindByAuthToken: func(sessionID string, options UserAuthOptions) (userID string, err error) { return "", nil },
+		FuncUserFindByUsername: func(username, firstName, lastName string, options UserAuthOptions) (userID string, err error) {
+			return "", nil
+		},
+		FuncUserLogin:          func(username, password string, options UserAuthOptions) (userID string, err error) { return "", nil },
+		FuncUserLogout:         func(userID string, options UserAuthOptions) (err error) { return nil },
+		FuncUserStoreAuthToken: func(sessionID, userID string, options UserAuthOptions) error { return nil },
+		FuncEmailSend:          func(email, emailSubject, emailBody string) (err error) { return nil },
+		UseCookies:             true,
+		UseLocalStorage:        false,
+		EnableCSRFProtection:   true,
+		CSRFSecret:             "super-secret",
+	})
+	if err != nil {
+		t.Fatal("Error SHOULD BE NULL, but found ", "'"+err.Error()+"'")
+	}
+	if auth == nil {
+		t.Fatal("Auth SHOULD NOT be NULL, but found NULL")
+	}
+	if !auth.enableCSRFProtection {
+		t.Fatal("enableCSRFProtection SHOULD be true")
+	}
+	if auth.csrfSecret != "super-secret" {
+		t.Fatal("csrfSecret SHOULD be 'super-secret', but found ", "'"+auth.csrfSecret+"'")
+	}
+}

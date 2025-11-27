@@ -22,6 +22,10 @@ type ConfigUsernameAndPassword struct {
 	FuncCheckRateLimit func(ip string, endpoint string) (allowed bool, retryAfter time.Duration, err error) // Optional: override default rate limiter
 	MaxLoginAttempts   int                                                                                  // Maximum attempts before lockout (default: 5)
 	LockoutDuration    time.Duration                                                                        // Duration to lock after max attempts (default: 15 minutes)
+	// CSRF Protection
+	EnableCSRFProtection bool
+	CSRFSecret           string
+
 	// ===== END: shared by all implementations
 
 	// ===== START: username(email) and password options
