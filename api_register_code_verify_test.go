@@ -4,52 +4,50 @@ import (
 	"errors"
 	"net/url"
 	"testing"
-
-	"github.com/dracory/auth/tests/testassert"
 )
 
 func TestApiRegisterCodeVerifyRequiresVerificationCode(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	expectedStatus := `"status":"error"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), url.Values{}, expectedStatus, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), url.Values{}, expectedStatus, "%")
 
 	expectedMessage := `"message":"Verification code is required field"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), url.Values{}, expectedMessage, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), url.Values{}, expectedMessage, "%")
 }
 
 func TestApiRegisterCodeVerifyInvalidLength(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	values := url.Values{
 		"verification_code": {"123456"},
 	}
 
 	expectedMessage := `"message":"Verification code is invalid length"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), values, expectedMessage, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), values, expectedMessage, "%")
 }
 
 func TestApiRegisterCodeVerifyInvalidCharacters(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	values := url.Values{
 		"verification_code": {"12345678"},
 	}
 
 	expectedMessage := `"message":"Verification code contains invalid characters"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), values, expectedMessage, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), values, expectedMessage, "%")
 }
 
 func TestApiRegisterCodeVerifyExpiredCode(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	authInstance.funcTemporaryKeyGet = func(key string) (value string, err error) {
 		return "", errors.New("expired")
@@ -60,13 +58,13 @@ func TestApiRegisterCodeVerifyExpiredCode(t *testing.T) {
 	}
 
 	expectedMessage := `"message":"Verification code has expired"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), values, expectedMessage, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), values, expectedMessage, "%")
 }
 
 func TestApiRegisterCodeVerifyMalformedJSON(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	authInstance.funcTemporaryKeyGet = func(key string) (value string, err error) {
 		return "not-json", nil
@@ -77,13 +75,13 @@ func TestApiRegisterCodeVerifyMalformedJSON(t *testing.T) {
 	}
 
 	expectedMessage := `"message":"Serialized format is malformed"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), values, expectedMessage, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), values, expectedMessage, "%")
 }
 
 func TestApiRegisterCodeVerifyRegistrationFailed(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	// Valid JSON payload
 	jsonPayload := `{"email":"test@test.com","first_name":"John","last_name":"Doe","password":"1234"}`
@@ -100,13 +98,13 @@ func TestApiRegisterCodeVerifyRegistrationFailed(t *testing.T) {
 	}
 
 	expectedMessage := `"message":"registration failed. db error"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), values, expectedMessage, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), values, expectedMessage, "%")
 }
 
 func TestApiRegisterCodeVerifyAuthenticationError(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	jsonPayload := `{"email":"test@test.com","first_name":"John","last_name":"Doe","password":"1234"}`
 	authInstance.funcTemporaryKeyGet = func(key string) (value string, err error) {
@@ -126,13 +124,13 @@ func TestApiRegisterCodeVerifyAuthenticationError(t *testing.T) {
 	}
 
 	expectedMessage := `"message":"authentication failed. db error"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), values, expectedMessage, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), values, expectedMessage, "%")
 }
 
 func TestApiRegisterCodeVerifyUserNotFound(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	jsonPayload := `{"email":"test@test.com","first_name":"John","last_name":"Doe","password":"1234"}`
 	authInstance.funcTemporaryKeyGet = func(key string) (value string, err error) {
@@ -152,13 +150,13 @@ func TestApiRegisterCodeVerifyUserNotFound(t *testing.T) {
 	}
 
 	expectedMessage := `"message":"authentication failed. user not found"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), values, expectedMessage, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), values, expectedMessage, "%")
 }
 
 func TestApiRegisterCodeVerifyTokenStoreError(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	jsonPayload := `{"email":"test@test.com","first_name":"John","last_name":"Doe","password":"1234"}`
 	authInstance.funcTemporaryKeyGet = func(key string) (value string, err error) {
@@ -182,13 +180,13 @@ func TestApiRegisterCodeVerifyTokenStoreError(t *testing.T) {
 	}
 
 	expectedMessage := `"message":"token store failed. db error"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), values, expectedMessage, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), values, expectedMessage, "%")
 }
 
 func TestApiRegisterCodeVerifySuccess(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	jsonPayload := `{"email":"test@test.com","first_name":"John","last_name":"Doe","password":"1234"}`
 	authInstance.funcTemporaryKeyGet = func(key string) (value string, err error) {
@@ -212,11 +210,11 @@ func TestApiRegisterCodeVerifySuccess(t *testing.T) {
 	}
 
 	expectedStatus := `"status":"success"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), values, expectedStatus, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), values, expectedStatus, "%")
 
 	expectedMessage := `"message":"login success"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), values, expectedMessage, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), values, expectedMessage, "%")
 
 	expectedToken := `"token":"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), values, expectedToken, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), values, expectedToken, "%")
 }
