@@ -1,23 +1,23 @@
 package auth
 
-// func newPasswordlessAuthForMiddlewareTests(useCookies bool) (*Auth, error) {
-// 	return NewPasswordlessAuth(ConfigPasswordless{
-// 		Endpoint:             "/auth",
-// 		UrlRedirectOnSuccess: "/user",
-// 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
-// 		FuncTemporaryKeySet:  func(key, value string, expiresSeconds int) (err error) { return nil },
-// 		FuncUserFindByAuthToken: func(sessionID string, options UserAuthOptions) (userID string, err error) {
-// 			// Default: no user found
-// 			return "", nil
-// 		},
-// 		FuncUserFindByEmail:    func(email string, options UserAuthOptions) (userID string, err error) { return "", nil },
-// 		FuncUserLogout:         func(userID string, options UserAuthOptions) (err error) { return nil },
-// 		FuncUserStoreAuthToken: func(sessionID, userID string, options UserAuthOptions) error { return nil },
-// 		FuncEmailSend:          func(email, emailSubject, emailBody string) (err error) { return nil },
-// 		UseCookies:             useCookies,
-// 		UseLocalStorage:        !useCookies,
-// 	})
-// }
+func newPasswordlessAuthForMiddlewareTests(useCookies bool) (*Auth, error) {
+	return NewPasswordlessAuth(ConfigPasswordless{
+		Endpoint:             "/auth",
+		UrlRedirectOnSuccess: "/user",
+		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
+		FuncTemporaryKeySet:  func(key, value string, expiresSeconds int) (err error) { return nil },
+		FuncUserFindByAuthToken: func(sessionID string, options UserAuthOptions) (userID string, err error) {
+			// Default: no user found
+			return "", nil
+		},
+		FuncUserFindByEmail:    func(email string, options UserAuthOptions) (userID string, err error) { return "", nil },
+		FuncUserLogout:         func(userID string, options UserAuthOptions) (err error) { return nil },
+		FuncUserStoreAuthToken: func(sessionID, userID string, options UserAuthOptions) error { return nil },
+		FuncEmailSend:          func(email, emailSubject, emailBody string) (err error) { return nil },
+		UseCookies:             useCookies,
+		UseLocalStorage:        !useCookies,
+	})
+}
 
 // func TestAuthMiddleware_NoToken_UseCookies_RedirectsToLogin(t *testing.T) {
 // 	authInstance, err := newPasswordlessAuthForMiddlewareTests(true)
