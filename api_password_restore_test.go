@@ -4,40 +4,38 @@ import (
 	"errors"
 	"net/url"
 	"testing"
-
-	"github.com/dracory/auth/tests/testassert"
 )
 
 func TestPasswordRestoreEndpointRequiresEmail(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	expectedError := `"status":"error"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordRestore(), url.Values{}, expectedError, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordRestore(), url.Values{}, expectedError, "%")
 
 	expectedErrorMessage := `"message":"Email is required field"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordRestore(), url.Values{}, expectedErrorMessage, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordRestore(), url.Values{}, expectedErrorMessage, "%")
 }
 
 func TestPasswordRestoreEndpointRequiresFirstName(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	expectedErrorMessage := `"message":"First name is required field"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordRestore(), url.Values{
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordRestore(), url.Values{
 		"email": {"test@test.com"},
 	}, expectedErrorMessage, "%")
 }
 
 func TestPasswordRestoreEndpointRequiresLastName(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	expectedErrorMessage := `"message":"Last name is required field"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordRestore(), url.Values{
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordRestore(), url.Values{
 		"email":      {"test@test.com"},
 		"first_name": {"John"},
 	}, expectedErrorMessage, "%")
@@ -45,8 +43,8 @@ func TestPasswordRestoreEndpointRequiresLastName(t *testing.T) {
 
 func TestPasswordRestoreEndpointUserNotFound(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	// Mock user not found
 	authInstance.funcUserFindByUsername = func(username string, firstName string, lastName string, options UserAuthOptions) (userID string, err error) {
@@ -54,7 +52,7 @@ func TestPasswordRestoreEndpointUserNotFound(t *testing.T) {
 	}
 
 	expectedErrorMessage := `"message":"User not found"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordRestore(), url.Values{
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordRestore(), url.Values{
 		"email":      {"test@test.com"},
 		"first_name": {"John"},
 		"last_name":  {"Doe"},
@@ -63,8 +61,8 @@ func TestPasswordRestoreEndpointUserNotFound(t *testing.T) {
 
 func TestPasswordRestoreEndpointInternalError(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	// Mock internal error
 	authInstance.funcUserFindByUsername = func(username string, firstName string, lastName string, options UserAuthOptions) (userID string, err error) {
@@ -72,7 +70,7 @@ func TestPasswordRestoreEndpointInternalError(t *testing.T) {
 	}
 
 	expectedErrorMessage := `"message":"Internal server error"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordRestore(), url.Values{
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordRestore(), url.Values{
 		"email":      {"test@test.com"},
 		"first_name": {"John"},
 		"last_name":  {"Doe"},
@@ -81,8 +79,8 @@ func TestPasswordRestoreEndpointInternalError(t *testing.T) {
 
 func TestPasswordRestoreEndpointSuccess(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	// Mock success
 	authInstance.funcUserFindByUsername = func(username string, firstName string, lastName string, options UserAuthOptions) (userID string, err error) {
@@ -96,14 +94,14 @@ func TestPasswordRestoreEndpointSuccess(t *testing.T) {
 	}
 
 	expectedSuccess := `"status":"success"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordRestore(), url.Values{
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordRestore(), url.Values{
 		"email":      {"test@test.com"},
 		"first_name": {"John"},
 		"last_name":  {"Doe"},
 	}, expectedSuccess, "%")
 
 	expectedMessage := `"message":"Password reset link was sent to your e-mail"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordRestore(), url.Values{
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordRestore(), url.Values{
 		"email":      {"test@test.com"},
 		"first_name": {"John"},
 		"last_name":  {"Doe"},

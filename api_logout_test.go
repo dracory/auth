@@ -7,27 +7,25 @@ import (
 	"net/url"
 	"strings"
 	"testing"
-
-	"github.com/dracory/auth/tests/testassert"
 )
 
 func TestLogoutEndpointNoToken(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	// No cookie or header set, so token retrieval should fail/return empty
 	expectedSuccess := `"status":"success"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogout(), url.Values{}, expectedSuccess, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogout(), url.Values{}, expectedSuccess, "%")
 
 	expectedMessage := `"message":"logout success"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogout(), url.Values{}, expectedMessage, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogout(), url.Values{}, expectedMessage, "%")
 }
 
 func TestLogoutEndpointTokenValidationError(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	// Mock token validation error
 	authInstance.funcUserFindByAuthToken = func(token string, options UserAuthOptions) (userID string, err error) {
@@ -57,7 +55,7 @@ func TestLogoutEndpointTokenValidationError(t *testing.T) {
 
 func TestLogoutEndpointTokenValidationError_Custom(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	testassert.Nil(t, err)
+	Nil(t, err)
 
 	authInstance.funcUserFindByAuthToken = func(token string, options UserAuthOptions) (userID string, err error) {
 		return "", errors.New("db error")

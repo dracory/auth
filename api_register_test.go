@@ -4,41 +4,39 @@ import (
 	"errors"
 	"net/url"
 	"testing"
-
-	"github.com/dracory/auth/tests/testassert"
 )
 
 // Username and password registration tests
 
 func TestApiRegisterUsernameAndPasswordRequiresFirstName(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	expectedStatus := `"status":"error"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), url.Values{}, expectedStatus, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), url.Values{}, expectedStatus, "%")
 
 	expectedMessage := `"message":"First name is required field"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), url.Values{}, expectedMessage, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), url.Values{}, expectedMessage, "%")
 }
 
 func TestApiRegisterUsernameAndPasswordRequiresLastName(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	values := url.Values{
 		"first_name": {"John"},
 	}
 
 	expectedMessage := `"message":"Last name is required field"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
 }
 
 func TestApiRegisterUsernameAndPasswordRequiresEmail(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	values := url.Values{
 		"first_name": {"John"},
@@ -46,13 +44,13 @@ func TestApiRegisterUsernameAndPasswordRequiresEmail(t *testing.T) {
 	}
 
 	expectedMessage := `"message":"Email is required field"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
 }
 
 func TestApiRegisterUsernameAndPasswordRequiresPassword(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	values := url.Values{
 		"first_name": {"John"},
@@ -61,13 +59,13 @@ func TestApiRegisterUsernameAndPasswordRequiresPassword(t *testing.T) {
 	}
 
 	expectedMessage := `"message":"Password is required field"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
 }
 
 func TestApiRegisterUsernameAndPasswordInvalidEmail(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	values := url.Values{
 		"first_name": {"John"},
@@ -77,13 +75,13 @@ func TestApiRegisterUsernameAndPasswordInvalidEmail(t *testing.T) {
 	}
 
 	expectedMessage := `"message":"This is not a valid email: invalid-email"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
 }
 
 func TestApiRegisterUsernameAndPasswordFuncUserRegisterNotDefined(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	// funcUserRegister is nil by default in testSetupUsernameAndPasswordAuth
 	values := url.Values{
@@ -94,13 +92,13 @@ func TestApiRegisterUsernameAndPasswordFuncUserRegisterNotDefined(t *testing.T) 
 	}
 
 	expectedMessage := `"message":"registration failed. FuncUserRegister function not defined"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
 }
 
 func TestApiRegisterUsernameAndPasswordRegistrationFailed(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	authInstance.funcUserRegister = func(username string, password string, firstName string, lastName string, options UserAuthOptions) (err error) {
 		return errors.New("db error")
@@ -114,13 +112,13 @@ func TestApiRegisterUsernameAndPasswordRegistrationFailed(t *testing.T) {
 	}
 
 	expectedMessage := `"message":"registration failed. db error"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
 }
 
 func TestApiRegisterUsernameAndPasswordSuccess(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	authInstance.funcUserRegister = func(username string, password string, firstName string, lastName string, options UserAuthOptions) (err error) {
 		return nil
@@ -134,43 +132,43 @@ func TestApiRegisterUsernameAndPasswordSuccess(t *testing.T) {
 	}
 
 	expectedStatus := `"status":"success"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedStatus, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedStatus, "%")
 
 	expectedMessage := `"message":"registration success"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
 }
 
 // Passwordless registration tests
 
 func TestApiRegisterPasswordlessRequiresFirstName(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	expectedStatus := `"status":"error"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), url.Values{}, expectedStatus, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), url.Values{}, expectedStatus, "%")
 
 	expectedMessage := `"message":"First name is required field"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), url.Values{}, expectedMessage, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), url.Values{}, expectedMessage, "%")
 }
 
 func TestApiRegisterPasswordlessRequiresLastName(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	values := url.Values{
 		"first_name": {"John"},
 	}
 
 	expectedMessage := `"message":"Last name is required field"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
 }
 
 func TestApiRegisterPasswordlessRequiresEmail(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	values := url.Values{
 		"first_name": {"John"},
@@ -178,13 +176,13 @@ func TestApiRegisterPasswordlessRequiresEmail(t *testing.T) {
 	}
 
 	expectedMessage := `"message":"Email is required field"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
 }
 
 func TestApiRegisterPasswordlessTokenStoreError(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	authInstance.funcTemporaryKeySet = func(key string, value string, expiresSeconds int) (err error) {
 		return errors.New("db error")
@@ -197,13 +195,13 @@ func TestApiRegisterPasswordlessTokenStoreError(t *testing.T) {
 	}
 
 	expectedMessage := `"message":"token store failed. db error"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
 }
 
 func TestApiRegisterPasswordlessEmailSendError(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	authInstance.passwordlessFuncEmailSend = func(email string, emailSubject string, emailBody string) (err error) {
 		return errors.New("smtp error")
@@ -216,13 +214,13 @@ func TestApiRegisterPasswordlessEmailSendError(t *testing.T) {
 	}
 
 	expectedMessage := `"message":"Registration code failed to be send. Please try again later"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
 }
 
 func TestApiRegisterPasswordlessSuccess(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	values := url.Values{
 		"first_name": {"John"},
@@ -231,8 +229,8 @@ func TestApiRegisterPasswordlessSuccess(t *testing.T) {
 	}
 
 	expectedStatus := `"status":"success"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedStatus, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedStatus, "%")
 
 	expectedMessage := `"message":"Registration code was sent successfully"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
 }

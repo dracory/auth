@@ -4,40 +4,38 @@ import (
 	"errors"
 	"net/url"
 	"testing"
-
-	"github.com/dracory/auth/tests/testassert"
 )
 
 func TestPasswordResetEndpointRequiresToken(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	expectedError := `"status":"error"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordReset(), url.Values{}, expectedError, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordReset(), url.Values{}, expectedError, "%")
 
 	expectedErrorMessage := `"message":"Token is required field"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordReset(), url.Values{}, expectedErrorMessage, "%")
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordReset(), url.Values{}, expectedErrorMessage, "%")
 }
 
 func TestPasswordResetEndpointRequiresPassword(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	expectedErrorMessage := `"message":"Password is required field"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordReset(), url.Values{
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordReset(), url.Values{
 		"token": {"valid-token"},
 	}, expectedErrorMessage, "%")
 }
 
 func TestPasswordResetEndpointRequiresMatchingPasswords(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	expectedErrorMessage := `"message":"Passwords do not match"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordReset(), url.Values{
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordReset(), url.Values{
 		"token":            {"valid-token"},
 		"password":         {"password123"},
 		"password_confirm": {"password321"},
@@ -46,8 +44,8 @@ func TestPasswordResetEndpointRequiresMatchingPasswords(t *testing.T) {
 
 func TestPasswordResetEndpointInvalidToken(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	// Mock invalid token (returns empty userID or error)
 	authInstance.funcTemporaryKeyGet = func(key string) (value string, err error) {
@@ -55,7 +53,7 @@ func TestPasswordResetEndpointInvalidToken(t *testing.T) {
 	}
 
 	expectedErrorMessage := `"message":"Link not valid of expired"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordReset(), url.Values{
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordReset(), url.Values{
 		"token":            {"invalid-token"},
 		"password":         {"password123"},
 		"password_confirm": {"password123"},
@@ -64,8 +62,8 @@ func TestPasswordResetEndpointInvalidToken(t *testing.T) {
 
 func TestPasswordResetEndpointPasswordChangeError(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	// Mock valid token
 	authInstance.funcTemporaryKeyGet = func(key string) (value string, err error) {
@@ -78,7 +76,7 @@ func TestPasswordResetEndpointPasswordChangeError(t *testing.T) {
 	}
 
 	expectedErrorMessage := `"message":"authentication failed. db error"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordReset(), url.Values{
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordReset(), url.Values{
 		"token":            {"valid-token"},
 		"password":         {"password123"},
 		"password_confirm": {"password123"},
@@ -87,8 +85,8 @@ func TestPasswordResetEndpointPasswordChangeError(t *testing.T) {
 
 func TestPasswordResetEndpointSuccess(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	testassert.Nil(t, err)
-	testassert.NotNil(t, authInstance)
+	Nil(t, err)
+	NotNil(t, authInstance)
 
 	// Mock valid token
 	authInstance.funcTemporaryKeyGet = func(key string) (value string, err error) {
@@ -101,14 +99,14 @@ func TestPasswordResetEndpointSuccess(t *testing.T) {
 	}
 
 	expectedSuccess := `"status":"success"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordReset(), url.Values{
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordReset(), url.Values{
 		"token":            {"valid-token"},
 		"password":         {"password123"},
 		"password_confirm": {"password123"},
 	}, expectedSuccess, "%")
 
 	expectedMessage := `"message":"login success"`
-	testassert.HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordReset(), url.Values{
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordReset(), url.Values{
 		"token":            {"valid-token"},
 		"password":         {"password123"},
 		"password_confirm": {"password123"},
