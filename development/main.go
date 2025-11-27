@@ -81,10 +81,10 @@ func main() {
 		w.Write([]byte("<html>" + html))
 	})
 	mux.HandleFunc("/auth-username-and-password/", authUsernameAndPassword.AuthHandler)
-	mux.Handle("/user/dashboard-after-username-and-password", authUsernameAndPassword.AuthMiddleware(messageHandler("<html>User page. Logout at: <a href='"+authUsernameAndPassword.LinkLogout()+"'>"+authUsernameAndPassword.LinkLogout()+"</a>")))
+	mux.Handle("/user/dashboard-after-username-and-password", authUsernameAndPassword.WebAuthOrRedirectMiddleware(messageHandler("<html>User page. Logout at: <a href='"+authUsernameAndPassword.LinkLogout()+"'>"+authUsernameAndPassword.LinkLogout()+"</a>")))
 
 	mux.HandleFunc("/auth-passwordless/", authPasswordless.AuthHandler)
-	mux.Handle("/user/dashboard-after-passwordless", authPasswordless.AuthMiddleware(messageHandler("<html>User page. Logout at: <a href='"+authPasswordless.LinkLogout()+"'>"+authPasswordless.LinkLogout()+"</a>")))
+	mux.Handle("/user/dashboard-after-passwordless", authPasswordless.WebAuthOrRedirectMiddleware(messageHandler("<html>User page. Logout at: <a href='"+authPasswordless.LinkLogout()+"'>"+authPasswordless.LinkLogout()+"</a>")))
 
 	log.Println("4. Starting server on http://" + env.GetString("SERVER_HOST") + ":" + env.GetString("SERVER_PORT") + " ...")
 	if strings.HasPrefix(env.GetString("APP_URL"), "https://") {
