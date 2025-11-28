@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/dracory/api"
+	authutils "github.com/dracory/auth/utils"
 	"github.com/dracory/req"
 	"github.com/dracory/str"
 )
@@ -22,12 +23,12 @@ func (a Auth) apiLoginCodeVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(verificationCode) != LoginCodeLength {
+	if len(verificationCode) != authutils.LoginCodeLength(a.disableRateLimit) {
 		api.Respond(w, r, api.Error("Verification code is invalid length"))
 		return
 	}
 
-	if !str.ContainsOnly(verificationCode, LoginCodeGamma) {
+	if !str.ContainsOnly(verificationCode, authutils.LoginCodeGamma(a.disableRateLimit)) {
 		api.Respond(w, r, api.Error("Verification code contains invalid characters"))
 		return
 	}

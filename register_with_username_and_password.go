@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/mail"
 
+	authutils "github.com/dracory/auth/utils"
 	"github.com/dracory/str"
 )
 
@@ -57,7 +58,10 @@ func (a Auth) RegisterWithUsernameAndPassword(email string, password string, fir
 		return response
 	}
 
-	verificationCode, errRandom := str.RandomFromGamma(LoginCodeLength, LoginCodeGamma)
+	verificationCode, errRandom := str.RandomFromGamma(
+		authutils.LoginCodeLength(a.disableRateLimit),
+		authutils.LoginCodeGamma(a.disableRateLimit),
+	)
 	if errRandom != nil {
 		response.ErrorMessage = "Error generating random string"
 		return response

@@ -82,39 +82,6 @@ if err != nil {
 
 ---
 
-### 4. **Weak Verification Code Entropy** - MEDIUM
-
-**Severity:** 🟡 **MEDIUM**  
-**Impact:** Brute force of verification codes
-
-**Problem:**
-Verification codes are only 8 characters from 21-character alphabet:
-
-```go
-// consts.go
-LoginCodeLength int = 8
-LoginCodeGamma string = "BCDFGHJKLMNPQRSTVXYZ"  // 21 characters
-```
-
-**Entropy Calculation:**
-- Possible codes: 21^8 = 37,822,859,361 (~38 billion)
-- With no rate limiting: **easily brute-forceable**
-- At 1000 req/sec: ~438 days to exhaust space
-- At 10,000 req/sec: ~44 days
-
-**Recommendation:**
-```go
-LoginCodeLength int = 12  // 21^12 = 7.3 × 10^15 (more secure)
-
-// OR use cryptographically secure random with numbers
-LoginCodeGamma string = "BCDFGHJKLMNPQRSTVXYZ0123456789"  // 31 characters
-LoginCodeLength int = 10  // 31^10 = 8.19 × 10^14
-```
-
-**Plus:** Implement rate limiting (see issue #1)
-
----
-
 ### 5. **No Password Strength Enforcement** - MEDIUM
 
 **Severity:** 🟡 **MEDIUM**  
@@ -190,17 +157,34 @@ if err != nil {
 ### 7. **No Context Propagation** - HIGH
 
 **Problem:**
-No `context.Context` parameter in any function:
+HTTP handlers can obtain a request context via `r.Context()`, but the library
+does not **propagate** that context into its public APIs and user callbacks
+(`FuncUserLogin`, `FuncUserRegister`, `FuncUserFindByUsername`, etc.). As a
+result, downstream operations (DB calls, RPCs, etc.) cannot participate in
+request cancellation, deadlines, or tracing through a first-class
+`context.Context` parameter.
 
 ```go
-// ❌ Cannot cancel, timeout, or trace
+// Current style (no explicit ctx propagation into callbacks)
 func (a Auth) apiLogin(w http.ResponseWriter, r *http.Request) {
-    // No ctx parameter
+    ctx := r.Context() // ✅ available, but not passed along
+
+    userID, err := a.funcUserLogin(email, password, UserAuthOptions{
+        UserIp:    req.GetIP(r),
+        UserAgent: r.UserAgent(),
+        // ❌ No ctx here, callbacks can't observe cancellation/timeouts
+    })
 }
 
-// ✅ Should be
-func (a Auth) apiLogin(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-    // Can propagate cancellation, add tracing
+// Recommended style
+func (a Auth) apiLogin(w http.ResponseWriter, r *http.Request) {
+    ctx := r.Context()
+
+    userID, err := a.funcUserLoginWithContext(ctx, email, password, UserAuthOptions{
+        UserIp:    req.GetIP(r),
+        UserAgent: r.UserAgent(),
+    })
+    // Callbacks can now use ctx for deadlines, cancellation, tracing, etc.
 }
 ```
 
