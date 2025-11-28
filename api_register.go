@@ -99,7 +99,7 @@ func (a Auth) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	errTempTokenSave := a.funcTemporaryKeySet(verificationCode, string(json), 3600)
+	errTempTokenSave := a.funcTemporaryKeySet(verificationCode, string(json), int(DefaultVerificationCodeExpiration.Seconds()))
 
 	if errTempTokenSave != nil {
 		authErr := NewTokenStoreError(errTempTokenSave)

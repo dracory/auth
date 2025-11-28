@@ -54,7 +54,7 @@ func TestPasswordResetEndpointInvalidToken(t *testing.T) {
 		return "", nil
 	}
 
-	expectedErrorMessage := `"message":"Link not valid of expired"`
+	expectedErrorMessage := `"message":"Link not valid or expired"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordReset(), url.Values{
 		"token":            {"invalid-token"},
 		"password":         {"password123"},

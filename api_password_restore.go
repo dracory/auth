@@ -98,7 +98,7 @@ func (a Auth) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	errTempTokenSave := a.funcTemporaryKeySet(token, userID, 3600)
+	errTempTokenSave := a.funcTemporaryKeySet(token, userID, int(DefaultPasswordResetExpiration.Seconds()))
 
 	if errTempTokenSave != nil {
 		authErr := NewTokenStoreError(errTempTokenSave)

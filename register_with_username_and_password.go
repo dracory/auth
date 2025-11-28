@@ -104,7 +104,7 @@ func (a Auth) RegisterWithUsernameAndPassword(ctx context.Context, email string,
 		return response
 	}
 
-	errTempTokenSave := a.funcTemporaryKeySet(verificationCode, string(json), 3600)
+	errTempTokenSave := a.funcTemporaryKeySet(verificationCode, string(json), int(DefaultVerificationCodeExpiration.Seconds()))
 
 	if errTempTokenSave != nil {
 		authErr := NewTokenStoreError(errTempTokenSave)

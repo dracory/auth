@@ -65,12 +65,12 @@ func (a Auth) apiPasswordReset(w http.ResponseWriter, r *http.Request) {
 	userID, errToken := a.funcTemporaryKeyGet(token)
 
 	if errToken != nil {
-		api.Respond(w, r, api.Error("Link not valid of expired"))
+		api.Respond(w, r, api.Error("Link not valid or expired"))
 		return
 	}
 
 	if userID == "" {
-		api.Respond(w, r, api.Error("Link not valid of expired"))
+		api.Respond(w, r, api.Error("Link not valid or expired"))
 		return
 	}
 

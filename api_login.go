@@ -61,7 +61,7 @@ func (a Auth) apiLoginPasswordless(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	errTempTokenSave := a.funcTemporaryKeySet(verificationCode, email, 3600)
+	errTempTokenSave := a.funcTemporaryKeySet(verificationCode, email, int(DefaultVerificationCodeExpiration.Seconds()))
 
 	if errTempTokenSave != nil {
 		authErr := NewTokenStoreError(errTempTokenSave)
