@@ -7,10 +7,11 @@ import (
 
 	"github.com/dracory/api"
 	apilogin "github.com/dracory/auth/internal/api"
-	apipwd "github.com/dracory/auth/internal/api"
 	apireg "github.com/dracory/auth/internal/api"
 	"github.com/dracory/auth/internal/api/api_login"
 	"github.com/dracory/auth/internal/api/api_logout"
+	"github.com/dracory/auth/internal/api/api_password_reset"
+	"github.com/dracory/auth/internal/api/api_password_restore"
 	"github.com/dracory/req"
 	"github.com/dracory/str"
 )
@@ -189,7 +190,7 @@ func (a authImplementation) apiLogout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a authImplementation) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
-	deps := apipwd.PasswordRestoreDeps{
+	deps := api_password_restore.PasswordRestoreDeps{
 		UserFindByUsername: func(ctx context.Context, email, firstName, lastName string) (string, error) {
 			return a.funcUserFindByUsername(ctx, email, firstName, lastName, UserAuthOptions{
 				UserIp:    req.GetIP(r),
@@ -209,17 +210,17 @@ func (a authImplementation) apiPasswordRestore(w http.ResponseWriter, r *http.Re
 		},
 	}
 
-	result, perr := apipwd.PasswordRestore(r.Context(), r, deps)
+	result, perr := api_password_restore.PasswordRestore(r.Context(), r, deps)
 	if perr != nil {
 		logger := a.GetLogger()
 		ip := req.GetIP(r)
 		userAgent := r.UserAgent()
 
 		switch perr.Code {
-		case apipwd.PasswordRestoreErrorCodeValidation:
+		case api_password_restore.PasswordRestoreErrorCodeValidation:
 			api.Respond(w, r, api.Error(perr.Message))
 			return
-		case apipwd.PasswordRestoreErrorCodeUserLookup:
+		case api_password_restore.PasswordRestoreErrorCodeUserLookup:
 			logger.Error("password restore user lookup failed",
 				"error", perr.Err,
 				"email", perr.Email,
@@ -231,7 +232,7 @@ func (a authImplementation) apiPasswordRestore(w http.ResponseWriter, r *http.Re
 			)
 			api.Respond(w, r, api.Error(perr.Message))
 			return
-		case apipwd.PasswordRestoreErrorCodeCodeGenerate:
+		case api_password_restore.PasswordRestoreErrorCodeCodeGenerate:
 			authErr := NewCodeGenerationError(perr.Err)
 			logger.Error("password reset token generation failed",
 				"error", authErr.InternalErr,
@@ -243,7 +244,7 @@ func (a authImplementation) apiPasswordRestore(w http.ResponseWriter, r *http.Re
 			)
 			api.Respond(w, r, api.Error(authErr.Message))
 			return
-		case apipwd.PasswordRestoreErrorCodeTokenStore:
+		case api_password_restore.PasswordRestoreErrorCodeTokenStore:
 			authErr := NewTokenStoreError(perr.Err)
 			logger.Error("password reset token store failed",
 				"error", authErr.InternalErr,
@@ -255,7 +256,7 @@ func (a authImplementation) apiPasswordRestore(w http.ResponseWriter, r *http.Re
 			)
 			api.Respond(w, r, api.Error(authErr.Message))
 			return
-		case apipwd.PasswordRestoreErrorCodeEmailSend:
+		case api_password_restore.PasswordRestoreErrorCodeEmailSend:
 			authErr := NewEmailSendError(perr.Err)
 			logger.Error("password restore email send failed",
 				"error", authErr.InternalErr,
@@ -286,7 +287,7 @@ func (a authImplementation) apiPasswordRestore(w http.ResponseWriter, r *http.Re
 }
 
 func (a authImplementation) apiPasswordReset(w http.ResponseWriter, r *http.Request) {
-	deps := apipwd.PasswordResetDeps{
+	deps := api_password_reset.PasswordResetDeps{
 		PasswordStrength: a.passwordStrength,
 		TemporaryKeyGet:  a.funcTemporaryKeyGet,
 		UserPasswordChange: func(ctx context.Context, userID, password string) error {
@@ -303,19 +304,19 @@ func (a authImplementation) apiPasswordReset(w http.ResponseWriter, r *http.Requ
 		},
 	}
 
-	result, perr := apipwd.PasswordReset(r.Context(), r, deps)
+	result, perr := api_password_reset.PasswordReset(r.Context(), r, deps)
 	if perr != nil {
 		logger := a.GetLogger()
 		ip := req.GetIP(r)
 		userAgent := r.UserAgent()
 
 		switch perr.Code {
-		case apipwd.PasswordResetErrorCodeValidation,
-			apipwd.PasswordResetErrorCodeTokenLookup,
-			apipwd.PasswordResetErrorCodeTokenInvalid:
+		case api_password_reset.PasswordResetErrorCodeValidation,
+			api_password_reset.PasswordResetErrorCodeTokenLookup,
+			api_password_reset.PasswordResetErrorCodeTokenInvalid:
 			api.Respond(w, r, api.Error(perr.Message))
 			return
-		case apipwd.PasswordResetErrorCodePasswordStrength:
+		case api_password_reset.PasswordResetErrorCodePasswordStrength:
 			authErr := AuthError{
 				Code:        ErrCodeValidationFailed,
 				Message:     perr.Err.Error(),
@@ -330,7 +331,7 @@ func (a authImplementation) apiPasswordReset(w http.ResponseWriter, r *http.Requ
 			)
 			api.Respond(w, r, api.Error(authErr.Message))
 			return
-		case apipwd.PasswordResetErrorCodePasswordChange:
+		case api_password_reset.PasswordResetErrorCodePasswordChange:
 			authErr := NewPasswordResetError(perr.Err)
 			logger.Error("password change failed",
 				"error", authErr.InternalErr,
@@ -342,7 +343,7 @@ func (a authImplementation) apiPasswordReset(w http.ResponseWriter, r *http.Requ
 			)
 			api.Respond(w, r, api.Error(authErr.Message))
 			return
-		case apipwd.PasswordResetErrorCodeLogout:
+		case api_password_reset.PasswordResetErrorCodeLogout:
 			authErr := NewLogoutError(perr.Err)
 			logger.Error("session invalidation after password change failed",
 				"error", authErr.InternalErr,
