@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/url"
@@ -72,7 +73,7 @@ func TestPasswordResetEndpointPasswordChangeError(t *testing.T) {
 	}
 
 	// Mock password change error
-	authInstance.funcUserPasswordChange = func(username string, newPassword string, options UserAuthOptions) (err error) {
+	authInstance.funcUserPasswordChange = func(ctx context.Context, username string, newPassword string, options UserAuthOptions) (err error) {
 		return errors.New("db error")
 	}
 
@@ -95,7 +96,7 @@ func TestPasswordResetEndpointSuccess(t *testing.T) {
 	}
 
 	// Mock success
-	authInstance.funcUserPasswordChange = func(username string, newPassword string, options UserAuthOptions) (err error) {
+	authInstance.funcUserPasswordChange = func(ctx context.Context, username string, newPassword string, options UserAuthOptions) (err error) {
 		return nil
 	}
 

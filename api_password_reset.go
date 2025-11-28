@@ -50,7 +50,7 @@ func (a Auth) apiPasswordReset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	errPasswordChange := a.funcUserPasswordChange(userID, password, UserAuthOptions{
+	errPasswordChange := a.funcUserPasswordChange(r.Context(), userID, password, UserAuthOptions{
 		UserIp:    req.GetIP(r),
 		UserAgent: r.UserAgent(),
 	})

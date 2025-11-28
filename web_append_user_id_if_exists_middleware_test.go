@@ -2,6 +2,7 @@ package auth
 
 import (
 	"bytes"
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -13,18 +14,26 @@ func TestBlockRobotsMiddlewareShouldPassForHomeWithoutSlash(t *testing.T) {
 		UrlRedirectOnSuccess: "/user",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
 		FuncTemporaryKeySet:  func(key, value string, expiresSeconds int) (err error) { return nil },
-		FuncUserFindByAuthToken: func(sessionID string, options UserAuthOptions) (userID string, err error) {
+		FuncUserFindByAuthToken: func(ctx context.Context, sessionID string, options UserAuthOptions) (userID string, err error) {
 			if sessionID == "123456" {
 				return "234567", nil
 			}
 			return "", nil
 		},
-		FuncUserFindByEmail:    func(email string, options UserAuthOptions) (userID string, err error) { return "", nil },
-		FuncUserLogout:         func(userID string, options UserAuthOptions) (err error) { return nil },
-		FuncUserStoreAuthToken: func(sessionID, userID string, options UserAuthOptions) error { return nil },
-		FuncEmailSend:          func(email, emailSubject, emailBody string) (err error) { return nil },
-		UseCookies:             true,
-		UseLocalStorage:        false,
+		FuncUserFindByEmail: func(ctx context.Context, email string, options UserAuthOptions) (userID string, err error) {
+			return "", nil
+		},
+		FuncUserLogout: func(ctx context.Context, userID string, options UserAuthOptions) (err error) {
+			return nil
+		},
+		FuncUserStoreAuthToken: func(ctx context.Context, sessionID, userID string, options UserAuthOptions) error {
+			return nil
+		},
+		FuncEmailSend: func(ctx context.Context, email, emailSubject, emailBody string) (err error) {
+			return nil
+		},
+		UseCookies:      true,
+		UseLocalStorage: false,
 	})
 
 	if err != nil {

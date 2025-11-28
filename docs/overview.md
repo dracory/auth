@@ -102,20 +102,20 @@ type ConfigPasswordless struct {
     // Required
     Endpoint                string
     UrlRedirectOnSuccess    string
-    FuncUserFindByAuthToken func(sessionID string, options UserAuthOptions) (userID string, err error)
-    FuncUserFindByEmail     func(email string, options UserAuthOptions) (userID string, err error)
-    FuncUserLogout          func(userID string, options UserAuthOptions) error
-    FuncUserStoreAuthToken  func(sessionID string, userID string, options UserAuthOptions) error
-    FuncEmailSend           func(email string, subject string, body string) error
+    FuncUserFindByAuthToken func(ctx context.Context, sessionID string, options UserAuthOptions) (userID string, err error)
+    FuncUserFindByEmail     func(ctx context.Context, email string, options UserAuthOptions) (userID string, err error)
+    FuncUserLogout          func(ctx context.Context, userID string, options UserAuthOptions) error
+    FuncUserStoreAuthToken  func(ctx context.Context, sessionID string, userID string, options UserAuthOptions) error
+    FuncEmailSend           func(ctx context.Context, email string, subject string, body string) error
     FuncTemporaryKeyGet     func(key string) (value string, err error)
     FuncTemporaryKeySet     func(key string, value string, expiresSeconds int) error
     UseCookies              bool // OR UseLocalStorage (one must be true)
     
     // Optional
     EnableRegistration           bool
-    FuncUserRegister             func(email, firstName, lastName string, options UserAuthOptions) error
-    FuncEmailTemplateLoginCode   func(email, loginLink string, options UserAuthOptions) string
-    FuncEmailTemplateRegisterCode func(email, registerLink string, options UserAuthOptions) string
+    FuncUserRegister             func(ctx context.Context, email, firstName, lastName string, options UserAuthOptions) error
+    FuncEmailTemplateLoginCode   func(ctx context.Context, email, loginLink string, options UserAuthOptions) string
+    FuncEmailTemplateRegisterCode func(ctx context.Context, email, registerLink string, options UserAuthOptions) string
     FuncLayout                   func(content string) string
 }
 ```
@@ -124,10 +124,10 @@ type ConfigPasswordless struct {
 ```go
 type ConfigUsernameAndPassword struct {
     // Similar to passwordless, plus:
-    FuncUserLogin          func(username, password string, options UserAuthOptions) (userID string, err error)
-    FuncUserPasswordChange func(username, newPassword string, options UserAuthOptions) error
-    FuncUserRegister       func(username, password, firstName, lastName string, options UserAuthOptions) error
-    FuncUserFindByUsername func(username, firstName, lastName string, options UserAuthOptions) (userID string, err error)
+    FuncUserLogin          func(ctx context.Context, username, password string, options UserAuthOptions) (userID string, err error)
+    FuncUserPasswordChange func(ctx context.Context, username, newPassword string, options UserAuthOptions) error
+    FuncUserRegister       func(ctx context.Context, username, password, firstName, lastName string, options UserAuthOptions) error
+    FuncUserFindByUsername func(ctx context.Context, username, firstName, lastName string, options UserAuthOptions) (userID string, err error)
     EnableVerification     bool // Email verification for registration
 }
 ```
@@ -344,7 +344,7 @@ func dashboardHandler(w http.ResponseWriter, r *http.Request) {
 3. **Complete UI Included** - HTML pages with Bootstrap styling
 4. **Token Storage Options** - Cookies OR localStorage (configurable)
 5. **Verification Codes** - 8-character codes from limited alphabet (BCDFGHJKLMNPQRSTVXYZ) to avoid confusion
-6. **UserAuthOptions** - Passes IP and UserAgent to all callbacks for audit trails
+6. **UserAuthOptions + Context** - Callbacks receive `ctx context.Context` plus IP and UserAgent metadata for audit trails and cancellation
 
 ---
 

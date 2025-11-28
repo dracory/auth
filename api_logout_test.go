@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -28,7 +29,7 @@ func TestLogoutEndpointTokenValidationError(t *testing.T) {
 	NotNil(t, authInstance)
 
 	// Mock token validation error
-	authInstance.funcUserFindByAuthToken = func(token string, options UserAuthOptions) (userID string, err error) {
+	authInstance.funcUserFindByAuthToken = func(ctx context.Context, token string, options UserAuthOptions) (userID string, err error) {
 		return "", errors.New("db error")
 	}
 
@@ -57,7 +58,7 @@ func TestLogoutEndpointTokenValidationError_Custom(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
 	Nil(t, err)
 
-	authInstance.funcUserFindByAuthToken = func(token string, options UserAuthOptions) (userID string, err error) {
+	authInstance.funcUserFindByAuthToken = func(ctx context.Context, token string, options UserAuthOptions) (userID string, err error) {
 		return "", errors.New("db error")
 	}
 

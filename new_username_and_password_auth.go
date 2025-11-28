@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"time"
@@ -90,12 +91,17 @@ func NewUsernameAndPasswordAuth(config ConfigUsernameAndPassword) (*Auth, error)
 
 	// If no user defined email template is set, use default
 	if auth.funcEmailTemplatePasswordRestore == nil {
-		auth.funcEmailTemplatePasswordRestore = emailTemplatePasswordChange
+		auth.funcEmailTemplatePasswordRestore = func(ctx context.Context, userID string, passwordRestoreLink string, options UserAuthOptions) string {
+			// userID here is effectively the name/email for the template
+			return emailTemplatePasswordChange(userID, passwordRestoreLink, options)
+		}
 	}
 
 	// If no user defined email template is set, use default
 	if auth.funcEmailTemplateRegisterCode == nil {
-		auth.funcEmailTemplateRegisterCode = emailRegisterCodeTemplate
+		auth.funcEmailTemplateRegisterCode = func(ctx context.Context, email string, code string, options UserAuthOptions) string {
+			return emailRegisterCodeTemplate(email, code, options)
+		}
 	}
 
 	// Initialize rate limiting

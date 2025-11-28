@@ -2,6 +2,7 @@ package auth
 
 import (
 	"bytes"
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -44,7 +45,7 @@ func TestWebAuthOrRedirectMiddleware_InvalidToken_RedirectsToLogin(t *testing.T)
 	}
 
 	// Simulate an error in token lookup
-	authInstance.funcUserFindByAuthToken = func(sessionID string, options UserAuthOptions) (userID string, err error) {
+	authInstance.funcUserFindByAuthToken = func(ctx context.Context, token string, options UserAuthOptions) (userID string, err error) {
 		return "", http.ErrNoCookie
 	}
 
@@ -81,8 +82,8 @@ func TestWebAuthOrRedirectMiddleware_ValidToken_AppendsUserIDToContext(t *testin
 	}
 
 	// Valid token returns a userID
-	authInstance.funcUserFindByAuthToken = func(sessionID string, options UserAuthOptions) (userID string, err error) {
-		if sessionID == "123456" {
+	authInstance.funcUserFindByAuthToken = func(ctx context.Context, token string, options UserAuthOptions) (userID string, err error) {
+		if token == "123456" {
 			return "234567", nil
 		}
 		return "", nil

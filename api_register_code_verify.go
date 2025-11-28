@@ -72,12 +72,12 @@ func (a Auth) apiRegisterCodeVerify(w http.ResponseWriter, r *http.Request) {
 	var errRegister error = nil
 
 	if a.passwordless {
-		errRegister = a.passwordlessFuncUserRegister(email, firstName, lastName, UserAuthOptions{
+		errRegister = a.passwordlessFuncUserRegister(r.Context(), email, firstName, lastName, UserAuthOptions{
 			UserIp:    req.GetIP(r),
 			UserAgent: r.UserAgent(),
 		})
 	} else {
-		errRegister = a.funcUserRegister(email, password, firstName, lastName, UserAuthOptions{
+		errRegister = a.funcUserRegister(r.Context(), email, password, firstName, lastName, UserAuthOptions{
 			UserIp:    req.GetIP(r),
 			UserAgent: r.UserAgent(),
 		})

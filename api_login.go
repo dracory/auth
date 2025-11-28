@@ -50,12 +50,12 @@ func (a Auth) apiLoginPasswordless(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	emailContent := a.passwordlessFuncEmailTemplateLoginCode(email, verificationCode, UserAuthOptions{
+	emailContent := a.passwordlessFuncEmailTemplateLoginCode(r.Context(), email, verificationCode, UserAuthOptions{
 		UserIp:    req.GetIP(r),
 		UserAgent: r.UserAgent(),
 	})
 
-	errEmailSent := a.passwordlessFuncEmailSend(email, "Login Code", emailContent)
+	errEmailSent := a.passwordlessFuncEmailSend(r.Context(), email, "Login Code", emailContent)
 
 	if errEmailSent != nil {
 		log.Println(errEmailSent)
@@ -75,7 +75,7 @@ func (a Auth) apiLoginUsernameAndPassword(w http.ResponseWriter, r *http.Request
 	email := req.GetStringTrimmed(r, "email")
 	password := req.GetStringTrimmed(r, "password")
 
-	response := a.LoginWithUsernameAndPassword(email, password, UserAuthOptions{
+	response := a.LoginWithUsernameAndPassword(r.Context(), email, password, UserAuthOptions{
 		UserIp:    req.GetIP(r),
 		UserAgent: r.UserAgent(),
 	})

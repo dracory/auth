@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/url"
@@ -51,7 +52,7 @@ func TestApiLoginUsernameAndPasswordUserLoginError(t *testing.T) {
 	Nil(t, err)
 	NotNil(t, authInstance)
 
-	authInstance.funcUserLogin = func(username string, password string, options UserAuthOptions) (userID string, err error) {
+	authInstance.funcUserLogin = func(ctx context.Context, username string, password string, options UserAuthOptions) (userID string, err error) {
 		return "", errors.New("db error")
 	}
 
@@ -69,7 +70,7 @@ func TestApiLoginUsernameAndPasswordUserNotFound(t *testing.T) {
 	Nil(t, err)
 	NotNil(t, authInstance)
 
-	authInstance.funcUserLogin = func(username string, password string, options UserAuthOptions) (userID string, err error) {
+	authInstance.funcUserLogin = func(ctx context.Context, username string, password string, options UserAuthOptions) (userID string, err error) {
 		return "", nil
 	}
 
@@ -87,11 +88,11 @@ func TestApiLoginUsernameAndPasswordTokenStoreError(t *testing.T) {
 	Nil(t, err)
 	NotNil(t, authInstance)
 
-	authInstance.funcUserLogin = func(username string, password string, options UserAuthOptions) (userID string, err error) {
+	authInstance.funcUserLogin = func(ctx context.Context, username string, password string, options UserAuthOptions) (userID string, err error) {
 		return "user123", nil
 	}
 
-	authInstance.funcUserStoreAuthToken = func(sessionID string, userID string, options UserAuthOptions) (err error) {
+	authInstance.funcUserStoreAuthToken = func(ctx context.Context, token string, userID string, options UserAuthOptions) error {
 		return errors.New("db error")
 	}
 
@@ -109,7 +110,7 @@ func TestApiLoginUsernameAndPasswordSuccess(t *testing.T) {
 	Nil(t, err)
 	NotNil(t, authInstance)
 
-	authInstance.funcUserLogin = func(username string, password string, options UserAuthOptions) (userID string, err error) {
+	authInstance.funcUserLogin = func(ctx context.Context, username string, password string, options UserAuthOptions) (userID string, err error) {
 		return "user123", nil
 	}
 
@@ -196,7 +197,7 @@ func TestApiLoginPasswordlessEmailSendError(t *testing.T) {
 	Nil(t, err)
 	NotNil(t, authInstance)
 
-	authInstance.passwordlessFuncEmailSend = func(email string, emailSubject string, emailBody string) (err error) {
+	authInstance.passwordlessFuncEmailSend = func(ctx context.Context, email string, emailSubject string, emailBody string) (err error) {
 		return errors.New("smtp error")
 	}
 

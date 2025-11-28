@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"errors"
 	"net/url"
 	"testing"
@@ -89,7 +90,7 @@ func TestApiRegisterCodeVerifyRegistrationFailed(t *testing.T) {
 		return jsonPayload, nil
 	}
 
-	authInstance.passwordlessFuncUserRegister = func(email string, firstName string, lastName string, options UserAuthOptions) (err error) {
+	authInstance.passwordlessFuncUserRegister = func(ctx context.Context, email string, firstName string, lastName string, options UserAuthOptions) (err error) {
 		return errors.New("db error")
 	}
 
@@ -111,11 +112,11 @@ func TestApiRegisterCodeVerifyAuthenticationError(t *testing.T) {
 		return jsonPayload, nil
 	}
 
-	authInstance.passwordlessFuncUserRegister = func(email string, firstName string, lastName string, options UserAuthOptions) (err error) {
+	authInstance.passwordlessFuncUserRegister = func(ctx context.Context, email string, firstName string, lastName string, options UserAuthOptions) (err error) {
 		return nil
 	}
 
-	authInstance.passwordlessFuncUserFindByEmail = func(email string, options UserAuthOptions) (userID string, err error) {
+	authInstance.passwordlessFuncUserFindByEmail = func(ctx context.Context, email string, options UserAuthOptions) (userID string, err error) {
 		return "", errors.New("db error")
 	}
 
@@ -137,11 +138,11 @@ func TestApiRegisterCodeVerifyUserNotFound(t *testing.T) {
 		return jsonPayload, nil
 	}
 
-	authInstance.passwordlessFuncUserRegister = func(email string, firstName string, lastName string, options UserAuthOptions) (err error) {
+	authInstance.passwordlessFuncUserRegister = func(ctx context.Context, email string, firstName string, lastName string, options UserAuthOptions) (err error) {
 		return nil
 	}
 
-	authInstance.passwordlessFuncUserFindByEmail = func(email string, options UserAuthOptions) (userID string, err error) {
+	authInstance.passwordlessFuncUserFindByEmail = func(ctx context.Context, email string, options UserAuthOptions) (userID string, err error) {
 		return "", nil
 	}
 
@@ -163,15 +164,15 @@ func TestApiRegisterCodeVerifyTokenStoreError(t *testing.T) {
 		return jsonPayload, nil
 	}
 
-	authInstance.passwordlessFuncUserRegister = func(email string, firstName string, lastName string, options UserAuthOptions) (err error) {
+	authInstance.passwordlessFuncUserRegister = func(ctx context.Context, email string, firstName string, lastName string, options UserAuthOptions) (err error) {
 		return nil
 	}
 
-	authInstance.passwordlessFuncUserFindByEmail = func(email string, options UserAuthOptions) (userID string, err error) {
+	authInstance.passwordlessFuncUserFindByEmail = func(ctx context.Context, email string, options UserAuthOptions) (userID string, err error) {
 		return "user123", nil
 	}
 
-	authInstance.funcUserStoreAuthToken = func(sessionID string, userID string, options UserAuthOptions) (err error) {
+	authInstance.funcUserStoreAuthToken = func(ctx context.Context, token string, userID string, options UserAuthOptions) error {
 		return errors.New("db error")
 	}
 
@@ -193,15 +194,15 @@ func TestApiRegisterCodeVerifySuccess(t *testing.T) {
 		return jsonPayload, nil
 	}
 
-	authInstance.passwordlessFuncUserRegister = func(email string, firstName string, lastName string, options UserAuthOptions) (err error) {
+	authInstance.passwordlessFuncUserRegister = func(ctx context.Context, email string, firstName string, lastName string, options UserAuthOptions) (err error) {
 		return nil
 	}
 
-	authInstance.passwordlessFuncUserFindByEmail = func(email string, options UserAuthOptions) (userID string, err error) {
+	authInstance.passwordlessFuncUserFindByEmail = func(ctx context.Context, email string, options UserAuthOptions) (userID string, err error) {
 		return "user123", nil
 	}
 
-	authInstance.funcUserStoreAuthToken = func(sessionID string, userID string, options UserAuthOptions) (err error) {
+	authInstance.funcUserStoreAuthToken = func(ctx context.Context, token string, userID string, options UserAuthOptions) error {
 		return nil
 	}
 
