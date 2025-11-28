@@ -165,8 +165,7 @@ func (a authImplementation) apiRegisterUsernameAndPassword(w http.ResponseWriter
 }
 
 func (a authImplementation) apiLogout(w http.ResponseWriter, r *http.Request) {
-	authToken := AuthTokenRetrieve(r, a.useCookies)
-	deps := api_logout.Dependencies{
+	api_logout.ApiLogout(w, r, api_logout.Dependencies{
 		UserFromToken: func(ctx context.Context, token string) (string, error) {
 			return a.funcUserFindByAuthToken(ctx, token, UserAuthOptions{
 				UserIp:    req.GetIP(r),
@@ -179,57 +178,14 @@ func (a authImplementation) apiLogout(w http.ResponseWriter, r *http.Request) {
 				UserAgent: r.UserAgent(),
 			})
 		},
-	}
-
-	logoutErr := api_logout.ApiLogout(r.Context(), authToken, deps)
-	if logoutErr != nil {
-		logger := a.GetLogger()
-		ip := req.GetIP(r)
-		userAgent := r.UserAgent()
-		switch logoutErr.Code {
-		case api_logout.LogoutErrorCodeTokenLookup:
-			authErr := NewLogoutError(logoutErr.Err)
-			logger.Error("logout token lookup failed",
-				"error", authErr.InternalErr,
-				"error_code", authErr.Code,
-				"ip", ip,
-				"user_agent", userAgent,
-				"endpoint", "api_logout",
-			)
-			api.Respond(w, r, api.Error(authErr.Message))
-			return
-		case api_logout.LogoutErrorCodeUserLogout:
-			authErr := NewLogoutError(logoutErr.Err)
-			logger.Error("user logout failed",
-				"error", authErr.InternalErr,
-				"error_code", authErr.Code,
-				"user_id", logoutErr.UserID,
-				"ip", ip,
-				"user_agent", userAgent,
-				"endpoint", "api_logout",
-			)
-			api.Respond(w, r, api.Error(authErr.Message))
-			return
-		default:
-			authErr := NewInternalError(logoutErr.Err)
-			logger := a.GetLogger()
-			logger.Error("logout internal error",
-				"error", authErr.InternalErr,
-				"error_code", authErr.Code,
-				"ip", ip,
-				"user_agent", userAgent,
-				"endpoint", "api_logout",
-			)
-			api.Respond(w, r, api.Error(authErr.Message))
-			return
-		}
-	}
-
-	if a.useCookies {
-		a.removeAuthCookie(w, r)
-	}
-
-	api.Respond(w, r, api.Success("logout success"))
+		UseCookies: a.useCookies,
+		AuthTokenRetrieve: func(r *http.Request, useCookies bool) string {
+			return AuthTokenRetrieve(r, useCookies)
+		},
+		RemoveAuthCookie: func(w http.ResponseWriter, r *http.Request) {
+			a.removeAuthCookie(w, r)
+		},
+	})
 }
 
 func (a authImplementation) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {

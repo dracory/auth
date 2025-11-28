@@ -1,6 +1,11 @@
 package api_logout
 
-import "context"
+import (
+	"context"
+	"net/http"
+
+	"github.com/dracory/api"
+)
 
 // LogoutErrorCode categorizes error sources in the logout flow.
 type LogoutErrorCode string
@@ -28,6 +33,35 @@ func (e *LogoutError) Error() string {
 	return string(e.Code)
 }
 
+// ApiLogout is the HTTP-level helper that wires request/response handling
+// to the core ApiLogout business logic using the provided dependencies.
+func ApiLogout(w http.ResponseWriter, r *http.Request, dependencies Dependencies) {
+	if dependencies.AuthTokenRetrieve == nil {
+		api.Respond(w, r, api.Error("Internal server error. Please try again later"))
+		return
+	}
+
+	token := dependencies.AuthTokenRetrieve(r, dependencies.UseCookies)
+	logoutErr := logout(r.Context(), token, dependencies)
+	if logoutErr != nil {
+		switch logoutErr.Code {
+		case LogoutErrorCodeTokenLookup,
+			LogoutErrorCodeUserLogout:
+			api.Respond(w, r, api.Error("Failed to process logout. Please try again later"))
+			return
+		default:
+			api.Respond(w, r, api.Error("Internal server error. Please try again later"))
+			return
+		}
+	}
+
+	if dependencies.UseCookies && dependencies.RemoveAuthCookie != nil {
+		dependencies.RemoveAuthCookie(w, r)
+	}
+
+	api.Respond(w, r, api.Success("logout success"))
+}
+
 // Logout contains the core business logic for logging out a user based on
 // an authentication token. It does not interact with HTTP, cookies or logs;
 // these responsibilities remain with the caller.
@@ -40,7 +74,7 @@ func (e *LogoutError) Error() string {
 //   - If a user ID is resolved and LogoutUser fails, a LogoutError with
 //     CodeUserLogout is returned.
 //   - Otherwise, nil is returned to indicate success.
-func ApiLogout(ctx context.Context, token string, dependencies Dependencies) *LogoutError {
+func logout(ctx context.Context, token string, dependencies Dependencies) *LogoutError {
 	if dependencies.UserFromToken == nil {
 		return &LogoutError{Code: LogoutErrorCodeTokenLookup}
 	}
