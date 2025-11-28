@@ -77,6 +77,9 @@ type Auth struct {
 	logger          *slog.Logger
 }
 
+// GetLogger returns the configured structured logger for this Auth instance.
+// If no logger was explicitly provided, it falls back to slog.Default().
+// Under normal library usage this method always returns a non-nil *slog.Logger.
 func (a Auth) GetLogger() *slog.Logger {
 	if a.logger != nil {
 		return a.logger
@@ -84,6 +87,8 @@ func (a Auth) GetLogger() *slog.Logger {
 	return slog.Default()
 }
 
+// GetCurrentUserID returns the authenticated user ID stored in the request
+// context, or an empty string if no user ID is attached.
 func (a Auth) GetCurrentUserID(r *http.Request) string {
 	authenticatedUserID := r.Context().Value(AuthenticatedUserID{})
 	if authenticatedUserID == nil {
