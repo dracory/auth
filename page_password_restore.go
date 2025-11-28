@@ -3,17 +3,12 @@ package auth
 import (
 	"net/http"
 
-	"log/slog"
-
 	"github.com/dracory/hb"
 )
 
 func (a Auth) pagePasswordRestore(w http.ResponseWriter, r *http.Request) {
 	webpage := webpage("Restore Password", a.pagePasswordRestoreContent(), a.pagePasswordRestoreScripts())
-	logger := a.logger
-	if logger == nil {
-		logger = slog.Default()
-	}
+	logger := a.GetLogger()
 
 	w.WriteHeader(200)
 	w.Header().Set("Content-Type", "text/html")

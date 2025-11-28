@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"log/slog"
 	"net/http"
 
 	"github.com/dracory/hb"
@@ -9,10 +8,7 @@ import (
 
 func (a Auth) pageLogout(w http.ResponseWriter, r *http.Request) {
 	webpage := webpage("Logout", a.funcLayout(a.pageLogoutContent()), a.pageLogoutScripts())
-	logger := a.logger
-	if logger == nil {
-		logger = slog.Default()
-	}
+	logger := a.GetLogger()
 
 	w.WriteHeader(200)
 	w.Header().Set("Content-Type", "text/html")
@@ -51,10 +47,7 @@ func (a Auth) pageLogoutContent() string {
 func (a Auth) pageLogoutScripts() string {
 	urlApiLogout := a.LinkApiLogout()
 	urlSuccess := a.LinkLogin()
-	logger := a.logger
-	if logger == nil {
-		logger = slog.Default()
-	}
+	logger := a.GetLogger()
 	logger.Debug("logout page initialized",
 		"api_logout_url", urlApiLogout,
 	)

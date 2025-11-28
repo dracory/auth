@@ -77,6 +77,13 @@ type Auth struct {
 	logger          *slog.Logger
 }
 
+func (a Auth) GetLogger() *slog.Logger {
+	if a.logger != nil {
+		return a.logger
+	}
+	return slog.Default()
+}
+
 func (a Auth) GetCurrentUserID(r *http.Request) string {
 	authenticatedUserID := r.Context().Value(AuthenticatedUserID{})
 	if authenticatedUserID == nil {

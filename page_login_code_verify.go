@@ -3,17 +3,12 @@ package auth
 import (
 	"net/http"
 
-	"log/slog"
-
 	"github.com/dracory/hb"
 )
 
 func (a Auth) pageLoginCodeVerify(w http.ResponseWriter, r *http.Request) {
 	webpage := webpage("Verify Login Code", a.funcLayout(a.pageLoginCodeVerifyContent()), a.pageLoginCodeVerifyContentScripts())
-	logger := a.logger
-	if logger == nil {
-		logger = slog.Default()
-	}
+	logger := a.GetLogger()
 
 	w.WriteHeader(200)
 	w.Header().Set("Content-Type", "text/html")
