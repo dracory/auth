@@ -3,9 +3,9 @@ package auth
 import (
 	"log/slog"
 	"net/http"
-	"net/mail"
 
 	"github.com/dracory/api"
+	authutils "github.com/dracory/auth/utils"
 	"github.com/dracory/req"
 )
 
@@ -36,8 +36,8 @@ func (a Auth) apiLoginPasswordless(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := mail.ParseAddress(email); err != nil {
-		api.Respond(w, r, api.Error("This is not a valid email: "+email))
+	if msg := authutils.ValidateEmailFormat(email); msg != "" {
+		api.Respond(w, r, api.Error(msg))
 		return
 	}
 

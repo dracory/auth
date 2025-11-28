@@ -3,8 +3,8 @@ package auth
 import (
 	"context"
 	"log/slog"
-	"net/mail"
 
+	authutils "github.com/dracory/auth/utils"
 	"github.com/dracory/str"
 )
 
@@ -25,8 +25,8 @@ func (a Auth) LoginWithUsernameAndPassword(ctx context.Context, email string, pa
 		return response
 	}
 
-	if _, err := mail.ParseAddress(email); err != nil {
-		response.ErrorMessage = "This is not a valid email: " + email
+	if msg := authutils.ValidateEmailFormat(email); msg != "" {
+		response.ErrorMessage = msg
 		return response
 	}
 

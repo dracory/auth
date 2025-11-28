@@ -19,7 +19,7 @@ The `dracory/auth` library demonstrates **solid engineering fundamentals** with 
 | **Security** | 🔴 Critical Issues | Core auth flows use sanitized, generic errors; CSRF & rate limiting implemented; other gaps remain |
 | **Architecture** | 🟢 Good | Clean callback pattern, good separation of concerns |
 | **Error Handling** | � Needs Improvement | Core flows sanitized; still inconsistent patterns and incomplete standardization |
-| **Input Validation** | 🟡 Basic | Email validation present; password strength is enforced but still configurable by callers |
+| **Input Validation** | 🟡 Basic | Email validated across flows; first/last names sanitized on input; password strength is enforced but still configurable by callers |
 | **Testing** | 🟢 Excellent | 90.2% coverage, comprehensive test suite |
 | **Documentation** | 🟡 Good | Well-documented but missing security guidance |
 | **Context Propagation** | � Implemented | `context.Context` propagated to public APIs and callbacks |
@@ -141,52 +141,6 @@ type CookieConfig struct {
 
 ---
 
-### 5. **No Input Sanitization** - MEDIUM
-
-**Problem:**
-User inputs are not sanitized before storage/display:
-
-```go
-firstName := req.GetStringTrimmed(r, "first_name")  // ❌ No sanitization
-lastName := req.GetStringTrimmed(r, "last_name")    // ❌ Could contain XSS
-```
-
-**Recommendation:**
-```go
-import "html"
-
-firstName := html.EscapeString(req.GetStringTrimmed(r, "first_name"))
-lastName := html.EscapeString(req.GetStringTrimmed(r, "last_name"))
-
-// OR provide sanitization callback
-type Config struct {
-    FuncSanitizeInput func(input string) string
-}
-```
-
----
-
-### 6. **Email Validation Inconsistency** - MEDIUM
-
-**Problem:**
-Email validation is inconsistent:
-
-```go
-// Some endpoints validate
-if _, err := mail.ParseAddress(email); err != nil {
-    return api.Error("Invalid email")
-}
-
-// Others don't validate at all
-email := req.GetStringTrimmed(r, "email")
-// ❌ No validation, directly used
-```
-
-**Recommendation:**
-Create centralized validation function used everywhere.
-
----
-
 ## 🟢 Strengths
 
 ### 1. **Excellent Test Coverage**
@@ -233,7 +187,7 @@ Create centralized validation function used everywhere.
 | Error Sanitization | 🟡 Partial | Core auth flows use generic messages; full error-code system not implemented |
 | Structured Logging | ✅ Implemented | Uses `log/slog` structured logging with request context |
 | Context Propagation | ✅ Implemented | `context.Context` propagated into public APIs and callbacks |
-| Input Validation | 🟡 Partial | Email validated; password strength enforced but policy is configurable |
+| Input Validation | 🟡 Partial | Email validated; first/last names sanitized on input; password strength enforced but policy is configurable |
 | Password Strength | ✅ Implemented | Configurable policy with secure defaults (length, charset, common-password blacklist) |
 | Account Lockout | ✅ Implemented | Lockout after N failed attempts via rate limiter |
 | Session Management | 🟡 Basic | No session invalidation on password change |
