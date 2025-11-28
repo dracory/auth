@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/dracory/api"
+	authutils "github.com/dracory/auth/utils"
 	"github.com/dracory/req"
 )
 
@@ -35,6 +36,11 @@ func (a Auth) apiPasswordReset(w http.ResponseWriter, r *http.Request) {
 
 	if password != passwordConfirm {
 		api.Respond(w, r, api.Error("Passwords do not match"))
+		return
+	}
+
+	if err := authutils.ValidatePasswordStrength(password, a.passwordStrength); err != nil {
+		api.Respond(w, r, api.Error(err.Error()))
 		return
 	}
 

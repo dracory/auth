@@ -16,10 +16,10 @@ The `dracory/auth` library demonstrates **solid engineering fundamentals** with 
 
 | Category | Rating | Summary |
 |----------|--------|---------|
-| **Security** | 🔴 Critical Issues | Weak error messages expose internals; CSRF & rate limiting implemented but other gaps remain |
+| **Security** | 🔴 Critical Issues | Core auth flows use sanitized, generic errors; CSRF & rate limiting implemented; other gaps remain |
 | **Architecture** | 🟢 Good | Clean callback pattern, good separation of concerns |
-| **Error Handling** | 🔴 Poor | Exposes internal errors, inconsistent patterns, uses `log.Println` |
-| **Input Validation** | 🟡 Basic | Email validation present but incomplete, no password strength enforcement |
+| **Error Handling** | � Needs Improvement | Core flows sanitized; still inconsistent patterns and reliance on `log.Println` |
+| **Input Validation** | 🟡 Basic | Email validation present; password strength is enforced but still configurable by callers |
 | **Testing** | 🟢 Excellent | 90.2% coverage, comprehensive test suite |
 | **Documentation** | 🟡 Good | Well-documented but missing security guidance |
 | **Context Propagation** | � Implemented | `context.Context` propagated to public APIs and callbacks |
@@ -29,45 +29,7 @@ The `dracory/auth` library demonstrates **solid engineering fundamentals** with 
 
 ## 🔴 Critical Security Issues
 
-### 2. **No Password Strength Enforcement** - MEDIUM
-
-**Severity:** 🟡 **MEDIUM**  
-**Impact:** Weak passwords compromise accounts
-
-**Problem:**
-The library accepts ANY password, no matter how weak:
-
-```go
-// api_password_reset.go
-if password == "" {
-    api.Respond(w, r, api.Error("Password is required field"))
-    return
-}
-// ❌ No strength check - "1" is valid, "password" is valid
-```
-
-**Recommendation:**
-```go
-type PasswordStrengthConfig struct {
-    MinLength          int  // e.g., 8
-    RequireUppercase   bool
-    RequireLowercase   bool
-    RequireDigit       bool
-    RequireSpecial     bool
-    ForbidCommonWords  bool
-}
-
-func validatePasswordStrength(password string, config PasswordStrengthConfig) error {
-    if len(password) < config.MinLength {
-        return errors.New("password too short")
-    }
-    // ... additional checks
-}
-```
-
----
-
-### 3. **Session Fixation Vulnerability** - MEDIUM
+### 2. **Session Fixation Vulnerability** - MEDIUM
 
 **Severity:** 🟡 **MEDIUM**  
 **Impact:** Session hijacking
@@ -101,7 +63,7 @@ if err != nil {
 
 ## 🟠 High Priority Issues
 
-### 4. **Inconsistent Error Handling** - HIGH
+### 3. **Inconsistent Error Handling** - HIGH
 
 **Problem:**
 Mixed error handling patterns:
@@ -149,7 +111,7 @@ if err != nil {
 
 ---
 
-### 5. **No Structured Logging** - HIGH
+### 4. **No Structured Logging** - HIGH
 
 **Problem:**
 Uses basic `log.Println`:
@@ -185,7 +147,7 @@ a.logger.Error("Email send failed",
 
 ---
 
-### 6. **Timing Attack Vulnerability** - MEDIUM
+### 5. **Timing Attack Vulnerability** - MEDIUM
 
 **Problem:**
 String comparisons may leak timing information:
@@ -212,7 +174,7 @@ if subtle.ConstantTimeCompare([]byte(password), []byte(passwordConfirm)) != 1 {
 
 ## 🟡 Medium Priority Issues
 
-### 7. **Hardcoded Cookie Settings** - MEDIUM
+### 6. **Hardcoded Cookie Settings** - MEDIUM
 
 **Problem:**
 Cookie security settings are not configurable:
@@ -240,7 +202,7 @@ type CookieConfig struct {
 
 ---
 
-### 8. **No Input Sanitization** - MEDIUM
+### 7. **No Input Sanitization** - MEDIUM
 
 **Problem:**
 User inputs are not sanitized before storage/display:
@@ -265,7 +227,7 @@ type Config struct {
 
 ---
 
-### 9. **Email Validation Inconsistency** - MEDIUM
+### 8. **Email Validation Inconsistency** - MEDIUM
 
 **Problem:**
 Email validation is inconsistent:
@@ -286,7 +248,7 @@ Create centralized validation function used everywhere.
 
 ---
 
-### 10. **No Account Enumeration Protection** - MEDIUM
+### 9. **No Account Enumeration Protection** - MEDIUM
 
 **Problem:**
 Different error messages reveal if user exists:
@@ -306,7 +268,7 @@ Always return same message: "Invalid credentials"
 
 ---
 
-### 11. **Deprecated Code Not Removed** - LOW
+### 10. **Deprecated Code Not Removed** - LOW
 
 **Problem:**
 Deprecated middleware still in codebase:
@@ -370,9 +332,8 @@ Remove deprecated code entirely. Add migration guide to docs.
 | Error Sanitization | 🟡 Partial | Core auth flows use generic messages; full error-code system not implemented |
 | Structured Logging | ❌ Missing | Uses `log.Println` |
 | Context Propagation | ✅ Implemented | `context.Context` propagated into public APIs and callbacks |
-| Input Validation | 🟡 Partial | Email only, no password strength |
-| Input Sanitization | ❌ Missing | XSS risk |
-| Password Strength | ❌ Missing | Accepts any password |
+| Input Validation | 🟡 Partial | Email validated; password strength enforced but policy is configurable |
+| Password Strength | ✅ Implemented | Configurable policy with secure defaults (length, charset, common-password blacklist) |
 | Account Lockout | ✅ Implemented | Lockout after N failed attempts via rate limiter |
 | Session Management | 🟡 Basic | No session invalidation on password change |
 | Audit Logging | 🟡 Partial | Has IP/UserAgent but no structured logs |
@@ -391,9 +352,9 @@ Remove deprecated code entirely. Add migration guide to docs.
 
 **Estimated Time:** 2-3 weeks
 
-1. **Sanitize Error Messages**
-   - Create error code system
-   - Never expose internal errors to users
+1. **Finalize Error Message Sanitization**
+   - Create and apply a consistent error code system
+   - Ensure all modules use generic user-facing messages only
    - Log detailed errors internally only
 
 2. **Add Structured Logging**
@@ -406,8 +367,7 @@ Remove deprecated code entirely. Add migration guide to docs.
    - Implement request timeouts
    - Add cancellation support
 
-4. **Enforce Password Strength and Input Sanitization**
-   - Add password strength requirements
+4. **Enforce Input Sanitization**
    - Sanitize all user inputs
    - Validate all fields consistently
 
@@ -415,8 +375,7 @@ Remove deprecated code entirely. Add migration guide to docs.
 
 **Estimated Time:** 1-2 weeks
 
-5. **Password Strength Enforcement**
-   - Add configurable password requirements
+5. **Optional: Advanced Password Strength Enhancements**
    - Integrate with haveibeenpwned API (optional)
    - Add password complexity scoring
 
@@ -553,7 +512,7 @@ The `dracory/auth` library has a **solid foundation** with good architecture and
 - Dual authentication flow support
 
 ❌ **Critical Issues:**
-- Exposes internal errors (information leakage)
+- Error sanitization only partial (no error-code system, limited standardization)
 - Poor logging (no structure, no levels)
 
 ### Final Recommendation
@@ -561,7 +520,7 @@ The `dracory/auth` library has a **solid foundation** with good architecture and
 **DO NOT use in production without:**
 1. Sanitizing all error messages
 2. Adding structured logging
-3. Enforcing password strength and input sanitization
+3. Ensuring robust input sanitization
 
 **Estimated effort to production-ready:** 4-6 weeks of security hardening
 

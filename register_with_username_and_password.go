@@ -37,6 +37,11 @@ func (a Auth) RegisterWithUsernameAndPassword(ctx context.Context, email string,
 		return response
 	}
 
+	if err := authutils.ValidatePasswordStrength(password, a.passwordStrength); err != nil {
+		response.ErrorMessage = err.Error()
+		return response
+	}
+
 	if _, err := mail.ParseAddress(email); err != nil {
 		response.ErrorMessage = "This is not a valid email: " + email
 		return response

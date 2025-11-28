@@ -77,6 +77,10 @@ func (a Auth) apiRegisterCodeVerify(w http.ResponseWriter, r *http.Request) {
 			UserAgent: r.UserAgent(),
 		})
 	} else {
+		if err := authutils.ValidatePasswordStrength(password, a.passwordStrength); err != nil {
+			api.Respond(w, r, api.Error(err.Error()))
+			return
+		}
 		errRegister = a.funcUserRegister(r.Context(), email, password, firstName, lastName, UserAuthOptions{
 			UserIp:    req.GetIP(r),
 			UserAgent: r.UserAgent(),

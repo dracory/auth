@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	authtypes "github.com/dracory/auth/types"
+	"github.com/dracory/auth/utils"
 	"github.com/dracory/csrf"
 	"github.com/dracory/req"
 )
@@ -83,6 +85,17 @@ func NewUsernameAndPasswordAuth(config ConfigUsernameAndPassword) (*Auth, error)
 	auth.funcUserFindByAuthToken = config.FuncUserFindByAuthToken
 	auth.funcUserFindByUsername = config.FuncUserFindByUsername
 	auth.funcUserStoreAuthToken = config.FuncUserStoreAuthToken
+	auth.passwordStrength = config.PasswordStrength
+	if auth.passwordStrength == nil {
+		auth.passwordStrength = &authtypes.PasswordStrengthConfig{
+			MinLength:         8,
+			RequireUppercase:  true,
+			RequireLowercase:  true,
+			RequireDigit:      true,
+			RequireSpecial:    true,
+			ForbidCommonWords: true,
+		}
+	}
 
 	// If no user defined layout is set, use default
 	if auth.funcLayout == nil {
@@ -121,7 +134,7 @@ func NewUsernameAndPasswordAuth(config ConfigUsernameAndPassword) (*Auth, error)
 			lockoutDuration = 15 * time.Minute // Default: 15 minutes
 		}
 
-		auth.rateLimiter = NewInMemoryRateLimiter(maxAttempts, lockoutDuration, lockoutDuration)
+		auth.rateLimiter = utils.NewInMemoryRateLimiter(maxAttempts, lockoutDuration, lockoutDuration)
 	}
 
 	// Initialize CSRF protection

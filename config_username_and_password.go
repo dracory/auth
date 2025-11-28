@@ -3,6 +3,8 @@ package auth
 import (
 	"context"
 	"time"
+
+	authtypes "github.com/dracory/auth/types"
 )
 
 // Config defines the available configuration options for authentication
@@ -39,6 +41,7 @@ type ConfigUsernameAndPassword struct {
 	FuncUserLogout                   func(ctx context.Context, userID string, options UserAuthOptions) (err error)
 	FuncUserPasswordChange           func(ctx context.Context, username string, newPassword string, options UserAuthOptions) (err error)
 	FuncUserRegister                 func(ctx context.Context, username string, password string, first_name string, last_name string, options UserAuthOptions) (err error)
+	PasswordStrength                 *authtypes.PasswordStrengthConfig
 	LabelUsername                    string
 	// ===== END: username(email) and password options
 }
