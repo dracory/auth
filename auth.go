@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/dracory/auth/utils"
 )
 
 type UserAuthOptions struct {
@@ -40,6 +42,7 @@ type Auth struct {
 	funcUserPasswordChange           func(ctx context.Context, username string, newPassword string, options UserAuthOptions) (err error)
 	funcUserRegister                 func(ctx context.Context, username string, password string, first_name string, last_name string, options UserAuthOptions) (err error)
 	funcUserFindByUsername           func(ctx context.Context, username string, first_name string, last_name string, options UserAuthOptions) (userID string, err error)
+	passwordStrength                 *PasswordStrengthConfig
 	// ===== END: username(email) and password options
 
 	// ===== START: passwordless options
@@ -54,7 +57,7 @@ type Auth struct {
 	// ===== START: rate limiting
 	disableRateLimit   bool
 	funcCheckRateLimit func(ip string, endpoint string) (allowed bool, retryAfter time.Duration, err error)
-	rateLimiter        *InMemoryRateLimiter
+	rateLimiter        *utils.InMemoryRateLimiter
 	// ===== END: rate limiting
 
 	// ===== START: CSRF Protection

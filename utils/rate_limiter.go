@@ -1,4 +1,4 @@
-package auth
+package utils
 
 import (
 	"sync"
@@ -56,11 +56,6 @@ func (r *InMemoryRateLimiter) Check(ip string, endpoint string) RateLimitResult 
 		lockedUntil: time.Time{},
 	})
 	record := recordInterface.(*requestRecord)
-
-	// Use a mutex per record to avoid race conditions
-	// Note: In production, consider using sync.Map with more sophisticated locking
-	// For now, we'll use a simple approach with the understanding that
-	// sync.Map provides some level of concurrent safety
 
 	// Check if currently locked out
 	if !record.lockedUntil.IsZero() && now.Before(record.lockedUntil) {
@@ -143,17 +138,4 @@ func (r *InMemoryRateLimiter) cleanupOldRecords() {
 func (r *InMemoryRateLimiter) Stop() {
 	close(r.stopCleanup)
 	r.cleanupWaitGroup.Wait()
-}
-
-// DefaultRateLimiter is a package-level default rate limiter instance
-var defaultRateLimiter *InMemoryRateLimiter
-var defaultRateLimiterOnce sync.Once
-
-// GetDefaultRateLimiter returns the singleton default rate limiter
-func GetDefaultRateLimiter() *InMemoryRateLimiter {
-	defaultRateLimiterOnce.Do(func() {
-		// Default: 5 attempts per 15 minutes with 15 minute lockout
-		defaultRateLimiter = NewInMemoryRateLimiter(5, 15*time.Minute, 15*time.Minute)
-	})
-	return defaultRateLimiter
 }

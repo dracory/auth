@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"time"
+
+	"github.com/dracory/auth/utils"
 )
 
 func NewPasswordlessAuth(config ConfigPasswordless) (*Auth, error) {
@@ -110,7 +112,7 @@ func NewPasswordlessAuth(config ConfigPasswordless) (*Auth, error) {
 			lockoutDuration = 15 * time.Minute // Default: 15 minutes
 		}
 
-		auth.rateLimiter = NewInMemoryRateLimiter(maxAttempts, lockoutDuration, lockoutDuration)
+		auth.rateLimiter = utils.NewInMemoryRateLimiter(maxAttempts, lockoutDuration, lockoutDuration)
 	}
 
 	return auth, nil
