@@ -6,7 +6,6 @@ import (
 	"log/slog"
 
 	authutils "github.com/dracory/auth/utils"
-	"github.com/dracory/str"
 )
 
 type RegisterUsernameAndPasswordResponse struct {
@@ -63,10 +62,7 @@ func (a Auth) RegisterWithUsernameAndPassword(ctx context.Context, email string,
 		return response
 	}
 
-	verificationCode, errRandom := str.RandomFromGamma(
-		authutils.LoginCodeLength(a.disableRateLimit),
-		authutils.LoginCodeGamma(a.disableRateLimit),
-	)
+	verificationCode, errRandom := authutils.GenerateVerificationCode(a.disableRateLimit)
 	if errRandom != nil {
 		response.ErrorMessage = "Error generating random string"
 		return response

@@ -9,7 +9,6 @@ import (
 	"github.com/dracory/api"
 	authutils "github.com/dracory/auth/utils"
 	"github.com/dracory/req"
-	"github.com/dracory/str"
 )
 
 func (a Auth) apiRegister(w http.ResponseWriter, r *http.Request) {
@@ -56,10 +55,7 @@ func (a Auth) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	verificationCode, errRandomFromGamma := str.RandomFromGamma(
-		authutils.LoginCodeLength(a.disableRateLimit),
-		authutils.LoginCodeGamma(a.disableRateLimit),
-	)
+	verificationCode, errRandomFromGamma := authutils.GenerateVerificationCode(a.disableRateLimit)
 
 	if errRandomFromGamma != nil {
 		api.Respond(w, r, api.Error("Error generating random string"))

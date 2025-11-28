@@ -1,5 +1,7 @@
 package utils
 
+import "github.com/dracory/str"
+
 // LoginCodeLength returns the length of verification/login codes.
 // extraHardened should be false in normal operation; it is only set to true
 // when rate limiting is explicitly disabled (which should never happen in
@@ -32,4 +34,15 @@ func LoginCodeGamma(extraHardened bool) string {
 
 	// Default gamma from consts.go.
 	return "BCDFGHJKLMNPQRSTVXYZ"
+}
+
+// GenerateVerificationCode generates a random verification code using the
+// configured length and gamma.
+func GenerateVerificationCode(extraHardened bool) (string, error) {
+	return str.RandomFromGamma(LoginCodeLength(extraHardened), LoginCodeGamma(extraHardened))
+}
+
+// GeneratePasswordResetToken generates a random password reset token.
+func GeneratePasswordResetToken() (string, error) {
+	return str.RandomFromGamma(32, "BCDFGHJKLMNPQRSTVXYZ")
 }

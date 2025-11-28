@@ -29,35 +29,6 @@ The `dracory/auth` library demonstrates **solid engineering fundamentals** with 
 
 ## 🔴 Critical Security Issues
 
-### 2. **Session Fixation Vulnerability** - MEDIUM
-
-**Severity:** 🟡 **MEDIUM**  
-**Impact:** Session hijacking
-
-**Problem:**
-Tokens are generated client-side in passwordless flow:
-
-```go
-// api_login.go:33 - Passwordless flow
-verificationCode := req.GetStringTrimmed(r, "verification_code")
-// ❌ Client provides the code, not server-generated
-```
-
-**Attack:**
-1. Attacker generates code "ABCD1234"
-2. Attacker sends to victim: "Your code is ABCD1234"
-3. Victim uses code, gets authenticated
-4. Attacker uses same code (if not invalidated properly)
-
-**Recommendation:**
-```go
-// Server generates code, not client
-verificationCode, err := str.RandomFromGamma(LoginCodeLength, LoginCodeGamma)
-if err != nil {
-    api.Respond(w, r, api.Error("Failed to generate code"))
-    return
-}
-```
 
 ---
 

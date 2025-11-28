@@ -8,7 +8,6 @@ import (
 	"github.com/dracory/api"
 	authutils "github.com/dracory/auth/utils"
 	"github.com/dracory/req"
-	"github.com/dracory/str"
 )
 
 func (a Auth) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
@@ -79,7 +78,7 @@ func (a Auth) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 
-	token, errRandomFromGamma := str.RandomFromGamma(32, "BCDFGHJKLMNPQRSTVXYZ")
+	token, errRandomFromGamma := authutils.GeneratePasswordResetToken()
 
 	if errRandomFromGamma != nil {
 		api.Respond(w, r, api.Error("Error generating random string"))

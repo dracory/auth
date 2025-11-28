@@ -41,7 +41,12 @@ func (a Auth) apiLoginPasswordless(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	verificationCode := req.GetStringTrimmed(r, "verification_code")
+	// Server generates code, not client
+	verificationCode, err := authutils.GenerateVerificationCode(a.disableRateLimit)
+	if err != nil {
+		api.Respond(w, r, api.Error("Failed to generate code"))
+		return
+	}
 
 	errTempTokenSave := a.funcTemporaryKeySet(verificationCode, email, 3600)
 
