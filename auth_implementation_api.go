@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/dracory/api"
-	apilogin "github.com/dracory/auth/internal/api"
 	"github.com/dracory/auth/internal/api/api_login"
+	"github.com/dracory/auth/internal/api/api_login_code_verify"
 	"github.com/dracory/auth/internal/api/api_logout"
 	"github.com/dracory/auth/internal/api/api_password_reset"
 	"github.com/dracory/auth/internal/api/api_password_restore"
@@ -138,25 +138,13 @@ func (a authImplementation) apiPasswordReset(w http.ResponseWriter, r *http.Requ
 }
 
 func (a authImplementation) apiLoginCodeVerify(w http.ResponseWriter, r *http.Request) {
-	deps := apilogin.LoginCodeVerifyDeps{
+	api_login_code_verify.ApiLoginCodeVerify(w, r, api_login_code_verify.Dependencies{
 		DisableRateLimit: a.disableRateLimit,
 		TemporaryKeyGet:  a.funcTemporaryKeyGet,
-	}
-
-	result, perr := apilogin.LoginCodeVerify(r.Context(), r, deps)
-	if perr != nil {
-		switch perr.Code {
-		case apilogin.LoginCodeVerifyErrorCodeValidation,
-			apilogin.LoginCodeVerifyErrorCodeCodeExpired:
-			api.Respond(w, r, api.Error(perr.Message))
-			return
-		default:
-			api.Respond(w, r, api.Error("Verification code has expired"))
-			return
-		}
-	}
-
-	a.authenticateViaUsername(w, r, result.Email, "", "")
+		AuthenticateViaUsername: func(w http.ResponseWriter, r *http.Request, email string) {
+			a.authenticateViaUsername(w, r, email, "", "")
+		},
+	})
 }
 
 func (a authImplementation) apiRegisterCodeVerify(w http.ResponseWriter, r *http.Request) {
