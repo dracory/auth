@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"net/mail"
 
 	"github.com/dracory/str"
@@ -12,7 +13,7 @@ type LoginUsernameAndPasswordResponse struct {
 	Token          string
 }
 
-func (a Auth) LoginWithUsernameAndPassword(email string, password string, options UserAuthOptions) (response LoginUsernameAndPasswordResponse) {
+func (a Auth) LoginWithUsernameAndPassword(ctx context.Context, email string, password string, options UserAuthOptions) (response LoginUsernameAndPasswordResponse) {
 	if email == "" {
 		response.ErrorMessage = "Email is required field"
 		return response
@@ -28,7 +29,7 @@ func (a Auth) LoginWithUsernameAndPassword(email string, password string, option
 		return response
 	}
 
-	userID, err := a.funcUserLogin(email, password, options)
+	userID, err := a.funcUserLogin(ctx, email, password, options)
 
 	if err != nil {
 		response.ErrorMessage = "authentication failed. " + err.Error()
@@ -46,7 +47,7 @@ func (a Auth) LoginWithUsernameAndPassword(email string, password string, option
 		return response
 	}
 
-	errSession := a.funcUserStoreAuthToken(token, userID, options)
+	errSession := a.funcUserStoreAuthToken(ctx, token, userID, options)
 
 	if errSession != nil {
 		response.ErrorMessage = "token store failed. " + errSession.Error()

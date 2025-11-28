@@ -126,13 +126,13 @@ func dashboardHandler(w http.ResponseWriter, r *http.Request) {
 
 ```go
 // Email sending
-func emailSend(email string, subject string, body string) error {
+func emailSend(ctx context.Context, email string, subject string, body string) error {
     // Use your email service (SendGrid, AWS SES, SMTP, etc.)
     return yourEmailService.Send(email, subject, body)
 }
 
 // User lookup by email
-func userFindByEmail(email string, options auth.UserAuthOptions) (userID string, err error) {
+func userFindByEmail(ctx context.Context, email string, options auth.UserAuthOptions) (userID string, err error) {
     // Query your database
     user, err := db.Query("SELECT id FROM users WHERE email = ?", email)
     if err != nil {
@@ -142,7 +142,7 @@ func userFindByEmail(email string, options auth.UserAuthOptions) (userID string,
 }
 
 // User registration (optional, if EnableRegistration is true)
-func userRegister(email string, firstName string, lastName string, options auth.UserAuthOptions) error {
+func userRegister(ctx context.Context, email string, firstName string, lastName string, options auth.UserAuthOptions) error {
     // Insert into your database
     _, err := db.Exec("INSERT INTO users (email, first_name, last_name) VALUES (?, ?, ?)", 
         email, firstName, lastName)
@@ -150,19 +150,19 @@ func userRegister(email string, firstName string, lastName string, options auth.
 }
 
 // User logout
-func userLogout(userID string, options auth.UserAuthOptions) error {
+func userLogout(ctx context.Context, userID string, options auth.UserAuthOptions) error {
     // Remove token from your session/cache store
     return sessionStore.Delete("auth_token_" + userID)
 }
 
 // Token storage
-func userStoreAuthToken(token string, userID string, options auth.UserAuthOptions) error {
+func userStoreAuthToken(ctx context.Context, token string, userID string, options auth.UserAuthOptions) error {
     // Store in session/cache with expiration (e.g., 2 hours)
     return sessionStore.Set("auth_token_"+token, userID, 2*time.Hour)
 }
 
 // Token lookup
-func userFindByAuthToken(token string, options auth.UserAuthOptions) (userID string, err error) {
+func userFindByAuthToken(ctx context.Context, token string, options auth.UserAuthOptions) (userID string, err error) {
     // Retrieve from session/cache
     userID, err = sessionStore.Get("auth_token_" + token)
     return userID, err
@@ -239,7 +239,7 @@ http.ListenAndServe(":8080", mux)
 
 ```go
 // User login with password verification
-func userLogin(username string, password string, options auth.UserAuthOptions) (userID string, err error) {
+func userLogin(ctx context.Context, username string, password string, options auth.UserAuthOptions) (userID string, err error) {
     // Query database and verify password (use bcrypt or similar)
     user, err := db.Query("SELECT id, password_hash FROM users WHERE email = ?", username)
     if err != nil {
@@ -254,7 +254,7 @@ func userLogin(username string, password string, options auth.UserAuthOptions) (
 }
 
 // User registration with password
-func userRegister(username string, password string, firstName string, lastName string, options auth.UserAuthOptions) error {
+func userRegister(ctx context.Context, username string, password string, firstName string, lastName string, options auth.UserAuthOptions) error {
     // Hash password
     hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
     if err != nil {
@@ -268,7 +268,7 @@ func userRegister(username string, password string, firstName string, lastName s
 }
 
 // User lookup by username
-func userFindByUsername(username string, firstName string, lastName string, options auth.UserAuthOptions) (userID string, err error) {
+func userFindByUsername(ctx context.Context, username string, firstName string, lastName string, options auth.UserAuthOptions) (userID string, err error) {
     // Query database (firstName and lastName used for password reset verification)
     user, err := db.Query("SELECT id FROM users WHERE email = ? AND first_name = ? AND last_name = ?",
         username, firstName, lastName)
@@ -279,7 +279,7 @@ func userFindByUsername(username string, firstName string, lastName string, opti
 }
 
 // Password change
-func userPasswordChange(username string, newPassword string, options auth.UserAuthOptions) error {
+func userPasswordChange(ctx context.Context, username string, newPassword string, options auth.UserAuthOptions) error {
     // Hash new password
     hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
     if err != nil {
@@ -393,7 +393,7 @@ func productsHandler(w http.ResponseWriter, r *http.Request) {
 ### Custom Email Templates
 
 ```go
-func customLoginEmailTemplate(email string, code string, options auth.UserAuthOptions) string {
+func customLoginEmailTemplate(ctx context.Context, email string, code string, options auth.UserAuthOptions) string {
     return fmt.Sprintf(`
         <h1>Your Login Code</h1>
         <p>Hi %s,</p>
@@ -492,7 +492,7 @@ authInstance, err := auth.NewUsernameAndPasswordAuth(auth.ConfigUsernameAndPassw
 
 ## 📖 UserAuthOptions
 
-All callback functions receive `UserAuthOptions` with request context:
+All callback functions are context-aware and receive both a `ctx context.Context` and a `UserAuthOptions` value with request metadata:
 
 ```go
 type UserAuthOptions struct {
@@ -501,10 +501,10 @@ type UserAuthOptions struct {
 }
 ```
 
-Use this for audit logging, security checks, or analytics:
+Use this together with `ctx` for audit logging, security checks, or analytics:
 
 ```go
-func userLogin(username string, password string, options auth.UserAuthOptions) (userID string, err error) {
+func userLogin(ctx context.Context, username string, password string, options auth.UserAuthOptions) (userID string, err error) {
     // Log login attempt
     log.Printf("Login attempt from IP: %s, UserAgent: %s", options.UserIp, options.UserAgent)
     

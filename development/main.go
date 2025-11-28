@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"net/smtp"
@@ -9,12 +10,53 @@ import (
 	"time"
 
 	"github.com/darkoatanasovski/htmltags"
+	"github.com/dracory/auth"
 	"github.com/dracory/auth/development/scribble"
 	"github.com/dracory/env"
 	"github.com/jordan-wright/email"
-
-	"github.com/dracory/auth"
 )
+
+// ctx-aware wrapper callbacks adapting existing dev helpers to the new ctx-first signatures
+
+func emailSendWithContext(ctx context.Context, userID string, subject string, body string) error {
+	return emailSend(userID, subject, body)
+}
+
+func userFindByAuthTokenWithContext(ctx context.Context, sessionID string, options auth.UserAuthOptions) (string, error) {
+	return userFindByAuthToken(sessionID, options)
+}
+
+func userFindByUsernameWithContext(ctx context.Context, username string, firstName string, lastName string, options auth.UserAuthOptions) (string, error) {
+	return userFindByUsername(username, firstName, lastName, options)
+}
+
+func userLoginWithContext(ctx context.Context, username string, password string, options auth.UserAuthOptions) (string, error) {
+	return userLogin(username, password, options)
+}
+
+func userLogoutWithContext(ctx context.Context, userID string, options auth.UserAuthOptions) error {
+	return userLogout(userID, options)
+}
+
+func userPasswordChangeWithContext(ctx context.Context, username string, newPassword string, options auth.UserAuthOptions) error {
+	return userPasswordChange(username, newPassword, options)
+}
+
+func userRegisterWithContext(ctx context.Context, username string, password string, firstName string, lastName string, options auth.UserAuthOptions) error {
+	return userRegister(username, password, firstName, lastName, options)
+}
+
+func userStoreAuthTokenWithContext(ctx context.Context, sessionID string, userID string, options auth.UserAuthOptions) error {
+	return userStoreAuthToken(sessionID, userID, options)
+}
+
+func passwordlessUserFindByEmailWithContext(ctx context.Context, email string, options auth.UserAuthOptions) (string, error) {
+	return passwordlessUserFindByEmail(email, options)
+}
+
+func passwordlessUserRegisterWithContext(ctx context.Context, email string, firstName string, lastName string, options auth.UserAuthOptions) error {
+	return passwordlessUserRegister(email, firstName, lastName, options)
+}
 
 func main() {
 	os.Remove(env.GetString("DB_DATABASE")) // remove database
@@ -32,14 +74,14 @@ func main() {
 	authUsernameAndPassword, errUsernameAndPassword := auth.NewUsernameAndPasswordAuth(auth.ConfigUsernameAndPassword{
 		Endpoint:                env.GetString("APP_URL") + "/auth-username-and-password",
 		UrlRedirectOnSuccess:    "/user/dashboard-after-username-and-password",
-		FuncEmailSend:           emailSend,
-		FuncUserFindByAuthToken: userFindByAuthToken,
-		FuncUserFindByUsername:  userFindByUsername,
-		FuncUserLogin:           userLogin,
-		FuncUserLogout:          userLogout,
-		FuncUserPasswordChange:  userPasswordChange,
-		FuncUserRegister:        userRegister,
-		FuncUserStoreAuthToken:  userStoreAuthToken,
+		FuncEmailSend:           emailSendWithContext,
+		FuncUserFindByAuthToken: userFindByAuthTokenWithContext,
+		FuncUserFindByUsername:  userFindByUsernameWithContext,
+		FuncUserLogin:           userLoginWithContext,
+		FuncUserLogout:          userLogoutWithContext,
+		FuncUserPasswordChange:  userPasswordChangeWithContext,
+		FuncUserRegister:        userRegisterWithContext,
+		FuncUserStoreAuthToken:  userStoreAuthTokenWithContext,
 		FuncTemporaryKeyGet:     temporaryKeyGet,
 		FuncTemporaryKeySet:     temporaryKeySet,
 		UseCookies:              true,
@@ -57,14 +99,14 @@ func main() {
 
 		EnableRegistration: true,
 
-		FuncEmailSend:           emailSend,
+		FuncEmailSend:           emailSendWithContext,
 		FuncTemporaryKeyGet:     temporaryKeyGet,
 		FuncTemporaryKeySet:     temporaryKeySet,
-		FuncUserFindByEmail:     passwordlessUserFindByEmail,
-		FuncUserFindByAuthToken: userFindByAuthToken,
-		FuncUserLogout:          userLogout,
-		FuncUserRegister:        passwordlessUserRegister,
-		FuncUserStoreAuthToken:  userStoreAuthToken,
+		FuncUserFindByEmail:     passwordlessUserFindByEmailWithContext,
+		FuncUserFindByAuthToken: userFindByAuthTokenWithContext,
+		FuncUserLogout:          userLogoutWithContext,
+		FuncUserRegister:        passwordlessUserRegisterWithContext,
+		FuncUserStoreAuthToken:  userStoreAuthTokenWithContext,
 
 		UseCookies: true,
 	})

@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/mail"
@@ -15,7 +16,7 @@ type RegisterUsernameAndPasswordResponse struct {
 	Token          string
 }
 
-func (a Auth) RegisterWithUsernameAndPassword(email string, password string, firstName string, lastName string, options UserAuthOptions) (response RegisterUsernameAndPasswordResponse) {
+func (a Auth) RegisterWithUsernameAndPassword(ctx context.Context, email string, password string, firstName string, lastName string, options UserAuthOptions) (response RegisterUsernameAndPasswordResponse) {
 	if firstName == "" {
 		response.ErrorMessage = "First name is required field"
 		return response
@@ -47,7 +48,7 @@ func (a Auth) RegisterWithUsernameAndPassword(email string, password string, fir
 	}
 
 	if !a.enableVerification {
-		err := a.funcUserRegister(email, password, firstName, lastName, options)
+		err := a.funcUserRegister(ctx, email, password, firstName, lastName, options)
 
 		if err != nil {
 			response.ErrorMessage = "registration failed. " + err.Error()
@@ -86,9 +87,9 @@ func (a Auth) RegisterWithUsernameAndPassword(email string, password string, fir
 		return response
 	}
 
-	emailContent := a.funcEmailTemplateRegisterCode(email, verificationCode, options)
+	emailContent := a.funcEmailTemplateRegisterCode(ctx, email, verificationCode, options)
 
-	errEmailSent := a.funcEmailSend(email, "Registration Code", emailContent)
+	errEmailSent := a.funcEmailSend(ctx, email, "Registration Code", emailContent)
 
 	if errEmailSent != nil {
 		log.Println(errEmailSent)

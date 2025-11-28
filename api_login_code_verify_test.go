@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"errors"
 	"net/url"
 	"testing"
@@ -70,7 +71,7 @@ func TestApiLoginCodeVerifyAuthenticationError(t *testing.T) {
 		return "user@example.com", nil
 	}
 
-	authInstance.passwordlessFuncUserFindByEmail = func(email string, options UserAuthOptions) (userID string, err error) {
+	authInstance.passwordlessFuncUserFindByEmail = func(ctx context.Context, email string, options UserAuthOptions) (userID string, err error) {
 		return "", errors.New("db error")
 	}
 
@@ -91,7 +92,7 @@ func TestApiLoginCodeVerifyUserNotFound(t *testing.T) {
 		return "user@example.com", nil
 	}
 
-	authInstance.passwordlessFuncUserFindByEmail = func(email string, options UserAuthOptions) (userID string, err error) {
+	authInstance.passwordlessFuncUserFindByEmail = func(ctx context.Context, email string, options UserAuthOptions) (userID string, err error) {
 		return "", nil
 	}
 
@@ -112,11 +113,11 @@ func TestApiLoginCodeVerifyTokenStoreError(t *testing.T) {
 		return "user@example.com", nil
 	}
 
-	authInstance.passwordlessFuncUserFindByEmail = func(email string, options UserAuthOptions) (userID string, err error) {
+	authInstance.passwordlessFuncUserFindByEmail = func(ctx context.Context, email string, options UserAuthOptions) (userID string, err error) {
 		return "user123", nil
 	}
 
-	authInstance.funcUserStoreAuthToken = func(sessionID string, userID string, options UserAuthOptions) (err error) {
+	authInstance.funcUserStoreAuthToken = func(ctx context.Context, token string, userID string, options UserAuthOptions) error {
 		return errors.New("db error")
 	}
 
@@ -137,11 +138,11 @@ func TestApiLoginCodeVerifySuccess(t *testing.T) {
 		return "user@example.com", nil
 	}
 
-	authInstance.passwordlessFuncUserFindByEmail = func(email string, options UserAuthOptions) (userID string, err error) {
+	authInstance.passwordlessFuncUserFindByEmail = func(ctx context.Context, email string, options UserAuthOptions) (userID string, err error) {
 		return "user123", nil
 	}
 
-	authInstance.funcUserStoreAuthToken = func(sessionID string, userID string, options UserAuthOptions) (err error) {
+	authInstance.funcUserStoreAuthToken = func(ctx context.Context, token string, userID string, options UserAuthOptions) error {
 		return nil
 	}
 

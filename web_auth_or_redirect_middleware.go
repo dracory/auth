@@ -25,7 +25,7 @@ func (a Auth) WebAuthOrRedirectMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		userID, err := a.funcUserFindByAuthToken(authToken, UserAuthOptions{
+		userID, err := a.funcUserFindByAuthToken(r.Context(), authToken, UserAuthOptions{
 			UserIp:    req.GetIP(r),
 			UserAgent: r.UserAgent(),
 		})

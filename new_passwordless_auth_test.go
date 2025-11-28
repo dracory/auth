@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"testing"
 )
 
@@ -70,11 +71,13 @@ func TestNewPasswordlessAuth_FuncUserFindByAuthTokenIsRequired(t *testing.T) {
 
 func TestNewPasswordlessAuth_FuncUserFindByEmailIsRequired(t *testing.T) {
 	_, err := NewPasswordlessAuth(ConfigPasswordless{
-		Endpoint:                "/auth",
-		UrlRedirectOnSuccess:    "/user",
-		FuncTemporaryKeyGet:     func(key string) (value string, err error) { return "", nil },
-		FuncTemporaryKeySet:     func(key, value string, expiresSeconds int) (err error) { return nil },
-		FuncUserFindByAuthToken: func(sessionID string, options UserAuthOptions) (userID string, err error) { return "", nil },
+		Endpoint:             "/auth",
+		UrlRedirectOnSuccess: "/user",
+		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
+		FuncTemporaryKeySet:  func(key, value string, expiresSeconds int) (err error) { return nil },
+		FuncUserFindByAuthToken: func(ctx context.Context, sessionID string, options UserAuthOptions) (userID string, err error) {
+			return "", nil
+		},
 	})
 	if err == nil {
 		t.Fatal("Error SHOULD NOT BE NULL")
@@ -86,12 +89,16 @@ func TestNewPasswordlessAuth_FuncUserFindByEmailIsRequired(t *testing.T) {
 
 func TestNewPasswordlessAuth_FuncUserLogoutIsRequired(t *testing.T) {
 	_, err := NewPasswordlessAuth(ConfigPasswordless{
-		Endpoint:                "/auth",
-		UrlRedirectOnSuccess:    "/user",
-		FuncTemporaryKeyGet:     func(key string) (value string, err error) { return "", nil },
-		FuncTemporaryKeySet:     func(key, value string, expiresSeconds int) (err error) { return nil },
-		FuncUserFindByAuthToken: func(sessionID string, options UserAuthOptions) (userID string, err error) { return "", nil },
-		FuncUserFindByEmail:     func(email string, options UserAuthOptions) (userID string, err error) { return "", nil },
+		Endpoint:             "/auth",
+		UrlRedirectOnSuccess: "/user",
+		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
+		FuncTemporaryKeySet:  func(key, value string, expiresSeconds int) (err error) { return nil },
+		FuncUserFindByAuthToken: func(ctx context.Context, sessionID string, options UserAuthOptions) (userID string, err error) {
+			return "", nil
+		},
+		FuncUserFindByEmail: func(ctx context.Context, email string, options UserAuthOptions) (userID string, err error) {
+			return "", nil
+		},
 	})
 	if err == nil {
 		t.Fatal("Error SHOULD NOT BE NULL")
@@ -103,13 +110,17 @@ func TestNewPasswordlessAuth_FuncUserLogoutIsRequired(t *testing.T) {
 
 func TestNewPasswordlessAuth_FuncUserStoreTokenFuncUserStoreTokenIsRequired(t *testing.T) {
 	_, err := NewPasswordlessAuth(ConfigPasswordless{
-		Endpoint:                "/auth",
-		UrlRedirectOnSuccess:    "/user",
-		FuncTemporaryKeyGet:     func(key string) (value string, err error) { return "", nil },
-		FuncTemporaryKeySet:     func(key, value string, expiresSeconds int) (err error) { return nil },
-		FuncUserFindByAuthToken: func(sessionID string, options UserAuthOptions) (userID string, err error) { return "", nil },
-		FuncUserFindByEmail:     func(email string, options UserAuthOptions) (userID string, err error) { return "", nil },
-		FuncUserLogout:          func(userID string, options UserAuthOptions) (err error) { return nil },
+		Endpoint:             "/auth",
+		UrlRedirectOnSuccess: "/user",
+		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
+		FuncTemporaryKeySet:  func(key, value string, expiresSeconds int) (err error) { return nil },
+		FuncUserFindByAuthToken: func(ctx context.Context, sessionID string, options UserAuthOptions) (userID string, err error) {
+			return "", nil
+		},
+		FuncUserFindByEmail: func(ctx context.Context, email string, options UserAuthOptions) (userID string, err error) {
+			return "", nil
+		},
+		FuncUserLogout: func(ctx context.Context, userID string, options UserAuthOptions) (err error) { return nil },
 	})
 	if err == nil {
 		t.Fatal("Error SHOULD NOT BE NULL")
@@ -121,14 +132,18 @@ func TestNewPasswordlessAuth_FuncUserStoreTokenFuncUserStoreTokenIsRequired(t *t
 
 func TestNewPasswordlessAuth_FuncEmailSendIsRequired(t *testing.T) {
 	_, err := NewPasswordlessAuth(ConfigPasswordless{
-		Endpoint:                "/auth",
-		UrlRedirectOnSuccess:    "/user",
-		FuncTemporaryKeyGet:     func(key string) (value string, err error) { return "", nil },
-		FuncTemporaryKeySet:     func(key, value string, expiresSeconds int) (err error) { return nil },
-		FuncUserFindByAuthToken: func(sessionID string, options UserAuthOptions) (userID string, err error) { return "", nil },
-		FuncUserFindByEmail:     func(email string, options UserAuthOptions) (userID string, err error) { return "", nil },
-		FuncUserLogout:          func(userID string, options UserAuthOptions) (err error) { return nil },
-		FuncUserStoreAuthToken:  func(sessionID, userID string, options UserAuthOptions) error { return nil },
+		Endpoint:             "/auth",
+		UrlRedirectOnSuccess: "/user",
+		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
+		FuncTemporaryKeySet:  func(key, value string, expiresSeconds int) (err error) { return nil },
+		FuncUserFindByAuthToken: func(ctx context.Context, sessionID string, options UserAuthOptions) (userID string, err error) {
+			return "", nil
+		},
+		FuncUserFindByEmail: func(ctx context.Context, email string, options UserAuthOptions) (userID string, err error) {
+			return "", nil
+		},
+		FuncUserLogout:         func(ctx context.Context, userID string, options UserAuthOptions) (err error) { return nil },
+		FuncUserStoreAuthToken: func(ctx context.Context, sessionID, userID string, options UserAuthOptions) error { return nil },
 	})
 	if err == nil {
 		t.Fatal("Error SHOULD NOT BE NULL")
@@ -140,15 +155,19 @@ func TestNewPasswordlessAuth_FuncEmailSendIsRequired(t *testing.T) {
 
 func TestNewPasswordlessAuth_UseCookiesAndLocalStorageCannotBeBothFalse(t *testing.T) {
 	_, err := NewPasswordlessAuth(ConfigPasswordless{
-		Endpoint:                "/auth",
-		UrlRedirectOnSuccess:    "/user",
-		FuncTemporaryKeyGet:     func(key string) (value string, err error) { return "", nil },
-		FuncTemporaryKeySet:     func(key, value string, expiresSeconds int) (err error) { return nil },
-		FuncUserFindByAuthToken: func(sessionID string, options UserAuthOptions) (userID string, err error) { return "", nil },
-		FuncUserFindByEmail:     func(email string, options UserAuthOptions) (userID string, err error) { return "", nil },
-		FuncUserLogout:          func(userID string, options UserAuthOptions) (err error) { return nil },
-		FuncUserStoreAuthToken:  func(sessionID, userID string, options UserAuthOptions) error { return nil },
-		FuncEmailSend:           func(email, emailSubject, emailBody string) (err error) { return nil },
+		Endpoint:             "/auth",
+		UrlRedirectOnSuccess: "/user",
+		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
+		FuncTemporaryKeySet:  func(key, value string, expiresSeconds int) (err error) { return nil },
+		FuncUserFindByAuthToken: func(ctx context.Context, sessionID string, options UserAuthOptions) (userID string, err error) {
+			return "", nil
+		},
+		FuncUserFindByEmail: func(ctx context.Context, email string, options UserAuthOptions) (userID string, err error) {
+			return "", nil
+		},
+		FuncUserLogout:         func(ctx context.Context, userID string, options UserAuthOptions) (err error) { return nil },
+		FuncUserStoreAuthToken: func(ctx context.Context, sessionID, userID string, options UserAuthOptions) error { return nil },
+		FuncEmailSend:          func(ctx context.Context, email, emailSubject, emailBody string) (err error) { return nil },
 	})
 	if err == nil {
 		t.Fatal("Error SHOULD NOT BE NULL")
@@ -160,17 +179,21 @@ func TestNewPasswordlessAuth_UseCookiesAndLocalStorageCannotBeBothFalse(t *testi
 
 func TestNewPasswordlessAuth_UseCookiesAndLocalStorageCannotBeBothTrue(t *testing.T) {
 	_, err := NewPasswordlessAuth(ConfigPasswordless{
-		Endpoint:                "/auth",
-		UrlRedirectOnSuccess:    "/user",
-		FuncTemporaryKeyGet:     func(key string) (value string, err error) { return "", nil },
-		FuncTemporaryKeySet:     func(key, value string, expiresSeconds int) (err error) { return nil },
-		FuncUserFindByAuthToken: func(sessionID string, options UserAuthOptions) (userID string, err error) { return "", nil },
-		FuncUserFindByEmail:     func(email string, options UserAuthOptions) (userID string, err error) { return "", nil },
-		FuncUserLogout:          func(userID string, options UserAuthOptions) (err error) { return nil },
-		FuncUserStoreAuthToken:  func(sessionID, userID string, options UserAuthOptions) error { return nil },
-		FuncEmailSend:           func(email, emailSubject, emailBody string) (err error) { return nil },
-		UseCookies:              true,
-		UseLocalStorage:         true,
+		Endpoint:             "/auth",
+		UrlRedirectOnSuccess: "/user",
+		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
+		FuncTemporaryKeySet:  func(key, value string, expiresSeconds int) (err error) { return nil },
+		FuncUserFindByAuthToken: func(ctx context.Context, sessionID string, options UserAuthOptions) (userID string, err error) {
+			return "", nil
+		},
+		FuncUserFindByEmail: func(ctx context.Context, email string, options UserAuthOptions) (userID string, err error) {
+			return "", nil
+		},
+		FuncUserLogout:         func(ctx context.Context, userID string, options UserAuthOptions) (err error) { return nil },
+		FuncUserStoreAuthToken: func(ctx context.Context, sessionID, userID string, options UserAuthOptions) error { return nil },
+		FuncEmailSend:          func(ctx context.Context, email, emailSubject, emailBody string) (err error) { return nil },
+		UseCookies:             true,
+		UseLocalStorage:        true,
 	})
 	if err == nil {
 		t.Fatal("Error SHOULD NOT BE NULL")
@@ -182,17 +205,21 @@ func TestNewPasswordlessAuth_UseCookiesAndLocalStorageCannotBeBothTrue(t *testin
 
 func TestNewPasswordlessAuth_UseCookiesAndLocalStorageCannotBeBothTruee(t *testing.T) {
 	auth, err := NewPasswordlessAuth(ConfigPasswordless{
-		Endpoint:                "/auth",
-		UrlRedirectOnSuccess:    "/user",
-		FuncTemporaryKeyGet:     func(key string) (value string, err error) { return "", nil },
-		FuncTemporaryKeySet:     func(key, value string, expiresSeconds int) (err error) { return nil },
-		FuncUserFindByAuthToken: func(sessionID string, options UserAuthOptions) (userID string, err error) { return "", nil },
-		FuncUserFindByEmail:     func(email string, options UserAuthOptions) (userID string, err error) { return "", nil },
-		FuncUserLogout:          func(userID string, options UserAuthOptions) (err error) { return nil },
-		FuncUserStoreAuthToken:  func(sessionID, userID string, options UserAuthOptions) error { return nil },
-		FuncEmailSend:           func(email, emailSubject, emailBody string) (err error) { return nil },
-		UseCookies:              true,
-		UseLocalStorage:         false,
+		Endpoint:             "/auth",
+		UrlRedirectOnSuccess: "/user",
+		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
+		FuncTemporaryKeySet:  func(key, value string, expiresSeconds int) (err error) { return nil },
+		FuncUserFindByAuthToken: func(ctx context.Context, sessionID string, options UserAuthOptions) (userID string, err error) {
+			return "", nil
+		},
+		FuncUserFindByEmail: func(ctx context.Context, email string, options UserAuthOptions) (userID string, err error) {
+			return "", nil
+		},
+		FuncUserLogout:         func(ctx context.Context, userID string, options UserAuthOptions) (err error) { return nil },
+		FuncUserStoreAuthToken: func(ctx context.Context, sessionID, userID string, options UserAuthOptions) error { return nil },
+		FuncEmailSend:          func(ctx context.Context, email, emailSubject, emailBody string) (err error) { return nil },
+		UseCookies:             true,
+		UseLocalStorage:        false,
 	})
 
 	if err != nil {

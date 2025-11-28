@@ -14,7 +14,7 @@ func (a Auth) apiLogout(w http.ResponseWriter, r *http.Request) {
 		api.Respond(w, r, api.Success("logout success"))
 	}
 
-	userID, errToken := a.funcUserFindByAuthToken(authToken, UserAuthOptions{
+	userID, errToken := a.funcUserFindByAuthToken(r.Context(), authToken, UserAuthOptions{
 		UserIp:    req.GetIP(r),
 		UserAgent: r.UserAgent(),
 	})
@@ -25,7 +25,7 @@ func (a Auth) apiLogout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if userID != "" {
-		errLogout := a.funcUserLogout(userID, UserAuthOptions{
+		errLogout := a.funcUserLogout(r.Context(), userID, UserAuthOptions{
 			UserIp:    req.GetIP(r),
 			UserAgent: r.UserAgent(),
 		})

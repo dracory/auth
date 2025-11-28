@@ -51,12 +51,12 @@ func (a Auth) authenticateViaUsername(w http.ResponseWriter, r *http.Request, us
 	var userID string
 	var errUser error
 	if a.passwordless {
-		userID, errUser = a.passwordlessFuncUserFindByEmail(username, UserAuthOptions{
+		userID, errUser = a.passwordlessFuncUserFindByEmail(r.Context(), username, UserAuthOptions{
 			UserIp:    req.GetIP(r),
 			UserAgent: r.UserAgent(),
 		})
 	} else {
-		userID, errUser = a.funcUserFindByUsername(username, firstName, lastName, UserAuthOptions{
+		userID, errUser = a.funcUserFindByUsername(r.Context(), username, firstName, lastName, UserAuthOptions{
 			UserIp:    req.GetIP(r),
 			UserAgent: r.UserAgent(),
 		})
@@ -79,7 +79,7 @@ func (a Auth) authenticateViaUsername(w http.ResponseWriter, r *http.Request, us
 		return
 	}
 
-	errSession := a.funcUserStoreAuthToken(token, userID, UserAuthOptions{
+	errSession := a.funcUserStoreAuthToken(r.Context(), token, userID, UserAuthOptions{
 		UserIp:    req.GetIP(r),
 		UserAgent: r.UserAgent(),
 	})

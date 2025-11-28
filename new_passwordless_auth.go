@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"errors"
 	"time"
 )
@@ -80,12 +81,16 @@ func NewPasswordlessAuth(config ConfigPasswordless) (*Auth, error) {
 
 	// If no user defined email template is set, use default
 	if auth.passwordlessFuncEmailTemplateLoginCode == nil {
-		auth.passwordlessFuncEmailTemplateLoginCode = emailLoginCodeTemplate
+		auth.passwordlessFuncEmailTemplateLoginCode = func(ctx context.Context, email string, code string, options UserAuthOptions) string {
+			return emailLoginCodeTemplate(email, code, options)
+		}
 	}
 
 	// If no user defined email template is set, use default
 	if auth.passwordlessFuncEmailTemplateRegisterCode == nil {
-		auth.passwordlessFuncEmailTemplateRegisterCode = emailRegisterCodeTemplate
+		auth.passwordlessFuncEmailTemplateRegisterCode = func(ctx context.Context, email string, code string, options UserAuthOptions) string {
+			return emailRegisterCodeTemplate(email, code, options)
+		}
 	}
 
 	// Initialize rate limiting

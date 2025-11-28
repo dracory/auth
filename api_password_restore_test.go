@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"errors"
 	"net/url"
 	"testing"
@@ -47,7 +48,7 @@ func TestPasswordRestoreEndpointUserNotFound(t *testing.T) {
 	NotNil(t, authInstance)
 
 	// Mock user not found
-	authInstance.funcUserFindByUsername = func(username string, firstName string, lastName string, options UserAuthOptions) (userID string, err error) {
+	authInstance.funcUserFindByUsername = func(ctx context.Context, username string, firstName string, lastName string, options UserAuthOptions) (userID string, err error) {
 		return "", nil
 	}
 
@@ -65,7 +66,7 @@ func TestPasswordRestoreEndpointInternalError(t *testing.T) {
 	NotNil(t, authInstance)
 
 	// Mock internal error
-	authInstance.funcUserFindByUsername = func(username string, firstName string, lastName string, options UserAuthOptions) (userID string, err error) {
+	authInstance.funcUserFindByUsername = func(ctx context.Context, username string, firstName string, lastName string, options UserAuthOptions) (userID string, err error) {
 		return "", errors.New("db error")
 	}
 
@@ -83,13 +84,13 @@ func TestPasswordRestoreEndpointSuccess(t *testing.T) {
 	NotNil(t, authInstance)
 
 	// Mock success
-	authInstance.funcUserFindByUsername = func(username string, firstName string, lastName string, options UserAuthOptions) (userID string, err error) {
+	authInstance.funcUserFindByUsername = func(ctx context.Context, username string, firstName string, lastName string, options UserAuthOptions) (userID string, err error) {
 		return "user123", nil
 	}
 	authInstance.funcTemporaryKeySet = func(key string, value string, expiresSeconds int) (err error) {
 		return nil
 	}
-	authInstance.funcEmailSend = func(userID string, emailSubject string, emailBody string) (err error) {
+	authInstance.funcEmailSend = func(ctx context.Context, userID string, emailSubject string, emailBody string) (err error) {
 		return nil
 	}
 

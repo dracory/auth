@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/url"
@@ -101,7 +102,7 @@ func TestApiRegisterUsernameAndPasswordRegistrationFailed(t *testing.T) {
 	Nil(t, err)
 	NotNil(t, authInstance)
 
-	authInstance.funcUserRegister = func(username string, password string, firstName string, lastName string, options UserAuthOptions) (err error) {
+	authInstance.funcUserRegister = func(ctx context.Context, username string, password string, firstName string, lastName string, options UserAuthOptions) (err error) {
 		return errors.New("db error")
 	}
 
@@ -121,7 +122,7 @@ func TestApiRegisterUsernameAndPasswordSuccess(t *testing.T) {
 	Nil(t, err)
 	NotNil(t, authInstance)
 
-	authInstance.funcUserRegister = func(username string, password string, firstName string, lastName string, options UserAuthOptions) (err error) {
+	authInstance.funcUserRegister = func(ctx context.Context, username string, password string, firstName string, lastName string, options UserAuthOptions) (err error) {
 		return nil
 	}
 
@@ -225,7 +226,7 @@ func TestApiRegisterPasswordlessEmailSendError(t *testing.T) {
 	Nil(t, err)
 	NotNil(t, authInstance)
 
-	authInstance.passwordlessFuncEmailSend = func(email string, emailSubject string, emailBody string) (err error) {
+	authInstance.passwordlessFuncEmailSend = func(ctx context.Context, email string, emailSubject string, emailBody string) (err error) {
 		return errors.New("smtp error")
 	}
 
