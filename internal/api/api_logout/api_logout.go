@@ -47,7 +47,7 @@ func ApiLogout(w http.ResponseWriter, r *http.Request, dependencies Dependencies
 		switch logoutErr.Code {
 		case LogoutErrorCodeTokenLookup,
 			LogoutErrorCodeUserLogout:
-			api.Respond(w, r, api.Error("Failed to process logout. Please try again later"))
+			api.Respond(w, r, api.Error("Logout failed. Please try again later"))
 			return
 		default:
 			api.Respond(w, r, api.Error("Internal server error. Please try again later"))
