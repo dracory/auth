@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/dracory/api"
+	"github.com/dracory/auth/internal/api/api_authenticate_via_username"
 	"github.com/dracory/auth/internal/api/api_login"
 	"github.com/dracory/auth/internal/api/api_login_code_verify"
 	"github.com/dracory/auth/internal/api/api_logout"
@@ -13,7 +13,6 @@ import (
 	"github.com/dracory/auth/internal/api/api_register"
 	"github.com/dracory/auth/internal/api/api_register_code_verify"
 	"github.com/dracory/req"
-	"github.com/dracory/str"
 )
 
 func (a authImplementation) apiLogin(w http.ResponseWriter, r *http.Request) {
@@ -172,72 +171,29 @@ func (a authImplementation) apiRegisterCodeVerify(w http.ResponseWriter, r *http
 }
 
 func (a authImplementation) authenticateViaUsername(w http.ResponseWriter, r *http.Request, username string, firstName string, lastName string) {
-	var userID string
-	var errUser error
-	if a.passwordless {
-		userID, errUser = a.passwordlessFuncUserFindByEmail(r.Context(), username, UserAuthOptions{
-			UserIp:    req.GetIP(r),
-			UserAgent: r.UserAgent(),
-		})
-	} else {
-		userID, errUser = a.funcUserFindByUsername(r.Context(), username, firstName, lastName, UserAuthOptions{
-			UserIp:    req.GetIP(r),
-			UserAgent: r.UserAgent(),
-		})
-	}
-
-	if errUser != nil {
-		api.Respond(w, r, api.Error("Invalid credentials"))
-		return
-	}
-
-	if userID == "" {
-		api.Respond(w, r, api.Error("Invalid credentials"))
-		return
-	}
-
-	token, errRandomFromGamma := str.RandomFromGamma(32, "BCDFGHJKLMNPQRSTVXYZ")
-
-	if errRandomFromGamma != nil {
-		authErr := NewCodeGenerationError(errRandomFromGamma)
-		logger := a.GetLogger()
-		logger.Error("login auth token generation failed",
-			"error", authErr.InternalErr,
-			"error_code", authErr.Code,
-			"user_id", userID,
-			"ip", req.GetIP(r),
-			"user_agent", r.UserAgent(),
-			"endpoint", "authenticate_via_username",
-		)
-		api.Respond(w, r, api.Error(authErr.Message))
-		return
-	}
-
-	errSession := a.funcUserStoreAuthToken(r.Context(), token, userID, UserAuthOptions{
-		UserIp:    req.GetIP(r),
-		UserAgent: r.UserAgent(),
+	api_authenticate_via_username.ApiAuthenticateViaUsername(w, r, username, firstName, lastName, api_authenticate_via_username.Dependencies{
+		Passwordless: a.passwordless,
+		PasswordlessUserFindByEmail: func(ctx context.Context, email string) (string, error) {
+			return a.passwordlessFuncUserFindByEmail(ctx, email, UserAuthOptions{
+				UserIp:    req.GetIP(r),
+				UserAgent: r.UserAgent(),
+			})
+		},
+		UserFindByUsername: func(ctx context.Context, username, firstName, lastName string) (string, error) {
+			return a.funcUserFindByUsername(ctx, username, firstName, lastName, UserAuthOptions{
+				UserIp:    req.GetIP(r),
+				UserAgent: r.UserAgent(),
+			})
+		},
+		UserStoreAuthToken: func(ctx context.Context, token, userID string) error {
+			return a.funcUserStoreAuthToken(ctx, token, userID, UserAuthOptions{
+				UserIp:    req.GetIP(r),
+				UserAgent: r.UserAgent(),
+			})
+		},
+		UseCookies: a.useCookies,
+		SetAuthCookie: func(w http.ResponseWriter, r *http.Request, token string) {
+			a.setAuthCookie(w, r, token)
+		},
 	})
-
-	if errSession != nil {
-		authErr := NewTokenStoreError(errSession)
-		logger := a.GetLogger()
-		logger.Error("login auth token store failed",
-			"error", authErr.InternalErr,
-			"error_code", authErr.Code,
-			"user_id", userID,
-			"ip", req.GetIP(r),
-			"user_agent", r.UserAgent(),
-			"endpoint", "authenticate_via_username",
-		)
-		api.Respond(w, r, api.Error(authErr.Message))
-		return
-	}
-
-	if a.useCookies {
-		a.setAuthCookie(w, r, token)
-	}
-
-	api.Respond(w, r, api.SuccessWithData("login success", map[string]any{
-		"token": token,
-	}))
 }
