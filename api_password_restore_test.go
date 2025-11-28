@@ -9,8 +9,12 @@ import (
 
 func TestPasswordRestoreEndpointRequiresEmail(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	expectedError := `"status":"error"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordRestore(), url.Values{}, expectedError, "%")
@@ -21,8 +25,12 @@ func TestPasswordRestoreEndpointRequiresEmail(t *testing.T) {
 
 func TestPasswordRestoreEndpointRequiresFirstName(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	expectedErrorMessage := `"message":"First name is required field"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordRestore(), url.Values{
@@ -32,8 +40,12 @@ func TestPasswordRestoreEndpointRequiresFirstName(t *testing.T) {
 
 func TestPasswordRestoreEndpointRequiresLastName(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	expectedErrorMessage := `"message":"Last name is required field"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordRestore(), url.Values{
@@ -44,8 +56,12 @@ func TestPasswordRestoreEndpointRequiresLastName(t *testing.T) {
 
 func TestPasswordRestoreEndpointUserNotFound(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	// Mock user not found
 	authInstance.funcUserFindByUsername = func(ctx context.Context, username string, firstName string, lastName string, options UserAuthOptions) (userID string, err error) {
@@ -62,8 +78,12 @@ func TestPasswordRestoreEndpointUserNotFound(t *testing.T) {
 
 func TestPasswordRestoreEndpointInternalError(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	// Mock internal error
 	authInstance.funcUserFindByUsername = func(ctx context.Context, username string, firstName string, lastName string, options UserAuthOptions) (userID string, err error) {
@@ -80,8 +100,12 @@ func TestPasswordRestoreEndpointInternalError(t *testing.T) {
 
 func TestPasswordRestoreEndpointSuccess(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	// Mock success
 	authInstance.funcUserFindByUsername = func(ctx context.Context, username string, firstName string, lastName string, options UserAuthOptions) (userID string, err error) {

@@ -9,8 +9,12 @@ import (
 
 func TestApiRegisterCodeVerifyRequiresVerificationCode(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	expectedStatus := `"status":"error"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), url.Values{}, expectedStatus, "%")
@@ -21,8 +25,12 @@ func TestApiRegisterCodeVerifyRequiresVerificationCode(t *testing.T) {
 
 func TestApiRegisterCodeVerifyInvalidLength(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	values := url.Values{
 		"verification_code": {"123456"},
@@ -34,8 +42,12 @@ func TestApiRegisterCodeVerifyInvalidLength(t *testing.T) {
 
 func TestApiRegisterCodeVerifyInvalidCharacters(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	values := url.Values{
 		"verification_code": {"12345678"},
@@ -47,8 +59,12 @@ func TestApiRegisterCodeVerifyInvalidCharacters(t *testing.T) {
 
 func TestApiRegisterCodeVerifyExpiredCode(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	authInstance.funcTemporaryKeyGet = func(key string) (value string, err error) {
 		return "", errors.New("expired")
@@ -64,8 +80,12 @@ func TestApiRegisterCodeVerifyExpiredCode(t *testing.T) {
 
 func TestApiRegisterCodeVerifyMalformedJSON(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	authInstance.funcTemporaryKeyGet = func(key string) (value string, err error) {
 		return "not-json", nil
@@ -81,8 +101,12 @@ func TestApiRegisterCodeVerifyMalformedJSON(t *testing.T) {
 
 func TestApiRegisterCodeVerifyRegistrationFailed(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	// Valid JSON payload
 	jsonPayload := `{"email":"test@test.com","first_name":"John","last_name":"Doe","password":"1234"}`
@@ -104,8 +128,12 @@ func TestApiRegisterCodeVerifyRegistrationFailed(t *testing.T) {
 
 func TestApiRegisterCodeVerifyAuthenticationError(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	jsonPayload := `{"email":"test@test.com","first_name":"John","last_name":"Doe","password":"1234"}`
 	authInstance.funcTemporaryKeyGet = func(key string) (value string, err error) {
@@ -130,8 +158,12 @@ func TestApiRegisterCodeVerifyAuthenticationError(t *testing.T) {
 
 func TestApiRegisterCodeVerifyUserNotFound(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	jsonPayload := `{"email":"test@test.com","first_name":"John","last_name":"Doe","password":"1234"}`
 	authInstance.funcTemporaryKeyGet = func(key string) (value string, err error) {
@@ -156,8 +188,12 @@ func TestApiRegisterCodeVerifyUserNotFound(t *testing.T) {
 
 func TestApiRegisterCodeVerifyTokenStoreError(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	jsonPayload := `{"email":"test@test.com","first_name":"John","last_name":"Doe","password":"1234"}`
 	authInstance.funcTemporaryKeyGet = func(key string) (value string, err error) {
@@ -186,8 +222,12 @@ func TestApiRegisterCodeVerifyTokenStoreError(t *testing.T) {
 
 func TestApiRegisterCodeVerifySuccess(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	jsonPayload := `{"email":"test@test.com","first_name":"John","last_name":"Doe","password":"1234"}`
 	authInstance.funcTemporaryKeyGet = func(key string) (value string, err error) {

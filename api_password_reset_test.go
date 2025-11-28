@@ -10,8 +10,12 @@ import (
 
 func TestPasswordResetEndpointRequiresToken(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	expectedError := `"status":"error"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordReset(), url.Values{}, expectedError, "%")
@@ -22,8 +26,12 @@ func TestPasswordResetEndpointRequiresToken(t *testing.T) {
 
 func TestPasswordResetEndpointRequiresPassword(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	expectedErrorMessage := `"message":"Password is required field"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordReset(), url.Values{
@@ -33,8 +41,12 @@ func TestPasswordResetEndpointRequiresPassword(t *testing.T) {
 
 func TestPasswordResetEndpointRequiresMatchingPasswords(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	expectedErrorMessage := `"message":"Passwords do not match"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordReset(), url.Values{
@@ -46,8 +58,12 @@ func TestPasswordResetEndpointRequiresMatchingPasswords(t *testing.T) {
 
 func TestPasswordResetEndpointInvalidToken(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	// Mock invalid token (returns empty userID or error)
 	authInstance.funcTemporaryKeyGet = func(key string) (value string, err error) {
@@ -64,8 +80,12 @@ func TestPasswordResetEndpointInvalidToken(t *testing.T) {
 
 func TestPasswordResetEndpointPasswordChangeError(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	// Mock valid token
 	authInstance.funcTemporaryKeyGet = func(key string) (value string, err error) {
@@ -87,8 +107,12 @@ func TestPasswordResetEndpointPasswordChangeError(t *testing.T) {
 
 func TestPasswordResetEndpointLogoutError(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	// Mock valid token
 	authInstance.funcTemporaryKeyGet = func(key string) (value string, err error) {
@@ -115,8 +139,12 @@ func TestPasswordResetEndpointLogoutError(t *testing.T) {
 
 func TestPasswordResetEndpointSuccess(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	// Mock valid token
 	authInstance.funcTemporaryKeyGet = func(key string) (value string, err error) {
@@ -155,8 +183,12 @@ func TestPasswordResetEndpointSuccess(t *testing.T) {
 
 func TestPasswordResetEndpointInvalidCSRFToken(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	authInstance.enableCSRFProtection = true
 	authInstance.funcCSRFTokenValidate = func(r *http.Request) bool {

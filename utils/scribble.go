@@ -147,7 +147,7 @@ func read(record string, v interface{}) error {
 	}
 
 	// unmarshal data
-	return json.Unmarshal(b, &v)
+	return json.Unmarshal(b, v)
 }
 
 // ReadAll records from a collection; this is returned as a slice of strings because

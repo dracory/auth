@@ -9,8 +9,12 @@ import (
 
 func TestApiLoginCodeVerifyRequiresVerificationCode(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	expectedStatus := `"status":"error"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLoginCodeVerify(), url.Values{}, expectedStatus, "%")
@@ -21,8 +25,12 @@ func TestApiLoginCodeVerifyRequiresVerificationCode(t *testing.T) {
 
 func TestApiLoginCodeVerifyInvalidLength(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	values := url.Values{
 		"verification_code": {"123456"},
@@ -34,8 +42,12 @@ func TestApiLoginCodeVerifyInvalidLength(t *testing.T) {
 
 func TestApiLoginCodeVerifyInvalidCharacters(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	values := url.Values{
 		"verification_code": {"12345678"},
@@ -47,8 +59,12 @@ func TestApiLoginCodeVerifyInvalidCharacters(t *testing.T) {
 
 func TestApiLoginCodeVerifyExpiredCode(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	authInstance.funcTemporaryKeyGet = func(key string) (value string, err error) {
 		return "", errors.New("expired")
@@ -64,8 +80,12 @@ func TestApiLoginCodeVerifyExpiredCode(t *testing.T) {
 
 func TestApiLoginCodeVerifyAuthenticationError(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	authInstance.funcTemporaryKeyGet = func(key string) (value string, err error) {
 		return "user@example.com", nil
@@ -85,8 +105,12 @@ func TestApiLoginCodeVerifyAuthenticationError(t *testing.T) {
 
 func TestApiLoginCodeVerifyUserNotFound(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	authInstance.funcTemporaryKeyGet = func(key string) (value string, err error) {
 		return "user@example.com", nil
@@ -106,8 +130,12 @@ func TestApiLoginCodeVerifyUserNotFound(t *testing.T) {
 
 func TestApiLoginCodeVerifyTokenStoreError(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	authInstance.funcTemporaryKeyGet = func(key string) (value string, err error) {
 		return "user@example.com", nil
@@ -131,8 +159,12 @@ func TestApiLoginCodeVerifyTokenStoreError(t *testing.T) {
 
 func TestApiLoginCodeVerifySuccess(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	authInstance.funcTemporaryKeyGet = func(key string) (value string, err error) {
 		return "user@example.com", nil

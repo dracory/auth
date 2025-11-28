@@ -7,7 +7,7 @@ import (
 )
 
 // EmailPasswordChangeTemplate returns the template for the email address verification email
-func emailTemplatePasswordChange(name string, url string, options UserAuthOptions) string {
+func emailTemplatePasswordChange(name string, url string, _ UserAuthOptions) string {
 	msg := `
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html>

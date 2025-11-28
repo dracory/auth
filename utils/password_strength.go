@@ -17,7 +17,7 @@ func ValidatePasswordStrength(password string, cfg *authtypes.PasswordStrengthCo
 	}
 
 	if cfg.MinLength > 0 && len(password) < cfg.MinLength {
-		return errors.New("Password must be at least " + strconv.Itoa(cfg.MinLength) + " characters long")
+		return errors.New("password must be at least " + strconv.Itoa(cfg.MinLength) + " characters long")
 	}
 
 	var hasUpper, hasLower, hasDigit, hasSpecial bool
@@ -35,16 +35,16 @@ func ValidatePasswordStrength(password string, cfg *authtypes.PasswordStrengthCo
 	}
 
 	if cfg.RequireUppercase && !hasUpper {
-		return errors.New("Password must contain at least one uppercase letter")
+		return errors.New("password must contain at least one uppercase letter")
 	}
 	if cfg.RequireLowercase && !hasLower {
-		return errors.New("Password must contain at least one lowercase letter")
+		return errors.New("password must contain at least one lowercase letter")
 	}
 	if cfg.RequireDigit && !hasDigit {
-		return errors.New("Password must contain at least one digit")
+		return errors.New("password must contain at least one digit")
 	}
 	if cfg.RequireSpecial && !hasSpecial {
-		return errors.New("Password must contain at least one special character")
+		return errors.New("password must contain at least one special character")
 	}
 
 	if cfg.ForbidCommonWords {
@@ -52,7 +52,7 @@ func ValidatePasswordStrength(password string, cfg *authtypes.PasswordStrengthCo
 		common := []string{"password", "123456", "123456789", "qwerty", "admin", "letmein"}
 		for _, w := range common {
 			if lower == w {
-				return errors.New("Password is too common")
+				return errors.New("password is too common")
 			}
 		}
 	}

@@ -10,8 +10,12 @@ import (
 
 func TestApiLoginUsernameAndPasswordRequiresEmail(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	expectedStatus := `"status":"error"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogin(), url.Values{}, expectedStatus, "%")
@@ -22,8 +26,12 @@ func TestApiLoginUsernameAndPasswordRequiresEmail(t *testing.T) {
 
 func TestApiLoginUsernameAndPasswordRequiresPassword(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	values := url.Values{
 		"email": {"test@test.com"},
@@ -35,8 +43,12 @@ func TestApiLoginUsernameAndPasswordRequiresPassword(t *testing.T) {
 
 func TestApiLoginUsernameAndPasswordUserLoginError(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	authInstance.funcUserLogin = func(ctx context.Context, username string, password string, options UserAuthOptions) (userID string, err error) {
 		return "", errors.New("db error")
@@ -53,8 +65,12 @@ func TestApiLoginUsernameAndPasswordUserLoginError(t *testing.T) {
 
 func TestApiLoginUsernameAndPasswordUserNotFound(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	authInstance.funcUserLogin = func(ctx context.Context, username string, password string, options UserAuthOptions) (userID string, err error) {
 		return "", nil
@@ -71,8 +87,12 @@ func TestApiLoginUsernameAndPasswordUserNotFound(t *testing.T) {
 
 func TestApiLoginUsernameAndPasswordTokenStoreError(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	authInstance.funcUserLogin = func(ctx context.Context, username string, password string, options UserAuthOptions) (userID string, err error) {
 		return "user123", nil
@@ -93,8 +113,12 @@ func TestApiLoginUsernameAndPasswordTokenStoreError(t *testing.T) {
 
 func TestApiLoginUsernameAndPasswordSuccess(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	authInstance.funcUserLogin = func(ctx context.Context, username string, password string, options UserAuthOptions) (userID string, err error) {
 		return "user123", nil
@@ -117,8 +141,12 @@ func TestApiLoginUsernameAndPasswordSuccess(t *testing.T) {
 
 func TestApiLoginUsernameAndPasswordInvalidCSRFToken(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	authInstance.enableCSRFProtection = true
 	authInstance.funcCSRFTokenValidate = func(r *http.Request) bool {
@@ -136,8 +164,12 @@ func TestApiLoginUsernameAndPasswordInvalidCSRFToken(t *testing.T) {
 
 func TestApiLoginPasswordlessRequiresEmail(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	expectedStatus := `"status":"error"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogin(), url.Values{}, expectedStatus, "%")
@@ -148,8 +180,12 @@ func TestApiLoginPasswordlessRequiresEmail(t *testing.T) {
 
 func TestApiLoginPasswordlessInvalidEmail(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	values := url.Values{
 		"email": {"invalid-email"},
@@ -161,8 +197,12 @@ func TestApiLoginPasswordlessInvalidEmail(t *testing.T) {
 
 func TestApiLoginPasswordlessTokenStoreError(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	authInstance.funcTemporaryKeySet = func(key string, value string, expiresSeconds int) (err error) {
 		return errors.New("db error")
@@ -178,8 +218,12 @@ func TestApiLoginPasswordlessTokenStoreError(t *testing.T) {
 
 func TestApiLoginPasswordlessEmailSendError(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	authInstance.passwordlessFuncEmailSend = func(ctx context.Context, email string, emailSubject string, emailBody string) (err error) {
 		return errors.New("smtp error")
@@ -195,8 +239,12 @@ func TestApiLoginPasswordlessEmailSendError(t *testing.T) {
 
 func TestApiLoginPasswordlessSuccess(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	values := url.Values{
 		"email": {"test@test.com"},

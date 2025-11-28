@@ -12,8 +12,12 @@ import (
 
 func TestLogoutEndpointNoToken(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	// No cookie or header set, so token retrieval should fail/return empty
 	expectedSuccess := `"status":"success"`
@@ -25,8 +29,12 @@ func TestLogoutEndpointNoToken(t *testing.T) {
 
 func TestLogoutEndpointTokenValidationError(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	// Mock token validation error
 	authInstance.funcUserFindByAuthToken = func(ctx context.Context, token string, options UserAuthOptions) (userID string, err error) {
@@ -34,7 +42,10 @@ func TestLogoutEndpointTokenValidationError(t *testing.T) {
 	}
 
 	// Manually create request to set cookie
-	req, _ := http.NewRequest("POST", authInstance.LinkApiLogout(), nil)
+	req, reqErr := http.NewRequest("POST", authInstance.LinkApiLogout(), nil)
+	if reqErr != nil {
+		t.Fatalf("http.NewRequest() error = %v", reqErr)
+	}
 	req.AddCookie(&http.Cookie{Name: CookieName, Value: "invalid-token"})
 
 	// We need to use a custom handler wrapper to inject the cookie because testassert helper creates a new request
@@ -56,13 +67,21 @@ func TestLogoutEndpointTokenValidationError(t *testing.T) {
 
 func TestLogoutEndpointTokenValidationError_Custom(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	authInstance.funcUserFindByAuthToken = func(ctx context.Context, token string, options UserAuthOptions) (userID string, err error) {
 		return "", errors.New("db error")
 	}
 
-	req, _ := http.NewRequest("POST", authInstance.LinkApiLogout(), nil)
+	req, reqErr := http.NewRequest("POST", authInstance.LinkApiLogout(), nil)
+	if reqErr != nil {
+		t.Fatalf("http.NewRequest() error = %v", reqErr)
+	}
 	req.Header.Set("Authorization", "Bearer some-token")
 
 	recorder := httptest.NewRecorder()

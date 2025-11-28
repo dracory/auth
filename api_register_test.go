@@ -12,8 +12,12 @@ import (
 
 func TestApiRegisterUsernameAndPasswordRequiresFirstName(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	expectedStatus := `"status":"error"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), url.Values{}, expectedStatus, "%")
@@ -24,8 +28,12 @@ func TestApiRegisterUsernameAndPasswordRequiresFirstName(t *testing.T) {
 
 func TestApiRegisterUsernameAndPasswordRequiresLastName(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	values := url.Values{
 		"first_name": {"John"},
@@ -37,8 +45,12 @@ func TestApiRegisterUsernameAndPasswordRequiresLastName(t *testing.T) {
 
 func TestApiRegisterUsernameAndPasswordRequiresEmail(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	values := url.Values{
 		"first_name": {"John"},
@@ -51,8 +63,12 @@ func TestApiRegisterUsernameAndPasswordRequiresEmail(t *testing.T) {
 
 func TestApiRegisterUsernameAndPasswordRequiresPassword(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	values := url.Values{
 		"first_name": {"John"},
@@ -66,8 +82,12 @@ func TestApiRegisterUsernameAndPasswordRequiresPassword(t *testing.T) {
 
 func TestApiRegisterUsernameAndPasswordInvalidEmail(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	values := url.Values{
 		"first_name": {"John"},
@@ -82,8 +102,12 @@ func TestApiRegisterUsernameAndPasswordInvalidEmail(t *testing.T) {
 
 func TestApiRegisterUsernameAndPasswordFuncUserRegisterNotDefined(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	// funcUserRegister is nil by default in testSetupUsernameAndPasswordAuth
 	values := url.Values{
@@ -99,8 +123,12 @@ func TestApiRegisterUsernameAndPasswordFuncUserRegisterNotDefined(t *testing.T) 
 
 func TestApiRegisterUsernameAndPasswordRegistrationFailed(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	authInstance.funcUserRegister = func(ctx context.Context, username string, password string, firstName string, lastName string, options UserAuthOptions) (err error) {
 		return errors.New("db error")
@@ -119,8 +147,12 @@ func TestApiRegisterUsernameAndPasswordRegistrationFailed(t *testing.T) {
 
 func TestApiRegisterUsernameAndPasswordSuccess(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	authInstance.funcUserRegister = func(ctx context.Context, username string, password string, firstName string, lastName string, options UserAuthOptions) (err error) {
 		return nil
@@ -142,8 +174,12 @@ func TestApiRegisterUsernameAndPasswordSuccess(t *testing.T) {
 
 func TestApiRegisterUsernameAndPasswordInvalidCSRFToken(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupUsernameAndPasswordAuth() returned nil auth instance")
+	}
 
 	authInstance.enableCSRFProtection = true
 	authInstance.funcCSRFTokenValidate = func(r *http.Request) bool {
@@ -165,8 +201,12 @@ func TestApiRegisterUsernameAndPasswordInvalidCSRFToken(t *testing.T) {
 
 func TestApiRegisterPasswordlessRequiresFirstName(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	expectedStatus := `"status":"error"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), url.Values{}, expectedStatus, "%")
@@ -177,8 +217,12 @@ func TestApiRegisterPasswordlessRequiresFirstName(t *testing.T) {
 
 func TestApiRegisterPasswordlessRequiresLastName(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	values := url.Values{
 		"first_name": {"John"},
@@ -190,8 +234,12 @@ func TestApiRegisterPasswordlessRequiresLastName(t *testing.T) {
 
 func TestApiRegisterPasswordlessRequiresEmail(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	values := url.Values{
 		"first_name": {"John"},
@@ -204,8 +252,12 @@ func TestApiRegisterPasswordlessRequiresEmail(t *testing.T) {
 
 func TestApiRegisterPasswordlessTokenStoreError(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	authInstance.funcTemporaryKeySet = func(key string, value string, expiresSeconds int) (err error) {
 		return errors.New("db error")
@@ -223,8 +275,12 @@ func TestApiRegisterPasswordlessTokenStoreError(t *testing.T) {
 
 func TestApiRegisterPasswordlessEmailSendError(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	authInstance.passwordlessFuncEmailSend = func(ctx context.Context, email string, emailSubject string, emailBody string) (err error) {
 		return errors.New("smtp error")
@@ -242,8 +298,12 @@ func TestApiRegisterPasswordlessEmailSendError(t *testing.T) {
 
 func TestApiRegisterPasswordlessSuccess(t *testing.T) {
 	authInstance, err := testSetupPasswordlessAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
+	if err != nil {
+		t.Fatalf("testSetupPasswordlessAuth() error = %v", err)
+	}
+	if authInstance == nil {
+		t.Fatalf("testSetupPasswordlessAuth() returned nil auth instance")
+	}
 
 	values := url.Values{
 		"first_name": {"John"},
