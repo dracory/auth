@@ -187,24 +187,6 @@ Create centralized validation function used everywhere.
 
 ---
 
-### 8. **Deprecated Code Not Removed** - LOW
-
-**Problem:**
-Deprecated middleware still in codebase:
-
-```go
-// auth_middleware.go
-// DEPRECATED use the Web or the API middleware instead
-// func (a Auth) AuthMiddleware(next http.Handler) http.Handler {
-//     ... 30+ lines of commented code
-// }
-```
-
-**Recommendation:**
-Remove deprecated code entirely. Add migration guide to docs.
-
----
-
 ## 🟢 Strengths
 
 ### 1. **Excellent Test Coverage**
