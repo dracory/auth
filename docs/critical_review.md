@@ -27,49 +27,6 @@ The `dracory/auth` library demonstrates **solid engineering fundamentals** with 
 
 ---
 
-## � Recent Improvements
-
-### 1. **Standardized Error Handling** - FIXED ✅
-
-The library now implements a robust `AuthError` type with structured error codes:
-
-```go
-type AuthError struct {
-    Code        string  // e.g., "TOKEN_STORE_FAILED", "EMAIL_SEND_FAILED"
-    Message     string  // User-facing, generic
-    InternalErr error   // For logging only, never exposed
-}
-```
-
-**Error Codes Implemented:**
-- `EMAIL_SEND_FAILED`
-- `TOKEN_STORE_FAILED`
-- `VALIDATION_FAILED`
-- `AUTHENTICATION_FAILED`
-- `REGISTRATION_FAILED`
-- `LOGOUT_FAILED`
-- `CODE_GENERATION_FAILED`
-- `SERIALIZATION_FAILED`
-- `PASSWORD_RESET_FAILED`
-- `INTERNAL_ERROR`
-
-**Benefits:**
-- ✅ User-facing messages are generic and don't leak internal details
-- ✅ Detailed errors logged with structured context (error_code, IP, user agent, endpoint)
-- ✅ Consistent error handling across all API handlers and core functions
-- ✅ All error paths include proper logging
-
-### 2. **Cookie Security** - FIXED ✅
-
-Cookie handling refactored with secure defaults:
-- `HttpOnly=true` (prevents XSS)
-- `SameSite=Lax` (CSRF protection)
-- `Secure` on HTTPS
-- 2-hour lifetime
-- Configurable via `CookieConfig`
-
----
-
 ## 🟡 Medium Priority Issues
 
 ### 1. **Magic Numbers** - MEDIUM
