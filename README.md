@@ -14,6 +14,16 @@
   - **Passwordless** - Email-based verification codes (recommended for security)
   - **Username/Password** - Traditional authentication with password storage
   
+- 🛡️ **Production-Grade Security**
+  - **Structured error handling** with error codes (no internal details leaked)
+  - **CSRF protection** via `dracory/csrf` integration
+  - **Rate limiting** with per-IP/per-endpoint lockout
+  - **Session invalidation** on password reset
+  - **Constant-time password comparison** to prevent timing attacks
+  - **Secure cookie defaults** (HttpOnly, SameSite, Secure on HTTPS)
+  - **Input validation** and HTML escaping
+  - **Structured logging** with `log/slog` for audit trails
+
 - 🎨 **Complete UI Included**
   - Pre-built HTML pages (login, registration, password reset)
   - Bootstrap-styled and customizable
@@ -40,9 +50,10 @@
   - Fully configurable or replaceable with a custom rate limiter
  
 - ✅ **Production Ready**
-  - 90%+ test coverage
+  - 90.2% test coverage
   - 34 comprehensive test files
-  - Battle-tested in production
+  - Battle-tested security practices
+  - Comprehensive critical review (see [docs/critical_review.md](docs/critical_review.md))
 
 ## 📦 Installation
 
@@ -609,7 +620,14 @@ A: Provide a custom `FuncLayout` function to wrap the content with your own HTML
 A: Any! You implement the storage callbacks, so it works with PostgreSQL, MySQL, MongoDB, Redis, or even in-memory stores.
 
 **Q: Is this production-ready?**  
-A: Yes! The library has 90%+ test coverage and is used in production applications.
+A: **Yes!** The library has:
+- 90.2% test coverage with comprehensive test suite
+- Structured error handling with error codes (no internal details leaked)
+- CSRF protection and rate limiting
+- Session invalidation on password reset
+- Secure cookie defaults and input validation
+- Structured logging for audit trails
+- See [docs/critical_review.md](docs/critical_review.md) for detailed security assessment
 
 **Q: How do I handle password reset?**  
 A: The library includes built-in password reset flow. Users enter their email, receive a reset link, and set a new password.

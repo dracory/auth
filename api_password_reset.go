@@ -97,6 +97,29 @@ func (a Auth) apiPasswordReset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	errLogout := a.funcUserLogout(r.Context(), userID, UserAuthOptions{
+		UserIp:    req.GetIP(r),
+		UserAgent: r.UserAgent(),
+	})
+
+	if errLogout != nil {
+		authErr := NewLogoutError(errLogout)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("session invalidation after password change failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"user_id", userID,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "api_password_reset",
+		)
+		api.Respond(w, r, api.Error(authErr.Message))
+		return
+	}
+
 	api.Respond(w, r, api.SuccessWithData("login success", map[string]interface{}{
 		"token": token,
 	}))

@@ -65,4 +65,8 @@ const (
 
 	DefaultVerificationCodeExpiration = 1 * time.Hour
 	DefaultPasswordResetExpiration    = 1 * time.Hour
+	DefaultAuthTokenExpiration        = 2 * time.Hour
+
+	DefaultMaxLoginAttempts = 5
+	DefaultLockoutDuration  = 15 * time.Minute
 )
