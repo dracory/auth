@@ -17,8 +17,9 @@ func AuthCookieSet(w http.ResponseWriter, r *http.Request, token string) {
 		Name:     CookieName,
 		Value:    token,
 		Expires:  expiration,
-		HttpOnly: false,
+		HttpOnly: true,
 		Secure:   secureCookie,
+		SameSite: http.SameSiteLaxMode,
 		Path:     "/",
 	}
 

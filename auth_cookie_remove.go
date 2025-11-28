@@ -18,8 +18,9 @@ func AuthCookieRemove(w http.ResponseWriter, r *http.Request) {
 		Name:     CookieName,
 		Value:    "none",
 		Expires:  expiration,
-		HttpOnly: false,
+		HttpOnly: true,
 		Secure:   secureCookie,
+		SameSite: http.SameSiteLaxMode,
 		Path:     "/",
 	}
 

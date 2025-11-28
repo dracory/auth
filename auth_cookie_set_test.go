@@ -39,12 +39,16 @@ func TestAuthCookieSet_HTTP_NotSecure(t *testing.T) {
 		t.Fatalf("expected cookie path %q, got %q", "/", c.Path)
 	}
 
-	if c.HttpOnly {
-		t.Fatalf("expected HttpOnly to be false")
-	}
-
 	if c.Secure {
 		t.Fatalf("expected Secure to be false for HTTP request")
+	}
+
+	if !c.HttpOnly {
+		t.Fatalf("expected HttpOnly to be true")
+	}
+
+	if c.SameSite != http.SameSiteLaxMode {
+		t.Fatalf("expected SameSite to be Lax, got %v", c.SameSite)
 	}
 
 	if !c.Expires.After(time.Now()) {
