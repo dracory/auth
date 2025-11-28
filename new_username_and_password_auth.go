@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -65,6 +66,11 @@ func NewUsernameAndPasswordAuth(config ConfigUsernameAndPassword) (*Auth, error)
 		return nil, errors.New("auth: UseCookies and UseLocalStorage cannot be both false")
 	}
 
+	logger := config.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	auth := &Auth{}
 	auth.enableRegistration = config.EnableRegistration
 	auth.enableVerification = config.EnableVerification
@@ -96,6 +102,8 @@ func NewUsernameAndPasswordAuth(config ConfigUsernameAndPassword) (*Auth, error)
 			ForbidCommonWords: true,
 		}
 	}
+
+	auth.logger = logger
 
 	// If no user defined layout is set, use default
 	if auth.funcLayout == nil {

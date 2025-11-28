@@ -2,7 +2,7 @@ package auth
 
 import (
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/dracory/api"
@@ -86,7 +86,17 @@ func (a Auth) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
 	errEmailSent := a.passwordlessFuncEmailSend(r.Context(), email, "Registration Code", emailContent)
 
 	if errEmailSent != nil {
-		log.Println(errEmailSent)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("registration code email send failed",
+			"error", errEmailSent,
+			"email", email,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "api_register_passwordless",
+		)
 		api.Respond(w, r, api.Error("Registration code failed to be send. Please try again later"))
 		return
 	}

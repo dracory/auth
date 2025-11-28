@@ -85,6 +85,7 @@ The central struct that holds all configuration and provides methods for authent
 - `urlRedirectOnSuccess` - Where to redirect after successful auth
 - `useCookies` / `useLocalStorage` - Token storage strategy
 - `passwordless` - Flag to determine which flow is active
+- `logger` - Optional `*slog.Logger` for structured logging
 - Function callbacks for user operations (login, register, logout, etc.)
 
 **Key Methods:**
@@ -117,6 +118,7 @@ type ConfigPasswordless struct {
     FuncEmailTemplateLoginCode   func(ctx context.Context, email, loginLink string, options UserAuthOptions) string
     FuncEmailTemplateRegisterCode func(ctx context.Context, email, registerLink string, options UserAuthOptions) string
     FuncLayout                   func(content string) string
+    Logger                       *slog.Logger // Optional structured logger (defaults to slog.Default when nil)
 }
 ```
 
@@ -129,6 +131,7 @@ type ConfigUsernameAndPassword struct {
     FuncUserRegister       func(ctx context.Context, username, password, firstName, lastName string, options UserAuthOptions) error
     FuncUserFindByUsername func(ctx context.Context, username, firstName, lastName string, options UserAuthOptions) (userID string, err error)
     EnableVerification     bool // Email verification for registration
+    Logger                 *slog.Logger // Optional structured logger
 }
 ```
 
@@ -345,6 +348,7 @@ func dashboardHandler(w http.ResponseWriter, r *http.Request) {
 4. **Token Storage Options** - Cookies OR localStorage (configurable)
 5. **Verification Codes** - 8-character codes from limited alphabet (BCDFGHJKLMNPQRSTVXYZ) to avoid confusion
 6. **UserAuthOptions + Context** - Callbacks receive `ctx context.Context` plus IP and UserAgent metadata for audit trails and cancellation
+7. **Structured Logging with slog** - Core flows emit structured logs (using `log/slog`) including `email`, `user_id`, `ip`, and `user_agent` where available; callers can inject a custom `*slog.Logger` via configuration
 
 ---
 

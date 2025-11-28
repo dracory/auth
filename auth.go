@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -71,6 +72,7 @@ type Auth struct {
 	// labelUsername   string
 	useCookies      bool
 	useLocalStorage bool
+	logger          *slog.Logger
 }
 
 func (a Auth) GetCurrentUserID(r *http.Request) string {

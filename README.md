@@ -505,10 +505,59 @@ Use this together with `ctx` for audit logging, security checks, or analytics:
 
 ```go
 func userLogin(ctx context.Context, username string, password string, options auth.UserAuthOptions) (userID string, err error) {
-    // Log login attempt
-    log.Printf("Login attempt from IP: %s, UserAgent: %s", options.UserIp, options.UserAgent)
-    
+    // Log login attempt with structured logging (see Structured Logging section)
+    slog.Info("login attempt",
+        "ip", options.UserIp,
+        "user_agent", options.UserAgent,
+    )
+
     // Your login logic...
+}
+```
+
+## 📊 Structured Logging
+
+The library uses Go's `log/slog` package for structured logging in core flows.
+
+- Both configuration structs accept an optional logger:
+
+  ```go
+  type ConfigPasswordless struct {
+      // ... other fields ...
+      Logger *slog.Logger // Optional: structured logger
+  }
+
+  type ConfigUsernameAndPassword struct {
+      // ... other fields ...
+      Logger *slog.Logger // Optional: structured logger
+  }
+  ```
+
+- If `Logger` is `nil`, the constructors fall back to `slog.Default()`.
+- The internal `Auth` instance keeps this logger and uses it to log:
+  - Email send failures
+  - Token generation/store errors
+  - Password restore failures
+  - Other internal errors along with `email`, `user_id`, `ip`, and `user_agent` where available
+
+### Example: JSON structured logging
+
+```go
+logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+    Level: slog.LevelInfo,
+}))
+
+authInstance, err := auth.NewUsernameAndPasswordAuth(auth.ConfigUsernameAndPassword{
+    Endpoint:             "/auth",
+    UrlRedirectOnSuccess: "/dashboard",
+    UseCookies:           true,
+
+    Logger: logger, // Pass your structured logger here
+
+    // ... required callbacks ...
+})
+if err != nil {
+    log.Fatal(err)
 }
 ```
 

@@ -3,12 +3,18 @@ package auth
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/dracory/auth/utils"
 )
 
 func NewPasswordlessAuth(config ConfigPasswordless) (*Auth, error) {
+	logger := config.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	auth := &Auth{}
 
 	if config.Endpoint == "" {
@@ -114,6 +120,8 @@ func NewPasswordlessAuth(config ConfigPasswordless) (*Auth, error) {
 
 		auth.rateLimiter = utils.NewInMemoryRateLimiter(maxAttempts, lockoutDuration, lockoutDuration)
 	}
+
+	auth.logger = logger
 
 	return auth, nil
 }

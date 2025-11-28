@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 )
 
@@ -11,7 +11,9 @@ func AuthCookieGet(r *http.Request) string {
 	if err != nil {
 
 		if err != http.ErrNoCookie {
-			log.Println(err.Error())
+			slog.Error("auth cookie retrieval failed",
+				"error", err,
+			)
 		}
 
 		return ""

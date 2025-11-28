@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"log/slog"
 	"time"
 )
 
@@ -27,6 +28,7 @@ type ConfigPasswordless struct {
 	// CSRF Protection
 	EnableCSRFProtection bool
 	CSRFSecret           string
+	Logger               *slog.Logger
 
 	// ===== END: shared by all implementations
 

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	authtypes "github.com/dracory/auth/types"
@@ -28,6 +29,7 @@ type ConfigUsernameAndPassword struct {
 	// CSRF Protection
 	EnableCSRFProtection bool
 	CSRFSecret           string
+	Logger               *slog.Logger
 
 	// ===== END: shared by all implementations
 

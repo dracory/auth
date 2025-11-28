@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"net/mail"
 
@@ -46,7 +46,17 @@ func (a Auth) apiLoginPasswordless(w http.ResponseWriter, r *http.Request) {
 	errTempTokenSave := a.funcTemporaryKeySet(verificationCode, email, 3600)
 
 	if errTempTokenSave != nil {
-		log.Println("token store failed:", errTempTokenSave)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("login code token store failed",
+			"error", errTempTokenSave,
+			"email", email,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "api_login_passwordless",
+		)
 		api.Respond(w, r, api.Error("token store failed."))
 		return
 	}
@@ -59,7 +69,17 @@ func (a Auth) apiLoginPasswordless(w http.ResponseWriter, r *http.Request) {
 	errEmailSent := a.passwordlessFuncEmailSend(r.Context(), email, "Login Code", emailContent)
 
 	if errEmailSent != nil {
-		log.Println(errEmailSent)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("login code email send failed",
+			"error", errEmailSent,
+			"email", email,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "api_login_passwordless",
+		)
 		api.Respond(w, r, api.Error("Login code failed to be send. Please try again later"))
 		return
 	}

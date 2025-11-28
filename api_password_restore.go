@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/dracory/api"
@@ -40,7 +40,19 @@ func (a Auth) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		log.Println(err.Error())
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("password restore user lookup failed",
+			"error", err,
+			"email", email,
+			"first_name", firstName,
+			"last_name", lastName,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "api_password_restore",
+		)
 		api.Respond(w, r, api.Error("Internal server error"))
 		return
 	}
@@ -81,9 +93,18 @@ func (a Auth) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
 
 	errEmailSent := a.funcEmailSend(r.Context(), userID, "Password Restore", emailContent)
 
-	log.Println(errEmailSent)
-
 	if errEmailSent != nil {
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("password restore email send failed",
+			"error", errEmailSent,
+			"user_id", userID,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "api_password_restore",
+		)
 		api.Respond(w, r, api.Error("Password reset link failed to be sent. Please try again later"))
 		return
 	}

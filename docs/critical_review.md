@@ -18,12 +18,12 @@ The `dracory/auth` library demonstrates **solid engineering fundamentals** with 
 |----------|--------|---------|
 | **Security** | 🔴 Critical Issues | Core auth flows use sanitized, generic errors; CSRF & rate limiting implemented; other gaps remain |
 | **Architecture** | 🟢 Good | Clean callback pattern, good separation of concerns |
-| **Error Handling** | � Needs Improvement | Core flows sanitized; still inconsistent patterns and reliance on `log.Println` |
+| **Error Handling** | � Needs Improvement | Core flows sanitized; still inconsistent patterns and incomplete standardization |
 | **Input Validation** | 🟡 Basic | Email validation present; password strength is enforced but still configurable by callers |
 | **Testing** | 🟢 Excellent | 90.2% coverage, comprehensive test suite |
 | **Documentation** | 🟡 Good | Well-documented but missing security guidance |
 | **Context Propagation** | � Implemented | `context.Context` propagated to public APIs and callbacks |
-| **Observability** | 🔴 Poor | Basic `log.Println`, no structured logging or metrics |
+| **Observability** | � Needs Improvement | Structured logging via `log/slog` added; no metrics or tracing yet |
 
 ---
 
@@ -70,7 +70,7 @@ Mixed error handling patterns:
 
 ```go
 // Pattern 1: Log and return generic error
-log.Println(errEmailSent)  // ❌ Using log.Println
+logger.Error("Email send failed", "error", err, "email", email)
 api.Respond(w, r, api.Error("Login code failed to be send"))
 
 // Pattern 2: Return error details
@@ -111,70 +111,9 @@ if err != nil {
 
 ---
 
-### 4. **No Structured Logging** - HIGH
-
-**Problem:**
-Uses basic `log.Println`:
-
-```go
-log.Println(errEmailSent)  // ❌ No context, no levels, no structure
-log.Println(urlApiLogout)  // ❌ Debugging code left in production
-```
-
-**Impact:**
-- Cannot filter logs by level
-- Cannot search/query logs effectively
-- No correlation IDs for request tracing
-- Debugging statements leak to production
-
-**Recommendation:**
-```go
-import "log/slog"
-
-// In config
-type Config struct {
-    Logger *slog.Logger  // Configurable logger
-}
-
-// Usage
-a.logger.Error("Email send failed",
-    "error", err,
-    "email", email,
-    "ip", options.UserIp,
-    "user_agent", options.UserAgent,
-)
-```
-
----
-
-### 5. **Timing Attack Vulnerability** - MEDIUM
-
-**Problem:**
-String comparisons may leak timing information:
-
-```go
-// api_password_reset.go:16
-if password != passwordConfirm {  // ❌ Not constant-time
-    api.Respond(w, r, api.Error("Passwords do not match"))
-    return
-}
-```
-
-**Recommendation:**
-```go
-import "crypto/subtle"
-
-if subtle.ConstantTimeCompare([]byte(password), []byte(passwordConfirm)) != 1 {
-    api.Respond(w, r, api.Error("Passwords do not match"))
-    return
-}
-```
-
----
-
 ## 🟡 Medium Priority Issues
 
-### 6. **Hardcoded Cookie Settings** - MEDIUM
+### 4. **Hardcoded Cookie Settings** - MEDIUM
 
 **Problem:**
 Cookie security settings are not configurable:
@@ -202,7 +141,7 @@ type CookieConfig struct {
 
 ---
 
-### 7. **No Input Sanitization** - MEDIUM
+### 5. **No Input Sanitization** - MEDIUM
 
 **Problem:**
 User inputs are not sanitized before storage/display:
@@ -227,7 +166,7 @@ type Config struct {
 
 ---
 
-### 8. **Email Validation Inconsistency** - MEDIUM
+### 6. **Email Validation Inconsistency** - MEDIUM
 
 **Problem:**
 Email validation is inconsistent:
@@ -248,7 +187,7 @@ Create centralized validation function used everywhere.
 
 ---
 
-### 9. **No Account Enumeration Protection** - MEDIUM
+### 7. **No Account Enumeration Protection** - MEDIUM
 
 **Problem:**
 Different error messages reveal if user exists:
@@ -268,7 +207,7 @@ Always return same message: "Invalid credentials"
 
 ---
 
-### 10. **Deprecated Code Not Removed** - LOW
+### 8. **Deprecated Code Not Removed** - LOW
 
 **Problem:**
 Deprecated middleware still in codebase:
@@ -330,13 +269,13 @@ Remove deprecated code entirely. Add migration guide to docs.
 | Rate Limiting | ✅ Implemented | In-memory per-IP/per-endpoint limiter with lockout; configurable |
 | CSRF Protection | ✅ Implemented | CSRF protection via `github.com/dracory/csrf` when enabled |
 | Error Sanitization | 🟡 Partial | Core auth flows use generic messages; full error-code system not implemented |
-| Structured Logging | ❌ Missing | Uses `log.Println` |
+| Structured Logging | ✅ Implemented | Uses `log/slog` structured logging with request context |
 | Context Propagation | ✅ Implemented | `context.Context` propagated into public APIs and callbacks |
 | Input Validation | 🟡 Partial | Email validated; password strength enforced but policy is configurable |
 | Password Strength | ✅ Implemented | Configurable policy with secure defaults (length, charset, common-password blacklist) |
 | Account Lockout | ✅ Implemented | Lockout after N failed attempts via rate limiter |
 | Session Management | 🟡 Basic | No session invalidation on password change |
-| Audit Logging | 🟡 Partial | Has IP/UserAgent but no structured logs |
+| Audit Logging | 🟡 Partial | Has IP/UserAgent and structured logs, but no full audit trail |
 | Metrics/Monitoring | ❌ Missing | No instrumentation |
 | Security Headers | ❌ Missing | No CSP, X-Frame-Options, etc. |
 | Test Coverage | ✅ Excellent | 90.2% coverage |
@@ -357,17 +296,12 @@ Remove deprecated code entirely. Add migration guide to docs.
    - Ensure all modules use generic user-facing messages only
    - Log detailed errors internally only
 
-2. **Add Structured Logging**
-   - Replace `log.Println` with `slog`
-   - Add log levels (Debug, Info, Warn, Error)
-   - Include context in all logs (request ID, user ID, IP)
-
-3. **Implement Context Propagation**
+2. **Implement Context Propagation**
    - Add `context.Context` to all functions
    - Implement request timeouts
    - Add cancellation support
 
-4. **Enforce Input Sanitization**
+3. **Enforce Input Sanitization**
    - Sanitize all user inputs
    - Validate all fields consistently
 
@@ -375,22 +309,22 @@ Remove deprecated code entirely. Add migration guide to docs.
 
 **Estimated Time:** 1-2 weeks
 
-5. **Optional: Advanced Password Strength Enhancements**
+4. **Optional: Advanced Password Strength Enhancements**
    - Integrate with haveibeenpwned API (optional)
    - Add password complexity scoring
 
-6. **Input Sanitization**
+5. **Input Sanitization**
    - Sanitize all user inputs
    - Add XSS protection
    - Validate all fields consistently
 
-7. **Improve Cookie Security**
+6. **Improve Cookie Security**
    - Make cookie settings configurable
    - Set HttpOnly=true by default
    - Set SameSite=Lax by default
    - Add Secure flag for HTTPS
 
-8. **Account Enumeration Protection**
+7. **Account Enumeration Protection**
    - Standardize all error messages
    - Add timing delays to prevent timing attacks
    - Use constant-time comparisons
@@ -399,24 +333,24 @@ Remove deprecated code entirely. Add migration guide to docs.
 
 **Estimated Time:** 2-3 weeks
 
-9. **Add Metrics/Monitoring**
+8. **Add Metrics/Monitoring**
     - Instrument all endpoints
     - Add Prometheus metrics
     - Track login success/failure rates
     - Monitor verification code usage
 
-10. **Add Security Headers**
+9. **Add Security Headers**
     - CSP (Content Security Policy)
     - X-Frame-Options
     - X-Content-Type-Options
     - Strict-Transport-Security
 
-11. **Session Management**
+10. **Session Management**
     - Invalidate sessions on password change
     - Add session expiration
     - Add "logout all devices" functionality
 
-12. **Audit Logging**
+11. **Audit Logging**
     - Log all authentication events
     - Include IP, UserAgent, timestamp
     - Make logs tamper-evident
@@ -471,7 +405,7 @@ auth/
 ### 1. **Magic Numbers**
 
 ```go
-errTempTokenSave := a.funcTemporaryKeySet(verificationCode, email, 3600)
+errTempTokenSave := a.funcTemporaryKeySet(verificationCode, email, 
                                                                     ^^^^
 // Should be: const DefaultCodeExpiration = 1 * time.Hour
 ```
@@ -513,14 +447,14 @@ The `dracory/auth` library has a **solid foundation** with good architecture and
 
 ❌ **Critical Issues:**
 - Error sanitization only partial (no error-code system, limited standardization)
-- Poor logging (no structure, no levels)
+- Limited observability (no metrics/tracing, partial audit logging)
 
 ### Final Recommendation
 
 **DO NOT use in production without:**
 1. Sanitizing all error messages
-2. Adding structured logging
-3. Ensuring robust input sanitization
+2. Ensuring robust input sanitization
+3. Improving observability (metrics, tracing, and full audit logging)
 
 **Estimated effort to production-ready:** 4-6 weeks of security hardening
 

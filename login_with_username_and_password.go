@@ -2,7 +2,7 @@ package auth
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"net/mail"
 
 	"github.com/dracory/str"
@@ -34,7 +34,16 @@ func (a Auth) LoginWithUsernameAndPassword(ctx context.Context, email string, pa
 
 	if err != nil {
 		response.ErrorMessage = "authentication failed."
-		log.Println("login failed:", err)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("login with username and password failed",
+			"error", err,
+			"email", email,
+			"ip", options.UserIp,
+			"user_agent", options.UserAgent,
+		)
 		return response
 	}
 
@@ -46,7 +55,16 @@ func (a Auth) LoginWithUsernameAndPassword(ctx context.Context, email string, pa
 	token, errRandom := str.RandomFromGamma(32, LoginCodeGamma)
 	if errRandom != nil {
 		response.ErrorMessage = "token generation failed."
-		log.Println("token generation failed:", errRandom)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("auth token generation failed",
+			"error", errRandom,
+			"email", email,
+			"ip", options.UserIp,
+			"user_agent", options.UserAgent,
+		)
 		return response
 	}
 
@@ -54,7 +72,17 @@ func (a Auth) LoginWithUsernameAndPassword(ctx context.Context, email string, pa
 
 	if errSession != nil {
 		response.ErrorMessage = "token store failed."
-		log.Println("token store failed:", errSession)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("auth token store failed",
+			"error", errSession,
+			"email", email,
+			"user_id", userID,
+			"ip", options.UserIp,
+			"user_agent", options.UserAgent,
+		)
 		return response
 	}
 

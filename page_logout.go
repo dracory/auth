@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/dracory/hb"
@@ -44,7 +44,13 @@ func (a Auth) pageLogoutContent() string {
 func (a Auth) pageLogoutScripts() string {
 	urlApiLogout := a.LinkApiLogout()
 	urlSuccess := a.LinkLogin()
-	log.Println(urlApiLogout)
+	logger := a.logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+	logger.Debug("logout page initialized",
+		"api_logout_url", urlApiLogout,
+	)
 
 	return `
 	var urlApiLogout = "` + urlApiLogout + `";

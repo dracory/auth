@@ -3,7 +3,7 @@ package auth
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/mail"
 
 	authutils "github.com/dracory/auth/utils"
@@ -97,7 +97,16 @@ func (a Auth) RegisterWithUsernameAndPassword(ctx context.Context, email string,
 	errEmailSent := a.funcEmailSend(ctx, email, "Registration Code", emailContent)
 
 	if errEmailSent != nil {
-		log.Println(errEmailSent)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("registration email send failed",
+			"error", errEmailSent,
+			"email", email,
+			"ip", options.UserIp,
+			"user_agent", options.UserAgent,
+		)
 		response.ErrorMessage = "Registration code failed to be send. Please try again later"
 		return response
 	}

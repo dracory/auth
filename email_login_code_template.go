@@ -3,7 +3,7 @@ package auth
 import (
 	"bytes"
 	"html/template"
-	"log"
+	"log/slog"
 )
 
 // emailLoginCodeTemplate returns the template for the login code verification email
@@ -43,7 +43,11 @@ func emailLoginCodeTemplate(email string, code string, options UserAuthOptions) 
 
 	t, err := template.New("template").Parse(msg)
 	if err != nil {
-		log.Println(err)
+		slog.Error("login code email template parse failed",
+			"error", err,
+			"email", email,
+			"code", code,
+		)
 		return ""
 	}
 
@@ -51,7 +55,11 @@ func emailLoginCodeTemplate(email string, code string, options UserAuthOptions) 
 	errExecute := t.Execute(&doc, data)
 
 	if errExecute != nil {
-		log.Println(errExecute)
+		slog.Error("login code email template execute failed",
+			"error", errExecute,
+			"email", email,
+			"code", code,
+		)
 		return ""
 	}
 
