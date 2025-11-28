@@ -136,7 +136,7 @@ func TestRegisterWithUsernameAndPassword_VerificationEnabled_TokenStoreError(t *
 
 	resp := authInstance.RegisterWithUsernameAndPassword(context.Background(), "test@test.com", "password", "John", "Doe", UserAuthOptions{})
 
-	expected := "token store failed."
+	expected := "Failed to process request. Please try again later"
 	if resp.ErrorMessage != expected {
 		t.Fatalf("expected error %q, got %q", expected, resp.ErrorMessage)
 	}
@@ -164,7 +164,7 @@ func TestRegisterWithUsernameAndPassword_VerificationEnabled_EmailSendError(t *t
 
 	resp := authInstance.RegisterWithUsernameAndPassword(context.Background(), "test@test.com", "password", "John", "Doe", UserAuthOptions{})
 
-	expected := "Registration code failed to be send. Please try again later"
+	expected := "Failed to send email. Please try again later"
 	if resp.ErrorMessage != expected {
 		t.Fatalf("expected error %q, got %q", expected, resp.ErrorMessage)
 	}

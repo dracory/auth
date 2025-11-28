@@ -2,6 +2,7 @@ package auth
 
 import (
 	"crypto/subtle"
+	"log/slog"
 	"net/http"
 
 	"github.com/dracory/api"
@@ -41,7 +42,23 @@ func (a Auth) apiPasswordReset(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := authutils.ValidatePasswordStrength(password, a.passwordStrength); err != nil {
-		api.Respond(w, r, api.Error(err.Error()))
+		authErr := AuthError{
+			Code:        ErrCodeValidationFailed,
+			Message:     err.Error(),
+			InternalErr: err,
+		}
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("password validation failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "api_password_reset",
+		)
+		api.Respond(w, r, api.Error(authErr.Message))
 		return
 	}
 
@@ -63,7 +80,20 @@ func (a Auth) apiPasswordReset(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if errPasswordChange != nil {
-		api.Respond(w, r, api.Error("authentication failed."))
+		authErr := NewPasswordResetError(errPasswordChange)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("password change failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"user_id", userID,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "api_password_reset",
+		)
+		api.Respond(w, r, api.Error(authErr.Message))
 		return
 	}
 

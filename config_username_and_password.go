@@ -21,6 +21,7 @@ type ConfigUsernameAndPassword struct {
 	UrlRedirectOnSuccess    string
 	UseCookies              bool
 	UseLocalStorage         bool
+	CookieConfig            *CookieConfig
 	// Rate limiting options
 	DisableRateLimit   bool                                                                                 // Set to true to disable rate limiting (not recommended for production)
 	FuncCheckRateLimit func(ip string, endpoint string) (allowed bool, retryAfter time.Duration, err error) // Optional: override default rate limiter

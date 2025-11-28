@@ -64,7 +64,19 @@ func (a Auth) RegisterWithUsernameAndPassword(ctx context.Context, email string,
 
 	verificationCode, errRandom := authutils.GenerateVerificationCode(a.disableRateLimit)
 	if errRandom != nil {
-		response.ErrorMessage = "Error generating random string"
+		authErr := NewCodeGenerationError(errRandom)
+		response.ErrorMessage = authErr.Message
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("registration code generation failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"email", email,
+			"ip", options.UserIp,
+			"user_agent", options.UserAgent,
+		)
 		return response
 	}
 
@@ -76,14 +88,38 @@ func (a Auth) RegisterWithUsernameAndPassword(ctx context.Context, email string,
 	})
 
 	if errJson != nil {
-		response.ErrorMessage = "Error serializing data"
+		authErr := NewSerializationError(errJson)
+		response.ErrorMessage = authErr.Message
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("registration data serialization failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"email", email,
+			"ip", options.UserIp,
+			"user_agent", options.UserAgent,
+		)
 		return response
 	}
 
 	errTempTokenSave := a.funcTemporaryKeySet(verificationCode, string(json), 3600)
 
 	if errTempTokenSave != nil {
-		response.ErrorMessage = "token store failed."
+		authErr := NewTokenStoreError(errTempTokenSave)
+		response.ErrorMessage = authErr.Message
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("registration code token store failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"email", email,
+			"ip", options.UserIp,
+			"user_agent", options.UserAgent,
+		)
 		return response
 	}
 
@@ -92,17 +128,19 @@ func (a Auth) RegisterWithUsernameAndPassword(ctx context.Context, email string,
 	errEmailSent := a.funcEmailSend(ctx, email, "Registration Code", emailContent)
 
 	if errEmailSent != nil {
+		authErr := NewEmailSendError(errEmailSent)
+		response.ErrorMessage = authErr.Message
 		logger := a.logger
 		if logger == nil {
 			logger = slog.Default()
 		}
 		logger.Error("registration email send failed",
-			"error", errEmailSent,
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
 			"email", email,
 			"ip", options.UserIp,
 			"user_agent", options.UserAgent,
 		)
-		response.ErrorMessage = "Registration code failed to be send. Please try again later"
 		return response
 	}
 

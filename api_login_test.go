@@ -87,7 +87,7 @@ func TestApiLoginUsernameAndPasswordTokenStoreError(t *testing.T) {
 		"password": {"1234"},
 	}
 
-	expectedMessage := `"message":"token store failed."`
+	expectedMessage := `"message":"Failed to process request. Please try again later"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogin(), values, expectedMessage, "%")
 }
 
@@ -172,7 +172,7 @@ func TestApiLoginPasswordlessTokenStoreError(t *testing.T) {
 		"email": {"test@test.com"},
 	}
 
-	expectedMessage := `"message":"token store failed."`
+	expectedMessage := `"message":"Failed to process request. Please try again later"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogin(), values, expectedMessage, "%")
 }
 
@@ -189,7 +189,7 @@ func TestApiLoginPasswordlessEmailSendError(t *testing.T) {
 		"email": {"test@test.com"},
 	}
 
-	expectedMessage := `"message":"Login code failed to be send. Please try again later"`
+	expectedMessage := `"message":"Failed to send email. Please try again later"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogin(), values, expectedMessage, "%")
 }
 

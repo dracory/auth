@@ -81,14 +81,40 @@ func (a Auth) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
 	token, errRandomFromGamma := authutils.GeneratePasswordResetToken()
 
 	if errRandomFromGamma != nil {
-		api.Respond(w, r, api.Error("Error generating random string"))
+		authErr := NewCodeGenerationError(errRandomFromGamma)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("password reset token generation failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"user_id", userID,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "api_password_restore",
+		)
+		api.Respond(w, r, api.Error(authErr.Message))
 		return
 	}
 
 	errTempTokenSave := a.funcTemporaryKeySet(token, userID, 3600)
 
 	if errTempTokenSave != nil {
-		api.Respond(w, r, api.Error("token store failed."))
+		authErr := NewTokenStoreError(errTempTokenSave)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("password reset token store failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"user_id", userID,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "api_password_restore",
+		)
+		api.Respond(w, r, api.Error(authErr.Message))
 		return
 	}
 
@@ -100,18 +126,20 @@ func (a Auth) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
 	errEmailSent := a.funcEmailSend(r.Context(), userID, "Password Restore", emailContent)
 
 	if errEmailSent != nil {
+		authErr := NewEmailSendError(errEmailSent)
 		logger := a.logger
 		if logger == nil {
 			logger = slog.Default()
 		}
 		logger.Error("password restore email send failed",
-			"error", errEmailSent,
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
 			"user_id", userID,
 			"ip", req.GetIP(r),
 			"user_agent", r.UserAgent(),
 			"endpoint", "api_password_restore",
 		)
-		api.Respond(w, r, api.Error("Password reset link failed to be sent. Please try again later"))
+		api.Respond(w, r, api.Error(authErr.Message))
 		return
 	}
 

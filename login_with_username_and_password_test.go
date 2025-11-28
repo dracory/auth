@@ -84,7 +84,7 @@ func TestLoginWithUsernameAndPassword_TokenStoreError(t *testing.T) {
 
 	resp := authInstance.LoginWithUsernameAndPassword(context.Background(), "test@test.com", "password", UserAuthOptions{})
 
-	expected := "token store failed."
+	expected := "Failed to process request. Please try again later"
 	if resp.ErrorMessage != expected {
 		t.Fatalf("expected error %q, got %q", expected, resp.ErrorMessage)
 	}

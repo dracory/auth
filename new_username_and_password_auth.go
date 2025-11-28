@@ -79,6 +79,11 @@ func NewUsernameAndPasswordAuth(config ConfigUsernameAndPassword) (*Auth, error)
 	auth.urlRedirectOnSuccess = config.UrlRedirectOnSuccess
 	auth.useCookies = config.UseCookies
 	auth.useLocalStorage = config.UseLocalStorage
+	if config.CookieConfig != nil {
+		auth.cookieConfig = *config.CookieConfig
+	} else {
+		auth.cookieConfig = defaultCookieConfig()
+	}
 	auth.funcEmailSend = config.FuncEmailSend
 	auth.funcEmailTemplatePasswordRestore = config.FuncEmailTemplatePasswordRestore
 	auth.funcLayout = config.FuncLayout

@@ -58,7 +58,20 @@ func (a Auth) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
 	verificationCode, errRandomFromGamma := authutils.GenerateVerificationCode(a.disableRateLimit)
 
 	if errRandomFromGamma != nil {
-		api.Respond(w, r, api.Error("Error generating random string"))
+		authErr := NewCodeGenerationError(errRandomFromGamma)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("registration code generation failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"email", email,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "api_register_passwordless",
+		)
+		api.Respond(w, r, api.Error(authErr.Message))
 		return
 	}
 
@@ -69,14 +82,40 @@ func (a Auth) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if errJson != nil {
-		api.Respond(w, r, api.Error("Error serializing data"))
+		authErr := NewSerializationError(errJson)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("registration data serialization failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"email", email,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "api_register_passwordless",
+		)
+		api.Respond(w, r, api.Error(authErr.Message))
 		return
 	}
 
 	errTempTokenSave := a.funcTemporaryKeySet(verificationCode, string(json), 3600)
 
 	if errTempTokenSave != nil {
-		api.Respond(w, r, api.Error("token store failed."))
+		authErr := NewTokenStoreError(errTempTokenSave)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("registration code token store failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"email", email,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "api_register_passwordless",
+		)
+		api.Respond(w, r, api.Error(authErr.Message))
 		return
 	}
 
@@ -88,22 +127,25 @@ func (a Auth) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
 	errEmailSent := a.passwordlessFuncEmailSend(r.Context(), email, "Registration Code", emailContent)
 
 	if errEmailSent != nil {
+		authErr := NewEmailSendError(errEmailSent)
 		logger := a.logger
 		if logger == nil {
 			logger = slog.Default()
 		}
 		logger.Error("registration code email send failed",
-			"error", errEmailSent,
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
 			"email", email,
 			"ip", req.GetIP(r),
 			"user_agent", r.UserAgent(),
 			"endpoint", "api_register_passwordless",
 		)
-		api.Respond(w, r, api.Error("Registration code failed to be send. Please try again later"))
+		api.Respond(w, r, api.Error(authErr.Message))
 		return
 	}
 
 	api.Respond(w, r, api.Success("Registration code was sent successfully"))
+
 }
 
 func (a Auth) apiRegisterUsernameAndPassword(w http.ResponseWriter, r *http.Request) {

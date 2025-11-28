@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/dracory/api"
@@ -75,7 +76,20 @@ func (a Auth) authenticateViaUsername(w http.ResponseWriter, r *http.Request, us
 	token, errRandomFromGamma := str.RandomFromGamma(32, "BCDFGHJKLMNPQRSTVXYZ")
 
 	if errRandomFromGamma != nil {
-		api.Respond(w, r, api.Error("Error generating random string"))
+		authErr := NewCodeGenerationError(errRandomFromGamma)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("login auth token generation failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"user_id", userID,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "authenticate_via_username",
+		)
+		api.Respond(w, r, api.Error(authErr.Message))
 		return
 	}
 
@@ -85,12 +99,25 @@ func (a Auth) authenticateViaUsername(w http.ResponseWriter, r *http.Request, us
 	})
 
 	if errSession != nil {
-		api.Respond(w, r, api.Error("token store failed."))
+		authErr := NewTokenStoreError(errSession)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("login auth token store failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"user_id", userID,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "authenticate_via_username",
+		)
+		api.Respond(w, r, api.Error(authErr.Message))
 		return
 	}
 
 	if a.useCookies {
-		AuthCookieSet(w, r, token)
+		a.setAuthCookie(w, r, token)
 	}
 
 	api.Respond(w, r, api.SuccessWithData("login success", map[string]interface{}{

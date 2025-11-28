@@ -62,6 +62,8 @@ type Auth struct {
 	rateLimiter        *authutils.InMemoryRateLimiter
 	// ===== END: rate limiting
 
+	cookieConfig CookieConfig
+
 	// ===== START: CSRF Protection
 	enableCSRFProtection  bool
 	csrfSecret            string

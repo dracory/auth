@@ -125,7 +125,7 @@ func TestApiLoginCodeVerifyTokenStoreError(t *testing.T) {
 		"verification_code": {"BCDFGHJK"},
 	}
 
-	expectedMessage := `"message":"token store failed."`
+	expectedMessage := `"message":"Failed to process request. Please try again later"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLoginCodeVerify(), values, expectedMessage, "%")
 }
 

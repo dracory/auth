@@ -54,13 +54,15 @@ func (a Auth) LoginWithUsernameAndPassword(ctx context.Context, email string, pa
 
 	token, errRandom := str.RandomFromGamma(32, LoginCodeGamma)
 	if errRandom != nil {
-		response.ErrorMessage = "token generation failed."
+		authErr := NewCodeGenerationError(errRandom)
+		response.ErrorMessage = authErr.Message
 		logger := a.logger
 		if logger == nil {
 			logger = slog.Default()
 		}
 		logger.Error("auth token generation failed",
-			"error", errRandom,
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
 			"email", email,
 			"ip", options.UserIp,
 			"user_agent", options.UserAgent,
@@ -71,13 +73,15 @@ func (a Auth) LoginWithUsernameAndPassword(ctx context.Context, email string, pa
 	errSession := a.funcUserStoreAuthToken(ctx, token, userID, options)
 
 	if errSession != nil {
-		response.ErrorMessage = "token store failed."
+		authErr := NewTokenStoreError(errSession)
+		response.ErrorMessage = authErr.Message
 		logger := a.logger
 		if logger == nil {
 			logger = slog.Default()
 		}
 		logger.Error("auth token store failed",
-			"error", errSession,
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
 			"email", email,
 			"user_id", userID,
 			"ip", options.UserIp,

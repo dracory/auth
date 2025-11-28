@@ -75,6 +75,11 @@ func NewPasswordlessAuth(config ConfigPasswordless) (*Auth, error) {
 	auth.urlRedirectOnSuccess = config.UrlRedirectOnSuccess
 	auth.useCookies = config.UseCookies
 	auth.useLocalStorage = config.UseLocalStorage
+	if config.CookieConfig != nil {
+		auth.cookieConfig = *config.CookieConfig
+	} else {
+		auth.cookieConfig = defaultCookieConfig()
+	}
 	auth.funcLayout = config.FuncLayout
 	auth.funcTemporaryKeyGet = config.FuncTemporaryKeyGet
 	auth.funcTemporaryKeySet = config.FuncTemporaryKeySet
