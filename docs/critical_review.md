@@ -29,59 +29,6 @@ The `dracory/auth` library demonstrates **solid engineering fundamentals** with 
 
 ## 🔴 Critical Security Issues
 
-### 1. **Internal Error Exposure** - HIGH
-
-**Severity:** 🔴 **HIGH**  
-**Impact:** Information leakage, attack surface mapping
-
-**Problem:**
-Internal errors are directly exposed to users, revealing implementation details:
-
-**Evidence:**
-```go
-// login_with_username_and_password.go:20
-if err != nil {
-    response.ErrorMessage = "authentication failed. " + err.Error()  // ❌ EXPOSES INTERNALS
-    return response
-}
-
-// api_password_restore.go:51
-log.Println(errEmailSent)  // ❌ LOGS TO STDOUT, MIGHT EXPOSE SECRETS
-if errEmailSent != nil {
-    api.Respond(w, r, api.Error("Password reset link failed to be sent. Please try again later"))
-}
-```
-
-**Attack Scenario:**
-```
-POST /auth/api/login
-{"email": "test@test.com", "password": "wrong"}
-
-Response: "authentication failed. sql: no rows in result set"
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-          Attacker now knows you use SQL database
-```
-
-**Recommendation:**
-```go
-// Define error codes
-const (
-    ErrCodeInvalidCredentials = "INVALID_CREDENTIALS"
-    ErrCodeAccountLocked      = "ACCOUNT_LOCKED"
-    ErrCodeServerError        = "SERVER_ERROR"
-)
-
-// Never expose internal errors
-if err != nil {
-    log.Error("Login failed", "error", err, "user", email)  // Log internally
-    response.ErrorMessage = "Invalid credentials"            // Generic to user
-    response.ErrorCode = ErrCodeInvalidCredentials
-    return response
-}
-```
-
----
-
 ### 2. **No Password Strength Enforcement** - MEDIUM
 
 **Severity:** 🟡 **MEDIUM**  
@@ -420,7 +367,7 @@ Remove deprecated code entirely. Add migration guide to docs.
 |-------------|--------|-------|
 | Rate Limiting | ✅ Implemented | In-memory per-IP/per-endpoint limiter with lockout; configurable |
 | CSRF Protection | ✅ Implemented | CSRF protection via `github.com/dracory/csrf` when enabled |
-| Error Sanitization | ❌ Missing | Exposes internal errors |
+| Error Sanitization | 🟡 Partial | Core auth flows use generic messages; full error-code system not implemented |
 | Structured Logging | ❌ Missing | Uses `log.Println` |
 | Context Propagation | ✅ Implemented | `context.Context` propagated into public APIs and callbacks |
 | Input Validation | 🟡 Partial | Email only, no password strength |

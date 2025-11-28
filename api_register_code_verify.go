@@ -84,7 +84,7 @@ func (a Auth) apiRegisterCodeVerify(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if errRegister != nil {
-		api.Respond(w, r, api.Error("registration failed. "+errRegister.Error()))
+		api.Respond(w, r, api.Error("registration failed."))
 		return
 	}
 

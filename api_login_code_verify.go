@@ -63,7 +63,7 @@ func (a Auth) authenticateViaUsername(w http.ResponseWriter, r *http.Request, us
 	}
 
 	if errUser != nil {
-		api.Respond(w, r, api.Error("authentication failed. "+errUser.Error()))
+		api.Respond(w, r, api.Error("authentication failed."))
 		return
 	}
 
@@ -85,7 +85,7 @@ func (a Auth) authenticateViaUsername(w http.ResponseWriter, r *http.Request, us
 	})
 
 	if errSession != nil {
-		api.Respond(w, r, api.Error("token store failed. "+errSession.Error()))
+		api.Respond(w, r, api.Error("token store failed."))
 		return
 	}
 

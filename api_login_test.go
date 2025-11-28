@@ -61,7 +61,7 @@ func TestApiLoginUsernameAndPasswordUserLoginError(t *testing.T) {
 		"password": {"1234"},
 	}
 
-	expectedMessage := `"message":"authentication failed. db error"`
+	expectedMessage := `"message":"authentication failed."`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogin(), values, expectedMessage, "%")
 }
 
@@ -101,7 +101,7 @@ func TestApiLoginUsernameAndPasswordTokenStoreError(t *testing.T) {
 		"password": {"1234"},
 	}
 
-	expectedMessage := `"message":"token store failed. db error"`
+	expectedMessage := `"message":"token store failed."`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogin(), values, expectedMessage, "%")
 }
 
@@ -188,7 +188,7 @@ func TestApiLoginPasswordlessTokenStoreError(t *testing.T) {
 		"verification_code": {"CODE1234"},
 	}
 
-	expectedMessage := `"message":"token store failed. db error"`
+	expectedMessage := `"message":"token store failed."`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogin(), values, expectedMessage, "%")
 }
 

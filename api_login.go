@@ -46,7 +46,8 @@ func (a Auth) apiLoginPasswordless(w http.ResponseWriter, r *http.Request) {
 	errTempTokenSave := a.funcTemporaryKeySet(verificationCode, email, 3600)
 
 	if errTempTokenSave != nil {
-		api.Respond(w, r, api.Error("token store failed. "+errTempTokenSave.Error()))
+		log.Println("token store failed:", errTempTokenSave)
+		api.Respond(w, r, api.Error("token store failed."))
 		return
 	}
 

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"log"
 	"net/mail"
 
 	"github.com/dracory/str"
@@ -32,7 +33,8 @@ func (a Auth) LoginWithUsernameAndPassword(ctx context.Context, email string, pa
 	userID, err := a.funcUserLogin(ctx, email, password, options)
 
 	if err != nil {
-		response.ErrorMessage = "authentication failed. " + err.Error()
+		response.ErrorMessage = "authentication failed."
+		log.Println("login failed:", err)
 		return response
 	}
 
@@ -43,14 +45,16 @@ func (a Auth) LoginWithUsernameAndPassword(ctx context.Context, email string, pa
 
 	token, errRandom := str.RandomFromGamma(32, LoginCodeGamma)
 	if errRandom != nil {
-		response.ErrorMessage = "token generation failed. " + errRandom.Error()
+		response.ErrorMessage = "token generation failed."
+		log.Println("token generation failed:", errRandom)
 		return response
 	}
 
 	errSession := a.funcUserStoreAuthToken(ctx, token, userID, options)
 
 	if errSession != nil {
-		response.ErrorMessage = "token store failed. " + errSession.Error()
+		response.ErrorMessage = "token store failed."
+		log.Println("token store failed:", errSession)
 		return response
 	}
 

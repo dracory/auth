@@ -31,7 +31,7 @@ func (a Auth) apiLogout(w http.ResponseWriter, r *http.Request) {
 		})
 
 		if errLogout != nil {
-			api.Respond(w, r, api.Error("logout failed. "+errLogout.Error()))
+			api.Respond(w, r, api.Error("logout failed"))
 			return
 		}
 	}

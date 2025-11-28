@@ -79,7 +79,7 @@ func TestApiLoginCodeVerifyAuthenticationError(t *testing.T) {
 		"verification_code": {"BCDFGHJK"},
 	}
 
-	expectedMessage := `"message":"authentication failed. db error"`
+	expectedMessage := `"message":"authentication failed."`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLoginCodeVerify(), values, expectedMessage, "%")
 }
 
@@ -125,7 +125,7 @@ func TestApiLoginCodeVerifyTokenStoreError(t *testing.T) {
 		"verification_code": {"BCDFGHJK"},
 	}
 
-	expectedMessage := `"message":"token store failed. db error"`
+	expectedMessage := `"message":"token store failed."`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLoginCodeVerify(), values, expectedMessage, "%")
 }
 

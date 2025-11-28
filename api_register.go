@@ -74,7 +74,7 @@ func (a Auth) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
 	errTempTokenSave := a.funcTemporaryKeySet(verificationCode, string(json), 3600)
 
 	if errTempTokenSave != nil {
-		api.Respond(w, r, api.Error("token store failed. "+errTempTokenSave.Error()))
+		api.Respond(w, r, api.Error("token store failed."))
 		return
 	}
 

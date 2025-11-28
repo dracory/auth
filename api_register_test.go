@@ -113,7 +113,7 @@ func TestApiRegisterUsernameAndPasswordRegistrationFailed(t *testing.T) {
 		"password":   {"1234"},
 	}
 
-	expectedMessage := `"message":"registration failed. db error"`
+	expectedMessage := `"message":"registration failed."`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
 }
 
@@ -217,7 +217,7 @@ func TestApiRegisterPasswordlessTokenStoreError(t *testing.T) {
 		"email":      {"test@test.com"},
 	}
 
-	expectedMessage := `"message":"token store failed. db error"`
+	expectedMessage := `"message":"token store failed."`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegister(), values, expectedMessage, "%")
 }
 

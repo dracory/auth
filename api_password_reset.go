@@ -56,7 +56,7 @@ func (a Auth) apiPasswordReset(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if errPasswordChange != nil {
-		api.Respond(w, r, api.Error("authentication failed. "+errPasswordChange.Error()))
+		api.Respond(w, r, api.Error("authentication failed."))
 		return
 	}
 

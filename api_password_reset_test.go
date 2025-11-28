@@ -77,7 +77,7 @@ func TestPasswordResetEndpointPasswordChangeError(t *testing.T) {
 		return errors.New("db error")
 	}
 
-	expectedErrorMessage := `"message":"authentication failed. db error"`
+	expectedErrorMessage := `"message":"authentication failed."`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordReset(), url.Values{
 		"token":            {"valid-token"},
 		"password":         {"password123"},

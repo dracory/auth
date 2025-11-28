@@ -51,7 +51,7 @@ func (a Auth) RegisterWithUsernameAndPassword(ctx context.Context, email string,
 		err := a.funcUserRegister(ctx, email, password, firstName, lastName, options)
 
 		if err != nil {
-			response.ErrorMessage = "registration failed. " + err.Error()
+			response.ErrorMessage = "registration failed."
 			return response
 		}
 
@@ -83,7 +83,7 @@ func (a Auth) RegisterWithUsernameAndPassword(ctx context.Context, email string,
 	errTempTokenSave := a.funcTemporaryKeySet(verificationCode, string(json), 3600)
 
 	if errTempTokenSave != nil {
-		response.ErrorMessage = "token store failed. " + errTempTokenSave.Error()
+		response.ErrorMessage = "token store failed."
 		return response
 	}
 
