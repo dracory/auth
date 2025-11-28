@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 
 	auth "github.com/dracory/auth"
@@ -115,6 +116,26 @@ func (s *passwordlessMemoryStore) tempKeyGet(key string) (string, error) {
 	return v, nil
 }
 
+func (s *passwordlessMemoryStore) displayName(userID string) string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for _, u := range s.usersByEmail {
+		if u.ID == userID {
+			full := strings.TrimSpace(u.FirstName + " " + u.LastName)
+			if full != "" {
+				return full
+			}
+			if u.Email != "" {
+				return u.Email
+			}
+			break
+		}
+	}
+
+	return userID
+}
+
 func passwordlessEmailSend(_ context.Context, to, subject, body string) error {
 	log.Printf("[passwordless] Sending email to %s via localhost:1025: %s", to, subject)
 
@@ -164,7 +185,8 @@ func main() {
 	// Protected dashboard page
 	mux.Handle("/dashboard", authInstance.WebAuthOrRedirectMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID := authInstance.GetCurrentUserID(r)
-		fmt.Fprintf(w, "<h1>Dashboard</h1><p>Welcome, user %s!</p><p><a href='%s'>Logout</a></p>", userID, authInstance.LinkLogout())
+		displayName := passwordlessStore.displayName(userID)
+		fmt.Fprintf(w, "<h1>Dashboard</h1><p>Welcome, %s (id: %s)!</p><p><a href='%s'>Logout</a></p>", displayName, userID, authInstance.LinkLogout())
 	})))
 
 	fmt.Println("Passwordless auth example running on http://localhost:8083")

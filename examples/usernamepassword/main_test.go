@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	auth "github.com/dracory/auth"
@@ -138,5 +139,31 @@ func TestUsernamePasswordTempKeys(t *testing.T) {
 
 	if _, err := passwordStore.tempKeyGet("missing"); err == nil {
 		t.Fatalf("expected error for missing key, got nil")
+	}
+}
+
+func TestPasswordStoreDisplayNameUsesRegisteredName(t *testing.T) {
+	resetPasswordStore()
+
+	ctx := context.Background()
+	opts := auth.UserAuthOptions{}
+
+	username := "user@example.com"
+	password := "P@ssw0rd!"
+	firstName := "Alice"
+	lastName := "Smith"
+
+	if err := passwordStore.userRegister(ctx, username, password, firstName, lastName, opts); err != nil {
+		t.Fatalf("userRegister unexpected error: %v", err)
+	}
+
+	userID, err := passwordStore.userLogin(ctx, username, password, opts)
+	if err != nil {
+		t.Fatalf("userLogin unexpected error: %v", err)
+	}
+
+	display := passwordStore.displayName(userID)
+	if !strings.Contains(display, firstName) || !strings.Contains(display, lastName) {
+		t.Fatalf("expected display name to contain first and last name, got %q", display)
 	}
 }

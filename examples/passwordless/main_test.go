@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	auth "github.com/dracory/auth"
@@ -120,5 +121,30 @@ func TestPasswordlessLogoutClearsSessionsForUser(t *testing.T) {
 	// Token for user2 should still be valid
 	if _, err := passwordlessStore.findByAuthToken(ctx, "t3", opts); err != nil {
 		t.Fatalf("expected token t3 to remain valid, got error: %v", err)
+	}
+}
+
+func TestPasswordlessDisplayNameUsesRegisteredName(t *testing.T) {
+	resetPasswordlessStore()
+
+	ctx := context.Background()
+	opts := auth.UserAuthOptions{}
+
+	email := "user@example.com"
+	firstName := "Alice"
+	lastName := "Smith"
+
+	if err := passwordlessStore.registerUser(ctx, email, firstName, lastName, opts); err != nil {
+		t.Fatalf("registerUser unexpected error: %v", err)
+	}
+
+	userID, err := passwordlessStore.findUserByEmail(ctx, email, opts)
+	if err != nil {
+		t.Fatalf("findUserByEmail unexpected error: %v", err)
+	}
+
+	display := passwordlessStore.displayName(userID)
+	if !strings.Contains(display, firstName) || !strings.Contains(display, lastName) {
+		t.Fatalf("expected display name to contain first and last name, got %q", display)
 	}
 }

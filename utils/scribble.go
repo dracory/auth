@@ -1,5 +1,5 @@
-// Package scribble is a tiny JSON database
-package scribble
+// This is a tiny JSON database
+package utils
 
 import (
 	"encoding/json"

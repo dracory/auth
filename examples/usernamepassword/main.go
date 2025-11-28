@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 
 	auth "github.com/dracory/auth"
@@ -162,6 +163,26 @@ func (s *passwordMemoryStore) tempKeyGet(key string) (string, error) {
 	return v, nil
 }
 
+func (s *passwordMemoryStore) displayName(userID string) string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for _, u := range s.usersByName {
+		if u.ID == userID {
+			full := strings.TrimSpace(u.FirstName + " " + u.LastName)
+			if full != "" {
+				return full
+			}
+			if u.Username != "" {
+				return u.Username
+			}
+			break
+		}
+	}
+
+	return userID
+}
+
 func exampleEmailSend(_ context.Context, email, subject, body string) error {
 	fmt.Printf("[username/password] Sending email to %s: %s\n%s", email, subject, body)
 	return nil
@@ -198,14 +219,57 @@ func main() {
 
 	// Public home page
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "<h1>Home</h1><p><a href='%s'>Login</a> | <a href='%s'>Register</a></p>",
-			authInstance.LinkLogin(), authInstance.LinkRegister())
+		fmt.Fprintf(w, `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Auth Example - Username &amp; Password</title>
+</head>
+<body>
+  <h1>Username &amp; Password Auth Example</h1>
+
+  <p>This example uses an <strong>in-memory store</strong> for users, sessions and reset tokens.</p>
+
+  <h2>How to use</h2>
+  <ol>
+    <li>Click <a href="%s">Register</a> and create a new user with an email (used as username) and password.</li>
+    <li>After registering, go back and click <a href="%s">Login</a> to sign in with the same credentials.</li>
+    <li>On successful login you will be redirected to <code>/dashboard</code>, which is protected by middleware.</li>
+  </ol>
+
+  <h2>What this demonstrates</h2>
+  <ul>
+    <li>Using <code>NewUsernameAndPasswordAuth</code> with callback-based storage.</li>
+    <li>Protecting routes with <code>WebAuthOrRedirectMiddleware</code>.</li>
+    <li>Using cookies for auth token storage.</li>
+  </ul>
+
+  <p><strong>Note:</strong> Data is not persisted. Restarting the example clears all users and sessions.</p>
+</body>
+</html>`,
+			authInstance.LinkRegister(), authInstance.LinkLogin())
 	})
 
 	// Protected dashboard page
 	mux.Handle("/dashboard", authInstance.WebAuthOrRedirectMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID := authInstance.GetCurrentUserID(r)
-		fmt.Fprintf(w, "<h1>Dashboard</h1><p>Welcome, user %s!</p><p><a href='%s'>Logout</a></p>", userID, authInstance.LinkLogout())
+		displayName := passwordStore.displayName(userID)
+		fmt.Fprintf(w, `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Dashboard - Auth Example</title>
+</head>
+<body>
+  <h1>Dashboard</h1>
+  <p>You are logged in as: <strong>%s</strong> (id: %s)</p>
+
+  <p>This page is protected by <code>WebAuthOrRedirectMiddleware</code>. If you clear your cookies and
+  refresh, you will be redirected back to the login page.</p>
+
+  <p><a href="%s">Logout</a></p>
+</body>
+</html>`, displayName, userID, authInstance.LinkLogout())
 	})))
 
 	fmt.Println("Username/password auth example running on http://localhost:8082")
