@@ -178,15 +178,19 @@ func main() {
 
 	// Public home page
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "<h1>Home</h1><p><a href='%s'>Login</a> | <a href='%s'>Register</a></p>",
-			authInstance.LinkLogin(), authInstance.LinkRegister())
+		if _, err := fmt.Fprintf(w, "<h1>Home</h1><p><a href='%s'>Login</a> | <a href='%s'>Register</a></p>",
+			authInstance.LinkLogin(), authInstance.LinkRegister()); err != nil {
+			log.Printf("failed to write home page response: %v", err)
+		}
 	})
 
 	// Protected dashboard page
 	mux.Handle("/dashboard", authInstance.WebAuthOrRedirectMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID := authInstance.GetCurrentUserID(r)
 		displayName := passwordlessStore.displayName(userID)
-		fmt.Fprintf(w, "<h1>Dashboard</h1><p>Welcome, %s (id: %s)!</p><p><a href='%s'>Logout</a></p>", displayName, userID, authInstance.LinkLogout())
+		if _, err := fmt.Fprintf(w, "<h1>Dashboard</h1><p>Welcome, %s (id: %s)!</p><p><a href='%s'>Logout</a></p>", displayName, userID, authInstance.LinkLogout()); err != nil {
+			log.Printf("failed to write dashboard page response: %v", err)
+		}
 	})))
 
 	fmt.Println("Passwordless auth example running on http://localhost:8083")

@@ -3,15 +3,23 @@ package auth
 import (
 	"net/http"
 
+	"log/slog"
+
 	"github.com/dracory/hb"
 )
 
 func (a Auth) pageRegisterCodeVerify(w http.ResponseWriter, r *http.Request) {
 	webpage := webpage("Verify Registration Code", a.funcLayout(a.pageRegisterCodeVerifyContent()), a.pageRegisterCodeVerifyScripts())
+	logger := a.logger
+	if logger == nil {
+		logger = slog.Default()
+	}
 
 	w.WriteHeader(200)
 	w.Header().Set("Content-Type", "text/html")
-	w.Write([]byte(webpage.ToHTML()))
+	if _, err := w.Write([]byte(webpage.ToHTML())); err != nil {
+		logger.Error("failed to write register code verify page response", "error", err)
+	}
 }
 
 func (a Auth) pageRegisterCodeVerifyContent() string {

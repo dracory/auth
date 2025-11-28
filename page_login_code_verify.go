@@ -3,15 +3,23 @@ package auth
 import (
 	"net/http"
 
+	"log/slog"
+
 	"github.com/dracory/hb"
 )
 
 func (a Auth) pageLoginCodeVerify(w http.ResponseWriter, r *http.Request) {
 	webpage := webpage("Verify Login Code", a.funcLayout(a.pageLoginCodeVerifyContent()), a.pageLoginCodeVerifyContentScripts())
+	logger := a.logger
+	if logger == nil {
+		logger = slog.Default()
+	}
 
 	w.WriteHeader(200)
 	w.Header().Set("Content-Type", "text/html")
-	w.Write([]byte(webpage.ToHTML()))
+	if _, err := w.Write([]byte(webpage.ToHTML())); err != nil {
+		logger.Error("failed to write login code verify page response", "error", err)
+	}
 }
 
 func (a Auth) pageLoginCodeVerifyContent() string {

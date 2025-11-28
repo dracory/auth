@@ -3,6 +3,8 @@ package auth
 import (
 	"net/http"
 
+	"log/slog"
+
 	"github.com/dracory/hb"
 	"github.com/dracory/req"
 )
@@ -24,9 +26,17 @@ func (a Auth) pagePasswordReset(w http.ResponseWriter, r *http.Request) {
 
 	h := a.pagePasswordResetContent(token, errorMessage)
 	webpage := webpage("Reset Password", h, a.pagePasswordResetScripts())
+
+	logger := a.logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	w.WriteHeader(200)
 	w.Header().Set("Content-Type", "text/html")
-	w.Write([]byte(webpage.ToHTML()))
+	if _, err := w.Write([]byte(webpage.ToHTML())); err != nil {
+		logger.Error("failed to write password reset page response", "error", err)
+	}
 }
 
 func (a Auth) pagePasswordResetContent(token string, errorMessage string) string {

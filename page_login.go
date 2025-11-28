@@ -3,6 +3,8 @@ package auth
 import (
 	"net/http"
 
+	"log/slog"
+
 	"github.com/dracory/hb"
 )
 
@@ -19,9 +21,16 @@ func (a Auth) pageLogin(w http.ResponseWriter, r *http.Request) {
 
 	webpage := webpage("Login", a.funcLayout(content), scripts)
 
+	logger := a.logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	w.WriteHeader(200)
 	w.Header().Set("Content-Type", "text/html")
-	w.Write([]byte(webpage.ToHTML()))
+	if _, err := w.Write([]byte(webpage.ToHTML())); err != nil {
+		logger.Error("failed to write login page response", "error", err)
+	}
 }
 
 func (a Auth) pageLoginPasswordlessContent() string {

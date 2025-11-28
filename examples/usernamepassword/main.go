@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -219,7 +220,7 @@ func main() {
 
 	// Public home page
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, `<!DOCTYPE html>
+		if _, err := fmt.Fprintf(w, `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8" />
@@ -247,14 +248,16 @@ func main() {
   <p><strong>Note:</strong> Data is not persisted. Restarting the example clears all users and sessions.</p>
 </body>
 </html>`,
-			authInstance.LinkRegister(), authInstance.LinkLogin())
+			authInstance.LinkRegister(), authInstance.LinkLogin()); err != nil {
+			log.Printf("failed to write home page response: %v", err)
+		}
 	})
 
 	// Protected dashboard page
 	mux.Handle("/dashboard", authInstance.WebAuthOrRedirectMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID := authInstance.GetCurrentUserID(r)
 		displayName := passwordStore.displayName(userID)
-		fmt.Fprintf(w, `<!DOCTYPE html>
+		if _, err := fmt.Fprintf(w, `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8" />
@@ -269,7 +272,9 @@ func main() {
 
   <p><a href="%s">Logout</a></p>
 </body>
-</html>`, displayName, userID, authInstance.LinkLogout())
+</html>`, displayName, userID, authInstance.LinkLogout()); err != nil {
+			log.Printf("failed to write dashboard page response: %v", err)
+		}
 	})))
 
 	fmt.Println("Username/password auth example running on http://localhost:8082")
