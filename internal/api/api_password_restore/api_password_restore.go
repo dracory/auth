@@ -11,36 +11,9 @@ import (
 	"github.com/dracory/req"
 )
 
-// PasswordRestoreDeps defines the dependencies required for the password
-// restore flow (issuing a password reset link).
-type PasswordRestoreDeps struct {
-	UserFindByUsername func(ctx context.Context, email, firstName, lastName string) (userID string, err error)
-
-	TemporaryKeySet func(key string, value string, expiresSeconds int) error
-	ExpiresSeconds  int
-
-	EmailTemplate func(ctx context.Context, userID, token string) string
-	EmailSend     func(ctx context.Context, userID, subject, body string) error
-}
-
-// Dependencies is an alias of PasswordRestoreDeps, used by the HTTP-level
-// ApiPasswordRestore helper to keep the public API explicit while reusing the
-// core dependency structure.
-type Dependencies = PasswordRestoreDeps
-
 // PasswordRestoreErrorCode categorizes error sources in the password restore
 // flow.
 type PasswordRestoreErrorCode string
-
-const (
-	PasswordRestoreErrorCodeNone          PasswordRestoreErrorCode = ""
-	PasswordRestoreErrorCodeValidation    PasswordRestoreErrorCode = "validation"
-	PasswordRestoreErrorCodeUserLookup    PasswordRestoreErrorCode = "user_lookup"
-	PasswordRestoreErrorCodeCodeGenerate  PasswordRestoreErrorCode = "code_generation"
-	PasswordRestoreErrorCodeTokenStore    PasswordRestoreErrorCode = "token_store"
-	PasswordRestoreErrorCodeEmailSend     PasswordRestoreErrorCode = "email_send"
-	PasswordRestoreErrorCodeInternalError PasswordRestoreErrorCode = "internal"
-)
 
 // PasswordRestoreError represents a structured error for password restore.
 type PasswordRestoreError struct {
@@ -101,7 +74,7 @@ func ApiPasswordRestore(w http.ResponseWriter, r *http.Request, deps Dependencie
 
 // PasswordRestore encapsulates core business logic for issuing a password
 // reset token and sending an email. It does not log or write HTTP responses.
-func PasswordRestore(ctx context.Context, r *http.Request, deps PasswordRestoreDeps) (*PasswordRestoreResult, *PasswordRestoreError) {
+func PasswordRestore(ctx context.Context, r *http.Request, deps Dependencies) (*PasswordRestoreResult, *PasswordRestoreError) {
 	email := req.GetStringTrimmed(r, "email")
 	firstName := html.EscapeString(req.GetStringTrimmed(r, "first_name"))
 	lastName := html.EscapeString(req.GetStringTrimmed(r, "last_name"))
