@@ -10,7 +10,7 @@ import (
 	"github.com/dracory/req"
 )
 
-func (a Auth) apiRegister(w http.ResponseWriter, r *http.Request) {
+func (a authImplementation) apiRegister(w http.ResponseWriter, r *http.Request) {
 	// Check CSRF token
 	if a.enableCSRFProtection && !a.funcCSRFTokenValidate(r) {
 		api.Respond(w, r, api.Forbidden("Invalid CSRF token"))
@@ -24,7 +24,7 @@ func (a Auth) apiRegister(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a Auth) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
+func (a authImplementation) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
 	// Check rate limit
 	if !a.checkRateLimit(w, r, "register") {
 		return
@@ -135,7 +135,7 @@ func (a Auth) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (a Auth) apiRegisterUsernameAndPassword(w http.ResponseWriter, r *http.Request) {
+func (a authImplementation) apiRegisterUsernameAndPassword(w http.ResponseWriter, r *http.Request) {
 	// Check rate limit
 	if !a.checkRateLimit(w, r, "register") {
 		return

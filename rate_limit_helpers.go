@@ -9,7 +9,7 @@ import (
 
 // checkRateLimit verifies if a request should be allowed based on rate limiting rules
 // Returns true if allowed, false if rate limited
-func (a Auth) checkRateLimit(w http.ResponseWriter, r *http.Request, endpoint string) bool {
+func (a authImplementation) checkRateLimit(w http.ResponseWriter, r *http.Request, endpoint string) bool {
 	// If rate limiting is disabled, allow all requests
 	if a.disableRateLimit {
 		return true

@@ -6,7 +6,7 @@ import (
 	"github.com/dracory/hb"
 )
 
-func (a Auth) pageRegister(w http.ResponseWriter, r *http.Request) {
+func (a authImplementation) pageRegister(w http.ResponseWriter, r *http.Request) {
 	content := ""
 	scripts := ""
 	if a.passwordless {
@@ -27,7 +27,7 @@ func (a Auth) pageRegister(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a Auth) pageRegisterPasswordlessContent() string {
+func (a authImplementation) pageRegisterPasswordlessContent() string {
 	// Elements for the form
 	alertSuccess := hb.NewDiv().Class("alert alert-success").Style("display:none")
 	alertDanger := hb.NewDiv().Class("alert alert-danger").Style("display:none")
@@ -79,7 +79,7 @@ func (a Auth) pageRegisterPasswordlessContent() string {
 	return container.ToHTML()
 }
 
-func (a Auth) pageRegisterPasswordlessScripts() string {
+func (a authImplementation) pageRegisterPasswordlessScripts() string {
 	urlApiRegister := a.LinkApiRegister()
 	urlSuccess := a.LinkRegisterCodeVerify()
 
@@ -161,7 +161,7 @@ func (a Auth) pageRegisterPasswordlessScripts() string {
 	`
 }
 
-func (a Auth) pageRegisterUsernameAndPasswordContent() string {
+func (a authImplementation) pageRegisterUsernameAndPasswordContent() string {
 	// Elements for the form
 	alertSuccess := hb.NewDiv().Class("alert alert-success").Style("display:none")
 	alertDanger := hb.NewDiv().Class("alert alert-danger").Style("display:none")
@@ -207,7 +207,7 @@ func (a Auth) pageRegisterUsernameAndPasswordContent() string {
 	return container.ToHTML()
 }
 
-func (a Auth) pageRegisterUsernameAndPasswordScripts() string {
+func (a authImplementation) pageRegisterUsernameAndPasswordScripts() string {
 	urlApiRegister := a.LinkApiRegister()
 	urlSuccess := a.LinkLogin()
 	if a.enableVerification {

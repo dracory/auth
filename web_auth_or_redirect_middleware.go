@@ -15,7 +15,7 @@ import (
 // If you need to only find if the authentication token is successful
 // without redirection please use the WebAppendUserIdIfExistsMiddleware
 // which does exactly that without side effects
-func (a Auth) WebAuthOrRedirectMiddleware(next http.Handler) http.Handler {
+func (a authImplementation) WebAuthOrRedirectMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		authToken := AuthTokenRetrieve(r, a.useCookies)

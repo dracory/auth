@@ -10,7 +10,7 @@ import (
 	"github.com/dracory/str"
 )
 
-func (a Auth) apiRegisterCodeVerify(w http.ResponseWriter, r *http.Request) {
+func (a authImplementation) apiRegisterCodeVerify(w http.ResponseWriter, r *http.Request) {
 	// Check rate limit
 	if !a.checkRateLimit(w, r, "register_code_verify") {
 		return

@@ -7,7 +7,7 @@ import (
 	"github.com/dracory/req"
 )
 
-func (a Auth) pagePasswordReset(w http.ResponseWriter, r *http.Request) {
+func (a authImplementation) pagePasswordReset(w http.ResponseWriter, r *http.Request) {
 	token := req.GetString(r, "t")
 	errorMessage := ""
 
@@ -33,7 +33,7 @@ func (a Auth) pagePasswordReset(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a Auth) pagePasswordResetContent(token string, errorMessage string) string {
+func (a authImplementation) pagePasswordResetContent(token string, errorMessage string) string {
 	urlPasswordRestore := a.LinkPasswordRestore()
 	urlLogin := a.LinkLogin()
 	urlRegister := a.LinkRegister()
@@ -97,7 +97,7 @@ func (a Auth) pagePasswordResetContent(token string, errorMessage string) string
 	return container.ToHTML()
 }
 
-func (a Auth) pagePasswordResetScripts() string {
+func (a authImplementation) pagePasswordResetScripts() string {
 	urlApiPasswordReset := a.LinkApiPasswordReset()
 	urlSuccess := a.LinkLogin()
 

@@ -11,7 +11,7 @@ func TestSetAuthCookie_UsesDefaultConfigWhenZero(t *testing.T) {
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "http://example.com/", nil)
 
-	var a Auth
+	var a authImplementation
 	// a.cookieConfig is zero value; should fall back to defaultCookieConfig.
 	a.setAuthCookie(w, r, "token")
 
@@ -52,7 +52,7 @@ func TestSetAuthCookie_UsesCustomConfig(t *testing.T) {
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "https://example.com/", nil)
 
-	a := Auth{
+	a := authImplementation{
 		cookieConfig: CookieConfig{
 			HttpOnly: false,
 			Secure:   true,
@@ -106,7 +106,7 @@ func TestRemoveAuthCookie_UsesCustomConfig(t *testing.T) {
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "https://example.com/", nil)
 
-	a := Auth{
+	a := authImplementation{
 		cookieConfig: CookieConfig{
 			HttpOnly: true,
 			Secure:   true,

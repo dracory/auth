@@ -329,9 +329,9 @@ func TestNewUsernameAndPasswordAuth_CSRFEnabledWithSecretSucceeds(t *testing.T) 
 	if auth == nil {
 		t.Fatal("Auth SHOULD NOT be NULL, but found NULL")
 	}
-	concrete, ok := auth.(*Auth)
+	concrete, ok := auth.(*authImplementation)
 	if !ok {
-		t.Fatal("expected *Auth concrete type from NewUsernameAndPasswordAuth")
+		t.Fatal("expected *authImplementation concrete type from NewUsernameAndPasswordAuth")
 	}
 	if !concrete.enableCSRFProtection {
 		t.Fatal("enableCSRFProtection SHOULD be true")

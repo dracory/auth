@@ -7,7 +7,7 @@ import (
 	"github.com/dracory/req"
 )
 
-func (a Auth) apiLogout(w http.ResponseWriter, r *http.Request) {
+func (a authImplementation) apiLogout(w http.ResponseWriter, r *http.Request) {
 	authToken := AuthTokenRetrieve(r, a.useCookies)
 
 	if authToken == "" {

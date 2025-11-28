@@ -14,7 +14,7 @@ func NewPasswordlessAuth(config ConfigPasswordless) (authtypes.AuthPasswordlessI
 		return nil, err
 	}
 
-	auth := &Auth{}
+	auth := &authImplementation{}
 	auth.enableRegistration = config.EnableRegistration
 	auth.endpoint = config.Endpoint
 	auth.passwordless = true

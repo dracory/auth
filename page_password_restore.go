@@ -6,7 +6,7 @@ import (
 	"github.com/dracory/hb"
 )
 
-func (a Auth) pagePasswordRestore(w http.ResponseWriter, r *http.Request) {
+func (a authImplementation) pagePasswordRestore(w http.ResponseWriter, r *http.Request) {
 	webpage := webpage("Restore Password", a.pagePasswordRestoreContent(), a.pagePasswordRestoreScripts())
 	logger := a.GetLogger()
 
@@ -17,7 +17,7 @@ func (a Auth) pagePasswordRestore(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a Auth) pagePasswordRestoreContent() string {
+func (a authImplementation) pagePasswordRestoreContent() string {
 	// Elements for the form
 	alertSuccess := hb.NewDiv().Class("alert alert-success").Style("display:none")
 	alertDanger := hb.NewDiv().Class("alert alert-danger").Style("display:none")
@@ -81,7 +81,7 @@ func (a Auth) pagePasswordRestoreContent() string {
 	return container.ToHTML()
 }
 
-func (a Auth) pagePasswordRestoreScripts() string {
+func (a authImplementation) pagePasswordRestoreScripts() string {
 	urlApiPasswordrestore := a.LinkApiPasswordRestore()
 	urlSuccess := a.LinkLogin()
 

@@ -17,7 +17,7 @@ type UserAuthOptions struct {
 }
 
 // Auth defines the structure for the authentication
-type Auth struct {
+type authImplementation struct {
 	endpoint string
 
 	// enableRegistration enables the registration page and endpoint
@@ -80,7 +80,7 @@ type Auth struct {
 // GetLogger returns the configured structured logger for this Auth instance.
 // If no logger was explicitly provided, it falls back to slog.Default().
 // Under normal library usage this method always returns a non-nil *slog.Logger.
-func (a Auth) GetLogger() *slog.Logger {
+func (a authImplementation) GetLogger() *slog.Logger {
 	if a.logger != nil {
 		return a.logger
 	}
@@ -89,7 +89,7 @@ func (a Auth) GetLogger() *slog.Logger {
 
 // GetCurrentUserID returns the authenticated user ID stored in the request
 // context, or an empty string if no user ID is attached.
-func (a Auth) GetCurrentUserID(r *http.Request) string {
+func (a authImplementation) GetCurrentUserID(r *http.Request) string {
 	authenticatedUserID := r.Context().Value(AuthenticatedUserID{})
 	if authenticatedUserID == nil {
 		return ""
@@ -97,67 +97,67 @@ func (a Auth) GetCurrentUserID(r *http.Request) string {
 	return authenticatedUserID.(string)
 }
 
-func (a Auth) LinkApiLogin() string {
+func (a authImplementation) LinkApiLogin() string {
 	return link(a.endpoint, PathApiLogin)
 }
 
-func (a Auth) LinkApiLoginCodeVerify() string {
+func (a authImplementation) LinkApiLoginCodeVerify() string {
 	return link(a.endpoint, PathApiLoginCodeVerify)
 }
 
-func (a Auth) LinkApiLogout() string {
+func (a authImplementation) LinkApiLogout() string {
 	return link(a.endpoint, PathApiLogout)
 }
 
-func (a Auth) LinkApiRegister() string {
+func (a authImplementation) LinkApiRegister() string {
 	return link(a.endpoint, PathApiRegister)
 }
 
-func (a Auth) LinkApiRegisterCodeVerify() string {
+func (a authImplementation) LinkApiRegisterCodeVerify() string {
 	return link(a.endpoint, PathApiRegisterCodeVerify)
 }
 
-func (a Auth) LinkApiPasswordRestore() string {
+func (a authImplementation) LinkApiPasswordRestore() string {
 	return link(a.endpoint, PathApiRestorePassword)
 }
 
-func (a Auth) LinkApiPasswordReset() string {
+func (a authImplementation) LinkApiPasswordReset() string {
 	return link(a.endpoint, PathApiResetPassword)
 }
 
-func (a Auth) LinkLogin() string {
+func (a authImplementation) LinkLogin() string {
 	return link(a.endpoint, PathLogin)
 }
 
-func (a Auth) LinkLoginCodeVerify() string {
+func (a authImplementation) LinkLoginCodeVerify() string {
 	return link(a.endpoint, PathLoginCodeVerify)
 }
 
-func (a Auth) LinkLogout() string {
+func (a authImplementation) LinkLogout() string {
 	return link(a.endpoint, PathLogout)
 }
 
-func (a Auth) LinkPasswordRestore() string {
+func (a authImplementation) LinkPasswordRestore() string {
 	return link(a.endpoint, PathPasswordRestore)
 }
 
 // LinkPasswordReset - returns the password reset URL
-func (a Auth) LinkPasswordReset(token string) string {
+func (a authImplementation) LinkPasswordReset(token string) string {
 	return link(a.endpoint, PathPasswordReset) + "?t=" + token
 }
 
 // LinkRegister - returns the registration URL
-func (a Auth) LinkRegister() string {
+func (a authImplementation) LinkRegister() string {
 	return link(a.endpoint, PathRegister)
 }
 
 // LinkRegisterCodeVerify - returns the registration code verification URL
-func (a Auth) LinkRegisterCodeVerify() string {
+func (a authImplementation) LinkRegisterCodeVerify() string {
 	return link(a.endpoint, PathRegisterCodeVerify)
 }
 
 // LinkRedirectOnSuccess - returns the URL to where the user will be redirected after successful registration
-func (a Auth) LinkRedirectOnSuccess() string {
+func (a authImplementation) LinkRedirectOnSuccess() string {
 	return a.urlRedirectOnSuccess
 }
 
@@ -171,11 +171,11 @@ func link(endpoint, uri string) string {
 }
 
 // RegistrationEnable - enables registration
-func (a *Auth) RegistrationEnable() {
+func (a *authImplementation) RegistrationEnable() {
 	a.enableRegistration = true
 }
 
 // RegistrationDisable - disables registration
-func (a *Auth) RegistrationDisable() {
+func (a *authImplementation) RegistrationDisable() {
 	a.enableRegistration = false
 }

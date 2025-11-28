@@ -8,7 +8,7 @@ import (
 )
 
 func TestGetCurrentUserID_EmptyContextReturnsEmptyString(t *testing.T) {
-	auth := &Auth{}
+	auth := &authImplementation{}
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	userID := auth.GetCurrentUserID(req)
@@ -19,7 +19,7 @@ func TestGetCurrentUserID_EmptyContextReturnsEmptyString(t *testing.T) {
 }
 
 func TestGetCurrentUserID_ReturnsUserIDFromContext(t *testing.T) {
-	auth := &Auth{}
+	auth := &authImplementation{}
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	ctx := context.WithValue(req.Context(), AuthenticatedUserID{}, "12345")
@@ -57,7 +57,7 @@ func TestLinkKeepsTrailingSlash(t *testing.T) {
 }
 
 func TestAuthLinkHelpersRespectEndpointTrailingSlash(t *testing.T) {
-	authWithSlash := &Auth{endpoint: "http://localhost/auth/"}
+	authWithSlash := &authImplementation{endpoint: "http://localhost/auth/"}
 
 	if got, want := authWithSlash.LinkApiLogin(), "http://localhost/auth/"+PathApiLogin; got != want {
 		t.Fatalf("LinkApiLogin with trailing slash: expected %q, got %q", want, got)
@@ -73,7 +73,7 @@ func TestAuthLinkHelpersRespectEndpointTrailingSlash(t *testing.T) {
 }
 
 func TestAuthLinkHelpers_NoTrailingSlash(t *testing.T) {
-	authNoSlash := &Auth{endpoint: "http://localhost/auth"}
+	authNoSlash := &authImplementation{endpoint: "http://localhost/auth"}
 
 	if got, want := authNoSlash.LinkApiLoginCodeVerify(), "http://localhost/auth/"+PathApiLoginCodeVerify; got != want {
 		t.Fatalf("LinkApiLoginCodeVerify without trailing slash: expected %q, got %q", want, got)
@@ -122,7 +122,7 @@ func TestAuthLinkHelpers_NoTrailingSlash(t *testing.T) {
 }
 
 func TestAuthLinkRedirectOnSuccess(t *testing.T) {
-	authInstance := &Auth{urlRedirectOnSuccess: "/dashboard"}
+	authInstance := &authImplementation{urlRedirectOnSuccess: "/dashboard"}
 
 	if got, want := authInstance.LinkRedirectOnSuccess(), "/dashboard"; got != want {
 		t.Fatalf("LinkRedirectOnSuccess: expected %q, got %q", want, got)
@@ -130,7 +130,7 @@ func TestAuthLinkRedirectOnSuccess(t *testing.T) {
 }
 
 func TestRegistrationEnableDisableToggle(t *testing.T) {
-	var authInstance Auth
+	var authInstance authImplementation
 
 	if authInstance.enableRegistration {
 		t.Fatalf("expected enableRegistration to be false by default")

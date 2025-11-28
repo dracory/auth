@@ -6,7 +6,7 @@ import (
 	"github.com/dracory/hb"
 )
 
-func (a Auth) pageLogin(w http.ResponseWriter, r *http.Request) {
+func (a authImplementation) pageLogin(w http.ResponseWriter, r *http.Request) {
 	content := ""
 	scripts := ""
 	if a.passwordless {
@@ -27,7 +27,7 @@ func (a Auth) pageLogin(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a Auth) pageLoginPasswordlessContent() string {
+func (a authImplementation) pageLoginPasswordlessContent() string {
 	// Elements for the form
 	alertSuccess := hb.NewDiv().
 		Class("alert alert-success").
@@ -109,7 +109,7 @@ func (a Auth) pageLoginPasswordlessContent() string {
 	return container.ToHTML()
 }
 
-func (a Auth) pageLoginPasswordlessScripts() string {
+func (a authImplementation) pageLoginPasswordlessScripts() string {
 	urlApiLogin := a.LinkApiLogin()
 	urlSuccess := a.LinkLoginCodeVerify()
 
@@ -179,7 +179,7 @@ func (a Auth) pageLoginPasswordlessScripts() string {
 	`
 }
 
-func (a Auth) pageLoginContent() string {
+func (a authImplementation) pageLoginContent() string {
 	// Elements for the form
 	alertSuccess := hb.NewDiv().Class("alert alert-success").Style("display:none")
 	alertDanger := hb.NewDiv().Class("alert alert-danger").Style("display:none")
@@ -264,7 +264,7 @@ func (a Auth) pageLoginContent() string {
 	return container.ToHTML()
 }
 
-func (a Auth) pageLoginScripts() string {
+func (a authImplementation) pageLoginScripts() string {
 	urlApiLogin := a.LinkApiLogin()
 	urlSuccess := a.LinkRedirectOnSuccess()
 

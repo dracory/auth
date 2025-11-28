@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-func newAuthForRegisterTests() *Auth {
-	return &Auth{}
+func newAuthForRegisterTests() *authImplementation {
+	return &authImplementation{}
 }
 
 func TestRegisterWithUsernameAndPassword_RequiresFirstName(t *testing.T) {

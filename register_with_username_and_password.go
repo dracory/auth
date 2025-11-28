@@ -13,7 +13,7 @@ type RegisterUsernameAndPasswordResponse struct {
 	Token          string
 }
 
-func (a Auth) RegisterWithUsernameAndPassword(ctx context.Context, email string, password string, firstName string, lastName string, options UserAuthOptions) (response RegisterUsernameAndPasswordResponse) {
+func (a authImplementation) RegisterWithUsernameAndPassword(ctx context.Context, email string, password string, firstName string, lastName string, options UserAuthOptions) (response RegisterUsernameAndPasswordResponse) {
 	if firstName == "" {
 		response.ErrorMessage = "First name is required field"
 		return response

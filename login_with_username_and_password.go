@@ -13,7 +13,7 @@ type LoginUsernameAndPasswordResponse struct {
 	Token          string
 }
 
-func (a Auth) LoginWithUsernameAndPassword(ctx context.Context, email string, password string, options UserAuthOptions) (response LoginUsernameAndPasswordResponse) {
+func (a authImplementation) LoginWithUsernameAndPassword(ctx context.Context, email string, password string, options UserAuthOptions) (response LoginUsernameAndPasswordResponse) {
 	if email == "" {
 		response.ErrorMessage = "Email is required field"
 		return response

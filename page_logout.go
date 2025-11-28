@@ -6,7 +6,7 @@ import (
 	"github.com/dracory/hb"
 )
 
-func (a Auth) pageLogout(w http.ResponseWriter, r *http.Request) {
+func (a authImplementation) pageLogout(w http.ResponseWriter, r *http.Request) {
 	webpage := webpage("Logout", a.funcLayout(a.pageLogoutContent()), a.pageLogoutScripts())
 	logger := a.GetLogger()
 
@@ -17,7 +17,7 @@ func (a Auth) pageLogout(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a Auth) pageLogoutContent() string {
+func (a authImplementation) pageLogoutContent() string {
 	// Elements for the form
 	alertSuccess := hb.NewDiv().Class("alert alert-success").Style("display:none")
 	alertDanger := hb.NewDiv().Class("alert alert-danger").Style("display:none")
@@ -44,7 +44,7 @@ func (a Auth) pageLogoutContent() string {
 	return container.ToHTML()
 }
 
-func (a Auth) pageLogoutScripts() string {
+func (a authImplementation) pageLogoutScripts() string {
 	urlApiLogout := a.LinkApiLogout()
 	urlSuccess := a.LinkLogin()
 	logger := a.GetLogger()

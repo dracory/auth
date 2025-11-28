@@ -6,7 +6,7 @@ import (
 )
 
 func TestLayoutWrapsContentWithFontAndStyle(t *testing.T) {
-	authInstance := &Auth{}
+	authInstance := &authImplementation{}
 
 	content := "<p>Hello World</p>"
 	html := authInstance.layout(content)

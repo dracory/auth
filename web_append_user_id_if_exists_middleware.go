@@ -17,7 +17,7 @@ import (
 // If you need to redirect the user if authentication token not found,
 // or the user does not exist, take a look at the WebAuthOrRedirectMiddleware
 // middleware, which does exactly that
-func (a Auth) WebAppendUserIdIfExistsMiddleware(next http.Handler) http.Handler {
+func (a authImplementation) WebAppendUserIdIfExistsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		authToken := AuthTokenRetrieve(r, a.useCookies)

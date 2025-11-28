@@ -93,7 +93,7 @@ func removeCookieWithConfig(w http.ResponseWriter, r *http.Request, cfg CookieCo
 	http.SetCookie(w, &cookie)
 }
 
-func (a Auth) setAuthCookie(w http.ResponseWriter, r *http.Request, token string) {
+func (a authImplementation) setAuthCookie(w http.ResponseWriter, r *http.Request, token string) {
 	cfg := a.cookieConfig
 	if cfg == (CookieConfig{}) {
 		cfg = defaultCookieConfig()
@@ -101,7 +101,7 @@ func (a Auth) setAuthCookie(w http.ResponseWriter, r *http.Request, token string
 	setCookieWithConfig(w, r, token, cfg)
 }
 
-func (a Auth) removeAuthCookie(w http.ResponseWriter, r *http.Request) {
+func (a authImplementation) removeAuthCookie(w http.ResponseWriter, r *http.Request) {
 	cfg := a.cookieConfig
 	if cfg == (CookieConfig{}) {
 		cfg = defaultCookieConfig()

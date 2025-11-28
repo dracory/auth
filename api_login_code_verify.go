@@ -10,7 +10,7 @@ import (
 )
 
 // apiLoginCodeVerify used for passwordless login code verification
-func (a Auth) apiLoginCodeVerify(w http.ResponseWriter, r *http.Request) {
+func (a authImplementation) apiLoginCodeVerify(w http.ResponseWriter, r *http.Request) {
 	// Check rate limit
 	if !a.checkRateLimit(w, r, "login_code_verify") {
 		return
@@ -47,7 +47,7 @@ func (a Auth) apiLoginCodeVerify(w http.ResponseWriter, r *http.Request) {
 // username is an email in passwordless auth
 // firstName is used only in username and password auth
 // lastName is used only in username and password auth
-func (a Auth) authenticateViaUsername(w http.ResponseWriter, r *http.Request, username string, firstName string, lastName string) {
+func (a authImplementation) authenticateViaUsername(w http.ResponseWriter, r *http.Request, username string, firstName string, lastName string) {
 	var userID string
 	var errUser error
 	if a.passwordless {

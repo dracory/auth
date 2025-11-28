@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func newPasswordlessAuthForMiddlewareTests(useCookies bool) (*Auth, error) {
+func newPasswordlessAuthForMiddlewareTests(useCookies bool) (*authImplementation, error) {
 	instance, err := NewPasswordlessAuth(ConfigPasswordless{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/user",
@@ -37,7 +37,7 @@ func newPasswordlessAuthForMiddlewareTests(useCookies bool) (*Auth, error) {
 	if err != nil {
 		return nil, err
 	}
-	auth, ok := instance.(*Auth)
+	auth, ok := instance.(*authImplementation)
 	if !ok {
 		return nil, errors.New("unexpected concrete type from NewPasswordlessAuth")
 	}

@@ -9,7 +9,7 @@ import (
 	"github.com/dracory/req"
 )
 
-func (a Auth) apiPasswordReset(w http.ResponseWriter, r *http.Request) {
+func (a authImplementation) apiPasswordReset(w http.ResponseWriter, r *http.Request) {
 	// Check rate limit
 	if !a.checkRateLimit(w, r, "password_reset") {
 		return

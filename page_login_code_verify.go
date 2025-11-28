@@ -6,7 +6,7 @@ import (
 	"github.com/dracory/hb"
 )
 
-func (a Auth) pageLoginCodeVerify(w http.ResponseWriter, r *http.Request) {
+func (a authImplementation) pageLoginCodeVerify(w http.ResponseWriter, r *http.Request) {
 	webpage := webpage("Verify Login Code", a.funcLayout(a.pageLoginCodeVerifyContent()), a.pageLoginCodeVerifyContentScripts())
 	logger := a.GetLogger()
 
@@ -17,7 +17,7 @@ func (a Auth) pageLoginCodeVerify(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a Auth) pageLoginCodeVerifyContent() string {
+func (a authImplementation) pageLoginCodeVerifyContent() string {
 	// Elements for the form
 	alertSuccess := hb.NewDiv().Class("alert alert-success").Style("display:none")
 	alertDanger := hb.NewDiv().Class("alert alert-danger").Style("display:none")
@@ -62,7 +62,7 @@ func (a Auth) pageLoginCodeVerifyContent() string {
 	return container.ToHTML()
 }
 
-func (a Auth) pageLoginCodeVerifyContentScripts() string {
+func (a authImplementation) pageLoginCodeVerifyContentScripts() string {
 	urlApiLoginCodeVerify := a.LinkApiLoginCodeVerify()
 	urlSuccess := a.LinkRedirectOnSuccess()
 

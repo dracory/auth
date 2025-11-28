@@ -9,20 +9,20 @@ import (
 	"github.com/dracory/str"
 )
 
-func (a Auth) Handler() http.Handler {
+func (a authImplementation) Handler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		a.AuthHandler(w, r)
 	})
 }
 
-func (a Auth) Router() *http.ServeMux {
+func (a authImplementation) Router() *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", a.AuthHandler)
 	return mux
 }
 
 // Router routes the requests
-func (a Auth) AuthHandler(w http.ResponseWriter, r *http.Request) {
+func (a authImplementation) AuthHandler(w http.ResponseWriter, r *http.Request) {
 	path := req.GetStringOr(r, "path", "home")
 	uri := r.RequestURI
 
@@ -74,7 +74,7 @@ func (a Auth) AuthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // getRoute finds a route
-func (a Auth) getRoute(route string) func(w http.ResponseWriter, r *http.Request) {
+func (a authImplementation) getRoute(route string) func(w http.ResponseWriter, r *http.Request) {
 	routes := map[string]func(w http.ResponseWriter, r *http.Request){
 		PathApiLogin:              a.apiLogin,
 		PathApiLoginCodeVerify:    a.apiLoginCodeVerify,
@@ -102,6 +102,6 @@ func (a Auth) getRoute(route string) func(w http.ResponseWriter, r *http.Request
 	return a.notFoundHandler
 }
 
-func (a Auth) notFoundHandler(w http.ResponseWriter, r *http.Request) {
+func (a authImplementation) notFoundHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, a.LinkLogin(), http.StatusTemporaryRedirect)
 }

@@ -8,7 +8,7 @@ import (
 )
 
 // testSetupUsernameAndPasswordAuth creates a new Auth for testing
-func testSetupUsernameAndPasswordAuth() (*Auth, error) {
+func testSetupUsernameAndPasswordAuth() (*authImplementation, error) {
 	endpoint := "http://localhost/auth"
 	instance, err := NewUsernameAndPasswordAuth(ConfigUsernameAndPassword{
 		Endpoint:             endpoint,
@@ -37,7 +37,7 @@ func testSetupUsernameAndPasswordAuth() (*Auth, error) {
 	if err != nil {
 		return nil, err
 	}
-	auth, ok := instance.(*Auth)
+	auth, ok := instance.(*authImplementation)
 	if !ok {
 		return nil, errors.New("unexpected concrete type from NewUsernameAndPasswordAuth")
 	}
@@ -45,7 +45,7 @@ func testSetupUsernameAndPasswordAuth() (*Auth, error) {
 }
 
 // testSetupPasswordlessAuth creates a new Auth for testing
-func testSetupPasswordlessAuth() (*Auth, error) {
+func testSetupPasswordlessAuth() (*authImplementation, error) {
 	endpoint := "http://localhost/auth"
 	instance, err := NewPasswordlessAuth(ConfigPasswordless{
 		Endpoint:             endpoint,
@@ -68,7 +68,7 @@ func testSetupPasswordlessAuth() (*Auth, error) {
 	if err != nil {
 		return nil, err
 	}
-	auth, ok := instance.(*Auth)
+	auth, ok := instance.(*authImplementation)
 	if !ok {
 		return nil, errors.New("unexpected concrete type from NewPasswordlessAuth")
 	}

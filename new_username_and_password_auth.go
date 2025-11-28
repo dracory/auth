@@ -17,7 +17,7 @@ func NewUsernameAndPasswordAuth(config ConfigUsernameAndPassword) (authtypes.Aut
 		return nil, err
 	}
 
-	auth := &Auth{}
+	auth := &authImplementation{}
 	auth.enableRegistration = config.EnableRegistration
 	auth.enableVerification = config.EnableVerification
 	auth.endpoint = config.Endpoint

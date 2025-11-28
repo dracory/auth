@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-func newAuthForLoginTests() *Auth {
-	return &Auth{}
+func newAuthForLoginTests() *authImplementation {
+	return &authImplementation{}
 }
 
 func TestLoginWithUsernameAndPassword_RequiresEmail(t *testing.T) {
