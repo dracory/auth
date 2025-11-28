@@ -6,12 +6,12 @@ import (
 
 	"github.com/dracory/api"
 	apilogin "github.com/dracory/auth/internal/api"
-	apireg "github.com/dracory/auth/internal/api"
 	"github.com/dracory/auth/internal/api/api_login"
 	"github.com/dracory/auth/internal/api/api_logout"
 	"github.com/dracory/auth/internal/api/api_password_reset"
 	"github.com/dracory/auth/internal/api/api_password_restore"
 	"github.com/dracory/auth/internal/api/api_register"
+	"github.com/dracory/auth/internal/api/api_register_code_verify"
 	"github.com/dracory/req"
 	"github.com/dracory/str"
 )
@@ -160,7 +160,7 @@ func (a authImplementation) apiLoginCodeVerify(w http.ResponseWriter, r *http.Re
 }
 
 func (a authImplementation) apiRegisterCodeVerify(w http.ResponseWriter, r *http.Request) {
-	deps := apireg.RegisterCodeVerifyDeps{
+	api_register_code_verify.ApiRegisterCodeVerify(w, r, api_register_code_verify.Dependencies{
 		DisableRateLimit: a.disableRateLimit,
 		TemporaryKeyGet:  a.funcTemporaryKeyGet,
 		PasswordStrength: a.passwordStrength,
@@ -177,68 +177,10 @@ func (a authImplementation) apiRegisterCodeVerify(w http.ResponseWriter, r *http
 				UserAgent: r.UserAgent(),
 			})
 		},
-	}
-
-	result, perr := apireg.RegisterCodeVerify(r.Context(), r, deps)
-	if perr != nil {
-		logger := a.GetLogger()
-		ip := req.GetIP(r)
-		userAgent := r.UserAgent()
-		email := ""
-		if result != nil {
-			email = result.Email
-		}
-
-		switch perr.Code {
-		case apireg.RegisterCodeVerifyErrorCodeValidation,
-			apireg.RegisterCodeVerifyErrorCodeCodeExpired,
-			apireg.RegisterCodeVerifyErrorCodeDeserialize:
-			api.Respond(w, r, api.Error(perr.Message))
-			return
-		case apireg.RegisterCodeVerifyErrorCodePasswordValidation:
-			authErr := AuthError{
-				Code:        ErrCodeValidationFailed,
-				Message:     perr.Err.Error(),
-				InternalErr: perr.Err,
-			}
-			logger.Error("password validation failed",
-				"error", authErr.InternalErr,
-				"error_code", authErr.Code,
-				"email", email,
-				"ip", ip,
-				"user_agent", userAgent,
-				"endpoint", "api_register_code_verify",
-			)
-			api.Respond(w, r, api.Error(authErr.Message))
-			return
-		case apireg.RegisterCodeVerifyErrorCodeRegister:
-			authErr := NewRegistrationError(perr.Err)
-			logger.Error("user registration failed",
-				"error", authErr.InternalErr,
-				"error_code", authErr.Code,
-				"email", email,
-				"ip", ip,
-				"user_agent", userAgent,
-				"endpoint", "api_register_code_verify",
-			)
-			api.Respond(w, r, api.Error(authErr.Message))
-			return
-		default:
-			authErr := NewInternalError(perr.Err)
-			logger.Error("registration code verify internal error",
-				"error", authErr.InternalErr,
-				"error_code", authErr.Code,
-				"email", email,
-				"ip", ip,
-				"user_agent", userAgent,
-				"endpoint", "api_register_code_verify",
-			)
-			api.Respond(w, r, api.Error(authErr.Message))
-			return
-		}
-	}
-
-	a.authenticateViaUsername(w, r, result.Email, result.FirstName, result.LastName)
+		AuthenticateViaUsername: func(w http.ResponseWriter, r *http.Request, email, firstName, lastName string) {
+			a.authenticateViaUsername(w, r, email, firstName, lastName)
+		},
+	})
 }
 
 func (a authImplementation) authenticateViaUsername(w http.ResponseWriter, r *http.Request, username string, firstName string, lastName string) {
