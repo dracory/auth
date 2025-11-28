@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/dracory/api"
-	authutils "github.com/dracory/auth/utils"
+	apilogin "github.com/dracory/auth/internal/api"
 	"github.com/dracory/req"
 	"github.com/dracory/str"
 )
@@ -16,31 +16,28 @@ func (a authImplementation) apiLoginCodeVerify(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	verificationCode := req.GetStringTrimmed(r, "verification_code")
-
-	if verificationCode == "" {
-		api.Respond(w, r, api.Error("Verification code is required field"))
-		return
+	deps := apilogin.LoginCodeVerifyDeps{
+		DisableRateLimit: a.disableRateLimit,
+		TemporaryKeyGet:  a.funcTemporaryKeyGet,
 	}
 
-	if len(verificationCode) != authutils.LoginCodeLength(a.disableRateLimit) {
-		api.Respond(w, r, api.Error("Verification code is invalid length"))
-		return
+	result, perr := apilogin.LoginCodeVerify(r.Context(), r, deps)
+	if perr != nil {
+		// Original implementation did not log; it only returned validation/expiry
+		// messages. Preserve that behaviour here.
+		switch perr.Code {
+		case apilogin.LoginCodeVerifyErrorCodeValidation,
+			apilogin.LoginCodeVerifyErrorCodeCodeExpired:
+			api.Respond(w, r, api.Error(perr.Message))
+			return
+		default:
+			api.Respond(w, r, api.Error("Verification code has expired"))
+			return
+		}
 	}
 
-	if !str.ContainsOnly(verificationCode, authutils.LoginCodeGamma(a.disableRateLimit)) {
-		api.Respond(w, r, api.Error("Verification code contains invalid characters"))
-		return
-	}
-
-	email, errCode := a.funcTemporaryKeyGet(verificationCode)
-
-	if errCode != nil {
-		api.Respond(w, r, api.Error("Verification code has expired"))
-		return
-	}
-
-	a.authenticateViaUsername(w, r, email, "", "")
+	// On success, perform authentication via username as before.
+	a.authenticateViaUsername(w, r, result.Email, "", "")
 }
 
 // authenticateViaEmail used for passwordless login and registration

@@ -10,12 +10,6 @@ import (
 )
 
 func (a authImplementation) apiLogin(w http.ResponseWriter, r *http.Request) {
-	// Check CSRF token
-	if a.enableCSRFProtection && !a.funcCSRFTokenValidate(r) {
-		api.Respond(w, r, api.Forbidden("Invalid CSRF token"))
-		return
-	}
-
 	if a.passwordless {
 		a.apiLoginPasswordless(w, r)
 	} else {

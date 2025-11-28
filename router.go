@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/dracory/auth/internal/middlewares"
 	"github.com/dracory/req"
 	"github.com/dracory/str"
 )
@@ -75,13 +76,18 @@ func (a authImplementation) AuthHandler(w http.ResponseWriter, r *http.Request) 
 
 // getRoute finds a route
 func (a authImplementation) getRoute(route string) func(w http.ResponseWriter, r *http.Request) {
+	csrfCfg := middlewares.CSRFConfig{
+		Enabled:  a.enableCSRFProtection,
+		Validate: a.funcCSRFTokenValidate,
+	}
+
 	routes := map[string]func(w http.ResponseWriter, r *http.Request){
-		PathApiLogin:              a.apiLogin,
+		PathApiLogin:              middlewares.WithCSRF(csrfCfg, a.apiLogin),
 		PathApiLoginCodeVerify:    a.apiLoginCodeVerify,
 		PathApiLogout:             a.apiLogout,
-		PathApiRegister:           a.apiRegister,
+		PathApiRegister:           middlewares.WithCSRF(csrfCfg, a.apiRegister),
 		PathApiRegisterCodeVerify: a.apiRegisterCodeVerify,
-		PathApiResetPassword:      a.apiPasswordReset,
+		PathApiResetPassword:      middlewares.WithCSRF(csrfCfg, a.apiPasswordReset),
 		PathApiRestorePassword:    a.apiPasswordRestore,
 		PathLogin:                 a.pageLogin,
 		PathLoginCodeVerify:       a.pageLoginCodeVerify,

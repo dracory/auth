@@ -1,11 +1,11 @@
 package auth
 
 import (
-	"crypto/subtle"
+	"context"
 	"net/http"
 
 	"github.com/dracory/api"
-	authutils "github.com/dracory/auth/utils"
+	apipwd "github.com/dracory/auth/internal/api"
 	"github.com/dracory/req"
 )
 
@@ -14,103 +14,90 @@ func (a authImplementation) apiPasswordReset(w http.ResponseWriter, r *http.Requ
 	if !a.checkRateLimit(w, r, "password_reset") {
 		return
 	}
-
-	// Check CSRF token
-	if a.enableCSRFProtection && !a.funcCSRFTokenValidate(r) {
-		api.Respond(w, r, api.Forbidden("Invalid CSRF token"))
-		return
+	deps := apipwd.PasswordResetDeps{
+		PasswordStrength: a.passwordStrength,
+		TemporaryKeyGet:  a.funcTemporaryKeyGet,
+		UserPasswordChange: func(ctx context.Context, userID, password string) error {
+			return a.funcUserPasswordChange(ctx, userID, password, UserAuthOptions{
+				UserIp:    req.GetIP(r),
+				UserAgent: r.UserAgent(),
+			})
+		},
+		LogoutUser: func(ctx context.Context, userID string) error {
+			return a.funcUserLogout(ctx, userID, UserAuthOptions{
+				UserIp:    req.GetIP(r),
+				UserAgent: r.UserAgent(),
+			})
+		},
 	}
 
-	token := req.GetStringTrimmed(r, "token")
-	password := req.GetStringTrimmed(r, "password")
-	passwordConfirm := req.GetStringTrimmed(r, "password_confirm")
+	result, perr := apipwd.PasswordReset(r.Context(), r, deps)
+	if perr != nil {
+		logger := a.GetLogger()
+		ip := req.GetIP(r)
+		userAgent := r.UserAgent()
 
-	if token == "" {
-		api.Respond(w, r, api.Error("Token is required field"))
-		return
-	}
-
-	if password == "" {
-		api.Respond(w, r, api.Error("Password is required field"))
-		return
-	}
-
-	if subtle.ConstantTimeCompare([]byte(password), []byte(passwordConfirm)) != 1 {
-		api.Respond(w, r, api.Error("Passwords do not match"))
-		return
-	}
-
-	if err := authutils.ValidatePasswordStrength(password, a.passwordStrength); err != nil {
-		authErr := AuthError{
-			Code:        ErrCodeValidationFailed,
-			Message:     err.Error(),
-			InternalErr: err,
+		switch perr.Code {
+		case apipwd.PasswordResetErrorCodeValidation,
+			apipwd.PasswordResetErrorCodeTokenLookup,
+			apipwd.PasswordResetErrorCodeTokenInvalid:
+			api.Respond(w, r, api.Error(perr.Message))
+			return
+		case apipwd.PasswordResetErrorCodePasswordStrength:
+			authErr := AuthError{
+				Code:        ErrCodeValidationFailed,
+				Message:     perr.Err.Error(),
+				InternalErr: perr.Err,
+			}
+			logger.Error("password validation failed",
+				"error", authErr.InternalErr,
+				"error_code", authErr.Code,
+				"ip", ip,
+				"user_agent", userAgent,
+				"endpoint", "api_password_reset",
+			)
+			api.Respond(w, r, api.Error(authErr.Message))
+			return
+		case apipwd.PasswordResetErrorCodePasswordChange:
+			authErr := NewPasswordResetError(perr.Err)
+			logger.Error("password change failed",
+				"error", authErr.InternalErr,
+				"error_code", authErr.Code,
+				"user_id", perr.UserID,
+				"ip", ip,
+				"user_agent", userAgent,
+				"endpoint", "api_password_reset",
+			)
+			api.Respond(w, r, api.Error(authErr.Message))
+			return
+		case apipwd.PasswordResetErrorCodeLogout:
+			authErr := NewLogoutError(perr.Err)
+			logger.Error("session invalidation after password change failed",
+				"error", authErr.InternalErr,
+				"error_code", authErr.Code,
+				"user_id", perr.UserID,
+				"ip", ip,
+				"user_agent", userAgent,
+				"endpoint", "api_password_reset",
+			)
+			api.Respond(w, r, api.Error(authErr.Message))
+			return
+		default:
+			authErr := NewInternalError(perr.Err)
+			logger.Error("password reset internal error",
+				"error", authErr.InternalErr,
+				"error_code", authErr.Code,
+				"user_id", perr.UserID,
+				"ip", ip,
+				"user_agent", userAgent,
+				"endpoint", "api_password_reset",
+			)
+			api.Respond(w, r, api.Error(authErr.Message))
+			return
 		}
-		logger := a.GetLogger()
-		logger.Error("password validation failed",
-			"error", authErr.InternalErr,
-			"error_code", authErr.Code,
-			"ip", req.GetIP(r),
-			"user_agent", r.UserAgent(),
-			"endpoint", "api_password_reset",
-		)
-		api.Respond(w, r, api.Error(authErr.Message))
-		return
 	}
 
-	userID, errToken := a.funcTemporaryKeyGet(token)
-
-	if errToken != nil {
-		api.Respond(w, r, api.Error("Link not valid or expired"))
-		return
-	}
-
-	if userID == "" {
-		api.Respond(w, r, api.Error("Link not valid or expired"))
-		return
-	}
-
-	errPasswordChange := a.funcUserPasswordChange(r.Context(), userID, password, UserAuthOptions{
-		UserIp:    req.GetIP(r),
-		UserAgent: r.UserAgent(),
-	})
-
-	if errPasswordChange != nil {
-		authErr := NewPasswordResetError(errPasswordChange)
-		logger := a.GetLogger()
-		logger.Error("password change failed",
-			"error", authErr.InternalErr,
-			"error_code", authErr.Code,
-			"user_id", userID,
-			"ip", req.GetIP(r),
-			"user_agent", r.UserAgent(),
-			"endpoint", "api_password_reset",
-		)
-		api.Respond(w, r, api.Error(authErr.Message))
-		return
-	}
-
-	errLogout := a.funcUserLogout(r.Context(), userID, UserAuthOptions{
-		UserIp:    req.GetIP(r),
-		UserAgent: r.UserAgent(),
-	})
-
-	if errLogout != nil {
-		authErr := NewLogoutError(errLogout)
-		logger := a.GetLogger()
-		logger.Error("session invalidation after password change failed",
-			"error", authErr.InternalErr,
-			"error_code", authErr.Code,
-			"user_id", userID,
-			"ip", req.GetIP(r),
-			"user_agent", r.UserAgent(),
-			"endpoint", "api_password_reset",
-		)
-		api.Respond(w, r, api.Error(authErr.Message))
-		return
-	}
-
-	api.Respond(w, r, api.SuccessWithData("login success", map[string]interface{}{
-		"token": token,
+	api.Respond(w, r, api.SuccessWithData(result.SuccessMessage, map[string]any{
+		"token": result.Token,
 	}))
 }
