@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"net/http"
 	"time"
 
@@ -13,62 +12,9 @@ import (
 	"github.com/dracory/req"
 )
 
-func NewUsernameAndPasswordAuth(config ConfigUsernameAndPassword) (*Auth, error) {
-	if config.Endpoint == "" {
-		return nil, errors.New("auth: endpoint is required")
-	}
-
-	if config.UrlRedirectOnSuccess == "" {
-		return nil, errors.New("auth: url to redirect to on success is required")
-	}
-
-	if config.FuncTemporaryKeyGet == nil {
-		return nil, errors.New("auth: FuncTemporaryKeyGet function is required")
-	}
-
-	if config.FuncTemporaryKeySet == nil {
-		return nil, errors.New("auth: FuncTemporaryKeySet function is required")
-	}
-
-	if config.FuncUserFindByAuthToken == nil {
-		return nil, errors.New("auth: FuncUserFindByAuthToken function is required")
-	}
-
-	if config.FuncUserFindByUsername == nil {
-		return nil, errors.New("auth: FuncUserFindByUsername function is required")
-	}
-
-	if config.FuncUserLogin == nil {
-		return nil, errors.New("auth: FuncUserLogin function is required")
-	}
-
-	if config.FuncUserLogout == nil {
-		return nil, errors.New("auth: FuncUserLogout function is required")
-	}
-
-	if config.EnableRegistration && config.FuncUserRegister == nil {
-		return nil, errors.New("auth: FuncUserRegister function is required")
-	}
-
-	if config.FuncUserStoreAuthToken == nil {
-		return nil, errors.New("auth: FuncUserStoreToken function is required")
-	}
-
-	if config.FuncEmailSend == nil {
-		return nil, errors.New("auth: FuncEmailSend function is required")
-	}
-
-	if config.UseCookies && config.UseLocalStorage {
-		return nil, errors.New("auth: UseCookies and UseLocalStorage cannot be both true")
-	}
-
-	if !config.UseCookies && !config.UseLocalStorage {
-		return nil, errors.New("auth: UseCookies and UseLocalStorage cannot be both false")
-	}
-
-	logger := config.Logger
-	if logger == nil {
-		logger = slog.Default()
+func NewUsernameAndPasswordAuth(config ConfigUsernameAndPassword) (authtypes.AuthPasswordInterface, error) {
+	if err := validateUsernameAndPasswordConfig(config); err != nil {
+		return nil, err
 	}
 
 	auth := &Auth{}
@@ -108,7 +54,7 @@ func NewUsernameAndPasswordAuth(config ConfigUsernameAndPassword) (*Auth, error)
 		}
 	}
 
-	auth.logger = logger
+	auth.logger = config.Logger
 
 	// If no user defined layout is set, use default
 	if auth.funcLayout == nil {
@@ -180,4 +126,63 @@ func NewUsernameAndPasswordAuth(config ConfigUsernameAndPassword) (*Auth, error)
 	}
 
 	return auth, nil
+}
+
+// validateUsernameAndPasswordConfig performs validation of the
+// ConfigUsernameAndPassword values and returns a descriptive error
+// if any required field is missing or invalid.
+func validateUsernameAndPasswordConfig(config ConfigUsernameAndPassword) error {
+	if config.Endpoint == "" {
+		return errors.New("auth: endpoint is required")
+	}
+
+	if config.UrlRedirectOnSuccess == "" {
+		return errors.New("auth: url to redirect to on success is required")
+	}
+
+	if config.FuncTemporaryKeyGet == nil {
+		return errors.New("auth: FuncTemporaryKeyGet function is required")
+	}
+
+	if config.FuncTemporaryKeySet == nil {
+		return errors.New("auth: FuncTemporaryKeySet function is required")
+	}
+
+	if config.FuncUserFindByAuthToken == nil {
+		return errors.New("auth: FuncUserFindByAuthToken function is required")
+	}
+
+	if config.FuncUserFindByUsername == nil {
+		return errors.New("auth: FuncUserFindByUsername function is required")
+	}
+
+	if config.FuncUserLogin == nil {
+		return errors.New("auth: FuncUserLogin function is required")
+	}
+
+	if config.FuncUserLogout == nil {
+		return errors.New("auth: FuncUserLogout function is required")
+	}
+
+	if config.EnableRegistration && config.FuncUserRegister == nil {
+		return errors.New("auth: FuncUserRegister function is required")
+	}
+
+	if config.FuncUserStoreAuthToken == nil {
+		return errors.New("auth: FuncUserStoreToken function is required")
+	}
+
+	if config.FuncEmailSend == nil {
+		return errors.New("auth: FuncEmailSend function is required")
+	}
+
+	if config.UseCookies && config.UseLocalStorage {
+		return errors.New("auth: UseCookies and UseLocalStorage cannot be both true")
+	}
+
+	if !config.UseCookies && !config.UseLocalStorage {
+		return errors.New("auth: UseCookies and UseLocalStorage cannot be both false")
+	}
+
+	return nil
 }

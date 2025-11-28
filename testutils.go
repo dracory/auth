@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 
 	authtypes "github.com/dracory/auth/types"
 )
@@ -9,7 +10,7 @@ import (
 // testSetupUsernameAndPasswordAuth creates a new Auth for testing
 func testSetupUsernameAndPasswordAuth() (*Auth, error) {
 	endpoint := "http://localhost/auth"
-	return NewUsernameAndPasswordAuth(ConfigUsernameAndPassword{
+	instance, err := NewUsernameAndPasswordAuth(ConfigUsernameAndPassword{
 		Endpoint:             endpoint,
 		UrlRedirectOnSuccess: "http://localhost/dashboard",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
@@ -33,12 +34,20 @@ func testSetupUsernameAndPasswordAuth() (*Auth, error) {
 		PasswordStrength: &authtypes.PasswordStrengthConfig{},
 		UseCookies:       true,
 	})
+	if err != nil {
+		return nil, err
+	}
+	auth, ok := instance.(*Auth)
+	if !ok {
+		return nil, errors.New("unexpected concrete type from NewUsernameAndPasswordAuth")
+	}
+	return auth, nil
 }
 
 // testSetupPasswordlessAuth creates a new Auth for testing
 func testSetupPasswordlessAuth() (*Auth, error) {
 	endpoint := "http://localhost/auth"
-	return NewPasswordlessAuth(ConfigPasswordless{
+	instance, err := NewPasswordlessAuth(ConfigPasswordless{
 		Endpoint:             endpoint,
 		UrlRedirectOnSuccess: "http://localhost/dashboard",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
@@ -56,4 +65,12 @@ func testSetupPasswordlessAuth() (*Auth, error) {
 		FuncEmailSend: func(ctx context.Context, email string, emailSubject string, emailBody string) (err error) { return nil },
 		UseCookies:    true,
 	})
+	if err != nil {
+		return nil, err
+	}
+	auth, ok := instance.(*Auth)
+	if !ok {
+		return nil, errors.New("unexpected concrete type from NewPasswordlessAuth")
+	}
+	return auth, nil
 }

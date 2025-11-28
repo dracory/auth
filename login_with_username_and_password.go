@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"log/slog"
 
 	authutils "github.com/dracory/auth/utils"
 	"github.com/dracory/str"
@@ -34,10 +33,7 @@ func (a Auth) LoginWithUsernameAndPassword(ctx context.Context, email string, pa
 
 	if err != nil {
 		response.ErrorMessage = "Invalid credentials"
-		logger := a.logger
-		if logger == nil {
-			logger = slog.Default()
-		}
+		logger := a.GetLogger()
 		logger.Error("login with username and password failed",
 			"error", err,
 			"email", email,
@@ -56,10 +52,7 @@ func (a Auth) LoginWithUsernameAndPassword(ctx context.Context, email string, pa
 	if errRandom != nil {
 		authErr := NewCodeGenerationError(errRandom)
 		response.ErrorMessage = authErr.Message
-		logger := a.logger
-		if logger == nil {
-			logger = slog.Default()
-		}
+		logger := a.GetLogger()
 		logger.Error("auth token generation failed",
 			"error", authErr.InternalErr,
 			"error_code", authErr.Code,
@@ -75,10 +68,7 @@ func (a Auth) LoginWithUsernameAndPassword(ctx context.Context, email string, pa
 	if errSession != nil {
 		authErr := NewTokenStoreError(errSession)
 		response.ErrorMessage = authErr.Message
-		logger := a.logger
-		if logger == nil {
-			logger = slog.Default()
-		}
+		logger := a.GetLogger()
 		logger.Error("auth token store failed",
 			"error", authErr.InternalErr,
 			"error_code", authErr.Code,

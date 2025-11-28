@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"log/slog"
 	"net/http"
 
 	"github.com/dracory/api"
@@ -22,10 +21,7 @@ func (a Auth) apiLogout(w http.ResponseWriter, r *http.Request) {
 
 	if errToken != nil {
 		authErr := NewLogoutError(errToken)
-		logger := a.logger
-		if logger == nil {
-			logger = slog.Default()
-		}
+		logger := a.GetLogger()
 		logger.Error("logout token lookup failed",
 			"error", authErr.InternalErr,
 			"error_code", authErr.Code,
@@ -45,10 +41,7 @@ func (a Auth) apiLogout(w http.ResponseWriter, r *http.Request) {
 
 		if errLogout != nil {
 			authErr := NewLogoutError(errLogout)
-			logger := a.logger
-			if logger == nil {
-				logger = slog.Default()
-			}
+			logger := a.GetLogger()
 			logger.Error("user logout failed",
 				"error", authErr.InternalErr,
 				"error_code", authErr.Code,

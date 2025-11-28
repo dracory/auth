@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"encoding/json"
-	"log/slog"
 
 	authutils "github.com/dracory/auth/utils"
 )
@@ -66,10 +65,7 @@ func (a Auth) RegisterWithUsernameAndPassword(ctx context.Context, email string,
 	if errRandom != nil {
 		authErr := NewCodeGenerationError(errRandom)
 		response.ErrorMessage = authErr.Message
-		logger := a.logger
-		if logger == nil {
-			logger = slog.Default()
-		}
+		logger := a.GetLogger()
 		logger.Error("registration code generation failed",
 			"error", authErr.InternalErr,
 			"error_code", authErr.Code,
@@ -90,10 +86,7 @@ func (a Auth) RegisterWithUsernameAndPassword(ctx context.Context, email string,
 	if errJson != nil {
 		authErr := NewSerializationError(errJson)
 		response.ErrorMessage = authErr.Message
-		logger := a.logger
-		if logger == nil {
-			logger = slog.Default()
-		}
+		logger := a.GetLogger()
 		logger.Error("registration data serialization failed",
 			"error", authErr.InternalErr,
 			"error_code", authErr.Code,
@@ -109,10 +102,7 @@ func (a Auth) RegisterWithUsernameAndPassword(ctx context.Context, email string,
 	if errTempTokenSave != nil {
 		authErr := NewTokenStoreError(errTempTokenSave)
 		response.ErrorMessage = authErr.Message
-		logger := a.logger
-		if logger == nil {
-			logger = slog.Default()
-		}
+		logger := a.GetLogger()
 		logger.Error("registration code token store failed",
 			"error", authErr.InternalErr,
 			"error_code", authErr.Code,
@@ -130,10 +120,7 @@ func (a Auth) RegisterWithUsernameAndPassword(ctx context.Context, email string,
 	if errEmailSent != nil {
 		authErr := NewEmailSendError(errEmailSent)
 		response.ErrorMessage = authErr.Message
-		logger := a.logger
-		if logger == nil {
-			logger = slog.Default()
-		}
+		logger := a.GetLogger()
 		logger.Error("registration email send failed",
 			"error", authErr.InternalErr,
 			"error_code", authErr.Code,

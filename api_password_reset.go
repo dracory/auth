@@ -2,7 +2,6 @@ package auth
 
 import (
 	"crypto/subtle"
-	"log/slog"
 	"net/http"
 
 	"github.com/dracory/api"
@@ -47,10 +46,7 @@ func (a Auth) apiPasswordReset(w http.ResponseWriter, r *http.Request) {
 			Message:     err.Error(),
 			InternalErr: err,
 		}
-		logger := a.logger
-		if logger == nil {
-			logger = slog.Default()
-		}
+		logger := a.GetLogger()
 		logger.Error("password validation failed",
 			"error", authErr.InternalErr,
 			"error_code", authErr.Code,
@@ -81,10 +77,7 @@ func (a Auth) apiPasswordReset(w http.ResponseWriter, r *http.Request) {
 
 	if errPasswordChange != nil {
 		authErr := NewPasswordResetError(errPasswordChange)
-		logger := a.logger
-		if logger == nil {
-			logger = slog.Default()
-		}
+		logger := a.GetLogger()
 		logger.Error("password change failed",
 			"error", authErr.InternalErr,
 			"error_code", authErr.Code,
@@ -104,10 +97,7 @@ func (a Auth) apiPasswordReset(w http.ResponseWriter, r *http.Request) {
 
 	if errLogout != nil {
 		authErr := NewLogoutError(errLogout)
-		logger := a.logger
-		if logger == nil {
-			logger = slog.Default()
-		}
+		logger := a.GetLogger()
 		logger.Error("session invalidation after password change failed",
 			"error", authErr.InternalErr,
 			"error_code", authErr.Code,

@@ -3,7 +3,6 @@ package auth
 import (
 	"encoding/json"
 	"html"
-	"log/slog"
 	"net/http"
 
 	"github.com/dracory/api"
@@ -59,10 +58,7 @@ func (a Auth) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
 
 	if errRandomFromGamma != nil {
 		authErr := NewCodeGenerationError(errRandomFromGamma)
-		logger := a.logger
-		if logger == nil {
-			logger = slog.Default()
-		}
+		logger := a.GetLogger()
 		logger.Error("registration code generation failed",
 			"error", authErr.InternalErr,
 			"error_code", authErr.Code,
@@ -83,10 +79,7 @@ func (a Auth) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
 
 	if errJson != nil {
 		authErr := NewSerializationError(errJson)
-		logger := a.logger
-		if logger == nil {
-			logger = slog.Default()
-		}
+		logger := a.GetLogger()
 		logger.Error("registration data serialization failed",
 			"error", authErr.InternalErr,
 			"error_code", authErr.Code,
@@ -103,10 +96,7 @@ func (a Auth) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
 
 	if errTempTokenSave != nil {
 		authErr := NewTokenStoreError(errTempTokenSave)
-		logger := a.logger
-		if logger == nil {
-			logger = slog.Default()
-		}
+		logger := a.GetLogger()
 		logger.Error("registration code token store failed",
 			"error", authErr.InternalErr,
 			"error_code", authErr.Code,
@@ -128,10 +118,7 @@ func (a Auth) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
 
 	if errEmailSent != nil {
 		authErr := NewEmailSendError(errEmailSent)
-		logger := a.logger
-		if logger == nil {
-			logger = slog.Default()
-		}
+		logger := a.GetLogger()
 		logger.Error("registration code email send failed",
 			"error", authErr.InternalErr,
 			"error_code", authErr.Code,

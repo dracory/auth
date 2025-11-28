@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"log/slog"
 	"net/http"
 
 	"github.com/dracory/api"
@@ -77,10 +76,7 @@ func (a Auth) authenticateViaUsername(w http.ResponseWriter, r *http.Request, us
 
 	if errRandomFromGamma != nil {
 		authErr := NewCodeGenerationError(errRandomFromGamma)
-		logger := a.logger
-		if logger == nil {
-			logger = slog.Default()
-		}
+		logger := a.GetLogger()
 		logger.Error("login auth token generation failed",
 			"error", authErr.InternalErr,
 			"error_code", authErr.Code,
@@ -100,10 +96,7 @@ func (a Auth) authenticateViaUsername(w http.ResponseWriter, r *http.Request, us
 
 	if errSession != nil {
 		authErr := NewTokenStoreError(errSession)
-		logger := a.logger
-		if logger == nil {
-			logger = slog.Default()
-		}
+		logger := a.GetLogger()
 		logger.Error("login auth token store failed",
 			"error", authErr.InternalErr,
 			"error_code", authErr.Code,

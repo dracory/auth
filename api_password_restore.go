@@ -2,7 +2,6 @@ package auth
 
 import (
 	"html"
-	"log/slog"
 	"net/http"
 
 	"github.com/dracory/api"
@@ -46,10 +45,7 @@ func (a Auth) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		logger := a.logger
-		if logger == nil {
-			logger = slog.Default()
-		}
+		logger := a.GetLogger()
 		logger.Error("password restore user lookup failed",
 			"error", err,
 			"email", email,
@@ -82,10 +78,7 @@ func (a Auth) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
 
 	if errRandomFromGamma != nil {
 		authErr := NewCodeGenerationError(errRandomFromGamma)
-		logger := a.logger
-		if logger == nil {
-			logger = slog.Default()
-		}
+		logger := a.GetLogger()
 		logger.Error("password reset token generation failed",
 			"error", authErr.InternalErr,
 			"error_code", authErr.Code,
@@ -102,10 +95,7 @@ func (a Auth) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
 
 	if errTempTokenSave != nil {
 		authErr := NewTokenStoreError(errTempTokenSave)
-		logger := a.logger
-		if logger == nil {
-			logger = slog.Default()
-		}
+		logger := a.GetLogger()
 		logger.Error("password reset token store failed",
 			"error", authErr.InternalErr,
 			"error_code", authErr.Code,
@@ -127,10 +117,7 @@ func (a Auth) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
 
 	if errEmailSent != nil {
 		authErr := NewEmailSendError(errEmailSent)
-		logger := a.logger
-		if logger == nil {
-			logger = slog.Default()
-		}
+		logger := a.GetLogger()
 		logger.Error("password restore email send failed",
 			"error", authErr.InternalErr,
 			"error_code", authErr.Code,

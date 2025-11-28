@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"log/slog"
 	"net/http"
 
 	"github.com/dracory/api"
@@ -45,10 +44,7 @@ func (a Auth) apiLoginPasswordless(w http.ResponseWriter, r *http.Request) {
 	verificationCode, err := authutils.GenerateVerificationCode(a.disableRateLimit)
 	if err != nil {
 		authErr := NewCodeGenerationError(err)
-		logger := a.logger
-		if logger == nil {
-			logger = slog.Default()
-		}
+		logger := a.GetLogger()
 		logger.Error("login code generation failed",
 			"error", authErr.InternalErr,
 			"error_code", authErr.Code,
@@ -65,10 +61,7 @@ func (a Auth) apiLoginPasswordless(w http.ResponseWriter, r *http.Request) {
 
 	if errTempTokenSave != nil {
 		authErr := NewTokenStoreError(errTempTokenSave)
-		logger := a.logger
-		if logger == nil {
-			logger = slog.Default()
-		}
+		logger := a.GetLogger()
 		logger.Error("login code token store failed",
 			"error", authErr.InternalErr,
 			"error_code", authErr.Code,
@@ -90,10 +83,7 @@ func (a Auth) apiLoginPasswordless(w http.ResponseWriter, r *http.Request) {
 
 	if errEmailSent != nil {
 		authErr := NewEmailSendError(errEmailSent)
-		logger := a.logger
-		if logger == nil {
-			logger = slog.Default()
-		}
+		logger := a.GetLogger()
 		logger.Error("login code email send failed",
 			"error", authErr.InternalErr,
 			"error_code", authErr.Code,

@@ -2,7 +2,6 @@ package auth
 
 import (
 	"encoding/json"
-	"log/slog"
 	"net/http"
 
 	"github.com/dracory/api"
@@ -84,10 +83,7 @@ func (a Auth) apiRegisterCodeVerify(w http.ResponseWriter, r *http.Request) {
 				Message:     err.Error(),
 				InternalErr: err,
 			}
-			logger := a.logger
-			if logger == nil {
-				logger = slog.Default()
-			}
+			logger := a.GetLogger()
 			logger.Error("password validation failed",
 				"error", authErr.InternalErr,
 				"error_code", authErr.Code,
@@ -107,10 +103,7 @@ func (a Auth) apiRegisterCodeVerify(w http.ResponseWriter, r *http.Request) {
 
 	if errRegister != nil {
 		authErr := NewRegistrationError(errRegister)
-		logger := a.logger
-		if logger == nil {
-			logger = slog.Default()
-		}
+		logger := a.GetLogger()
 		logger.Error("user registration failed",
 			"error", authErr.InternalErr,
 			"error_code", authErr.Code,

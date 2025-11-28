@@ -3,13 +3,14 @@ package auth
 import (
 	"bytes"
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
 func newPasswordlessAuthForMiddlewareTests(useCookies bool) (*Auth, error) {
-	return NewPasswordlessAuth(ConfigPasswordless{
+	instance, err := NewPasswordlessAuth(ConfigPasswordless{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/user",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
@@ -33,6 +34,14 @@ func newPasswordlessAuthForMiddlewareTests(useCookies bool) (*Auth, error) {
 		UseCookies:      useCookies,
 		UseLocalStorage: !useCookies,
 	})
+	if err != nil {
+		return nil, err
+	}
+	auth, ok := instance.(*Auth)
+	if !ok {
+		return nil, errors.New("unexpected concrete type from NewPasswordlessAuth")
+	}
+	return auth, nil
 }
 
 func TestWebAuthOrRedirectMiddleware_NoToken_RedirectsToLogin(t *testing.T) {
