@@ -6,21 +6,10 @@ import (
 	"errors"
 	"net/http"
 
-	authtypes "github.com/dracory/auth/types"
+	"github.com/dracory/api"
 	authutils "github.com/dracory/auth/utils"
 	"github.com/dracory/req"
 )
-
-// PasswordResetDeps defines the dependencies required for the password reset
-// flow (changing the user's password given a valid token).
-type PasswordResetDeps struct {
-	PasswordStrength *authtypes.PasswordStrengthConfig
-
-	TemporaryKeyGet func(key string) (string, error)
-
-	UserPasswordChange func(ctx context.Context, userID, password string) error
-	LogoutUser         func(ctx context.Context, userID string) error
-}
 
 // PasswordResetErrorCode categorizes error sources in the password reset flow.
 type PasswordResetErrorCode string
@@ -63,9 +52,48 @@ type PasswordResetResult struct {
 	Token          string
 }
 
+// ApiPasswordReset is the HTTP-level helper that wires request/response
+// handling to the core PasswordReset business logic using the provided
+// dependencies.
+func ApiPasswordReset(w http.ResponseWriter, r *http.Request, deps Dependencies) {
+	result, perr := PasswordReset(r.Context(), r, deps)
+	if perr != nil {
+		switch perr.Code {
+		case PasswordResetErrorCodeValidation,
+			PasswordResetErrorCodeTokenLookup,
+			PasswordResetErrorCodeTokenInvalid:
+			api.Respond(w, r, api.Error(perr.Message))
+			return
+		case PasswordResetErrorCodePasswordStrength:
+			// Preserve existing behavior: return the validation error string.
+			if perr.Err != nil {
+				api.Respond(w, r, api.Error(perr.Err.Error()))
+			} else {
+				api.Respond(w, r, api.Error("Password validation failed"))
+			}
+			return
+		case PasswordResetErrorCodePasswordChange:
+			// Map to the same user-facing message as NewPasswordResetError.
+			api.Respond(w, r, api.Error("Password reset failed. Please try again later"))
+			return
+		case PasswordResetErrorCodeLogout:
+			// Map to the same user-facing message as NewLogoutError.
+			api.Respond(w, r, api.Error("Logout failed. Please try again later"))
+			return
+		default:
+			api.Respond(w, r, api.Error("Internal server error. Please try again later"))
+			return
+		}
+	}
+
+	api.Respond(w, r, api.SuccessWithData(result.SuccessMessage, map[string]any{
+		"token": result.Token,
+	}))
+}
+
 // PasswordReset encapsulates the core business logic for resetting a user's
 // password based on a reset token. It does not log or write HTTP responses.
-func PasswordReset(ctx context.Context, r *http.Request, deps PasswordResetDeps) (*PasswordResetResult, *PasswordResetError) {
+func PasswordReset(ctx context.Context, r *http.Request, deps Dependencies) (*PasswordResetResult, *PasswordResetError) {
 	token := req.GetStringTrimmed(r, "token")
 	password := req.GetStringTrimmed(r, "password")
 	passwordConfirm := req.GetStringTrimmed(r, "password_confirm")

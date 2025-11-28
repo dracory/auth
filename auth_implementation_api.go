@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"html"
 	"net/http"
 
 	"github.com/dracory/api"
@@ -12,6 +11,7 @@ import (
 	"github.com/dracory/auth/internal/api/api_logout"
 	"github.com/dracory/auth/internal/api/api_password_reset"
 	"github.com/dracory/auth/internal/api/api_password_restore"
+	"github.com/dracory/auth/internal/api/api_register"
 	"github.com/dracory/req"
 	"github.com/dracory/str"
 )
@@ -46,123 +46,30 @@ func (a authImplementation) apiLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a authImplementation) apiRegister(w http.ResponseWriter, r *http.Request) {
-	if a.passwordless {
-		a.apiRegisterPasswordless(w, r)
-	} else {
-		a.apiRegisterUsernameAndPassword(w, r)
-	}
-}
-
-func (a authImplementation) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
-	deps := apireg.RegisterPasswordlessInitDeps{
-		DisableRateLimit: a.disableRateLimit,
-		TemporaryKeySet:  a.funcTemporaryKeySet,
-		ExpiresSeconds:   int(DefaultVerificationCodeExpiration.Seconds()),
-		EmailTemplate: func(ctx context.Context, email string, verificationCode string) string {
-			return a.passwordlessFuncEmailTemplateRegisterCode(ctx, email, verificationCode, UserAuthOptions{
-				UserIp:    req.GetIP(r),
-				UserAgent: r.UserAgent(),
+	api_register.ApiRegister(w, r, api_register.Dependencies{
+		Passwordless: a.passwordless,
+		RegisterPasswordlessInitDependencies: api_register.RegisterPasswordlessInitDependencies{
+			DisableRateLimit: a.disableRateLimit,
+			TemporaryKeySet:  a.funcTemporaryKeySet,
+			ExpiresSeconds:   int(DefaultVerificationCodeExpiration.Seconds()),
+			EmailTemplate: func(ctx context.Context, email string, verificationCode string) string {
+				return a.passwordlessFuncEmailTemplateRegisterCode(ctx, email, verificationCode, UserAuthOptions{
+					UserIp:    req.GetIP(r),
+					UserAgent: r.UserAgent(),
+				})
+			},
+			EmailSend: func(ctx context.Context, email string, subject string, body string) error {
+				return a.passwordlessFuncEmailSend(ctx, email, subject, body)
+			},
+		},
+		RegisterWithUsernameAndPassword: func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string) {
+			resp := a.RegisterWithUsernameAndPassword(ctx, email, password, firstName, lastName, UserAuthOptions{
+				UserIp:    ip,
+				UserAgent: userAgent,
 			})
+			return resp.SuccessMessage, resp.ErrorMessage
 		},
-		EmailSend: func(ctx context.Context, email string, subject string, body string) error {
-			return a.passwordlessFuncEmailSend(ctx, email, subject, body)
-		},
-	}
-
-	result, perr := apireg.RegisterPasswordlessInit(r.Context(), r, deps)
-	if perr != nil {
-		email := req.GetStringTrimmed(r, "email")
-		logger := a.GetLogger()
-		ip := req.GetIP(r)
-		userAgent := r.UserAgent()
-
-		switch perr.Code {
-		case apireg.RegisterPasswordlessInitErrorCodeValidation:
-			api.Respond(w, r, api.Error(perr.Message))
-			return
-		case apireg.RegisterPasswordlessInitErrorCodeCodeGeneration:
-			authErr := NewCodeGenerationError(perr.Err)
-			logger.Error("registration code generation failed",
-				"error", authErr.InternalErr,
-				"error_code", authErr.Code,
-				"email", email,
-				"ip", ip,
-				"user_agent", userAgent,
-				"endpoint", "api_register_passwordless",
-			)
-			api.Respond(w, r, api.Error(authErr.Message))
-			return
-		case apireg.RegisterPasswordlessInitErrorCodeSerialization:
-			authErr := NewSerializationError(perr.Err)
-			logger.Error("registration data serialization failed",
-				"error", authErr.InternalErr,
-				"error_code", authErr.Code,
-				"email", email,
-				"ip", ip,
-				"user_agent", userAgent,
-				"endpoint", "api_register_passwordless",
-			)
-			api.Respond(w, r, api.Error(authErr.Message))
-			return
-		case apireg.RegisterPasswordlessInitErrorCodeTokenStore:
-			authErr := NewTokenStoreError(perr.Err)
-			logger.Error("registration code token store failed",
-				"error", authErr.InternalErr,
-				"error_code", authErr.Code,
-				"email", email,
-				"ip", ip,
-				"user_agent", userAgent,
-				"endpoint", "api_register_passwordless",
-			)
-			api.Respond(w, r, api.Error(authErr.Message))
-			return
-		case apireg.RegisterPasswordlessInitErrorCodeEmailSend:
-			authErr := NewEmailSendError(perr.Err)
-			logger.Error("registration code email send failed",
-				"error", authErr.InternalErr,
-				"error_code", authErr.Code,
-				"email", email,
-				"ip", ip,
-				"user_agent", userAgent,
-				"endpoint", "api_register_passwordless",
-			)
-			api.Respond(w, r, api.Error(authErr.Message))
-			return
-		default:
-			authErr := NewInternalError(perr.Err)
-			logger.Error("registration init internal error",
-				"error", authErr.InternalErr,
-				"error_code", authErr.Code,
-				"email", email,
-				"ip", ip,
-				"user_agent", userAgent,
-				"endpoint", "api_register_passwordless",
-			)
-			api.Respond(w, r, api.Error(authErr.Message))
-			return
-		}
-	}
-
-	api.Respond(w, r, api.Success(result.SuccessMessage))
-}
-
-func (a authImplementation) apiRegisterUsernameAndPassword(w http.ResponseWriter, r *http.Request) {
-	email := req.GetStringTrimmed(r, "email")
-	password := req.GetStringTrimmed(r, "password")
-	first_name := html.EscapeString(req.GetStringTrimmed(r, "first_name"))
-	last_name := html.EscapeString(req.GetStringTrimmed(r, "last_name"))
-
-	response := a.RegisterWithUsernameAndPassword(r.Context(), email, password, first_name, last_name, UserAuthOptions{
-		UserIp:    req.GetIP(r),
-		UserAgent: r.UserAgent(),
 	})
-
-	if response.ErrorMessage != "" {
-		api.Respond(w, r, api.Error(response.ErrorMessage))
-		return
-	}
-
-	api.Respond(w, r, api.Success(response.SuccessMessage))
 }
 
 func (a authImplementation) apiLogout(w http.ResponseWriter, r *http.Request) {
@@ -190,7 +97,7 @@ func (a authImplementation) apiLogout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a authImplementation) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
-	deps := api_password_restore.PasswordRestoreDeps{
+	api_password_restore.ApiPasswordRestore(w, r, api_password_restore.Dependencies{
 		UserFindByUsername: func(ctx context.Context, email, firstName, lastName string) (string, error) {
 			return a.funcUserFindByUsername(ctx, email, firstName, lastName, UserAuthOptions{
 				UserIp:    req.GetIP(r),
@@ -208,86 +115,11 @@ func (a authImplementation) apiPasswordRestore(w http.ResponseWriter, r *http.Re
 		EmailSend: func(ctx context.Context, userID, subject, body string) error {
 			return a.funcEmailSend(ctx, userID, subject, body)
 		},
-	}
-
-	result, perr := api_password_restore.PasswordRestore(r.Context(), r, deps)
-	if perr != nil {
-		logger := a.GetLogger()
-		ip := req.GetIP(r)
-		userAgent := r.UserAgent()
-
-		switch perr.Code {
-		case api_password_restore.PasswordRestoreErrorCodeValidation:
-			api.Respond(w, r, api.Error(perr.Message))
-			return
-		case api_password_restore.PasswordRestoreErrorCodeUserLookup:
-			logger.Error("password restore user lookup failed",
-				"error", perr.Err,
-				"email", perr.Email,
-				"first_name", perr.FirstName,
-				"last_name", perr.LastName,
-				"ip", ip,
-				"user_agent", userAgent,
-				"endpoint", "api_password_restore",
-			)
-			api.Respond(w, r, api.Error(perr.Message))
-			return
-		case api_password_restore.PasswordRestoreErrorCodeCodeGenerate:
-			authErr := NewCodeGenerationError(perr.Err)
-			logger.Error("password reset token generation failed",
-				"error", authErr.InternalErr,
-				"error_code", authErr.Code,
-				"user_id", perr.UserID,
-				"ip", ip,
-				"user_agent", userAgent,
-				"endpoint", "api_password_restore",
-			)
-			api.Respond(w, r, api.Error(authErr.Message))
-			return
-		case api_password_restore.PasswordRestoreErrorCodeTokenStore:
-			authErr := NewTokenStoreError(perr.Err)
-			logger.Error("password reset token store failed",
-				"error", authErr.InternalErr,
-				"error_code", authErr.Code,
-				"user_id", perr.UserID,
-				"ip", ip,
-				"user_agent", userAgent,
-				"endpoint", "api_password_restore",
-			)
-			api.Respond(w, r, api.Error(authErr.Message))
-			return
-		case api_password_restore.PasswordRestoreErrorCodeEmailSend:
-			authErr := NewEmailSendError(perr.Err)
-			logger.Error("password restore email send failed",
-				"error", authErr.InternalErr,
-				"error_code", authErr.Code,
-				"user_id", perr.UserID,
-				"ip", ip,
-				"user_agent", userAgent,
-				"endpoint", "api_password_restore",
-			)
-			api.Respond(w, r, api.Error(authErr.Message))
-			return
-		default:
-			authErr := NewInternalError(perr.Err)
-			logger.Error("password restore internal error",
-				"error", authErr.InternalErr,
-				"error_code", authErr.Code,
-				"user_id", perr.UserID,
-				"ip", ip,
-				"user_agent", userAgent,
-				"endpoint", "api_password_restore",
-			)
-			api.Respond(w, r, api.Error(authErr.Message))
-			return
-		}
-	}
-
-	api.Respond(w, r, api.Success(result.SuccessMessage))
+	})
 }
 
 func (a authImplementation) apiPasswordReset(w http.ResponseWriter, r *http.Request) {
-	deps := api_password_reset.PasswordResetDeps{
+	api_password_reset.ApiPasswordReset(w, r, api_password_reset.Dependencies{
 		PasswordStrength: a.passwordStrength,
 		TemporaryKeyGet:  a.funcTemporaryKeyGet,
 		UserPasswordChange: func(ctx context.Context, userID, password string) error {
@@ -302,77 +134,7 @@ func (a authImplementation) apiPasswordReset(w http.ResponseWriter, r *http.Requ
 				UserAgent: r.UserAgent(),
 			})
 		},
-	}
-
-	result, perr := api_password_reset.PasswordReset(r.Context(), r, deps)
-	if perr != nil {
-		logger := a.GetLogger()
-		ip := req.GetIP(r)
-		userAgent := r.UserAgent()
-
-		switch perr.Code {
-		case api_password_reset.PasswordResetErrorCodeValidation,
-			api_password_reset.PasswordResetErrorCodeTokenLookup,
-			api_password_reset.PasswordResetErrorCodeTokenInvalid:
-			api.Respond(w, r, api.Error(perr.Message))
-			return
-		case api_password_reset.PasswordResetErrorCodePasswordStrength:
-			authErr := AuthError{
-				Code:        ErrCodeValidationFailed,
-				Message:     perr.Err.Error(),
-				InternalErr: perr.Err,
-			}
-			logger.Error("password validation failed",
-				"error", authErr.InternalErr,
-				"error_code", authErr.Code,
-				"ip", ip,
-				"user_agent", userAgent,
-				"endpoint", "api_password_reset",
-			)
-			api.Respond(w, r, api.Error(authErr.Message))
-			return
-		case api_password_reset.PasswordResetErrorCodePasswordChange:
-			authErr := NewPasswordResetError(perr.Err)
-			logger.Error("password change failed",
-				"error", authErr.InternalErr,
-				"error_code", authErr.Code,
-				"user_id", perr.UserID,
-				"ip", ip,
-				"user_agent", userAgent,
-				"endpoint", "api_password_reset",
-			)
-			api.Respond(w, r, api.Error(authErr.Message))
-			return
-		case api_password_reset.PasswordResetErrorCodeLogout:
-			authErr := NewLogoutError(perr.Err)
-			logger.Error("session invalidation after password change failed",
-				"error", authErr.InternalErr,
-				"error_code", authErr.Code,
-				"user_id", perr.UserID,
-				"ip", ip,
-				"user_agent", userAgent,
-				"endpoint", "api_password_reset",
-			)
-			api.Respond(w, r, api.Error(authErr.Message))
-			return
-		default:
-			authErr := NewInternalError(perr.Err)
-			logger.Error("password reset internal error",
-				"error", authErr.InternalErr,
-				"error_code", authErr.Code,
-				"user_id", perr.UserID,
-				"ip", ip,
-				"user_agent", userAgent,
-				"endpoint", "api_password_reset",
-			)
-			api.Respond(w, r, api.Error(authErr.Message))
-			return
-		}
-	}
-
-	api.Respond(w, r, api.SuccessWithData(result.SuccessMessage, map[string]any{
-		"token": result.Token,
-	}))
+	})
 }
 
 func (a authImplementation) apiLoginCodeVerify(w http.ResponseWriter, r *http.Request) {

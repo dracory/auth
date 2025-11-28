@@ -7,13 +7,63 @@ import (
 	"html"
 	"net/http"
 
+	"github.com/dracory/api"
 	authutils "github.com/dracory/auth/utils"
 	"github.com/dracory/req"
 )
 
+// ApiRegister is the HTTP-level helper that routes registration requests to
+// either the passwordless or username+password flow based on the provided
+// dependencies.
+func ApiRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
+	if deps.Passwordless {
+		result, err := RegisterPasswordlessInit(r.Context(), r, deps.RegisterPasswordlessInitDependencies)
+		if err != nil {
+			switch err.Code {
+			case RegisterPasswordlessInitErrorCodeValidation:
+				api.Respond(w, r, api.Error(err.Message))
+				return
+			case RegisterPasswordlessInitErrorCodeTokenStore,
+				RegisterPasswordlessInitErrorCodeSerialization:
+				api.Respond(w, r, api.Error("Failed to process request. Please try again later"))
+				return
+			case RegisterPasswordlessInitErrorCodeEmailSend:
+				api.Respond(w, r, api.Error("Failed to send email. Please try again later"))
+				return
+			default:
+				api.Respond(w, r, api.Error("Internal server error. Please try again later"))
+				return
+			}
+		}
+
+		api.Respond(w, r, api.Success(result.SuccessMessage))
+		return
+	}
+
+	if deps.RegisterWithUsernameAndPassword == nil {
+		api.Respond(w, r, api.Error("Registration failed. Please try again later"))
+		return
+	}
+
+	email := req.GetStringTrimmed(r, "email")
+	password := req.GetStringTrimmed(r, "password")
+	firstName := html.EscapeString(req.GetStringTrimmed(r, "first_name"))
+	lastName := html.EscapeString(req.GetStringTrimmed(r, "last_name"))
+	ip := req.GetIP(r)
+	userAgent := r.UserAgent()
+
+	successMessage, errorMessage := deps.RegisterWithUsernameAndPassword(r.Context(), email, password, firstName, lastName, ip, userAgent)
+	if errorMessage != "" {
+		api.Respond(w, r, api.Error(errorMessage))
+		return
+	}
+
+	api.Respond(w, r, api.Success(successMessage))
+}
+
 // RegisterPasswordlessInitDeps defines the dependencies required for the
 // passwordless registration init (sending verification code).
-type RegisterPasswordlessInitDeps struct {
+type RegisterPasswordlessInitDependencies struct {
 	DisableRateLimit bool
 
 	TemporaryKeySet func(key string, value string, expiresSeconds int) error
@@ -66,7 +116,7 @@ type RegisterPasswordlessInitResult struct {
 // stores a temporary JSON payload and sends the email. It intentionally does
 // not perform any logging; callers are responsible for mapping structured
 // errors to their own logging and HTTP responses.
-func RegisterPasswordlessInit(ctx context.Context, r *http.Request, deps RegisterPasswordlessInitDeps) (*RegisterPasswordlessInitResult, *RegisterPasswordlessInitError) {
+func RegisterPasswordlessInit(ctx context.Context, r *http.Request, deps RegisterPasswordlessInitDependencies) (*RegisterPasswordlessInitResult, *RegisterPasswordlessInitError) {
 	email := req.GetStringTrimmed(r, "email")
 	firstName := html.EscapeString(req.GetStringTrimmed(r, "first_name"))
 	lastName := html.EscapeString(req.GetStringTrimmed(r, "last_name"))

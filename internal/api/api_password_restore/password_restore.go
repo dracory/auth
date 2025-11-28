@@ -6,6 +6,7 @@ import (
 	"html"
 	"net/http"
 
+	"github.com/dracory/api"
 	authutils "github.com/dracory/auth/utils"
 	"github.com/dracory/req"
 )
@@ -21,6 +22,11 @@ type PasswordRestoreDeps struct {
 	EmailTemplate func(ctx context.Context, userID, token string) string
 	EmailSend     func(ctx context.Context, userID, subject, body string) error
 }
+
+// Dependencies is an alias of PasswordRestoreDeps, used by the HTTP-level
+// ApiPasswordRestore helper to keep the public API explicit while reusing the
+// core dependency structure.
+type Dependencies = PasswordRestoreDeps
 
 // PasswordRestoreErrorCode categorizes error sources in the password restore
 // flow.
@@ -63,6 +69,34 @@ func (e *PasswordRestoreError) Error() string {
 // PasswordRestoreResult represents a successful password restore operation.
 type PasswordRestoreResult struct {
 	SuccessMessage string
+}
+
+// ApiPasswordRestore is the HTTP-level helper that wires request/response
+// handling to the core PasswordRestore business logic using the provided
+// dependencies.
+func ApiPasswordRestore(w http.ResponseWriter, r *http.Request, deps Dependencies) {
+	result, perr := PasswordRestore(r.Context(), r, deps)
+	if perr != nil {
+		switch perr.Code {
+		case PasswordRestoreErrorCodeValidation:
+			api.Respond(w, r, api.Error(perr.Message))
+			return
+		case PasswordRestoreErrorCodeUserLookup:
+			api.Respond(w, r, api.Error(perr.Message))
+			return
+		case PasswordRestoreErrorCodeCodeGenerate,
+			PasswordRestoreErrorCodeTokenStore,
+			PasswordRestoreErrorCodeEmailSend,
+			PasswordRestoreErrorCodeInternalError:
+			api.Respond(w, r, api.Error("Internal server error. Please try again later"))
+			return
+		default:
+			api.Respond(w, r, api.Error("Internal server error. Please try again later"))
+			return
+		}
+	}
+
+	api.Respond(w, r, api.Success(result.SuccessMessage))
 }
 
 // PasswordRestore encapsulates core business logic for issuing a password
