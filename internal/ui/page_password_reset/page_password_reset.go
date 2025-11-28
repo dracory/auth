@@ -4,22 +4,8 @@ import (
 	"net/http"
 
 	"github.com/dracory/auth/internal/links"
-	"github.com/dracory/auth/internal/ui"
+	"github.com/dracory/auth/internal/ui/shared"
 )
-
-// Dependencies contains the dependencies required to render the password reset page.
-type Dependencies struct {
-	Endpoint           string
-	EnableRegistration bool
-	Token              string
-	ErrorMessage       string
-
-	Layout func(content string) string
-
-	Logger interface {
-		Error(msg string, keyvals ...interface{})
-	}
-}
 
 // PagePasswordReset renders the password reset page using the provided
 // dependencies and writes the result to the ResponseWriter.
@@ -28,7 +14,7 @@ func PagePasswordReset(deps Dependencies, w http.ResponseWriter, r *http.Request
 	urlLogin := links.Login(deps.Endpoint)
 	urlRegister := links.Register(deps.Endpoint)
 
-	content := ui.PasswordResetContent(
+	content := PasswordResetContent(
 		deps.Token,
 		deps.ErrorMessage,
 		urlPasswordRestore,
@@ -36,12 +22,12 @@ func PagePasswordReset(deps Dependencies, w http.ResponseWriter, r *http.Request
 		urlRegister,
 		deps.EnableRegistration,
 	)
-	scripts := ui.PasswordResetScripts(
+	scripts := PasswordResetScripts(
 		links.ApiPasswordReset(deps.Endpoint),
 		links.Login(deps.Endpoint),
 	)
 
-	html := ui.BuildPage("Reset Password", deps.Layout, content, scripts)
+	html := shared.BuildPage("Reset Password", deps.Layout, content, scripts)
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "text/html")

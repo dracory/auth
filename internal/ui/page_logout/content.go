@@ -1,4 +1,4 @@
-package ui
+package page_logout
 
 import "github.com/dracory/hb"
 

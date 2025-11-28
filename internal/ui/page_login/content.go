@@ -1,8 +1,6 @@
-package ui
+package page_login
 
-import (
-	"github.com/dracory/hb"
-)
+import "github.com/dracory/hb"
 
 // LoginPasswordlessContent builds the HTML content for the passwordless login page.
 func LoginPasswordlessContent(enableRegistration bool, urlRegister string) string {

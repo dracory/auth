@@ -1,4 +1,4 @@
-package ui
+package page_login_code_verify
 
 import "github.com/dracory/hb"
 

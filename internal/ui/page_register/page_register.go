@@ -4,22 +4,8 @@ import (
 	"net/http"
 
 	"github.com/dracory/auth/internal/links"
-	"github.com/dracory/auth/internal/ui"
+	"github.com/dracory/auth/internal/ui/shared"
 )
-
-// Dependencies contains the dependencies required to render the register page.
-type Dependencies struct {
-	Passwordless       bool
-	EnableVerification bool
-
-	Endpoint string
-
-	Layout func(content string) string
-
-	Logger interface {
-		Error(msg string, keyvals ...interface{})
-	}
-}
 
 // PageRegister renders the register page using the provided dependencies and
 // writes the result to the ResponseWriter.
@@ -28,13 +14,13 @@ func PageRegister(deps Dependencies, w http.ResponseWriter, r *http.Request) {
 	scripts := ""
 
 	if deps.Passwordless {
-		content = ui.RegisterPasswordlessContent(links.Login(deps.Endpoint))
-		scripts = ui.RegisterPasswordlessScripts(
+		content = RegisterPasswordlessContent(links.Login(deps.Endpoint))
+		scripts = RegisterPasswordlessScripts(
 			links.ApiRegister(deps.Endpoint),
 			links.RegisterCodeVerify(deps.Endpoint),
 		)
 	} else {
-		content = ui.RegisterUsernameAndPasswordContent(
+		content = RegisterUsernameAndPasswordContent(
 			links.Login(deps.Endpoint),
 			links.PasswordRestore(deps.Endpoint),
 		)
@@ -42,13 +28,13 @@ func PageRegister(deps Dependencies, w http.ResponseWriter, r *http.Request) {
 		if deps.EnableVerification {
 			urlSuccess = links.RegisterCodeVerify(deps.Endpoint)
 		}
-		scripts = ui.RegisterUsernameAndPasswordScripts(
+		scripts = RegisterUsernameAndPasswordScripts(
 			links.ApiRegister(deps.Endpoint),
 			urlSuccess,
 		)
 	}
 
-	html := ui.BuildPage("Register", deps.Layout, content, scripts)
+	html := shared.BuildPage("Register", deps.Layout, content, scripts)
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "text/html")

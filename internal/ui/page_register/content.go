@@ -1,4 +1,4 @@
-package ui
+package page_register
 
 import "github.com/dracory/hb"
 
