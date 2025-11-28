@@ -1,0 +1,265 @@
+package ui
+
+import "github.com/dracory/hb"
+
+// PasswordRestoreContent builds the HTML for the password restore page.
+func PasswordRestoreContent(enableRegistration bool, urlLogin, urlRegister string) string {
+	// Elements for the form
+	alertSuccess := hb.NewDiv().Class("alert alert-success").Style("display:none")
+	alertDanger := hb.NewDiv().Class("alert alert-danger").Style("display:none")
+	alertGroup := hb.NewDiv().Class("alert-group").AddChild(alertSuccess).AddChild(alertDanger)
+
+	header := hb.NewHeading5().
+		Style("margin:0px;").
+		HTML("Restore password")
+	firstNameLabel := hb.NewLabel().Text("First Name")
+	firstNameInput := hb.NewInput().Class("form-control").Name("first_name").Placeholder("Enter first name")
+	firstNameFormGroup := hb.NewDiv().Class("form-group mt-3").AddChild(firstNameLabel).AddChild(firstNameInput)
+	lastNameLabel := hb.NewLabel().Text("Last Name")
+	lastNameInput := hb.NewInput().Class("form-control").Name("last_name").Placeholder("Enter last name")
+	lastNameFormGroup := hb.NewDiv().Class("form-group mt-3").AddChild(lastNameLabel).AddChild(lastNameInput)
+	emailLabel := hb.NewLabel().Text("E-mail Address")
+	emailInput := hb.NewInput().Class("form-control").Name("email").Placeholder("Enter e-mail address")
+	emailFormGroup := hb.NewDiv().Class("form-group mt-3").AddChild(emailLabel).AddChild(emailInput)
+
+	buttonContinue := hb.NewButton().
+		Class("ButtonContinue btn btn-lg btn-success btn-block w-100").
+		OnClick("passwordRestoreFormValidate()").
+		HTML("Send Password Reset Link")
+
+	buttonContinueFormGroup := hb.NewDiv().
+		Class("form-group mt-3 mb-3").
+		Child(buttonContinue)
+
+	buttonLogin := hb.NewHyperlink().
+		Class("btn btn-info float-start").
+		Href(urlLogin).
+		HTML("Login")
+
+	buttonRegister := hb.NewHyperlink().
+		Class("btn btn-warning float-end").
+		Href(urlRegister).
+		HTML("Register")
+
+	// Add elements in a card
+	cardHeader := hb.NewDiv().Class("card-header").AddChild(header)
+	cardBody := hb.NewDiv().Class("card-body").AddChildren([]hb.TagInterface{
+		alertGroup,
+		firstNameFormGroup,
+		lastNameFormGroup,
+		emailFormGroup,
+		buttonContinueFormGroup,
+	})
+	cardFooter := hb.NewDiv().Class("card-footer").AddChildren([]hb.TagInterface{
+		buttonLogin,
+	})
+
+	if enableRegistration {
+		cardFooter.AddChild(buttonRegister)
+	}
+
+	card := hb.NewDiv().Class("card card-default").Style("margin:0 auto;max-width: 360px;")
+	card.AddChild(cardHeader).AddChild(cardBody).AddChild(cardFooter)
+
+	container := hb.NewDiv().Class("container").
+		AddChild(card)
+
+	return container.ToHTML()
+}
+
+// PasswordRestoreScripts builds the JS for the password restore page.
+func PasswordRestoreScripts(urlApiPasswordRestore, urlOnSuccess string) string {
+	return `
+		var urlApiPasswordRestore = "` + urlApiPasswordRestore + `";
+		var urlOnSuccess = "` + urlOnSuccess + `";
+
+		/**
+		 * Raises an error message
+		 * @param  {String} error
+		 * @returns  {Boolean}
+		 */
+		function passwordRestoreFormRaiseError(error) {
+			$('div.alert-success').html('').hide();
+			$('div.alert-danger').html(error).show();
+			setTimeout(function () {
+				$('div.alert-danger').html('').hide();
+			}, 10000);
+			return false;
+		}
+
+		function passwordRestoreFormRaiseSuccess(success) {
+			$('div.alert-danger').html('').hide();
+			$('div.alert-success').html(success).show();
+			setTimeout(function () {
+				$('div.alert-success').html('').hide();
+			}, 10000);
+			return false;
+		}
+
+		/**
+		 * Validates the Password Restore Form
+		 * and sends the request to the backend
+		 * @returns  {Boolean}
+		 */
+		function passwordRestoreFormValidate() {
+			var first_name = $.trim($('input[name=first_name]').val());
+			var last_name = $.trim($('input[name=last_name]').val());
+			var email = $.trim($('input[name=email]').val());
+
+			$('.ButtonContinue .imgLoading').show();
+
+			var data = {"first_name": first_name, "last_name": last_name, "email": email};
+
+			$.post(urlApiPasswordRestore, data).then(function (response) {
+				$('.ButtonContinue .imgLoading').hide();
+
+				if (response.status !== "success") {
+					return passwordRestoreFormRaiseError(response.message);
+				}
+
+				passwordRestoreFormRaiseSuccess('Success');
+				$('div.alert-danger').html('').hide();
+
+				setTimeout(function () {
+					window.location.href=urlOnSuccess;
+				}, 2000);
+				return;
+			}).fail(function (error) {
+				console.log(error);
+				$('.ButtonContinue .imgLoading').hide();
+				return passwordRestoreFormRaiseError('There was an error. Try again later!');
+			});
+		}
+		$(function () {
+			$("input[name=first_name").focus();
+		});
+	`
+}
+
+// PasswordResetContent builds the HTML for the password reset page.
+func PasswordResetContent(token, errorMessage, urlPasswordRestore, urlLogin, urlRegister string, enableRegistration bool) string {
+	// Elements for the form
+	alertSuccess := hb.NewDiv().Class("alert alert-success").Style("display:none")
+	alertDanger := hb.NewDiv().Class("alert alert-danger")
+	if errorMessage != "" {
+		alertDanger.Text(errorMessage)
+	} else {
+		alertDanger.Style("display:none")
+	}
+	alertGroup := hb.NewDiv().Class("alert-group").AddChild(alertSuccess).AddChild(alertDanger)
+
+	header := hb.NewHeading5().Text("Reset Password").Style("margin:0px;")
+	tokenInput := hb.NewInput().Name("token").Value(token)
+	passwordLabel := hb.NewLabel().Text("New Password")
+	passwordInput := hb.NewInput().Class("form-control").Name("password").Placeholder("Enter new password")
+	passwordFormGroup := hb.NewDiv().Class("form-group mt-3").Child(passwordLabel).Child(passwordInput)
+	passwordConfirmLabel := hb.NewLabel().Text("Confirm New Password")
+	passwordConfirmInput := hb.NewInput().Class("form-control").Name("password_confirm").Placeholder("Enter confirmation of new password")
+	passwordConfirmFormGroup := hb.NewDiv().Class("form-group mt-3").Child(passwordConfirmLabel).Child(passwordConfirmInput)
+	buttonContinue := hb.NewButton().Class("ButtonContinue btn btn-lg btn-success btn-block w-100").Text("Reset Password").OnClick("resetFormValidate()")
+	buttonContinueFormGroup := hb.NewDiv().Class("form-group mt-3").AddChild(buttonContinue)
+	buttonLogin := hb.NewHyperlink().Class("btn btn-info float-start").Text("Login").Href(urlLogin)
+	buttonRegister := hb.NewHyperlink().Class("btn btn-warning float-end").Text("Register").Href(urlRegister)
+
+	// Add elements in a card
+	cardHeader := hb.NewDiv().Class("card-header").AddChild(header)
+	cardBody := hb.NewDiv().Class("card-body").AddChildren([]hb.TagInterface{
+		alertGroup,
+	})
+
+	if errorMessage == "" {
+		cardBody.AddChild(tokenInput)
+		cardBody.AddChild(passwordFormGroup)
+		cardBody.AddChild(passwordConfirmFormGroup)
+		cardBody.AddChild(buttonContinueFormGroup)
+	} else {
+		cardBody.AddChild(hb.NewParagraph().Text("Sorry, there was an error processing your request. Please select one of the following options:"))
+		cardBody.AddChild(hb.NewParagraph().AddChild(hb.NewHyperlink().Href(urlPasswordRestore).Text("request a reset of your password")))
+		cardBody.AddChild(hb.NewParagraph().AddChild(hb.NewHyperlink().Href(urlLogin).Text("login to the system")))
+		cardBody.AddChild(hb.NewParagraph().AddChild(hb.NewHyperlink().Href(urlRegister).Text("create a new account")))
+	}
+
+	cardFooter := hb.NewDiv().Class("card-footer").AddChildren([]hb.TagInterface{
+		buttonLogin,
+	})
+
+	if enableRegistration {
+		cardFooter.AddChild(buttonRegister)
+	}
+
+	card := hb.NewDiv().
+		Class("card card-default").
+		Style("margin:0 auto;max-width: 360px;")
+
+	card.AddChild(cardHeader).AddChild(cardBody).AddChild(cardFooter)
+
+	container := hb.NewDiv().Class("container").Child(card)
+
+	return container.ToHTML()
+}
+
+// PasswordResetScripts builds the JS for the password reset page.
+func PasswordResetScripts(urlApiPasswordReset, urlOnSuccess string) string {
+	return `
+		var urlApiPasswordReset = "` + urlApiPasswordReset + `";
+		var urlOnSuccess = "` + urlOnSuccess + `";
+		/**
+		 * Raises an error message
+		 * @param  {String} error
+		 * @returns  {Boolean}
+		 */
+		function resetFormRaiseError(error) {
+			$('div.alert-success').html('').hide();
+			$('div.alert-danger').html(error).show();
+			setTimeout(function () {
+				$('div.alert-danger').html('').hide();
+			}, 10000);
+			return false;
+		}
+
+		function resetFormRaiseSuccess(success) {
+			$('div.alert-danger').html('').hide();
+			$('div.alert-success').html(success).show();
+			setTimeout(function () {
+				$('div.alert-success').html('').hide();
+			}, 10000);
+			return false;
+		}
+
+		/**
+		 * Validate Login Form
+		 * @returns  {Boolean}
+		 */
+		function resetFormValidate() {
+			var token = $.trim($('input[name=token]').val());
+			var password = $.trim($('input[name=password]').val());
+			var passwordConfirm = $.trim($('input[name=password_confirm]').val());
+
+			$('.ButtonContinue .imgLoading').show();
+
+			var data = {"password": password, "password_confirm": passwordConfirm, "token": token};
+
+			$.post(urlApiPasswordReset, data).then(function (response) {
+				$('.ButtonContinue .imgLoading').hide();
+
+				if (response.status !== "success") {
+					return resetFormRaiseError(response.message);
+				}
+
+				resetFormRaiseSuccess('Success');
+				$('div.alert-danger').html('').hide();
+				setTimeout(function () {
+					window.location.href=urlOnSuccess;
+				}, 2000);
+				return;
+			}).fail(function (error) {
+				console.log(error);
+				$('.ButtonContinue .imgLoading').hide();
+				return resetFormRaiseError('There was an error. Try again later!');
+			});
+		}
+		$(function () {
+			$("input[name=first_name").focus();
+		});
+	`
+}

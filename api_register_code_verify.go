@@ -1,13 +1,12 @@
 package auth
 
 import (
-	"encoding/json"
+	"context"
 	"net/http"
 
 	"github.com/dracory/api"
-	authutils "github.com/dracory/auth/utils"
+	apireg "github.com/dracory/auth/internal/api"
 	"github.com/dracory/req"
-	"github.com/dracory/str"
 )
 
 func (a authImplementation) apiRegisterCodeVerify(w http.ResponseWriter, r *http.Request) {
@@ -15,106 +14,84 @@ func (a authImplementation) apiRegisterCodeVerify(w http.ResponseWriter, r *http
 	if !a.checkRateLimit(w, r, "register_code_verify") {
 		return
 	}
-
-	verificationCode := req.GetStringTrimmed(r, "verification_code")
-
-	if verificationCode == "" {
-		api.Respond(w, r, api.Error("Verification code is required field"))
-		return
+	deps := apireg.RegisterCodeVerifyDeps{
+		DisableRateLimit: a.disableRateLimit,
+		TemporaryKeyGet:  a.funcTemporaryKeyGet,
+		PasswordStrength: a.passwordStrength,
+		Passwordless:     a.passwordless,
+		PasswordlessUserRegister: func(ctx context.Context, email, firstName, lastName string) error {
+			return a.passwordlessFuncUserRegister(ctx, email, firstName, lastName, UserAuthOptions{
+				UserIp:    req.GetIP(r),
+				UserAgent: r.UserAgent(),
+			})
+		},
+		UserRegister: func(ctx context.Context, email, password, firstName, lastName string) error {
+			return a.funcUserRegister(ctx, email, password, firstName, lastName, UserAuthOptions{
+				UserIp:    req.GetIP(r),
+				UserAgent: r.UserAgent(),
+			})
+		},
 	}
 
-	if len(verificationCode) != authutils.LoginCodeLength(a.disableRateLimit) {
-		api.Respond(w, r, api.Error("Verification code is invalid length"))
-		return
-	}
+	result, perr := apireg.RegisterCodeVerify(r.Context(), r, deps)
+	if perr != nil {
+		logger := a.GetLogger()
+		ip := req.GetIP(r)
+		userAgent := r.UserAgent()
+		email := ""
+		if result != nil {
+			email = result.Email
+		}
 
-	if !str.ContainsOnly(verificationCode, authutils.LoginCodeGamma(a.disableRateLimit)) {
-		api.Respond(w, r, api.Error("Verification code contains invalid characters"))
-		return
-	}
-
-	registerJSON, errCode := a.funcTemporaryKeyGet(verificationCode)
-
-	if errCode != nil {
-		api.Respond(w, r, api.Error("Verification code has expired"))
-		return
-	}
-
-	// Unmarshal the stored JSON (string) into a map
-	registerMap := map[string]interface{}{}
-	errJSON := json.Unmarshal([]byte(registerJSON), &registerMap)
-
-	if errJSON != nil {
-		api.Respond(w, r, api.Error("Serialized format is malformed"))
-		return
-	}
-
-	email := ""
-	if val, ok := registerMap["email"]; ok {
-		email = val.(string)
-	}
-
-	firstName := ""
-	if val, ok := registerMap["first_name"]; ok {
-		firstName = val.(string)
-	}
-
-	lastName := ""
-	if val, ok := registerMap["last_name"]; ok {
-		lastName = val.(string)
-	}
-
-	password := ""
-	if val, ok := registerMap["password"]; ok {
-		password = val.(string)
-	}
-
-	var errRegister error = nil
-
-	if a.passwordless {
-		errRegister = a.passwordlessFuncUserRegister(r.Context(), email, firstName, lastName, UserAuthOptions{
-			UserIp:    req.GetIP(r),
-			UserAgent: r.UserAgent(),
-		})
-	} else {
-		if err := authutils.ValidatePasswordStrength(password, a.passwordStrength); err != nil {
+		switch perr.Code {
+		case apireg.RegisterCodeVerifyErrorCodeValidation,
+			apireg.RegisterCodeVerifyErrorCodeCodeExpired,
+			apireg.RegisterCodeVerifyErrorCodeDeserialize:
+			// Pure validation/data errors, no structured logging previously.
+			api.Respond(w, r, api.Error(perr.Message))
+			return
+		case apireg.RegisterCodeVerifyErrorCodePasswordValidation:
 			authErr := AuthError{
 				Code:        ErrCodeValidationFailed,
-				Message:     err.Error(),
-				InternalErr: err,
+				Message:     perr.Err.Error(),
+				InternalErr: perr.Err,
 			}
-			logger := a.GetLogger()
 			logger.Error("password validation failed",
 				"error", authErr.InternalErr,
 				"error_code", authErr.Code,
 				"email", email,
-				"ip", req.GetIP(r),
-				"user_agent", r.UserAgent(),
+				"ip", ip,
+				"user_agent", userAgent,
+				"endpoint", "api_register_code_verify",
+			)
+			api.Respond(w, r, api.Error(authErr.Message))
+			return
+		case apireg.RegisterCodeVerifyErrorCodeRegister:
+			authErr := NewRegistrationError(perr.Err)
+			logger.Error("user registration failed",
+				"error", authErr.InternalErr,
+				"error_code", authErr.Code,
+				"email", email,
+				"ip", ip,
+				"user_agent", userAgent,
+				"endpoint", "api_register_code_verify",
+			)
+			api.Respond(w, r, api.Error(authErr.Message))
+			return
+		default:
+			authErr := NewInternalError(perr.Err)
+			logger.Error("registration code verify internal error",
+				"error", authErr.InternalErr,
+				"error_code", authErr.Code,
+				"email", email,
+				"ip", ip,
+				"user_agent", userAgent,
 				"endpoint", "api_register_code_verify",
 			)
 			api.Respond(w, r, api.Error(authErr.Message))
 			return
 		}
-		errRegister = a.funcUserRegister(r.Context(), email, password, firstName, lastName, UserAuthOptions{
-			UserIp:    req.GetIP(r),
-			UserAgent: r.UserAgent(),
-		})
 	}
 
-	if errRegister != nil {
-		authErr := NewRegistrationError(errRegister)
-		logger := a.GetLogger()
-		logger.Error("user registration failed",
-			"error", authErr.InternalErr,
-			"error_code", authErr.Code,
-			"email", email,
-			"ip", req.GetIP(r),
-			"user_agent", r.UserAgent(),
-			"endpoint", "api_register_code_verify",
-		)
-		api.Respond(w, r, api.Error(authErr.Message))
-		return
-	}
-
-	a.authenticateViaUsername(w, r, email, firstName, lastName)
+	a.authenticateViaUsername(w, r, result.Email, result.FirstName, result.LastName)
 }

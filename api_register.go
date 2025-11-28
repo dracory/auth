@@ -1,12 +1,12 @@
 package auth
 
 import (
-	"encoding/json"
+	"context"
 	"html"
 	"net/http"
 
 	"github.com/dracory/api"
-	authutils "github.com/dracory/auth/utils"
+	apireg "github.com/dracory/auth/internal/api"
 	"github.com/dracory/req"
 )
 
@@ -30,108 +30,97 @@ func (a authImplementation) apiRegisterPasswordless(w http.ResponseWriter, r *ht
 		return
 	}
 
-	email := req.GetStringTrimmed(r, "email")
-	first_name := html.EscapeString(req.GetStringTrimmed(r, "first_name"))
-	last_name := html.EscapeString(req.GetStringTrimmed(r, "last_name"))
-
-	if first_name == "" {
-		api.Respond(w, r, api.Error("First name is required field"))
-		return
+	deps := apireg.RegisterPasswordlessInitDeps{
+		DisableRateLimit: a.disableRateLimit,
+		TemporaryKeySet:  a.funcTemporaryKeySet,
+		ExpiresSeconds:   int(DefaultVerificationCodeExpiration.Seconds()),
+		EmailTemplate: func(ctx context.Context, email string, verificationCode string) string {
+			return a.passwordlessFuncEmailTemplateRegisterCode(ctx, email, verificationCode, UserAuthOptions{
+				UserIp:    req.GetIP(r),
+				UserAgent: r.UserAgent(),
+			})
+		},
+		EmailSend: func(ctx context.Context, email string, subject string, body string) error {
+			return a.passwordlessFuncEmailSend(ctx, email, subject, body)
+		},
 	}
 
-	if last_name == "" {
-		api.Respond(w, r, api.Error("Last name is required field"))
-		return
-	}
-
-	if email == "" {
-		api.Respond(w, r, api.Error("Email is required field"))
-		return
-	}
-
-	if msg := authutils.ValidateEmailFormat(email); msg != "" {
-		api.Respond(w, r, api.Error(msg))
-		return
-	}
-
-	verificationCode, errRandomFromGamma := authutils.GenerateVerificationCode(a.disableRateLimit)
-
-	if errRandomFromGamma != nil {
-		authErr := NewCodeGenerationError(errRandomFromGamma)
+	result, perr := apireg.RegisterPasswordlessInit(r.Context(), r, deps)
+	if perr != nil {
+		// Preserve existing logging and error mapping behaviour as closely as possible.
+		email := req.GetStringTrimmed(r, "email")
 		logger := a.GetLogger()
-		logger.Error("registration code generation failed",
-			"error", authErr.InternalErr,
-			"error_code", authErr.Code,
-			"email", email,
-			"ip", req.GetIP(r),
-			"user_agent", r.UserAgent(),
-			"endpoint", "api_register_passwordless",
-		)
-		api.Respond(w, r, api.Error(authErr.Message))
-		return
+		ip := req.GetIP(r)
+		userAgent := r.UserAgent()
+
+		switch perr.Code {
+		case apireg.RegisterPasswordlessInitErrorCodeValidation:
+			api.Respond(w, r, api.Error(perr.Message))
+			return
+		case apireg.RegisterPasswordlessInitErrorCodeCodeGeneration:
+			authErr := NewCodeGenerationError(perr.Err)
+			logger.Error("registration code generation failed",
+				"error", authErr.InternalErr,
+				"error_code", authErr.Code,
+				"email", email,
+				"ip", ip,
+				"user_agent", userAgent,
+				"endpoint", "api_register_passwordless",
+			)
+			api.Respond(w, r, api.Error(authErr.Message))
+			return
+		case apireg.RegisterPasswordlessInitErrorCodeSerialization:
+			authErr := NewSerializationError(perr.Err)
+			logger.Error("registration data serialization failed",
+				"error", authErr.InternalErr,
+				"error_code", authErr.Code,
+				"email", email,
+				"ip", ip,
+				"user_agent", userAgent,
+				"endpoint", "api_register_passwordless",
+			)
+			api.Respond(w, r, api.Error(authErr.Message))
+			return
+		case apireg.RegisterPasswordlessInitErrorCodeTokenStore:
+			authErr := NewTokenStoreError(perr.Err)
+			logger.Error("registration code token store failed",
+				"error", authErr.InternalErr,
+				"error_code", authErr.Code,
+				"email", email,
+				"ip", ip,
+				"user_agent", userAgent,
+				"endpoint", "api_register_passwordless",
+			)
+			api.Respond(w, r, api.Error(authErr.Message))
+			return
+		case apireg.RegisterPasswordlessInitErrorCodeEmailSend:
+			authErr := NewEmailSendError(perr.Err)
+			logger.Error("registration code email send failed",
+				"error", authErr.InternalErr,
+				"error_code", authErr.Code,
+				"email", email,
+				"ip", ip,
+				"user_agent", userAgent,
+				"endpoint", "api_register_passwordless",
+			)
+			api.Respond(w, r, api.Error(authErr.Message))
+			return
+		default:
+			authErr := NewInternalError(perr.Err)
+			logger.Error("registration init internal error",
+				"error", authErr.InternalErr,
+				"error_code", authErr.Code,
+				"email", email,
+				"ip", ip,
+				"user_agent", userAgent,
+				"endpoint", "api_register_passwordless",
+			)
+			api.Respond(w, r, api.Error(authErr.Message))
+			return
+		}
 	}
 
-	json, errJson := json.Marshal(map[string]string{
-		"email":      email,
-		"first_name": first_name,
-		"last_name":  last_name,
-	})
-
-	if errJson != nil {
-		authErr := NewSerializationError(errJson)
-		logger := a.GetLogger()
-		logger.Error("registration data serialization failed",
-			"error", authErr.InternalErr,
-			"error_code", authErr.Code,
-			"email", email,
-			"ip", req.GetIP(r),
-			"user_agent", r.UserAgent(),
-			"endpoint", "api_register_passwordless",
-		)
-		api.Respond(w, r, api.Error(authErr.Message))
-		return
-	}
-
-	errTempTokenSave := a.funcTemporaryKeySet(verificationCode, string(json), int(DefaultVerificationCodeExpiration.Seconds()))
-
-	if errTempTokenSave != nil {
-		authErr := NewTokenStoreError(errTempTokenSave)
-		logger := a.GetLogger()
-		logger.Error("registration code token store failed",
-			"error", authErr.InternalErr,
-			"error_code", authErr.Code,
-			"email", email,
-			"ip", req.GetIP(r),
-			"user_agent", r.UserAgent(),
-			"endpoint", "api_register_passwordless",
-		)
-		api.Respond(w, r, api.Error(authErr.Message))
-		return
-	}
-
-	emailContent := a.passwordlessFuncEmailTemplateRegisterCode(r.Context(), email, verificationCode, UserAuthOptions{
-		UserIp:    req.GetIP(r),
-		UserAgent: r.UserAgent(),
-	})
-
-	errEmailSent := a.passwordlessFuncEmailSend(r.Context(), email, "Registration Code", emailContent)
-
-	if errEmailSent != nil {
-		authErr := NewEmailSendError(errEmailSent)
-		logger := a.GetLogger()
-		logger.Error("registration code email send failed",
-			"error", authErr.InternalErr,
-			"error_code", authErr.Code,
-			"email", email,
-			"ip", req.GetIP(r),
-			"user_agent", r.UserAgent(),
-			"endpoint", "api_register_passwordless",
-		)
-		api.Respond(w, r, api.Error(authErr.Message))
-		return
-	}
-
-	api.Respond(w, r, api.Success("Registration code was sent successfully"))
+	api.Respond(w, r, api.Success(result.SuccessMessage))
 
 }
 
