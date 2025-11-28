@@ -1,0 +1,18 @@
+# https://taskfile.dev
+
+version: '3'
+
+tasks:
+  default:
+    cmds:
+      - task: serve
+
+  serve:
+    desc: Run passwordless auth example server on :8080
+    cmds:
+      - go run .
+
+  dev:
+    desc: Run passwordless auth example server with air on :8080
+    cmds:
+      - air
