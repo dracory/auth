@@ -3,7 +3,7 @@ package auth
 import (
 	"net/http"
 
-	"github.com/dracory/auth/internal/ui"
+	page_password_reset "github.com/dracory/auth/internal/ui/page_password_reset"
 	"github.com/dracory/req"
 )
 
@@ -22,28 +22,14 @@ func (a authImplementation) pagePasswordReset(w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	h := a.pagePasswordResetContent(token, errorMessage)
-	webpage := webpage("Reset Password", h, a.pagePasswordResetScripts())
-	logger := a.GetLogger()
-
-	w.WriteHeader(200)
-	w.Header().Set("Content-Type", "text/html")
-	if _, err := w.Write([]byte(webpage.ToHTML())); err != nil {
-		logger.Error("failed to write password reset page response", "error", err)
+	deps := page_password_reset.Dependencies{
+		Endpoint:           a.endpoint,
+		EnableRegistration: a.enableRegistration,
+		Token:              token,
+		ErrorMessage:       errorMessage,
+		Layout:             a.funcLayout,
+		Logger:             a.GetLogger(),
 	}
-}
 
-func (a authImplementation) pagePasswordResetContent(token string, errorMessage string) string {
-	urlPasswordRestore := a.LinkPasswordRestore()
-	urlLogin := a.LinkLogin()
-	urlRegister := a.LinkRegister()
-
-	return ui.PasswordResetContent(token, errorMessage, urlPasswordRestore, urlLogin, urlRegister, a.enableRegistration)
-}
-
-func (a authImplementation) pagePasswordResetScripts() string {
-	urlApiPasswordReset := a.LinkApiPasswordReset()
-	urlSuccess := a.LinkLogin()
-
-	return ui.PasswordResetScripts(urlApiPasswordReset, urlSuccess)
+	page_password_reset.PagePasswordReset(deps, w, r)
 }

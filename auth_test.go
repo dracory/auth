@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/dracory/auth/internal/links"
 )
 
 func TestGetCurrentUserID_EmptyContextReturnsEmptyString(t *testing.T) {
@@ -36,7 +38,7 @@ func TestLinkAddsSlashWhenMissing(t *testing.T) {
 	endpoint := "http://example.com/auth"
 	uri := PathApiLogin
 
-	got := link(endpoint, uri)
+	got := links.Join(endpoint, uri)
 	want := endpoint + "/" + uri
 
 	if got != want {
@@ -48,7 +50,7 @@ func TestLinkKeepsTrailingSlash(t *testing.T) {
 	endpoint := "http://example.com/auth/"
 	uri := PathApiLogin
 
-	got := link(endpoint, uri)
+	got := links.Join(endpoint, uri)
 	want := endpoint + uri
 
 	if got != want {

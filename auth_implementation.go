@@ -4,9 +4,9 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
-	"strings"
 	"time"
 
+	"github.com/dracory/auth/internal/links"
 	authtypes "github.com/dracory/auth/types"
 	authutils "github.com/dracory/auth/utils"
 )
@@ -98,76 +98,67 @@ func (a authImplementation) GetCurrentUserID(r *http.Request) string {
 }
 
 func (a authImplementation) LinkApiLogin() string {
-	return link(a.endpoint, PathApiLogin)
+	return links.ApiLogin(a.endpoint)
 }
 
 func (a authImplementation) LinkApiLoginCodeVerify() string {
-	return link(a.endpoint, PathApiLoginCodeVerify)
+	return links.ApiLoginCodeVerify(a.endpoint)
 }
 
 func (a authImplementation) LinkApiLogout() string {
-	return link(a.endpoint, PathApiLogout)
+	return links.ApiLogout(a.endpoint)
 }
 
 func (a authImplementation) LinkApiRegister() string {
-	return link(a.endpoint, PathApiRegister)
+	return links.ApiRegister(a.endpoint)
 }
 
 func (a authImplementation) LinkApiRegisterCodeVerify() string {
-	return link(a.endpoint, PathApiRegisterCodeVerify)
+	return links.ApiRegisterCodeVerify(a.endpoint)
 }
 
 func (a authImplementation) LinkApiPasswordRestore() string {
-	return link(a.endpoint, PathApiRestorePassword)
+	return links.ApiPasswordRestore(a.endpoint)
 }
 
 func (a authImplementation) LinkApiPasswordReset() string {
-	return link(a.endpoint, PathApiResetPassword)
+	return links.ApiPasswordReset(a.endpoint)
 }
 
 func (a authImplementation) LinkLogin() string {
-	return link(a.endpoint, PathLogin)
+	return links.Login(a.endpoint)
 }
 
 func (a authImplementation) LinkLoginCodeVerify() string {
-	return link(a.endpoint, PathLoginCodeVerify)
+	return links.LoginCodeVerify(a.endpoint)
 }
 
 func (a authImplementation) LinkLogout() string {
-	return link(a.endpoint, PathLogout)
+	return links.Logout(a.endpoint)
 }
 
 func (a authImplementation) LinkPasswordRestore() string {
-	return link(a.endpoint, PathPasswordRestore)
+	return links.PasswordRestore(a.endpoint)
 }
 
 // LinkPasswordReset - returns the password reset URL
 func (a authImplementation) LinkPasswordReset(token string) string {
-	return link(a.endpoint, PathPasswordReset) + "?t=" + token
+	return links.PasswordReset(a.endpoint) + "?t=" + token
 }
 
 // LinkRegister - returns the registration URL
 func (a authImplementation) LinkRegister() string {
-	return link(a.endpoint, PathRegister)
+	return links.Register(a.endpoint)
 }
 
 // LinkRegisterCodeVerify - returns the registration code verification URL
 func (a authImplementation) LinkRegisterCodeVerify() string {
-	return link(a.endpoint, PathRegisterCodeVerify)
+	return links.RegisterCodeVerify(a.endpoint)
 }
 
 // LinkRedirectOnSuccess - returns the URL to where the user will be redirected after successful registration
 func (a authImplementation) LinkRedirectOnSuccess() string {
 	return a.urlRedirectOnSuccess
-}
-
-// link - creates the final URL by combining the provided endpoint with the provided URL
-func link(endpoint, uri string) string {
-	if strings.HasSuffix(endpoint, "/") {
-		return endpoint + uri
-	} else {
-		return endpoint + "/" + uri
-	}
 }
 
 // RegistrationEnable - enables registration
