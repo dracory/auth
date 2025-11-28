@@ -9,7 +9,7 @@ import (
 
 // PagePasswordRestore renders the password restore page using the provided
 // dependencies and writes the result to the ResponseWriter.
-func PagePasswordRestore(deps Dependencies, w http.ResponseWriter, r *http.Request) {
+func PagePasswordRestore(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 	content := PasswordRestoreContent(
 		deps.EnableRegistration,
 		links.Login(deps.Endpoint),
@@ -20,13 +20,12 @@ func PagePasswordRestore(deps Dependencies, w http.ResponseWriter, r *http.Reque
 		links.Login(deps.Endpoint),
 	)
 
-	html := shared.BuildPage("Restore Password", deps.Layout, content, scripts)
-
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "text/html")
-	if _, err := w.Write([]byte(html)); err != nil {
-		if deps.Logger != nil {
-			deps.Logger.Error("failed to write password restore page response", "error", err)
-		}
-	}
+	shared.PageRender(w, shared.PageOptions{
+		Title:      "Restore Password",
+		Layout:     deps.Layout,
+		Content:    content,
+		Scripts:    scripts,
+		Logger:     deps.Logger,
+		LogMessage: "failed to write password restore page response",
+	})
 }

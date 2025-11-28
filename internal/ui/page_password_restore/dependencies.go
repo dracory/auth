@@ -1,5 +1,7 @@
 package page_password_restore
 
+import "log/slog"
+
 // Dependencies contains the dependencies required to render the password restore page.
 type Dependencies struct {
 	EnableRegistration bool
@@ -8,7 +10,5 @@ type Dependencies struct {
 
 	Layout func(content string) string
 
-	Logger interface {
-		Error(msg string, keyvals ...interface{})
-	}
+	Logger *slog.Logger
 }

@@ -1,6 +1,7 @@
-package auth
+package page_password_reset
 
 import (
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -8,17 +9,13 @@ import (
 )
 
 func TestPagePasswordReset_ValidTokenShowsForm(t *testing.T) {
-	authInstance, err := testSetupUsernameAndPasswordAuth()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Mock token lookup to succeed
-	authInstance.funcTemporaryKeyGet = func(key string) (value string, err error) {
-		if key == "valid-token" {
-			return "user123", nil
-		}
-		return "", nil
+	deps := Dependencies{
+		Endpoint:           "http://localhost/auth",
+		EnableRegistration: true,
+		Token:              "valid-token",
+		ErrorMessage:       "",
+		Layout:             func(content string) string { return content },
+		Logger:             slog.Default(),
 	}
 
 	req, err := http.NewRequest("GET", "/?t=valid-token", nil)
@@ -27,8 +24,7 @@ func TestPagePasswordReset_ValidTokenShowsForm(t *testing.T) {
 	}
 
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(authInstance.pagePasswordReset)
-	handler.ServeHTTP(recorder, req)
+	PagePasswordReset(recorder, req, deps)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -52,20 +48,22 @@ func TestPagePasswordReset_ValidTokenShowsForm(t *testing.T) {
 }
 
 func TestPagePasswordReset_MissingTokenShowsError(t *testing.T) {
-	authInstance, err := testSetupUsernameAndPasswordAuth()
-	if err != nil {
-		t.Fatal(err)
+	deps := Dependencies{
+		Endpoint:           "http://localhost/auth",
+		EnableRegistration: true,
+		Token:              "",
+		ErrorMessage:       "Link is invalid",
+		Layout:             func(content string) string { return content },
+		Logger:             slog.Default(),
 	}
 
-	// No token query parameter
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(authInstance.pagePasswordReset)
-	handler.ServeHTTP(recorder, req)
+	PagePasswordReset(recorder, req, deps)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)

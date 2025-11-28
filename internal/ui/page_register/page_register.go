@@ -9,7 +9,7 @@ import (
 
 // PageRegister renders the register page using the provided dependencies and
 // writes the result to the ResponseWriter.
-func PageRegister(deps Dependencies, w http.ResponseWriter, r *http.Request) {
+func PageRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 	content := ""
 	scripts := ""
 
@@ -34,13 +34,12 @@ func PageRegister(deps Dependencies, w http.ResponseWriter, r *http.Request) {
 		)
 	}
 
-	html := shared.BuildPage("Register", deps.Layout, content, scripts)
-
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "text/html")
-	if _, err := w.Write([]byte(html)); err != nil {
-		if deps.Logger != nil {
-			deps.Logger.Error("failed to write register page response", "error", err)
-		}
-	}
+	shared.PageRender(w, shared.PageOptions{
+		Title:      "Register",
+		Layout:     deps.Layout,
+		Content:    content,
+		Scripts:    scripts,
+		Logger:     deps.Logger,
+		LogMessage: "failed to write register page response",
+	})
 }

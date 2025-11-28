@@ -1,5 +1,7 @@
 package page_password_reset
 
+import "log/slog"
+
 // Dependencies contains the dependencies required to render the password reset page.
 type Dependencies struct {
 	Endpoint           string
@@ -9,7 +11,5 @@ type Dependencies struct {
 
 	Layout func(content string) string
 
-	Logger interface {
-		Error(msg string, keyvals ...interface{})
-	}
+	Logger *slog.Logger
 }

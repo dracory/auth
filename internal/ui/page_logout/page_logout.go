@@ -9,20 +9,19 @@ import (
 
 // PageLogout renders the logout page using the provided dependencies and
 // writes the result to the ResponseWriter.
-func PageLogout(deps Dependencies, w http.ResponseWriter, r *http.Request) {
+func PageLogout(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 	content := LogoutContent()
 	scripts := LogoutScripts(
 		links.ApiLogout(deps.Endpoint),
 		links.Login(deps.Endpoint),
 	)
 
-	html := shared.BuildPage("Logout", deps.Layout, content, scripts)
-
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "text/html")
-	if _, err := w.Write([]byte(html)); err != nil {
-		if deps.Logger != nil {
-			deps.Logger.Error("failed to write logout page response", "error", err)
-		}
-	}
+	shared.PageRender(w, shared.PageOptions{
+		Title:      "Logout",
+		Layout:     deps.Layout,
+		Content:    content,
+		Scripts:    scripts,
+		Logger:     deps.Logger,
+		LogMessage: "failed to write logout page response",
+	})
 }

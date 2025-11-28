@@ -1,22 +1,34 @@
 package shared
 
 import (
+	"log/slog"
+	"net/http"
+
 	"github.com/dracory/hb"
 	"github.com/dracory/uncdn"
 )
 
-// BuildPage composes a full HTML document using the shared UI shell
+type PageOptions struct {
+	Title      string
+	Layout     func(string) string
+	Content    string
+	Scripts    string
+	Logger     *slog.Logger
+	LogMessage string
+}
+
+// buildPage composes a full HTML document using the shared UI shell
 // (styles, scripts) and a caller-provided layout function that wraps the
 // page-specific content.
-func BuildPage(title string, layout func(string) string, content, scripts string) string {
+func buildPage(opts PageOptions) string {
 	// Apply outer layout to the content first.
-	laidOutContent := layout(content)
+	laidOutContent := opts.Layout(opts.Content)
 
 	faviconImgCms := `data:image/x-icon;base64,AAABAAEAEBAQAAEABAAoAQAAFgAAACgAAAAQAAAAIAAAAAEABAAAAAAAgAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAmzKzAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABEQEAAQERAAEAAQABAAEAAQABAQEBEQABAAEREQEAAAERARARAREAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAAi6MAALu7AAC6owAAuC8AAIkjAAD//wAA//8AAP//AAD//wAA`
 	app := ""
 
 	webpage := hb.NewWebpage()
-	webpage.SetTitle(title)
+	webpage.SetTitle(opts.Title)
 	webpage.SetFavicon(faviconImgCms)
 	webpage.AddStyles([]string{
 		uncdn.BootstrapCss521(),
@@ -26,7 +38,7 @@ func BuildPage(title string, layout func(string) string, content, scripts string
 		uncdn.BootstrapJs521(),
 		uncdn.WebJs260(),
 		app,
-		scripts,
+		opts.Scripts,
 	})
 	webpage.AddStyle(`html,body{height:100%;font-family: Ubuntu, sans-serif;}`)
 	webpage.AddStyle(`body {
@@ -60,4 +72,22 @@ func BuildPage(title string, layout func(string) string, content, scripts string
 	webpage.AddChild(hb.NewHTML(laidOutContent))
 
 	return webpage.ToHTML()
+}
+
+// PageRender writes the provided HTML to the ResponseWriter using a standard
+// status code and content type. If writing fails and a logger is provided, it
+// logs the supplied error message together with the error.
+func PageRender(
+	w http.ResponseWriter,
+	opts PageOptions,
+) {
+	html := buildPage(opts)
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "text/html")
+	if _, err := w.Write([]byte(html)); err != nil {
+		if opts.Logger != nil {
+			opts.Logger.Error(opts.LogMessage, "error", err)
+		}
+	}
 }

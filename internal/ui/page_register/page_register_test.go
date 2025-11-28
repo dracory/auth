@@ -1,6 +1,7 @@
-package auth
+package page_register
 
 import (
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -8,9 +9,12 @@ import (
 )
 
 func TestPageRegister_UsernameAndPassword(t *testing.T) {
-	authInstance, err := testSetupUsernameAndPasswordAuth()
-	if err != nil {
-		t.Fatal(err)
+	deps := Dependencies{
+		Passwordless:       false,
+		EnableVerification: false,
+		Endpoint:           "http://localhost/auth",
+		Layout:             func(content string) string { return content },
+		Logger:             slog.Default(),
 	}
 
 	req, err := http.NewRequest("GET", "/", nil)
@@ -19,8 +23,7 @@ func TestPageRegister_UsernameAndPassword(t *testing.T) {
 	}
 
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(authInstance.pageRegister)
-	handler.ServeHTTP(recorder, req)
+	PageRegister(recorder, req, deps)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -46,9 +49,12 @@ func TestPageRegister_UsernameAndPassword(t *testing.T) {
 }
 
 func TestPageRegister_Passwordless(t *testing.T) {
-	authInstance, err := testSetupPasswordlessAuth()
-	if err != nil {
-		t.Fatal(err)
+	deps := Dependencies{
+		Passwordless:       true,
+		EnableVerification: true,
+		Endpoint:           "http://localhost/auth",
+		Layout:             func(content string) string { return content },
+		Logger:             slog.Default(),
 	}
 
 	req, err := http.NewRequest("GET", "/", nil)
@@ -57,8 +63,7 @@ func TestPageRegister_Passwordless(t *testing.T) {
 	}
 
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(authInstance.pageRegister)
-	handler.ServeHTTP(recorder, req)
+	PageRegister(recorder, req, deps)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)

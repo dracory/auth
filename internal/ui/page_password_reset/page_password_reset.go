@@ -9,7 +9,7 @@ import (
 
 // PagePasswordReset renders the password reset page using the provided
 // dependencies and writes the result to the ResponseWriter.
-func PagePasswordReset(deps Dependencies, w http.ResponseWriter, r *http.Request) {
+func PagePasswordReset(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 	urlPasswordRestore := links.PasswordRestore(deps.Endpoint)
 	urlLogin := links.Login(deps.Endpoint)
 	urlRegister := links.Register(deps.Endpoint)
@@ -27,13 +27,12 @@ func PagePasswordReset(deps Dependencies, w http.ResponseWriter, r *http.Request
 		links.Login(deps.Endpoint),
 	)
 
-	html := shared.BuildPage("Reset Password", deps.Layout, content, scripts)
-
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "text/html")
-	if _, err := w.Write([]byte(html)); err != nil {
-		if deps.Logger != nil {
-			deps.Logger.Error("failed to write password reset page response", "error", err)
-		}
-	}
+	shared.PageRender(w, shared.PageOptions{
+		Title:      "Reset Password",
+		Layout:     deps.Layout,
+		Content:    content,
+		Scripts:    scripts,
+		Logger:     deps.Logger,
+		LogMessage: "failed to write password reset page response",
+	})
 }

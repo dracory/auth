@@ -1,6 +1,7 @@
-package auth
+package page_password_restore
 
 import (
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -8,9 +9,11 @@ import (
 )
 
 func TestPagePasswordRestore(t *testing.T) {
-	authInstance, err := testSetupUsernameAndPasswordAuth()
-	if err != nil {
-		t.Fatal(err)
+	deps := Dependencies{
+		EnableRegistration: true,
+		Endpoint:           "http://localhost/auth",
+		Layout:             func(content string) string { return content },
+		Logger:             slog.Default(),
 	}
 
 	req, err := http.NewRequest("GET", "/", nil)
@@ -19,8 +22,7 @@ func TestPagePasswordRestore(t *testing.T) {
 	}
 
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(authInstance.pagePasswordRestore)
-	handler.ServeHTTP(recorder, req)
+	PagePasswordRestore(recorder, req, deps)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)

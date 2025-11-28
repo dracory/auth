@@ -1,5 +1,7 @@
 package page_login
 
+import "log/slog"
+
 // Dependencies contains the dependencies required to render the login page.
 type Dependencies struct {
 	Passwordless       bool
@@ -11,7 +13,5 @@ type Dependencies struct {
 	// Layout is the outer layout function supplied by the auth package.
 	Layout func(content string) string
 
-	Logger interface {
-		Error(msg string, keyvals ...interface{})
-	}
+	Logger *slog.Logger
 }

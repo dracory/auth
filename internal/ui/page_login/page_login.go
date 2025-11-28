@@ -9,7 +9,7 @@ import (
 
 // PageLogin renders the login page using the provided dependencies and writes
 // the result to the ResponseWriter.
-func PageLogin(deps Dependencies, w http.ResponseWriter, r *http.Request) {
+func PageLogin(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 	content := ""
 	scripts := ""
 	if deps.Passwordless {
@@ -30,13 +30,12 @@ func PageLogin(deps Dependencies, w http.ResponseWriter, r *http.Request) {
 		)
 	}
 
-	html := shared.BuildPage("Login", deps.Layout, content, scripts)
-
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "text/html")
-	if _, err := w.Write([]byte(html)); err != nil {
-		if deps.Logger != nil {
-			deps.Logger.Error("failed to write login page response", "error", err)
-		}
-	}
+	shared.PageRender(w, shared.PageOptions{
+		Title:      "Login",
+		Layout:     deps.Layout,
+		Content:    content,
+		Scripts:    scripts,
+		Logger:     deps.Logger,
+		LogMessage: "failed to write login page response",
+	})
 }

@@ -1,5 +1,7 @@
 package page_login_code_verify
 
+import "log/slog"
+
 // Dependencies contains the dependencies required to render the login code verify
 // page.
 type Dependencies struct {
@@ -8,7 +10,5 @@ type Dependencies struct {
 
 	Layout func(content string) string
 
-	Logger interface {
-		Error(msg string, keyvals ...interface{})
-	}
+	Logger *slog.Logger
 }
