@@ -1,10 +1,11 @@
-package api
+package api_login
 
 import (
 	"context"
 	"errors"
 	"net/http"
 
+	"github.com/dracory/api"
 	authutils "github.com/dracory/auth/utils"
 	"github.com/dracory/req"
 )
@@ -130,4 +131,80 @@ func LoginPasswordless(ctx context.Context, r *http.Request, deps LoginPasswordl
 	return &LoginPasswordlessResult{
 		SuccessMessage: "Login code was sent successfully",
 	}, nil
+}
+
+// Dependencies aggregates all dependencies required for handling the /api/login
+// endpoint for both passwordless and username+password flows.
+type Dependencies struct {
+	// Passwordless controls which flow is executed. When true, the passwordless
+	// email-code flow is used; otherwise the username+password flow is used.
+	Passwordless bool
+
+	// PasswordlessDeps contains the business-logic dependencies for the
+	// passwordless login flow.
+	PasswordlessDeps LoginPasswordlessDeps
+
+	// LoginWithUsernameAndPassword performs the username+password login flow
+	// and returns success message, token and error message. If error message is
+	// non-empty, the operation is considered failed.
+	LoginWithUsernameAndPassword func(ctx context.Context, email, password, ip, userAgent string) (successMessage, token, errorMessage string)
+
+	// UseCookies controls whether the auth token should be written as a cookie
+	// when the username+password flow succeeds.
+	UseCookies bool
+
+	// SetAuthCookie writes the auth cookie. It is only used when UseCookies is
+	// true and must be non-nil in that case.
+	SetAuthCookie func(w http.ResponseWriter, r *http.Request, token string)
+}
+
+// ApiLogin is the HTTP-level handler that combines passwordless and
+// username+password login flows behind a shared interface.
+func ApiLogin(w http.ResponseWriter, r *http.Request, deps Dependencies) {
+	if deps.Passwordless {
+		result, perr := LoginPasswordless(r.Context(), r, deps.PasswordlessDeps)
+		if perr != nil {
+			switch perr.Code {
+			case LoginPasswordlessErrorCodeValidation:
+				api.Respond(w, r, api.Error(perr.Message))
+				return
+			case LoginPasswordlessErrorCodeTokenStore:
+				api.Respond(w, r, api.Error("Failed to process request. Please try again later"))
+				return
+			case LoginPasswordlessErrorCodeEmailSend:
+				api.Respond(w, r, api.Error("Failed to send email. Please try again later"))
+				return
+			default:
+				api.Respond(w, r, api.Error("Internal server error. Please try again later"))
+				return
+			}
+		}
+
+		api.Respond(w, r, api.Success(result.SuccessMessage))
+		return
+	}
+
+	if deps.LoginWithUsernameAndPassword == nil {
+		api.Respond(w, r, api.Error("Internal server error. Please try again later"))
+		return
+	}
+
+	email := req.GetStringTrimmed(r, "email")
+	password := req.GetStringTrimmed(r, "password")
+	ip := req.GetIP(r)
+	userAgent := r.UserAgent()
+
+	successMessage, token, errMessage := deps.LoginWithUsernameAndPassword(r.Context(), email, password, ip, userAgent)
+	if errMessage != "" {
+		api.Respond(w, r, api.Error(errMessage))
+		return
+	}
+
+	if deps.UseCookies && deps.SetAuthCookie != nil {
+		deps.SetAuthCookie(w, r, token)
+	}
+
+	api.Respond(w, r, api.SuccessWithData(successMessage, map[string]any{
+		"token": token,
+	}))
 }
