@@ -187,26 +187,6 @@ Create centralized validation function used everywhere.
 
 ---
 
-### 7. **No Account Enumeration Protection** - MEDIUM
-
-**Problem:**
-Different error messages reveal if user exists:
-
-```go
-// If user exists but wrong password
-"authentication failed. invalid password"
-
-// If user doesn't exist
-"User not found"
-```
-
-Attacker can enumerate valid email addresses.
-
-**Recommendation:**
-Always return same message: "Invalid credentials"
-
----
-
 ### 8. **Deprecated Code Not Removed** - LOW
 
 **Problem:**

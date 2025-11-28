@@ -79,7 +79,7 @@ func TestApiLoginCodeVerifyAuthenticationError(t *testing.T) {
 		"verification_code": {"BCDFGHJK"},
 	}
 
-	expectedMessage := `"message":"authentication failed."`
+	expectedMessage := `"message":"Invalid credentials"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLoginCodeVerify(), values, expectedMessage, "%")
 }
 
@@ -100,7 +100,7 @@ func TestApiLoginCodeVerifyUserNotFound(t *testing.T) {
 		"verification_code": {"BCDFGHJK"},
 	}
 
-	expectedMessage := `"message":"authentication failed. user not found"`
+	expectedMessage := `"message":"Invalid credentials"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLoginCodeVerify(), values, expectedMessage, "%")
 }
 

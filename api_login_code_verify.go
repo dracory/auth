@@ -63,12 +63,12 @@ func (a Auth) authenticateViaUsername(w http.ResponseWriter, r *http.Request, us
 	}
 
 	if errUser != nil {
-		api.Respond(w, r, api.Error("authentication failed."))
+		api.Respond(w, r, api.Error("Invalid credentials"))
 		return
 	}
 
 	if userID == "" {
-		api.Respond(w, r, api.Error("authentication failed. user not found"))
+		api.Respond(w, r, api.Error("Invalid credentials"))
 		return
 	}
 

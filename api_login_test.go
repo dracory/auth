@@ -61,7 +61,7 @@ func TestApiLoginUsernameAndPasswordUserLoginError(t *testing.T) {
 		"password": {"1234"},
 	}
 
-	expectedMessage := `"message":"authentication failed."`
+	expectedMessage := `"message":"Invalid credentials"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogin(), values, expectedMessage, "%")
 }
 
@@ -79,7 +79,7 @@ func TestApiLoginUsernameAndPasswordUserNotFound(t *testing.T) {
 		"password": {"1234"},
 	}
 
-	expectedMessage := `"message":"User not found"`
+	expectedMessage := `"message":"Invalid credentials"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogin(), values, expectedMessage, "%")
 }
 

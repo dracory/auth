@@ -33,7 +33,7 @@ func (a Auth) LoginWithUsernameAndPassword(ctx context.Context, email string, pa
 	userID, err := a.funcUserLogin(ctx, email, password, options)
 
 	if err != nil {
-		response.ErrorMessage = "authentication failed."
+		response.ErrorMessage = "Invalid credentials"
 		logger := a.logger
 		if logger == nil {
 			logger = slog.Default()
@@ -48,7 +48,7 @@ func (a Auth) LoginWithUsernameAndPassword(ctx context.Context, email string, pa
 	}
 
 	if userID == "" {
-		response.ErrorMessage = "User not found"
+		response.ErrorMessage = "Invalid credentials"
 		return response
 	}
 
