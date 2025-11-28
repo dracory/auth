@@ -10,10 +10,6 @@ import (
 )
 
 func (a authImplementation) apiRegisterCodeVerify(w http.ResponseWriter, r *http.Request) {
-	// Check rate limit
-	if !a.checkRateLimit(w, r, "register_code_verify") {
-		return
-	}
 	deps := apireg.RegisterCodeVerifyDeps{
 		DisableRateLimit: a.disableRateLimit,
 		TemporaryKeyGet:  a.funcTemporaryKeyGet,

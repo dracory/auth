@@ -11,11 +11,6 @@ import (
 
 // apiLoginCodeVerify used for passwordless login code verification
 func (a authImplementation) apiLoginCodeVerify(w http.ResponseWriter, r *http.Request) {
-	// Check rate limit
-	if !a.checkRateLimit(w, r, "login_code_verify") {
-		return
-	}
-
 	deps := apilogin.LoginCodeVerifyDeps{
 		DisableRateLimit: a.disableRateLimit,
 		TemporaryKeyGet:  a.funcTemporaryKeyGet,

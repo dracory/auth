@@ -18,11 +18,6 @@ func (a authImplementation) apiLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a authImplementation) apiLoginPasswordless(w http.ResponseWriter, r *http.Request) {
-	// Check rate limit
-	if !a.checkRateLimit(w, r, "login") {
-		return
-	}
-
 	// Delegate core business logic to internal/api while keeping logging and
 	// HTTP response behaviour in this package.
 	deps := apilogin.LoginPasswordlessDeps{
@@ -108,11 +103,6 @@ func (a authImplementation) apiLoginPasswordless(w http.ResponseWriter, r *http.
 }
 
 func (a authImplementation) apiLoginUsernameAndPassword(w http.ResponseWriter, r *http.Request) {
-	// Check rate limit
-	if !a.checkRateLimit(w, r, "login") {
-		return
-	}
-
 	email := req.GetStringTrimmed(r, "email")
 	password := req.GetStringTrimmed(r, "password")
 

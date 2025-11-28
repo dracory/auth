@@ -82,18 +82,36 @@ func (a authImplementation) getRoute(route string) func(w http.ResponseWriter, r
 	}
 
 	routes := map[string]func(w http.ResponseWriter, r *http.Request){
-		PathApiLogin:              middlewares.WithCSRF(csrfCfg, a.apiLogin),
-		PathApiLoginCodeVerify:    a.apiLoginCodeVerify,
-		PathApiLogout:             a.apiLogout,
-		PathApiRegister:           middlewares.WithCSRF(csrfCfg, a.apiRegister),
-		PathApiRegisterCodeVerify: a.apiRegisterCodeVerify,
-		PathApiResetPassword:      middlewares.WithCSRF(csrfCfg, a.apiPasswordReset),
-		PathApiRestorePassword:    a.apiPasswordRestore,
-		PathLogin:                 a.pageLogin,
-		PathLoginCodeVerify:       a.pageLoginCodeVerify,
-		PathLogout:                a.pageLogout,
-		PathPasswordReset:         a.pagePasswordReset,
-		PathPasswordRestore:       a.pagePasswordRestore,
+		PathApiLogin: middlewares.WithRateLimit(
+			middlewares.RateLimitConfig{Check: a.checkRateLimit, Endpoint: "login"},
+			middlewares.WithCSRF(csrfCfg, a.apiLogin),
+		),
+		PathApiLoginCodeVerify: middlewares.WithRateLimit(
+			middlewares.RateLimitConfig{Check: a.checkRateLimit, Endpoint: "login_code_verify"},
+			a.apiLoginCodeVerify,
+		),
+		PathApiLogout: a.apiLogout,
+		PathApiRegister: middlewares.WithRateLimit(
+			middlewares.RateLimitConfig{Check: a.checkRateLimit, Endpoint: "register"},
+			middlewares.WithCSRF(csrfCfg, a.apiRegister),
+		),
+		PathApiRegisterCodeVerify: middlewares.WithRateLimit(
+			middlewares.RateLimitConfig{Check: a.checkRateLimit, Endpoint: "register_code_verify"},
+			a.apiRegisterCodeVerify,
+		),
+		PathApiResetPassword: middlewares.WithRateLimit(
+			middlewares.RateLimitConfig{Check: a.checkRateLimit, Endpoint: "password_reset"},
+			middlewares.WithCSRF(csrfCfg, a.apiPasswordReset),
+		),
+		PathApiRestorePassword: middlewares.WithRateLimit(
+			middlewares.RateLimitConfig{Check: a.checkRateLimit, Endpoint: "password_restore"},
+			a.apiPasswordRestore,
+		),
+		PathLogin:           a.pageLogin,
+		PathLoginCodeVerify: a.pageLoginCodeVerify,
+		PathLogout:          a.pageLogout,
+		PathPasswordReset:   a.pagePasswordReset,
+		PathPasswordRestore: a.pagePasswordRestore,
 	}
 
 	if a.enableRegistration {

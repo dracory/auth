@@ -10,10 +10,6 @@ import (
 )
 
 func (a authImplementation) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
-	// Check rate limit
-	if !a.checkRateLimit(w, r, "password_restore") {
-		return
-	}
 	deps := apipwd.PasswordRestoreDeps{
 		UserFindByUsername: func(ctx context.Context, email, firstName, lastName string) (string, error) {
 			return a.funcUserFindByUsername(ctx, email, firstName, lastName, UserAuthOptions{

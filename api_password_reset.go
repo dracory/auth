@@ -10,10 +10,6 @@ import (
 )
 
 func (a authImplementation) apiPasswordReset(w http.ResponseWriter, r *http.Request) {
-	// Check rate limit
-	if !a.checkRateLimit(w, r, "password_reset") {
-		return
-	}
 	deps := apipwd.PasswordResetDeps{
 		PasswordStrength: a.passwordStrength,
 		TemporaryKeyGet:  a.funcTemporaryKeyGet,
