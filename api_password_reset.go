@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"crypto/subtle"
 	"net/http"
 
 	"github.com/dracory/api"
@@ -34,7 +35,7 @@ func (a Auth) apiPasswordReset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if password != passwordConfirm {
+	if subtle.ConstantTimeCompare([]byte(password), []byte(passwordConfirm)) != 1 {
 		api.Respond(w, r, api.Error("Passwords do not match"))
 		return
 	}
