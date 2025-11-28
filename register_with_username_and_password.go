@@ -3,11 +3,9 @@ package auth
 import (
 	"context"
 	"encoding/json"
-	"log"
-	"net/mail"
+	"log/slog"
 
 	authutils "github.com/dracory/auth/utils"
-	"github.com/dracory/str"
 )
 
 type RegisterUsernameAndPasswordResponse struct {
@@ -37,8 +35,13 @@ func (a Auth) RegisterWithUsernameAndPassword(ctx context.Context, email string,
 		return response
 	}
 
-	if _, err := mail.ParseAddress(email); err != nil {
-		response.ErrorMessage = "This is not a valid email: " + email
+	if err := authutils.ValidatePasswordStrength(password, a.passwordStrength); err != nil {
+		response.ErrorMessage = err.Error()
+		return response
+	}
+
+	if msg := authutils.ValidateEmailFormat(email); msg != "" {
+		response.ErrorMessage = msg
 		return response
 	}
 
@@ -51,7 +54,7 @@ func (a Auth) RegisterWithUsernameAndPassword(ctx context.Context, email string,
 		err := a.funcUserRegister(ctx, email, password, firstName, lastName, options)
 
 		if err != nil {
-			response.ErrorMessage = "registration failed. " + err.Error()
+			response.ErrorMessage = "registration failed."
 			return response
 		}
 
@@ -59,12 +62,21 @@ func (a Auth) RegisterWithUsernameAndPassword(ctx context.Context, email string,
 		return response
 	}
 
-	verificationCode, errRandom := str.RandomFromGamma(
-		authutils.LoginCodeLength(a.disableRateLimit),
-		authutils.LoginCodeGamma(a.disableRateLimit),
-	)
+	verificationCode, errRandom := authutils.GenerateVerificationCode(a.disableRateLimit)
 	if errRandom != nil {
-		response.ErrorMessage = "Error generating random string"
+		authErr := NewCodeGenerationError(errRandom)
+		response.ErrorMessage = authErr.Message
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("registration code generation failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"email", email,
+			"ip", options.UserIp,
+			"user_agent", options.UserAgent,
+		)
 		return response
 	}
 
@@ -76,14 +88,38 @@ func (a Auth) RegisterWithUsernameAndPassword(ctx context.Context, email string,
 	})
 
 	if errJson != nil {
-		response.ErrorMessage = "Error serializing data"
+		authErr := NewSerializationError(errJson)
+		response.ErrorMessage = authErr.Message
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("registration data serialization failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"email", email,
+			"ip", options.UserIp,
+			"user_agent", options.UserAgent,
+		)
 		return response
 	}
 
-	errTempTokenSave := a.funcTemporaryKeySet(verificationCode, string(json), 3600)
+	errTempTokenSave := a.funcTemporaryKeySet(verificationCode, string(json), int(DefaultVerificationCodeExpiration.Seconds()))
 
 	if errTempTokenSave != nil {
-		response.ErrorMessage = "token store failed. " + errTempTokenSave.Error()
+		authErr := NewTokenStoreError(errTempTokenSave)
+		response.ErrorMessage = authErr.Message
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("registration code token store failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"email", email,
+			"ip", options.UserIp,
+			"user_agent", options.UserAgent,
+		)
 		return response
 	}
 
@@ -92,8 +128,19 @@ func (a Auth) RegisterWithUsernameAndPassword(ctx context.Context, email string,
 	errEmailSent := a.funcEmailSend(ctx, email, "Registration Code", emailContent)
 
 	if errEmailSent != nil {
-		log.Println(errEmailSent)
-		response.ErrorMessage = "Registration code failed to be send. Please try again later"
+		authErr := NewEmailSendError(errEmailSent)
+		response.ErrorMessage = authErr.Message
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("registration email send failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"email", email,
+			"ip", options.UserIp,
+			"user_agent", options.UserAgent,
+		)
 		return response
 	}
 

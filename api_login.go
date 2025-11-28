@@ -1,11 +1,11 @@
 package auth
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
-	"net/mail"
 
 	"github.com/dracory/api"
+	authutils "github.com/dracory/auth/utils"
 	"github.com/dracory/req"
 )
 
@@ -36,17 +36,48 @@ func (a Auth) apiLoginPasswordless(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := mail.ParseAddress(email); err != nil {
-		api.Respond(w, r, api.Error("This is not a valid email: "+email))
+	if msg := authutils.ValidateEmailFormat(email); msg != "" {
+		api.Respond(w, r, api.Error(msg))
 		return
 	}
 
-	verificationCode := req.GetStringTrimmed(r, "verification_code")
+	// Server generates code, not client
+	verificationCode, err := authutils.GenerateVerificationCode(a.disableRateLimit)
+	if err != nil {
+		authErr := NewCodeGenerationError(err)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("login code generation failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"email", email,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "api_login_passwordless",
+		)
+		api.Respond(w, r, api.Error(authErr.Message))
+		return
+	}
 
-	errTempTokenSave := a.funcTemporaryKeySet(verificationCode, email, 3600)
+	errTempTokenSave := a.funcTemporaryKeySet(verificationCode, email, int(DefaultVerificationCodeExpiration.Seconds()))
 
 	if errTempTokenSave != nil {
-		api.Respond(w, r, api.Error("token store failed. "+errTempTokenSave.Error()))
+		authErr := NewTokenStoreError(errTempTokenSave)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("login code token store failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"email", email,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "api_login_passwordless",
+		)
+		api.Respond(w, r, api.Error(authErr.Message))
 		return
 	}
 
@@ -58,12 +89,25 @@ func (a Auth) apiLoginPasswordless(w http.ResponseWriter, r *http.Request) {
 	errEmailSent := a.passwordlessFuncEmailSend(r.Context(), email, "Login Code", emailContent)
 
 	if errEmailSent != nil {
-		log.Println(errEmailSent)
-		api.Respond(w, r, api.Error("Login code failed to be send. Please try again later"))
+		authErr := NewEmailSendError(errEmailSent)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("login code email send failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"email", email,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "api_login_passwordless",
+		)
+		api.Respond(w, r, api.Error(authErr.Message))
 		return
 	}
 
 	api.Respond(w, r, api.Success("Login code was sent successfully"))
+
 }
 
 func (a Auth) apiLoginUsernameAndPassword(w http.ResponseWriter, r *http.Request) {
@@ -86,7 +130,7 @@ func (a Auth) apiLoginUsernameAndPassword(w http.ResponseWriter, r *http.Request
 	}
 
 	if a.useCookies {
-		AuthCookieSet(w, r, response.Token)
+		a.setAuthCookie(w, r, response.Token)
 	}
 
 	api.Respond(w, r, api.SuccessWithData(response.SuccessMessage, map[string]any{

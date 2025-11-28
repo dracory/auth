@@ -1,6 +1,6 @@
 # Rate Limiting in dracory/auth
 
-**Last Updated:** 2025-11-27
+**Last Updated:** 2025-11-28
 
 ---
 
@@ -35,7 +35,7 @@ When the limit is exceeded, the library returns:
 
 ## Default Behavior
 
-The default in-memory limiter is implemented in `rate_limiter.go` and initialized automatically when you create an auth instance (passwordless or username/password) and **do not** provide your own rate-limiter function.
+The default in-memory limiter is implemented in the internal `utils` package (see `utils/rate_limiter.go`) and is initialized automatically when you create an auth instance (passwordless or username/password) and **do not** provide your own rate-limiter function.
 
 **Defaults:**
 

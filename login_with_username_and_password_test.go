@@ -50,7 +50,7 @@ func TestLoginWithUsernameAndPassword_LoginError(t *testing.T) {
 
 	resp := authInstance.LoginWithUsernameAndPassword(context.Background(), "test@test.com", "password", UserAuthOptions{})
 
-	expected := "authentication failed. db error"
+	expected := "Invalid credentials"
 	if resp.ErrorMessage != expected {
 		t.Fatalf("expected error %q, got %q", expected, resp.ErrorMessage)
 	}
@@ -65,7 +65,7 @@ func TestLoginWithUsernameAndPassword_UserNotFound(t *testing.T) {
 
 	resp := authInstance.LoginWithUsernameAndPassword(context.Background(), "test@test.com", "password", UserAuthOptions{})
 
-	expected := "User not found"
+	expected := "Invalid credentials"
 	if resp.ErrorMessage != expected {
 		t.Fatalf("expected error %q, got %q", expected, resp.ErrorMessage)
 	}
@@ -84,7 +84,7 @@ func TestLoginWithUsernameAndPassword_TokenStoreError(t *testing.T) {
 
 	resp := authInstance.LoginWithUsernameAndPassword(context.Background(), "test@test.com", "password", UserAuthOptions{})
 
-	expected := "token store failed. db error"
+	expected := "Failed to process request. Please try again later"
 	if resp.ErrorMessage != expected {
 		t.Fatalf("expected error %q, got %q", expected, resp.ErrorMessage)
 	}

@@ -33,20 +33,6 @@ func TestApiLoginUsernameAndPasswordRequiresPassword(t *testing.T) {
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogin(), values, expectedMessage, "%")
 }
 
-func TestApiLoginUsernameAndPasswordInvalidEmail(t *testing.T) {
-	authInstance, err := testSetupUsernameAndPasswordAuth()
-	Nil(t, err)
-	NotNil(t, authInstance)
-
-	values := url.Values{
-		"email":    {"invalid-email"},
-		"password": {"1234"},
-	}
-
-	expectedMessage := `"message":"This is not a valid email: invalid-email"`
-	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogin(), values, expectedMessage, "%")
-}
-
 func TestApiLoginUsernameAndPasswordUserLoginError(t *testing.T) {
 	authInstance, err := testSetupUsernameAndPasswordAuth()
 	Nil(t, err)
@@ -61,7 +47,7 @@ func TestApiLoginUsernameAndPasswordUserLoginError(t *testing.T) {
 		"password": {"1234"},
 	}
 
-	expectedMessage := `"message":"authentication failed. db error"`
+	expectedMessage := `"message":"Invalid credentials"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogin(), values, expectedMessage, "%")
 }
 
@@ -79,7 +65,7 @@ func TestApiLoginUsernameAndPasswordUserNotFound(t *testing.T) {
 		"password": {"1234"},
 	}
 
-	expectedMessage := `"message":"User not found"`
+	expectedMessage := `"message":"Invalid credentials"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogin(), values, expectedMessage, "%")
 }
 
@@ -101,7 +87,7 @@ func TestApiLoginUsernameAndPasswordTokenStoreError(t *testing.T) {
 		"password": {"1234"},
 	}
 
-	expectedMessage := `"message":"token store failed. db error"`
+	expectedMessage := `"message":"Failed to process request. Please try again later"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogin(), values, expectedMessage, "%")
 }
 
@@ -166,8 +152,7 @@ func TestApiLoginPasswordlessInvalidEmail(t *testing.T) {
 	NotNil(t, authInstance)
 
 	values := url.Values{
-		"email":             {"invalid-email"},
-		"verification_code": {"CODE1234"},
+		"email": {"invalid-email"},
 	}
 
 	expectedMessage := `"message":"This is not a valid email: invalid-email"`
@@ -184,11 +169,10 @@ func TestApiLoginPasswordlessTokenStoreError(t *testing.T) {
 	}
 
 	values := url.Values{
-		"email":             {"test@test.com"},
-		"verification_code": {"CODE1234"},
+		"email": {"test@test.com"},
 	}
 
-	expectedMessage := `"message":"token store failed. db error"`
+	expectedMessage := `"message":"Failed to process request. Please try again later"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogin(), values, expectedMessage, "%")
 }
 
@@ -202,11 +186,10 @@ func TestApiLoginPasswordlessEmailSendError(t *testing.T) {
 	}
 
 	values := url.Values{
-		"email":             {"test@test.com"},
-		"verification_code": {"CODE1234"},
+		"email": {"test@test.com"},
 	}
 
-	expectedMessage := `"message":"Login code failed to be send. Please try again later"`
+	expectedMessage := `"message":"Failed to send email. Please try again later"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiLogin(), values, expectedMessage, "%")
 }
 
@@ -216,8 +199,7 @@ func TestApiLoginPasswordlessSuccess(t *testing.T) {
 	NotNil(t, authInstance)
 
 	values := url.Values{
-		"email":             {"test@test.com"},
-		"verification_code": {"CODE1234"},
+		"email": {"test@test.com"},
 	}
 
 	expectedStatus := `"status":"success"`

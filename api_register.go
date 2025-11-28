@@ -2,13 +2,13 @@ package auth
 
 import (
 	"encoding/json"
-	"log"
+	"html"
+	"log/slog"
 	"net/http"
 
 	"github.com/dracory/api"
 	authutils "github.com/dracory/auth/utils"
 	"github.com/dracory/req"
-	"github.com/dracory/str"
 )
 
 func (a Auth) apiRegister(w http.ResponseWriter, r *http.Request) {
@@ -32,8 +32,8 @@ func (a Auth) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := req.GetStringTrimmed(r, "email")
-	first_name := req.GetStringTrimmed(r, "first_name")
-	last_name := req.GetStringTrimmed(r, "last_name")
+	first_name := html.EscapeString(req.GetStringTrimmed(r, "first_name"))
+	last_name := html.EscapeString(req.GetStringTrimmed(r, "last_name"))
 
 	if first_name == "" {
 		api.Respond(w, r, api.Error("First name is required field"))
@@ -50,13 +50,28 @@ func (a Auth) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	verificationCode, errRandomFromGamma := str.RandomFromGamma(
-		authutils.LoginCodeLength(a.disableRateLimit),
-		authutils.LoginCodeGamma(a.disableRateLimit),
-	)
+	if msg := authutils.ValidateEmailFormat(email); msg != "" {
+		api.Respond(w, r, api.Error(msg))
+		return
+	}
+
+	verificationCode, errRandomFromGamma := authutils.GenerateVerificationCode(a.disableRateLimit)
 
 	if errRandomFromGamma != nil {
-		api.Respond(w, r, api.Error("Error generating random string"))
+		authErr := NewCodeGenerationError(errRandomFromGamma)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("registration code generation failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"email", email,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "api_register_passwordless",
+		)
+		api.Respond(w, r, api.Error(authErr.Message))
 		return
 	}
 
@@ -67,14 +82,40 @@ func (a Auth) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if errJson != nil {
-		api.Respond(w, r, api.Error("Error serializing data"))
+		authErr := NewSerializationError(errJson)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("registration data serialization failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"email", email,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "api_register_passwordless",
+		)
+		api.Respond(w, r, api.Error(authErr.Message))
 		return
 	}
 
-	errTempTokenSave := a.funcTemporaryKeySet(verificationCode, string(json), 3600)
+	errTempTokenSave := a.funcTemporaryKeySet(verificationCode, string(json), int(DefaultVerificationCodeExpiration.Seconds()))
 
 	if errTempTokenSave != nil {
-		api.Respond(w, r, api.Error("token store failed. "+errTempTokenSave.Error()))
+		authErr := NewTokenStoreError(errTempTokenSave)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("registration code token store failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"email", email,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "api_register_passwordless",
+		)
+		api.Respond(w, r, api.Error(authErr.Message))
 		return
 	}
 
@@ -86,12 +127,25 @@ func (a Auth) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
 	errEmailSent := a.passwordlessFuncEmailSend(r.Context(), email, "Registration Code", emailContent)
 
 	if errEmailSent != nil {
-		log.Println(errEmailSent)
-		api.Respond(w, r, api.Error("Registration code failed to be send. Please try again later"))
+		authErr := NewEmailSendError(errEmailSent)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("registration code email send failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"email", email,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "api_register_passwordless",
+		)
+		api.Respond(w, r, api.Error(authErr.Message))
 		return
 	}
 
 	api.Respond(w, r, api.Success("Registration code was sent successfully"))
+
 }
 
 func (a Auth) apiRegisterUsernameAndPassword(w http.ResponseWriter, r *http.Request) {
@@ -102,8 +156,8 @@ func (a Auth) apiRegisterUsernameAndPassword(w http.ResponseWriter, r *http.Requ
 
 	email := req.GetStringTrimmed(r, "email")
 	password := req.GetStringTrimmed(r, "password")
-	first_name := req.GetStringTrimmed(r, "first_name")
-	last_name := req.GetStringTrimmed(r, "last_name")
+	first_name := html.EscapeString(req.GetStringTrimmed(r, "first_name"))
+	last_name := html.EscapeString(req.GetStringTrimmed(r, "last_name"))
 
 	response := a.RegisterWithUsernameAndPassword(r.Context(), email, password, first_name, last_name, UserAuthOptions{
 		UserIp:    req.GetIP(r),

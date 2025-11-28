@@ -8,6 +8,33 @@ import (
 	"testing"
 )
 
+func newPasswordlessAuthForMiddlewareTests(useCookies bool) (*Auth, error) {
+	return NewPasswordlessAuth(ConfigPasswordless{
+		Endpoint:             "/auth",
+		UrlRedirectOnSuccess: "/user",
+		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
+		FuncTemporaryKeySet:  func(key, value string, expiresSeconds int) (err error) { return nil },
+		FuncUserFindByAuthToken: func(ctx context.Context, sessionID string, options UserAuthOptions) (userID string, err error) {
+			// Default: no user found
+			return "", nil
+		},
+		FuncUserFindByEmail: func(ctx context.Context, email string, options UserAuthOptions) (userID string, err error) {
+			return "", nil
+		},
+		FuncUserLogout: func(ctx context.Context, userID string, options UserAuthOptions) (err error) {
+			return nil
+		},
+		FuncUserStoreAuthToken: func(ctx context.Context, sessionID, userID string, options UserAuthOptions) error {
+			return nil
+		},
+		FuncEmailSend: func(ctx context.Context, email, emailSubject, emailBody string) (err error) {
+			return nil
+		},
+		UseCookies:      useCookies,
+		UseLocalStorage: !useCookies,
+	})
+}
+
 func TestWebAuthOrRedirectMiddleware_NoToken_RedirectsToLogin(t *testing.T) {
 	authInstance, err := newPasswordlessAuthForMiddlewareTests(true)
 	if err != nil {

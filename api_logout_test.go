@@ -69,7 +69,7 @@ func TestLogoutEndpointTokenValidationError_Custom(t *testing.T) {
 	authInstance.Router().ServeHTTP(recorder, req)
 
 	body := recorder.Body.String()
-	expected := `"message":"logout failed"`
+	expected := `"message":"Logout failed. Please try again later"`
 	if !strings.Contains(body, expected) {
 		t.Fatalf("expected body to contain %q, got %q", expected, body)
 	}

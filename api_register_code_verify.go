@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 
 	"github.com/dracory/api"
@@ -77,6 +78,27 @@ func (a Auth) apiRegisterCodeVerify(w http.ResponseWriter, r *http.Request) {
 			UserAgent: r.UserAgent(),
 		})
 	} else {
+		if err := authutils.ValidatePasswordStrength(password, a.passwordStrength); err != nil {
+			authErr := AuthError{
+				Code:        ErrCodeValidationFailed,
+				Message:     err.Error(),
+				InternalErr: err,
+			}
+			logger := a.logger
+			if logger == nil {
+				logger = slog.Default()
+			}
+			logger.Error("password validation failed",
+				"error", authErr.InternalErr,
+				"error_code", authErr.Code,
+				"email", email,
+				"ip", req.GetIP(r),
+				"user_agent", r.UserAgent(),
+				"endpoint", "api_register_code_verify",
+			)
+			api.Respond(w, r, api.Error(authErr.Message))
+			return
+		}
 		errRegister = a.funcUserRegister(r.Context(), email, password, firstName, lastName, UserAuthOptions{
 			UserIp:    req.GetIP(r),
 			UserAgent: r.UserAgent(),
@@ -84,7 +106,20 @@ func (a Auth) apiRegisterCodeVerify(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if errRegister != nil {
-		api.Respond(w, r, api.Error("registration failed. "+errRegister.Error()))
+		authErr := NewRegistrationError(errRegister)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("user registration failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"email", email,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "api_register_code_verify",
+		)
+		api.Respond(w, r, api.Error(authErr.Message))
 		return
 	}
 

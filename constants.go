@@ -1,5 +1,7 @@
 package auth
 
+import "time"
+
 type contextKey string
 
 func (c contextKey) String() string {
@@ -60,4 +62,11 @@ const (
 
 	// LoginCodeGamma specifies the characters to be used for building the login code
 	LoginCodeGamma string = "BCDFGHJKLMNPQRSTVXYZ"
+
+	DefaultVerificationCodeExpiration = 1 * time.Hour
+	DefaultPasswordResetExpiration    = 1 * time.Hour
+	DefaultAuthTokenExpiration        = 2 * time.Hour
+
+	DefaultMaxLoginAttempts = 5
+	DefaultLockoutDuration  = 15 * time.Minute
 )

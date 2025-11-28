@@ -2,8 +2,9 @@ package auth
 
 import (
 	"context"
-	"net/mail"
+	"log/slog"
 
+	authutils "github.com/dracory/auth/utils"
 	"github.com/dracory/str"
 )
 
@@ -24,33 +25,68 @@ func (a Auth) LoginWithUsernameAndPassword(ctx context.Context, email string, pa
 		return response
 	}
 
-	if _, err := mail.ParseAddress(email); err != nil {
-		response.ErrorMessage = "This is not a valid email: " + email
+	if msg := authutils.ValidateEmailFormat(email); msg != "" {
+		response.ErrorMessage = msg
 		return response
 	}
 
 	userID, err := a.funcUserLogin(ctx, email, password, options)
 
 	if err != nil {
-		response.ErrorMessage = "authentication failed. " + err.Error()
+		response.ErrorMessage = "Invalid credentials"
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("login with username and password failed",
+			"error", err,
+			"email", email,
+			"ip", options.UserIp,
+			"user_agent", options.UserAgent,
+		)
 		return response
 	}
 
 	if userID == "" {
-		response.ErrorMessage = "User not found"
+		response.ErrorMessage = "Invalid credentials"
 		return response
 	}
 
 	token, errRandom := str.RandomFromGamma(32, LoginCodeGamma)
 	if errRandom != nil {
-		response.ErrorMessage = "token generation failed. " + errRandom.Error()
+		authErr := NewCodeGenerationError(errRandom)
+		response.ErrorMessage = authErr.Message
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("auth token generation failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"email", email,
+			"ip", options.UserIp,
+			"user_agent", options.UserAgent,
+		)
 		return response
 	}
 
 	errSession := a.funcUserStoreAuthToken(ctx, token, userID, options)
 
 	if errSession != nil {
-		response.ErrorMessage = "token store failed. " + errSession.Error()
+		authErr := NewTokenStoreError(errSession)
+		response.ErrorMessage = authErr.Message
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("auth token store failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"email", email,
+			"user_id", userID,
+			"ip", options.UserIp,
+			"user_agent", options.UserAgent,
+		)
 		return response
 	}
 

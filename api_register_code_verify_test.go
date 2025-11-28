@@ -98,7 +98,7 @@ func TestApiRegisterCodeVerifyRegistrationFailed(t *testing.T) {
 		"verification_code": {"BCDFGHJK"},
 	}
 
-	expectedMessage := `"message":"registration failed. db error"`
+	expectedMessage := `"message":"Registration failed. Please try again later"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), values, expectedMessage, "%")
 }
 
@@ -124,7 +124,7 @@ func TestApiRegisterCodeVerifyAuthenticationError(t *testing.T) {
 		"verification_code": {"BCDFGHJK"},
 	}
 
-	expectedMessage := `"message":"authentication failed. db error"`
+	expectedMessage := `"message":"Invalid credentials"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), values, expectedMessage, "%")
 }
 
@@ -150,7 +150,7 @@ func TestApiRegisterCodeVerifyUserNotFound(t *testing.T) {
 		"verification_code": {"BCDFGHJK"},
 	}
 
-	expectedMessage := `"message":"authentication failed. user not found"`
+	expectedMessage := `"message":"Invalid credentials"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), values, expectedMessage, "%")
 }
 
@@ -180,7 +180,7 @@ func TestApiRegisterCodeVerifyTokenStoreError(t *testing.T) {
 		"verification_code": {"BCDFGHJK"},
 	}
 
-	expectedMessage := `"message":"token store failed. db error"`
+	expectedMessage := `"message":"Failed to process request. Please try again later"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiRegisterCodeVerify(), values, expectedMessage, "%")
 }
 

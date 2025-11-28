@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/dracory/api"
@@ -20,7 +21,19 @@ func (a Auth) apiLogout(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if errToken != nil {
-		api.Respond(w, r, api.Error("logout failed"))
+		authErr := NewLogoutError(errToken)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("logout token lookup failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "api_logout",
+		)
+		api.Respond(w, r, api.Error(authErr.Message))
 		return
 	}
 
@@ -31,13 +44,26 @@ func (a Auth) apiLogout(w http.ResponseWriter, r *http.Request) {
 		})
 
 		if errLogout != nil {
-			api.Respond(w, r, api.Error("logout failed. "+errLogout.Error()))
+			authErr := NewLogoutError(errLogout)
+			logger := a.logger
+			if logger == nil {
+				logger = slog.Default()
+			}
+			logger.Error("user logout failed",
+				"error", authErr.InternalErr,
+				"error_code", authErr.Code,
+				"user_id", userID,
+				"ip", req.GetIP(r),
+				"user_agent", r.UserAgent(),
+				"endpoint", "api_logout",
+			)
+			api.Respond(w, r, api.Error(authErr.Message))
 			return
 		}
 	}
 
 	if a.useCookies {
-		AuthCookieRemove(w, r)
+		a.removeAuthCookie(w, r)
 	}
 
 	api.Respond(w, r, api.Success("logout success"))

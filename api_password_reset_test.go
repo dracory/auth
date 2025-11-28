@@ -54,7 +54,7 @@ func TestPasswordResetEndpointInvalidToken(t *testing.T) {
 		return "", nil
 	}
 
-	expectedErrorMessage := `"message":"Link not valid of expired"`
+	expectedErrorMessage := `"message":"Link not valid or expired"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordReset(), url.Values{
 		"token":            {"invalid-token"},
 		"password":         {"password123"},
@@ -77,7 +77,35 @@ func TestPasswordResetEndpointPasswordChangeError(t *testing.T) {
 		return errors.New("db error")
 	}
 
-	expectedErrorMessage := `"message":"authentication failed. db error"`
+	expectedErrorMessage := `"message":"Password reset failed. Please try again later"`
+	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordReset(), url.Values{
+		"token":            {"valid-token"},
+		"password":         {"password123"},
+		"password_confirm": {"password123"},
+	}, expectedErrorMessage, "%")
+}
+
+func TestPasswordResetEndpointLogoutError(t *testing.T) {
+	authInstance, err := testSetupUsernameAndPasswordAuth()
+	Nil(t, err)
+	NotNil(t, authInstance)
+
+	// Mock valid token
+	authInstance.funcTemporaryKeyGet = func(key string) (value string, err error) {
+		return "user123", nil
+	}
+
+	// Mock successful password change
+	authInstance.funcUserPasswordChange = func(ctx context.Context, username string, newPassword string, options UserAuthOptions) (err error) {
+		return nil
+	}
+
+	// Mock logout error
+	authInstance.funcUserLogout = func(ctx context.Context, userID string, options UserAuthOptions) (err error) {
+		return errors.New("logout failed")
+	}
+
+	expectedErrorMessage := `"message":"Logout failed. Please try again later"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordReset(), url.Values{
 		"token":            {"valid-token"},
 		"password":         {"password123"},
@@ -100,6 +128,12 @@ func TestPasswordResetEndpointSuccess(t *testing.T) {
 		return nil
 	}
 
+	logoutCalled := false
+	authInstance.funcUserLogout = func(ctx context.Context, userID string, options UserAuthOptions) (err error) {
+		logoutCalled = true
+		return nil
+	}
+
 	expectedSuccess := `"status":"success"`
 	HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", authInstance.LinkApiPasswordReset(), url.Values{
 		"token":            {"valid-token"},
@@ -113,6 +147,10 @@ func TestPasswordResetEndpointSuccess(t *testing.T) {
 		"password":         {"password123"},
 		"password_confirm": {"password123"},
 	}, expectedMessage, "%")
+
+	if !logoutCalled {
+		t.Fatal("FuncUserLogout SHOULD BE called on successful password reset")
+	}
 }
 
 func TestPasswordResetEndpointInvalidCSRFToken(t *testing.T) {

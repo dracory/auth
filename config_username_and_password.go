@@ -2,7 +2,10 @@ package auth
 
 import (
 	"context"
+	"log/slog"
 	"time"
+
+	authtypes "github.com/dracory/auth/types"
 )
 
 // Config defines the available configuration options for authentication
@@ -18,6 +21,7 @@ type ConfigUsernameAndPassword struct {
 	UrlRedirectOnSuccess    string
 	UseCookies              bool
 	UseLocalStorage         bool
+	CookieConfig            *CookieConfig
 	// Rate limiting options
 	DisableRateLimit   bool                                                                                 // Set to true to disable rate limiting (not recommended for production)
 	FuncCheckRateLimit func(ip string, endpoint string) (allowed bool, retryAfter time.Duration, err error) // Optional: override default rate limiter
@@ -26,6 +30,7 @@ type ConfigUsernameAndPassword struct {
 	// CSRF Protection
 	EnableCSRFProtection bool
 	CSRFSecret           string
+	Logger               *slog.Logger
 
 	// ===== END: shared by all implementations
 
@@ -39,6 +44,7 @@ type ConfigUsernameAndPassword struct {
 	FuncUserLogout                   func(ctx context.Context, userID string, options UserAuthOptions) (err error)
 	FuncUserPasswordChange           func(ctx context.Context, username string, newPassword string, options UserAuthOptions) (err error)
 	FuncUserRegister                 func(ctx context.Context, username string, password string, first_name string, last_name string, options UserAuthOptions) (err error)
+	PasswordStrength                 *authtypes.PasswordStrengthConfig
 	LabelUsername                    string
 	// ===== END: username(email) and password options
 }

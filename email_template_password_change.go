@@ -3,7 +3,7 @@ package auth
 import (
 	"bytes"
 	"html/template"
-	"log"
+	"log/slog"
 )
 
 // EmailPasswordChangeTemplate returns the template for the email address verification email
@@ -49,7 +49,11 @@ func emailTemplatePasswordChange(name string, url string, options UserAuthOption
 
 	t, err := template.New("template").Parse(msg)
 	if err != nil {
-		log.Println(err)
+		slog.Error("password change email template parse failed",
+			"error", err,
+			"name", name,
+			"url", url,
+		)
 		return ""
 	}
 
@@ -57,7 +61,11 @@ func emailTemplatePasswordChange(name string, url string, options UserAuthOption
 	errExecute := t.Execute(&doc, data)
 
 	if errExecute != nil {
-		log.Println(errExecute)
+		slog.Error("password change email template execute failed",
+			"error", errExecute,
+			"name", name,
+			"url", url,
+		)
 		return ""
 	}
 

@@ -3,10 +3,18 @@ package auth
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"time"
+
+	"github.com/dracory/auth/utils"
 )
 
 func NewPasswordlessAuth(config ConfigPasswordless) (*Auth, error) {
+	logger := config.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	auth := &Auth{}
 
 	if config.Endpoint == "" {
@@ -67,6 +75,11 @@ func NewPasswordlessAuth(config ConfigPasswordless) (*Auth, error) {
 	auth.urlRedirectOnSuccess = config.UrlRedirectOnSuccess
 	auth.useCookies = config.UseCookies
 	auth.useLocalStorage = config.UseLocalStorage
+	if config.CookieConfig != nil {
+		auth.cookieConfig = *config.CookieConfig
+	} else {
+		auth.cookieConfig = defaultCookieConfig()
+	}
 	auth.funcLayout = config.FuncLayout
 	auth.funcTemporaryKeyGet = config.FuncTemporaryKeyGet
 	auth.funcTemporaryKeySet = config.FuncTemporaryKeySet
@@ -110,8 +123,10 @@ func NewPasswordlessAuth(config ConfigPasswordless) (*Auth, error) {
 			lockoutDuration = 15 * time.Minute // Default: 15 minutes
 		}
 
-		auth.rateLimiter = NewInMemoryRateLimiter(maxAttempts, lockoutDuration, lockoutDuration)
+		auth.rateLimiter = utils.NewInMemoryRateLimiter(maxAttempts, lockoutDuration, lockoutDuration)
 	}
+
+	auth.logger = logger
 
 	return auth, nil
 }

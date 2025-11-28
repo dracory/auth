@@ -1,12 +1,13 @@
 package auth
 
 import (
-	"log"
+	"html"
+	"log/slog"
 	"net/http"
 
 	"github.com/dracory/api"
+	authutils "github.com/dracory/auth/utils"
 	"github.com/dracory/req"
-	"github.com/dracory/str"
 )
 
 func (a Auth) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
@@ -16,11 +17,16 @@ func (a Auth) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := req.GetStringTrimmed(r, "email")
-	firstName := req.GetStringTrimmed(r, "first_name")
-	lastName := req.GetStringTrimmed(r, "last_name")
+	firstName := html.EscapeString(req.GetStringTrimmed(r, "first_name"))
+	lastName := html.EscapeString(req.GetStringTrimmed(r, "last_name"))
 
 	if email == "" {
 		api.Respond(w, r, api.Error("Email is required field"))
+		return
+	}
+
+	if msg := authutils.ValidateEmailFormat(email); msg != "" {
+		api.Respond(w, r, api.Error(msg))
 		return
 	}
 
@@ -40,7 +46,19 @@ func (a Auth) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		log.Println(err.Error())
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("password restore user lookup failed",
+			"error", err,
+			"email", email,
+			"first_name", firstName,
+			"last_name", lastName,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "api_password_restore",
+		)
 		api.Respond(w, r, api.Error("Internal server error"))
 		return
 	}
@@ -60,17 +78,43 @@ func (a Auth) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 
-	token, errRandomFromGamma := str.RandomFromGamma(32, "BCDFGHJKLMNPQRSTVXYZ")
+	token, errRandomFromGamma := authutils.GeneratePasswordResetToken()
 
 	if errRandomFromGamma != nil {
-		api.Respond(w, r, api.Error("Error generating random string"))
+		authErr := NewCodeGenerationError(errRandomFromGamma)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("password reset token generation failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"user_id", userID,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "api_password_restore",
+		)
+		api.Respond(w, r, api.Error(authErr.Message))
 		return
 	}
 
-	errTempTokenSave := a.funcTemporaryKeySet(token, userID, 3600)
+	errTempTokenSave := a.funcTemporaryKeySet(token, userID, int(DefaultPasswordResetExpiration.Seconds()))
 
 	if errTempTokenSave != nil {
-		api.Respond(w, r, api.Error("token store failed. "+errTempTokenSave.Error()))
+		authErr := NewTokenStoreError(errTempTokenSave)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("password reset token store failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"user_id", userID,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "api_password_restore",
+		)
+		api.Respond(w, r, api.Error(authErr.Message))
 		return
 	}
 
@@ -81,10 +125,21 @@ func (a Auth) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
 
 	errEmailSent := a.funcEmailSend(r.Context(), userID, "Password Restore", emailContent)
 
-	log.Println(errEmailSent)
-
 	if errEmailSent != nil {
-		api.Respond(w, r, api.Error("Password reset link failed to be sent. Please try again later"))
+		authErr := NewEmailSendError(errEmailSent)
+		logger := a.logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("password restore email send failed",
+			"error", authErr.InternalErr,
+			"error_code", authErr.Code,
+			"user_id", userID,
+			"ip", req.GetIP(r),
+			"user_agent", r.UserAgent(),
+			"endpoint", "api_password_restore",
+		)
+		api.Respond(w, r, api.Error(authErr.Message))
 		return
 	}
 

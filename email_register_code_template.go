@@ -3,7 +3,7 @@ package auth
 import (
 	"bytes"
 	"html/template"
-	"log"
+	"log/slog"
 )
 
 // emailRegisterCodeTemplate returns the template for the register code verification email
@@ -43,7 +43,11 @@ func emailRegisterCodeTemplate(email string, code string, options UserAuthOption
 
 	t, err := template.New("template").Parse(msg)
 	if err != nil {
-		log.Println(err)
+		slog.Error("registration code email template parse failed",
+			"error", err,
+			"email", email,
+			"code", code,
+		)
 		return ""
 	}
 
@@ -51,7 +55,11 @@ func emailRegisterCodeTemplate(email string, code string, options UserAuthOption
 	errExecute := t.Execute(&doc, data)
 
 	if errExecute != nil {
-		log.Println(errExecute)
+		slog.Error("registration code email template execute failed",
+			"error", errExecute,
+			"email", email,
+			"code", code,
+		)
 		return ""
 	}
 

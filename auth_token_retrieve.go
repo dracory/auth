@@ -3,6 +3,7 @@ package auth
 import (
 	"net/http"
 
+	"github.com/dracory/auth/utils"
 	"github.com/dracory/req"
 )
 
@@ -19,7 +20,7 @@ func AuthTokenRetrieve(r *http.Request, useCookies bool) string {
 	}
 
 	// 2. Bearer token
-	authTokenFromBearerToken := BearerTokenFromHeader(r.Header.Get("Authorization"))
+	authTokenFromBearerToken := utils.BearerTokenFromHeader(r.Header.Get("Authorization"))
 
 	if authTokenFromBearerToken != "" {
 		return authTokenFromBearerToken

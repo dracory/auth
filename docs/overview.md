@@ -1,6 +1,6 @@
 # Package Overview: dracory/auth
 
-**Last Updated:** 2025-11-27
+**Last Updated:** 2025-11-28
 
 ---
 
@@ -20,7 +20,14 @@
    - Authentication middleware for protecting routes
    - Customizable email templates
 
-3. **Flexible Storage**
+3. **Production-Grade Security**
+   - Structured error handling with error codes
+   - CSRF protection and rate limiting
+   - Session invalidation on password reset
+   - Secure cookie defaults and input validation
+   - Structured logging for audit trails
+
+4. **Flexible Storage**
    - You implement the storage layer via callback functions
    - Works with any database (SQL, NoSQL, in-memory)
    - You control session/token management
@@ -85,6 +92,7 @@ The central struct that holds all configuration and provides methods for authent
 - `urlRedirectOnSuccess` - Where to redirect after successful auth
 - `useCookies` / `useLocalStorage` - Token storage strategy
 - `passwordless` - Flag to determine which flow is active
+- `logger` - Optional `*slog.Logger` for structured logging
 - Function callbacks for user operations (login, register, logout, etc.)
 
 **Key Methods:**
@@ -117,6 +125,7 @@ type ConfigPasswordless struct {
     FuncEmailTemplateLoginCode   func(ctx context.Context, email, loginLink string, options UserAuthOptions) string
     FuncEmailTemplateRegisterCode func(ctx context.Context, email, registerLink string, options UserAuthOptions) string
     FuncLayout                   func(content string) string
+    Logger                       *slog.Logger // Optional structured logger (defaults to slog.Default when nil)
 }
 ```
 
@@ -129,6 +138,7 @@ type ConfigUsernameAndPassword struct {
     FuncUserRegister       func(ctx context.Context, username, password, firstName, lastName string, options UserAuthOptions) error
     FuncUserFindByUsername func(ctx context.Context, username, firstName, lastName string, options UserAuthOptions) (userID string, err error)
     EnableVerification     bool // Email verification for registration
+    Logger                 *slog.Logger // Optional structured logger
 }
 ```
 
@@ -345,6 +355,9 @@ func dashboardHandler(w http.ResponseWriter, r *http.Request) {
 4. **Token Storage Options** - Cookies OR localStorage (configurable)
 5. **Verification Codes** - 8-character codes from limited alphabet (BCDFGHJKLMNPQRSTVXYZ) to avoid confusion
 6. **UserAuthOptions + Context** - Callbacks receive `ctx context.Context` plus IP and UserAgent metadata for audit trails and cancellation
+7. **Structured Logging with slog** - Core flows emit structured logs (using `log/slog`) including `email`, `user_id`, `ip`, and `user_agent` where available; callers can inject a custom `*slog.Logger` via configuration
+8. **Structured Error Handling** - `AuthError` type with error codes ensures user-facing messages don't leak internal details while detailed errors are logged
+9. **Security by Default** - CSRF protection, rate limiting, secure cookies, session invalidation on password reset, constant-time password comparison
 
 ---
 
