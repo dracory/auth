@@ -18,7 +18,7 @@ import (
 func (a authImplementation) apiLogin(w http.ResponseWriter, r *http.Request) {
 	api_login.ApiLogin(w, r, api_login.Dependencies{
 		Passwordless: a.passwordless,
-		PasswordlessDeps: api_login.LoginPasswordlessDeps{
+		PasswordlessDependencies: api_login.LoginPasswordlessDeps{
 			DisableRateLimit: a.disableRateLimit,
 			TemporaryKeySet:  a.funcTemporaryKeySet,
 			ExpiresSeconds:   int(DefaultVerificationCodeExpiration.Seconds()),
