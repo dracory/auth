@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"html"
 	"log/slog"
 	"net/http"
 
@@ -32,8 +33,8 @@ func (a Auth) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := req.GetStringTrimmed(r, "email")
-	first_name := req.GetStringTrimmed(r, "first_name")
-	last_name := req.GetStringTrimmed(r, "last_name")
+	first_name := html.EscapeString(req.GetStringTrimmed(r, "first_name"))
+	last_name := html.EscapeString(req.GetStringTrimmed(r, "last_name"))
 
 	if first_name == "" {
 		api.Respond(w, r, api.Error("First name is required field"))
@@ -47,6 +48,11 @@ func (a Auth) apiRegisterPasswordless(w http.ResponseWriter, r *http.Request) {
 
 	if email == "" {
 		api.Respond(w, r, api.Error("Email is required field"))
+		return
+	}
+
+	if msg := authutils.ValidateEmailFormat(email); msg != "" {
+		api.Respond(w, r, api.Error(msg))
 		return
 	}
 
@@ -112,8 +118,8 @@ func (a Auth) apiRegisterUsernameAndPassword(w http.ResponseWriter, r *http.Requ
 
 	email := req.GetStringTrimmed(r, "email")
 	password := req.GetStringTrimmed(r, "password")
-	first_name := req.GetStringTrimmed(r, "first_name")
-	last_name := req.GetStringTrimmed(r, "last_name")
+	first_name := html.EscapeString(req.GetStringTrimmed(r, "first_name"))
+	last_name := html.EscapeString(req.GetStringTrimmed(r, "last_name"))
 
 	response := a.RegisterWithUsernameAndPassword(r.Context(), email, password, first_name, last_name, UserAuthOptions{
 		UserIp:    req.GetIP(r),

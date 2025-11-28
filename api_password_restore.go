@@ -1,10 +1,12 @@
 package auth
 
 import (
+	"html"
 	"log/slog"
 	"net/http"
 
 	"github.com/dracory/api"
+	authutils "github.com/dracory/auth/utils"
 	"github.com/dracory/req"
 	"github.com/dracory/str"
 )
@@ -16,11 +18,16 @@ func (a Auth) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := req.GetStringTrimmed(r, "email")
-	firstName := req.GetStringTrimmed(r, "first_name")
-	lastName := req.GetStringTrimmed(r, "last_name")
+	firstName := html.EscapeString(req.GetStringTrimmed(r, "first_name"))
+	lastName := html.EscapeString(req.GetStringTrimmed(r, "last_name"))
 
 	if email == "" {
 		api.Respond(w, r, api.Error("Email is required field"))
+		return
+	}
+
+	if msg := authutils.ValidateEmailFormat(email); msg != "" {
+		api.Respond(w, r, api.Error(msg))
 		return
 	}
 
