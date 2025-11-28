@@ -29,43 +29,7 @@ The `dracory/auth` library demonstrates **solid engineering fundamentals** with 
 
 ## 🟡 Medium Priority Issues
 
-### 1. **Magic Numbers** - MEDIUM
-
-Hardcoded expiration times throughout the codebase:
-
-```go
-// Found in 4 files:
-a.funcTemporaryKeySet(verificationCode, email, 3600)  // ❌ Magic number
-```
-
-**Recommendation:**
-```go
-const (
-    DefaultVerificationCodeExpiration = 1 * time.Hour  // 3600 seconds
-    DefaultPasswordResetExpiration    = 1 * time.Hour
-)
-
-// Usage:
-a.funcTemporaryKeySet(verificationCode, email, int(DefaultVerificationCodeExpiration.Seconds()))
-```
-
-**Files to update:**
-- `api_login.go:64`
-- `api_register.go:102`
-- `api_password_restore.go:101`
-- `register_with_username_and_password.go:107`
-
-### 2. **Typos in Error Messages** - LOW
-
-```go
-api.Error("Link not valid of expired")  // ❌ "of" should be "or"
-```
-
-**Files to fix:**
-- `api_password_reset.go:68, 73`
-- `api_password_reset_test.go:57`
-
-### 3. **Session Management** - MEDIUM
+### 1. **Session Management** - MEDIUM
 
 **Missing Feature:** Sessions are not invalidated when password is changed.
 
@@ -151,56 +115,44 @@ if a.funcUserInvalidateAllSessions != nil {
 | Test Coverage | ✅ Excellent | 90.2% coverage |
 | Documentation | ✅ Good | Comprehensive README |
 
-**Production Ready:** 🟡 **YES, with minor improvements** - Recommended to address magic numbers and session invalidation
+**Production Ready:** 🟡 **YES, with minor improvements** - Recommended to address session invalidation
 
 ---
 
 ## 🎯 Recommended Action Plan
 
-### Phase 1: Code Quality (SHOULD DO)
-
-**Estimated Time:** 1-2 days
-
-1. **Replace Magic Numbers**
-   - Define constants for expiration times
-   - Update all 4 files using hardcoded `3600`
-
-2. **Fix Typos**
-   - Fix "of" → "or" in error messages
-   - Update corresponding tests
-
-### Phase 2: Security Enhancements (RECOMMENDED)
+### Phase 1: Security Enhancements (RECOMMENDED)
 
 **Estimated Time:** 1 week
 
-3. **Session Management**
+1. **Session Management**
    - Add session invalidation on password change
    - Add "logout all devices" functionality
    - Add session expiration tracking
 
-4. **Audit Logging**
+2. **Audit Logging**
    - Log all authentication events
    - Include IP, UserAgent, timestamp
    - Make logs tamper-evident
    - Add log retention policy
 
-### Phase 3: Production Hardening (NICE TO HAVE)
+### Phase 2: Production Hardening (NICE TO HAVE)
 
 **Estimated Time:** 2-3 weeks
 
-5. **Add Metrics/Monitoring**
+1. **Add Metrics/Monitoring**
     - Instrument all endpoints
     - Add Prometheus metrics
     - Track login success/failure rates
     - Monitor verification code usage
 
-6. **Add Security Headers**
+2. **Add Security Headers**
     - CSP (Content Security Policy)
     - X-Frame-Options
     - X-Content-Type-Options
     - Strict-Transport-Security
 
-7. **Advanced Password Features**
+3. **Advanced Password Features**
     - Integrate with haveibeenpwned API (optional)
     - Add password complexity scoring
     - Add password history (prevent reuse)
@@ -260,8 +212,6 @@ The `dracory/auth` library has evolved into a **well-architected, secure authent
 - Good documentation
 
 🟡 **Minor Issues:**
-- Magic numbers should be extracted to constants
-- Minor typos in error messages
 - Session invalidation on password change not implemented
 - No metrics/monitoring
 
@@ -269,15 +219,11 @@ The `dracory/auth` library has evolved into a **well-architected, secure authent
 
 **RECOMMENDED for production use** with the following caveats:
 
-1. **Must Do:**
-   - Fix typos in error messages
-   - Replace magic numbers with constants
-
-2. **Should Do:**
+1. **Should Do:**
    - Implement session invalidation on password change
    - Add comprehensive audit logging
 
-3. **Nice to Have:**
+2. **Nice to Have:**
    - Add metrics/monitoring
    - Add security headers middleware
    - Implement advanced password features
