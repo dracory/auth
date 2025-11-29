@@ -89,6 +89,7 @@ type AuthSharedInterface interface {
 	SetFuncUserStoreAuthToken(fn func(ctx context.Context, token, userID string, options UserAuthOptions) error)
 
 	SetAuthCookie(w http.ResponseWriter, r *http.Request, token string)
+	RemoveAuthCookie(w http.ResponseWriter, r *http.Request)
 
 	// Final authentication step helpers used by internal API flows.
 	AuthenticateViaUsername(w http.ResponseWriter, r *http.Request, email, firstName, lastName string)

@@ -14,7 +14,6 @@ import (
 	"github.com/dracory/auth/internal/api/api_register"
 	"github.com/dracory/auth/internal/api/api_register_code_verify"
 	"github.com/dracory/auth/types"
-	"github.com/dracory/auth/utils"
 	"github.com/dracory/req"
 )
 
@@ -79,29 +78,7 @@ func (a authImplementation) apiRegister(w http.ResponseWriter, r *http.Request) 
 }
 
 func (a authImplementation) apiLogout(w http.ResponseWriter, r *http.Request) {
-	dependencies := api_logout.Dependencies{
-		UserFromToken: func(ctx context.Context, token string) (string, error) {
-			return a.funcUserFindByAuthToken(ctx, token, types.UserAuthOptions{
-				UserIp:    req.GetIP(r),
-				UserAgent: r.UserAgent(),
-			})
-		},
-		LogoutUser: func(ctx context.Context, userID string) error {
-			return a.funcUserLogout(ctx, userID, types.UserAuthOptions{
-				UserIp:    req.GetIP(r),
-				UserAgent: r.UserAgent(),
-			})
-		},
-		UseCookies: a.useCookies,
-		AuthTokenRetrieve: func(r *http.Request, useCookies bool) string {
-			return utils.AuthTokenRetrieve(r, useCookies)
-		},
-		RemoveAuthCookie: func(w http.ResponseWriter, r *http.Request) {
-			a.removeAuthCookie(w, r)
-		},
-	}
-
-	api_logout.ApiLogout(w, r, dependencies)
+	api_logout.ApiLogoutWithAuth(w, r, &a)
 }
 
 func (a authImplementation) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {

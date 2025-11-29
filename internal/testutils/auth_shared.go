@@ -155,6 +155,10 @@ func (a *authSharedTest) SetAuthCookie(w http.ResponseWriter, r *http.Request, t
 	// test double: no-op
 }
 
+func (a *authSharedTest) RemoveAuthCookie(w http.ResponseWriter, r *http.Request) {
+	// test double: no-op
+}
+
 func (a *authSharedTest) TemporaryKeyGet(token string) (string, error) { return "", nil }
 
 func (a *authSharedTest) AuthenticateViaUsername(w http.ResponseWriter, r *http.Request, email, firstName, lastName string) {

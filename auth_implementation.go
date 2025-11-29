@@ -217,6 +217,10 @@ func (a authImplementation) SetAuthCookie(w http.ResponseWriter, r *http.Request
 	a.setAuthCookie(w, r, token)
 }
 
+func (a authImplementation) RemoveAuthCookie(w http.ResponseWriter, r *http.Request) {
+	a.removeAuthCookie(w, r)
+}
+
 func (a authImplementation) AuthenticateViaUsername(w http.ResponseWriter, r *http.Request, email, firstName, lastName string) {
 	a.authenticateViaUsername(w, r, email, firstName, lastName)
 }

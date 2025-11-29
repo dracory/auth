@@ -5,6 +5,9 @@ import (
 	"net/http"
 
 	"github.com/dracory/api"
+	"github.com/dracory/auth/types"
+	"github.com/dracory/auth/utils"
+	"github.com/dracory/req"
 )
 
 // LogoutErrorCode categorizes error sources in the logout flow.
@@ -35,14 +38,14 @@ func (e *LogoutError) Error() string {
 
 // ApiLogout is the HTTP-level helper that wires request/response handling
 // to the core ApiLogout business logic using the provided dependencies.
-func ApiLogout(w http.ResponseWriter, r *http.Request, dependencies Dependencies) {
-	if dependencies.AuthTokenRetrieve == nil {
+func ApiLogout(w http.ResponseWriter, r *http.Request, deps Dependencies) {
+	if deps.AuthTokenRetrieve == nil {
 		api.Respond(w, r, api.Error("Internal server error. Please try again later"))
 		return
 	}
 
-	token := dependencies.AuthTokenRetrieve(r, dependencies.UseCookies)
-	logoutErr := logout(r.Context(), token, dependencies)
+	token := deps.AuthTokenRetrieve(r, deps.UseCookies)
+	logoutErr := logout(r.Context(), token, deps)
 	if logoutErr != nil {
 		switch logoutErr.Code {
 		case LogoutErrorCodeTokenLookup,
@@ -55,11 +58,47 @@ func ApiLogout(w http.ResponseWriter, r *http.Request, dependencies Dependencies
 		}
 	}
 
-	if dependencies.UseCookies && dependencies.RemoveAuthCookie != nil {
-		dependencies.RemoveAuthCookie(w, r)
+	if deps.UseCookies && deps.RemoveAuthCookie != nil {
+		deps.RemoveAuthCookie(w, r)
 	}
 
 	api.Respond(w, r, api.Success("logout success"))
+}
+
+// ApiLogoutWithAuth is a convenience wrapper that allows callers to pass a
+// types.AuthSharedInterface (such as authImplementation) instead of manually
+// wiring Dependencies. It constructs the Dependencies struct using the
+// interface accessors and preserves the existing behaviour.
+func ApiLogoutWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) {
+	deps := Dependencies{
+		UseCookies: a.GetUseCookies(),
+		AuthTokenRetrieve: func(r *http.Request, useCookies bool) string {
+			return utils.AuthTokenRetrieve(r, useCookies)
+		},
+		RemoveAuthCookie: func(w http.ResponseWriter, r *http.Request) {
+			a.RemoveAuthCookie(w, r)
+		},
+	}
+
+	if fn := a.GetFuncUserFindByAuthToken(); fn != nil {
+		deps.UserFromToken = func(ctx context.Context, token string) (string, error) {
+			return fn(ctx, token, types.UserAuthOptions{
+				UserIp:    req.GetIP(r),
+				UserAgent: r.UserAgent(),
+			})
+		}
+	}
+
+	if fn := a.GetFuncUserLogout(); fn != nil {
+		deps.LogoutUser = func(ctx context.Context, userID string) error {
+			return fn(ctx, userID, types.UserAuthOptions{
+				UserIp:    req.GetIP(r),
+				UserAgent: r.UserAgent(),
+			})
+		}
+	}
+
+	ApiLogout(w, r, deps)
 }
 
 // Logout contains the core business logic for logging out a user based on
