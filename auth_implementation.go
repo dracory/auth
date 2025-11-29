@@ -7,14 +7,10 @@ import (
 	"time"
 
 	"github.com/dracory/auth/internal/links"
+	"github.com/dracory/auth/types"
 	authtypes "github.com/dracory/auth/types"
 	authutils "github.com/dracory/auth/utils"
 )
-
-type UserAuthOptions struct {
-	UserIp    string
-	UserAgent string
-}
 
 // Auth defines the structure for the authentication
 type authImplementation struct {
@@ -30,30 +26,30 @@ type authImplementation struct {
 	funcLayout              func(content string) string
 	funcTemporaryKeyGet     func(key string) (value string, err error)
 	funcTemporaryKeySet     func(key string, value string, expiresSeconds int) (err error)
-	funcUserFindByAuthToken func(ctx context.Context, token string, options UserAuthOptions) (userID string, err error)
-	funcUserLogout          func(ctx context.Context, userID string, options UserAuthOptions) (err error)
-	funcUserStoreAuthToken  func(ctx context.Context, token string, userID string, options UserAuthOptions) error
+	funcUserFindByAuthToken func(ctx context.Context, token string, options types.UserAuthOptions) (userID string, err error)
+	funcUserLogout          func(ctx context.Context, userID string, options types.UserAuthOptions) (err error)
+	funcUserStoreAuthToken  func(ctx context.Context, token string, userID string, options types.UserAuthOptions) error
 	// ===== END: shared by all implementations
 
 	// ===== START: username(email) and password options
 	enableVerification               bool
-	funcEmailTemplatePasswordRestore func(ctx context.Context, userID string, passwordRestoreLink string, options UserAuthOptions) string // optional
-	funcEmailTemplateRegisterCode    func(ctx context.Context, email string, passwordRestoreLink string, options UserAuthOptions) string  // optional
+	funcEmailTemplatePasswordRestore func(ctx context.Context, userID string, passwordRestoreLink string, options types.UserAuthOptions) string // optional
+	funcEmailTemplateRegisterCode    func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string  // optional
 	funcEmailSend                    func(ctx context.Context, userID string, emailSubject string, emailBody string) (err error)
-	funcUserLogin                    func(ctx context.Context, username string, password string, options UserAuthOptions) (userID string, err error)
-	funcUserPasswordChange           func(ctx context.Context, username string, newPassword string, options UserAuthOptions) (err error)
-	funcUserRegister                 func(ctx context.Context, username string, password string, first_name string, last_name string, options UserAuthOptions) (err error)
-	funcUserFindByUsername           func(ctx context.Context, username string, first_name string, last_name string, options UserAuthOptions) (userID string, err error)
+	funcUserLogin                    func(ctx context.Context, username string, password string, options types.UserAuthOptions) (userID string, err error)
+	funcUserPasswordChange           func(ctx context.Context, username string, newPassword string, options types.UserAuthOptions) (err error)
+	funcUserRegister                 func(ctx context.Context, username string, password string, first_name string, last_name string, options types.UserAuthOptions) (err error)
+	funcUserFindByUsername           func(ctx context.Context, username string, first_name string, last_name string, options types.UserAuthOptions) (userID string, err error)
 	passwordStrength                 *authtypes.PasswordStrengthConfig
 	// ===== END: username(email) and password options
 
 	// ===== START: passwordless options
 	passwordless                              bool
-	passwordlessFuncUserFindByEmail           func(ctx context.Context, email string, options UserAuthOptions) (userID string, err error)
-	passwordlessFuncEmailTemplateLoginCode    func(ctx context.Context, email string, passwordRestoreLink string, options UserAuthOptions) string // optional
-	passwordlessFuncEmailTemplateRegisterCode func(ctx context.Context, email string, passwordRestoreLink string, options UserAuthOptions) string // optional
+	passwordlessFuncUserFindByEmail           func(ctx context.Context, email string, options types.UserAuthOptions) (userID string, err error)
+	passwordlessFuncEmailTemplateLoginCode    func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string // optional
+	passwordlessFuncEmailTemplateRegisterCode func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string // optional
 	passwordlessFuncEmailSend                 func(ctx context.Context, email string, emailSubject string, emailBody string) (err error)
-	passwordlessFuncUserRegister              func(ctx context.Context, email string, firstName string, lastName string, options UserAuthOptions) (err error)
+	passwordlessFuncUserRegister              func(ctx context.Context, email string, firstName string, lastName string, options types.UserAuthOptions) (err error)
 	// ===== END: passwordless options
 
 	// ===== START: rate limiting

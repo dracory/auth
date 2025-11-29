@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/dracory/auth/types"
 	"github.com/dracory/req"
 )
 
@@ -23,7 +24,7 @@ func (a authImplementation) WebAppendUserIdIfExistsMiddleware(next http.Handler)
 		authToken := AuthTokenRetrieve(r, a.useCookies)
 
 		if authToken != "" {
-			userID, err := a.funcUserFindByAuthToken(r.Context(), authToken, UserAuthOptions{
+			userID, err := a.funcUserFindByAuthToken(r.Context(), authToken, types.UserAuthOptions{
 				UserIp:    req.GetIP(r),
 				UserAgent: r.UserAgent(),
 			})

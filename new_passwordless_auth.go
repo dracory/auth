@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/dracory/auth/internal/emails"
+	"github.com/dracory/auth/types"
 	authtypes "github.com/dracory/auth/types"
 	"github.com/dracory/auth/utils"
 )
@@ -43,14 +44,14 @@ func NewPasswordlessAuth(config ConfigPasswordless) (authtypes.AuthPasswordlessI
 
 	// If no user defined email template is set, use default
 	if auth.passwordlessFuncEmailTemplateLoginCode == nil {
-		auth.passwordlessFuncEmailTemplateLoginCode = func(ctx context.Context, email string, code string, options UserAuthOptions) string {
+		auth.passwordlessFuncEmailTemplateLoginCode = func(ctx context.Context, email string, code string, options types.UserAuthOptions) string {
 			return emails.EmailLoginCodeTemplate(email, code)
 		}
 	}
 
 	// If no user defined email template is set, use default
 	if auth.passwordlessFuncEmailTemplateRegisterCode == nil {
-		auth.passwordlessFuncEmailTemplateRegisterCode = func(ctx context.Context, email string, code string, options UserAuthOptions) string {
+		auth.passwordlessFuncEmailTemplateRegisterCode = func(ctx context.Context, email string, code string, options types.UserAuthOptions) string {
 			return emails.EmailRegisterCodeTemplate(email, code)
 		}
 	}

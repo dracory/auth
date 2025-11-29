@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/dracory/auth/types"
 	authutils "github.com/dracory/auth/utils"
 )
 
@@ -13,7 +14,7 @@ type RegisterUsernameAndPasswordResponse struct {
 	Token          string
 }
 
-func (a authImplementation) RegisterWithUsernameAndPassword(ctx context.Context, email string, password string, firstName string, lastName string, options UserAuthOptions) (response RegisterUsernameAndPasswordResponse) {
+func (a authImplementation) RegisterWithUsernameAndPassword(ctx context.Context, email string, password string, firstName string, lastName string, options types.UserAuthOptions) (response RegisterUsernameAndPasswordResponse) {
 	if firstName == "" {
 		response.ErrorMessage = "First name is required field"
 		return response

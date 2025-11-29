@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	auth "github.com/dracory/auth"
+	authtypes "github.com/dracory/auth/types"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -37,7 +38,7 @@ var passwordStore = &passwordMemoryStore{
 	nextUserIndex: 1,
 }
 
-func (s *passwordMemoryStore) userLogin(_ context.Context, username, password string, _ auth.UserAuthOptions) (string, error) {
+func (s *passwordMemoryStore) userLogin(_ context.Context, username, password string, _ authtypes.UserAuthOptions) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -53,7 +54,7 @@ func (s *passwordMemoryStore) userLogin(_ context.Context, username, password st
 	return u.ID, nil
 }
 
-func (s *passwordMemoryStore) userRegister(_ context.Context, username, password, firstName, lastName string, _ auth.UserAuthOptions) error {
+func (s *passwordMemoryStore) userRegister(_ context.Context, username, password, firstName, lastName string, _ authtypes.UserAuthOptions) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -80,7 +81,7 @@ func (s *passwordMemoryStore) userRegister(_ context.Context, username, password
 	return nil
 }
 
-func (s *passwordMemoryStore) userFindByUsername(_ context.Context, username, firstName, lastName string, _ auth.UserAuthOptions) (string, error) {
+func (s *passwordMemoryStore) userFindByUsername(_ context.Context, username, firstName, lastName string, _ authtypes.UserAuthOptions) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -92,7 +93,7 @@ func (s *passwordMemoryStore) userFindByUsername(_ context.Context, username, fi
 	return u.ID, nil
 }
 
-func (s *passwordMemoryStore) userPasswordChange(_ context.Context, username, newPassword string, _ auth.UserAuthOptions) error {
+func (s *passwordMemoryStore) userPasswordChange(_ context.Context, username, newPassword string, _ authtypes.UserAuthOptions) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -110,7 +111,7 @@ func (s *passwordMemoryStore) userPasswordChange(_ context.Context, username, ne
 	return nil
 }
 
-func (s *passwordMemoryStore) logout(_ context.Context, userID string, _ auth.UserAuthOptions) error {
+func (s *passwordMemoryStore) logout(_ context.Context, userID string, _ authtypes.UserAuthOptions) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -123,7 +124,7 @@ func (s *passwordMemoryStore) logout(_ context.Context, userID string, _ auth.Us
 	return nil
 }
 
-func (s *passwordMemoryStore) storeAuthToken(_ context.Context, token, userID string, _ auth.UserAuthOptions) error {
+func (s *passwordMemoryStore) storeAuthToken(_ context.Context, token, userID string, _ authtypes.UserAuthOptions) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -131,7 +132,7 @@ func (s *passwordMemoryStore) storeAuthToken(_ context.Context, token, userID st
 	return nil
 }
 
-func (s *passwordMemoryStore) findByAuthToken(_ context.Context, token string, _ auth.UserAuthOptions) (string, error) {
+func (s *passwordMemoryStore) findByAuthToken(_ context.Context, token string, _ authtypes.UserAuthOptions) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

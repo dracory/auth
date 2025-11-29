@@ -13,6 +13,7 @@ import (
 	"github.com/dracory/auth/internal/api/api_password_restore"
 	"github.com/dracory/auth/internal/api/api_register"
 	"github.com/dracory/auth/internal/api/api_register_code_verify"
+	"github.com/dracory/auth/types"
 	"github.com/dracory/req"
 )
 
@@ -24,7 +25,7 @@ func (a authImplementation) apiLogin(w http.ResponseWriter, r *http.Request) {
 			TemporaryKeySet:  a.funcTemporaryKeySet,
 			ExpiresSeconds:   int(DefaultVerificationCodeExpiration.Seconds()),
 			EmailTemplate: func(ctx context.Context, email string, verificationCode string) string {
-				return a.passwordlessFuncEmailTemplateLoginCode(ctx, email, verificationCode, UserAuthOptions{
+				return a.passwordlessFuncEmailTemplateLoginCode(ctx, email, verificationCode, types.UserAuthOptions{
 					UserIp:    req.GetIP(r),
 					UserAgent: r.UserAgent(),
 				})
@@ -32,7 +33,7 @@ func (a authImplementation) apiLogin(w http.ResponseWriter, r *http.Request) {
 			EmailSend: a.passwordlessFuncEmailSend,
 		},
 		LoginWithUsernameAndPassword: func(ctx context.Context, email, password, ip, userAgent string) (string, string, string) {
-			response := a.LoginWithUsernameAndPassword(ctx, email, password, UserAuthOptions{
+			response := a.LoginWithUsernameAndPassword(ctx, email, password, types.UserAuthOptions{
 				UserIp:    ip,
 				UserAgent: userAgent,
 			})
@@ -55,7 +56,7 @@ func (a authImplementation) apiRegister(w http.ResponseWriter, r *http.Request) 
 			TemporaryKeySet:  a.funcTemporaryKeySet,
 			ExpiresSeconds:   int(DefaultVerificationCodeExpiration.Seconds()),
 			EmailTemplate: func(ctx context.Context, email string, verificationCode string) string {
-				return a.passwordlessFuncEmailTemplateRegisterCode(ctx, email, verificationCode, UserAuthOptions{
+				return a.passwordlessFuncEmailTemplateRegisterCode(ctx, email, verificationCode, types.UserAuthOptions{
 					UserIp:    req.GetIP(r),
 					UserAgent: r.UserAgent(),
 				})
@@ -65,7 +66,7 @@ func (a authImplementation) apiRegister(w http.ResponseWriter, r *http.Request) 
 			},
 		},
 		RegisterWithUsernameAndPassword: func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string) {
-			resp := a.RegisterWithUsernameAndPassword(ctx, email, password, firstName, lastName, UserAuthOptions{
+			resp := a.RegisterWithUsernameAndPassword(ctx, email, password, firstName, lastName, types.UserAuthOptions{
 				UserIp:    ip,
 				UserAgent: userAgent,
 			})
@@ -79,13 +80,13 @@ func (a authImplementation) apiRegister(w http.ResponseWriter, r *http.Request) 
 func (a authImplementation) apiLogout(w http.ResponseWriter, r *http.Request) {
 	dependencies := api_logout.Dependencies{
 		UserFromToken: func(ctx context.Context, token string) (string, error) {
-			return a.funcUserFindByAuthToken(ctx, token, UserAuthOptions{
+			return a.funcUserFindByAuthToken(ctx, token, types.UserAuthOptions{
 				UserIp:    req.GetIP(r),
 				UserAgent: r.UserAgent(),
 			})
 		},
 		LogoutUser: func(ctx context.Context, userID string) error {
-			return a.funcUserLogout(ctx, userID, UserAuthOptions{
+			return a.funcUserLogout(ctx, userID, types.UserAuthOptions{
 				UserIp:    req.GetIP(r),
 				UserAgent: r.UserAgent(),
 			})
@@ -105,7 +106,7 @@ func (a authImplementation) apiLogout(w http.ResponseWriter, r *http.Request) {
 func (a authImplementation) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
 	dependencies, err := api_password_restore.NewDependencies(
 		func(ctx context.Context, email, firstName, lastName string) (string, error) {
-			return a.funcUserFindByUsername(ctx, email, firstName, lastName, UserAuthOptions{
+			return a.funcUserFindByUsername(ctx, email, firstName, lastName, types.UserAuthOptions{
 				UserIp:    req.GetIP(r),
 				UserAgent: r.UserAgent(),
 			})
@@ -113,7 +114,7 @@ func (a authImplementation) apiPasswordRestore(w http.ResponseWriter, r *http.Re
 		a.funcTemporaryKeySet,
 		int(DefaultPasswordResetExpiration.Seconds()),
 		func(ctx context.Context, userID, token string) string {
-			return a.funcEmailTemplatePasswordRestore(ctx, userID, a.LinkPasswordReset(token), UserAuthOptions{
+			return a.funcEmailTemplatePasswordRestore(ctx, userID, a.LinkPasswordReset(token), types.UserAuthOptions{
 				UserIp:    req.GetIP(r),
 				UserAgent: r.UserAgent(),
 			})
@@ -139,13 +140,13 @@ func (a authImplementation) apiPasswordReset(w http.ResponseWriter, r *http.Requ
 		PasswordStrength: a.passwordStrength,
 		TemporaryKeyGet:  a.funcTemporaryKeyGet,
 		UserPasswordChange: func(ctx context.Context, userID, password string) error {
-			return a.funcUserPasswordChange(ctx, userID, password, UserAuthOptions{
+			return a.funcUserPasswordChange(ctx, userID, password, types.UserAuthOptions{
 				UserIp:    req.GetIP(r),
 				UserAgent: r.UserAgent(),
 			})
 		},
 		LogoutUser: func(ctx context.Context, userID string) error {
-			return a.funcUserLogout(ctx, userID, UserAuthOptions{
+			return a.funcUserLogout(ctx, userID, types.UserAuthOptions{
 				UserIp:    req.GetIP(r),
 				UserAgent: r.UserAgent(),
 			})
@@ -174,13 +175,13 @@ func (a authImplementation) apiRegisterCodeVerify(w http.ResponseWriter, r *http
 		PasswordStrength: a.passwordStrength,
 		Passwordless:     a.passwordless,
 		PasswordlessUserRegister: func(ctx context.Context, email, firstName, lastName string) error {
-			return a.passwordlessFuncUserRegister(ctx, email, firstName, lastName, UserAuthOptions{
+			return a.passwordlessFuncUserRegister(ctx, email, firstName, lastName, types.UserAuthOptions{
 				UserIp:    req.GetIP(r),
 				UserAgent: r.UserAgent(),
 			})
 		},
 		UserRegister: func(ctx context.Context, email, password, firstName, lastName string) error {
-			return a.funcUserRegister(ctx, email, password, firstName, lastName, UserAuthOptions{
+			return a.funcUserRegister(ctx, email, password, firstName, lastName, types.UserAuthOptions{
 				UserIp:    req.GetIP(r),
 				UserAgent: r.UserAgent(),
 			})
@@ -197,19 +198,19 @@ func (a authImplementation) authenticateViaUsername(w http.ResponseWriter, r *ht
 	dependencies := api_authenticate_via_username.Dependencies{
 		Passwordless: a.passwordless,
 		PasswordlessUserFindByEmail: func(ctx context.Context, email string) (string, error) {
-			return a.passwordlessFuncUserFindByEmail(ctx, email, UserAuthOptions{
+			return a.passwordlessFuncUserFindByEmail(ctx, email, types.UserAuthOptions{
 				UserIp:    req.GetIP(r),
 				UserAgent: r.UserAgent(),
 			})
 		},
 		UserFindByUsername: func(ctx context.Context, username, firstName, lastName string) (string, error) {
-			return a.funcUserFindByUsername(ctx, username, firstName, lastName, UserAuthOptions{
+			return a.funcUserFindByUsername(ctx, username, firstName, lastName, types.UserAuthOptions{
 				UserIp:    req.GetIP(r),
 				UserAgent: r.UserAgent(),
 			})
 		},
 		UserStoreAuthToken: func(ctx context.Context, token, userID string) error {
-			return a.funcUserStoreAuthToken(ctx, token, userID, UserAuthOptions{
+			return a.funcUserStoreAuthToken(ctx, token, userID, types.UserAuthOptions{
 				UserIp:    req.GetIP(r),
 				UserAgent: r.UserAgent(),
 			})

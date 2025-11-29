@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/dracory/auth/types"
 	"github.com/dracory/req"
 )
 
@@ -25,7 +26,7 @@ func (a authImplementation) WebAuthOrRedirectMiddleware(next http.Handler) http.
 			return
 		}
 
-		userID, err := a.funcUserFindByAuthToken(r.Context(), authToken, UserAuthOptions{
+		userID, err := a.funcUserFindByAuthToken(r.Context(), authToken, types.UserAuthOptions{
 			UserIp:    req.GetIP(r),
 			UserAgent: r.UserAgent(),
 		})

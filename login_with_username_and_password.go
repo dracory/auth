@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 
+	"github.com/dracory/auth/types"
 	authutils "github.com/dracory/auth/utils"
 	"github.com/dracory/str"
 )
@@ -13,7 +14,7 @@ type LoginUsernameAndPasswordResponse struct {
 	Token          string
 }
 
-func (a authImplementation) LoginWithUsernameAndPassword(ctx context.Context, email string, password string, options UserAuthOptions) (response LoginUsernameAndPasswordResponse) {
+func (a authImplementation) LoginWithUsernameAndPassword(ctx context.Context, email string, password string, options types.UserAuthOptions) (response LoginUsernameAndPasswordResponse) {
 	if email == "" {
 		response.ErrorMessage = "Email is required field"
 		return response

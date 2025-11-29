@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	auth "github.com/dracory/auth"
+	authtypes "github.com/dracory/auth/types"
 )
 
 // resetPasswordlessStore is a helper to reset the global store between tests.
@@ -21,7 +21,7 @@ func TestPasswordlessRegisterAndFindUser(t *testing.T) {
 	resetPasswordlessStore()
 
 	ctx := context.Background()
-	opts := auth.UserAuthOptions{}
+	opts := authtypes.UserAuthOptions{}
 
 	email := "user@example.com"
 	if err := passwordlessStore.registerUser(ctx, email, "John", "Doe", opts); err != nil {
@@ -46,7 +46,7 @@ func TestPasswordlessAuthTokenLifecycle(t *testing.T) {
 	resetPasswordlessStore()
 
 	ctx := context.Background()
-	opts := auth.UserAuthOptions{}
+	opts := authtypes.UserAuthOptions{}
 
 	userID := "user-1"
 	token := "token-123"
@@ -97,7 +97,7 @@ func TestPasswordlessLogoutClearsSessionsForUser(t *testing.T) {
 	resetPasswordlessStore()
 
 	ctx := context.Background()
-	opts := auth.UserAuthOptions{}
+	opts := authtypes.UserAuthOptions{}
 
 	userID1 := "user-1"
 	userID2 := "user-2"
@@ -128,7 +128,7 @@ func TestPasswordlessDisplayNameUsesRegisteredName(t *testing.T) {
 	resetPasswordlessStore()
 
 	ctx := context.Background()
-	opts := auth.UserAuthOptions{}
+	opts := authtypes.UserAuthOptions{}
 
 	email := "user@example.com"
 	firstName := "Alice"

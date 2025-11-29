@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	auth "github.com/dracory/auth"
+	authtypes "github.com/dracory/auth/types"
 	"github.com/jordan-wright/email"
 )
 
@@ -33,7 +34,7 @@ var passwordlessStore = &passwordlessMemoryStore{
 	tempKeys:     make(map[string]string),
 }
 
-func (s *passwordlessMemoryStore) findUserByEmail(_ context.Context, email string, _ auth.UserAuthOptions) (string, error) {
+func (s *passwordlessMemoryStore) findUserByEmail(_ context.Context, email string, _ authtypes.UserAuthOptions) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -44,7 +45,7 @@ func (s *passwordlessMemoryStore) findUserByEmail(_ context.Context, email strin
 	return "", fmt.Errorf("user with email %s not found", email)
 }
 
-func (s *passwordlessMemoryStore) registerUser(_ context.Context, email, firstName, lastName string, _ auth.UserAuthOptions) error {
+func (s *passwordlessMemoryStore) registerUser(_ context.Context, email, firstName, lastName string, _ authtypes.UserAuthOptions) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -63,7 +64,7 @@ func (s *passwordlessMemoryStore) registerUser(_ context.Context, email, firstNa
 	return nil
 }
 
-func (s *passwordlessMemoryStore) logout(_ context.Context, userID string, _ auth.UserAuthOptions) error {
+func (s *passwordlessMemoryStore) logout(_ context.Context, userID string, _ authtypes.UserAuthOptions) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -76,7 +77,7 @@ func (s *passwordlessMemoryStore) logout(_ context.Context, userID string, _ aut
 	return nil
 }
 
-func (s *passwordlessMemoryStore) storeAuthToken(_ context.Context, token, userID string, _ auth.UserAuthOptions) error {
+func (s *passwordlessMemoryStore) storeAuthToken(_ context.Context, token, userID string, _ authtypes.UserAuthOptions) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -84,7 +85,7 @@ func (s *passwordlessMemoryStore) storeAuthToken(_ context.Context, token, userI
 	return nil
 }
 
-func (s *passwordlessMemoryStore) findByAuthToken(_ context.Context, token string, _ auth.UserAuthOptions) (string, error) {
+func (s *passwordlessMemoryStore) findByAuthToken(_ context.Context, token string, _ authtypes.UserAuthOptions) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

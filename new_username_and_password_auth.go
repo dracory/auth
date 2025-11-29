@@ -64,7 +64,7 @@ func NewUsernameAndPasswordAuth(config ConfigUsernameAndPassword) (types.AuthPas
 
 	// If no user defined email template is set, use default
 	if auth.funcEmailTemplatePasswordRestore == nil {
-		auth.funcEmailTemplatePasswordRestore = func(ctx context.Context, userID string, passwordRestoreLink string, options UserAuthOptions) string {
+		auth.funcEmailTemplatePasswordRestore = func(ctx context.Context, userID string, passwordRestoreLink string, options types.UserAuthOptions) string {
 			// userID here is effectively the name/email for the template
 			return emails.EmailTemplatePasswordChange(userID, passwordRestoreLink)
 		}
@@ -72,7 +72,7 @@ func NewUsernameAndPasswordAuth(config ConfigUsernameAndPassword) (types.AuthPas
 
 	// If no user defined email template is set, use default
 	if auth.funcEmailTemplateRegisterCode == nil {
-		auth.funcEmailTemplateRegisterCode = func(ctx context.Context, email string, code string, options UserAuthOptions) string {
+		auth.funcEmailTemplateRegisterCode = func(ctx context.Context, email string, code string, options types.UserAuthOptions) string {
 			return emails.EmailRegisterCodeTemplate(email, code)
 		}
 	}

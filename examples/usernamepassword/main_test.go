@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	auth "github.com/dracory/auth"
+	authtypes "github.com/dracory/auth/types"
 )
 
 // resetPasswordStore is a helper to reset the global store between tests.
@@ -22,7 +22,7 @@ func TestUsernamePasswordRegisterAndLogin(t *testing.T) {
 	resetPasswordStore()
 
 	ctx := context.Background()
-	opts := auth.UserAuthOptions{}
+	opts := authtypes.UserAuthOptions{}
 
 	username := "user@example.com"
 	password := "P@ssw0rd!"
@@ -54,7 +54,7 @@ func TestUsernamePasswordFindByUsernameAndChangePassword(t *testing.T) {
 	resetPasswordStore()
 
 	ctx := context.Background()
-	opts := auth.UserAuthOptions{}
+	opts := authtypes.UserAuthOptions{}
 
 	username := "user@example.com"
 	password := "OldPass1!"
@@ -94,7 +94,7 @@ func TestUsernamePasswordAuthTokenAndLogout(t *testing.T) {
 	resetPasswordStore()
 
 	ctx := context.Background()
-	opts := auth.UserAuthOptions{}
+	opts := authtypes.UserAuthOptions{}
 
 	userID1 := "user-1"
 	userID2 := "user-2"
@@ -146,7 +146,7 @@ func TestPasswordStoreDisplayNameUsesRegisteredName(t *testing.T) {
 	resetPasswordStore()
 
 	ctx := context.Background()
-	opts := auth.UserAuthOptions{}
+	opts := authtypes.UserAuthOptions{}
 
 	username := "user@example.com"
 	password := "P@ssw0rd!"
