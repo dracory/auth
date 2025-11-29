@@ -59,6 +59,22 @@ type AuthSharedInterface interface {
 
 	GetFuncUserFindByAuthToken() func(ctx context.Context, token string, options UserAuthOptions) (userID string, err error)
 	SetFuncUserFindByAuthToken(fn func(ctx context.Context, token string, options UserAuthOptions) (userID string, err error))
+
+	// Additional accessors used by internal API flows.
+	GetDisableRateLimit() bool
+	SetDisableRateLimit(disable bool)
+
+	GetPasswordStrength() *PasswordStrengthConfig
+	SetPasswordStrength(cfg *PasswordStrengthConfig)
+
+	GetPasswordlessUserRegister() func(ctx context.Context, email, firstName, lastName string, options UserAuthOptions) error
+	SetPasswordlessUserRegister(fn func(ctx context.Context, email, firstName, lastName string, options UserAuthOptions) error)
+
+	GetFuncUserRegister() func(ctx context.Context, username, password, firstName, lastName string, options UserAuthOptions) error
+	SetFuncUserRegister(fn func(ctx context.Context, username, password, firstName, lastName string, options UserAuthOptions) error)
+
+	// Final authentication step helpers used by internal API flows.
+	AuthenticateViaUsername(w http.ResponseWriter, r *http.Request, email, firstName, lastName string)
 }
 
 // AuthPasswordInterface represents username/password based authentication.

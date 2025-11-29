@@ -158,41 +158,11 @@ func (a authImplementation) apiPasswordReset(w http.ResponseWriter, r *http.Requ
 }
 
 func (a authImplementation) apiLoginCodeVerify(w http.ResponseWriter, r *http.Request) {
-	dependencies := api_login_code_verify.Dependencies{
-		DisableRateLimit: a.disableRateLimit,
-		TemporaryKeyGet:  a.funcTemporaryKeyGet,
-		AuthenticateViaUsername: func(w http.ResponseWriter, r *http.Request, email string) {
-			a.authenticateViaUsername(w, r, email, "", "")
-		},
-	}
-
-	api_login_code_verify.ApiLoginCodeVerify(w, r, dependencies)
+	api_login_code_verify.ApiLoginCodeVerifyWithAuth(w, r, &a)
 }
 
 func (a authImplementation) apiRegisterCodeVerify(w http.ResponseWriter, r *http.Request) {
-	dependencies := api_register_code_verify.Dependencies{
-		DisableRateLimit: a.disableRateLimit,
-		TemporaryKeyGet:  a.funcTemporaryKeyGet,
-		PasswordStrength: a.passwordStrength,
-		Passwordless:     a.passwordless,
-		PasswordlessUserRegister: func(ctx context.Context, email, firstName, lastName string) error {
-			return a.passwordlessFuncUserRegister(ctx, email, firstName, lastName, types.UserAuthOptions{
-				UserIp:    req.GetIP(r),
-				UserAgent: r.UserAgent(),
-			})
-		},
-		UserRegister: func(ctx context.Context, email, password, firstName, lastName string) error {
-			return a.funcUserRegister(ctx, email, password, firstName, lastName, types.UserAuthOptions{
-				UserIp:    req.GetIP(r),
-				UserAgent: r.UserAgent(),
-			})
-		},
-		AuthenticateViaUsername: func(w http.ResponseWriter, r *http.Request, email, firstName, lastName string) {
-			a.authenticateViaUsername(w, r, email, firstName, lastName)
-		},
-	}
-
-	api_register_code_verify.ApiRegisterCodeVerify(w, r, dependencies)
+	api_register_code_verify.ApiRegisterCodeVerifyWithAuth(w, r, &a)
 }
 
 func (a authImplementation) authenticateViaUsername(w http.ResponseWriter, r *http.Request, username string, firstName string, lastName string) {

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/dracory/api"
+	"github.com/dracory/auth/types"
 	"github.com/dracory/auth/utils"
 	"github.com/dracory/req"
 	"github.com/dracory/str"
@@ -82,6 +83,23 @@ func ApiLoginCodeVerify(w http.ResponseWriter, r *http.Request, deps Dependencie
 	}
 
 	deps.AuthenticateViaUsername(w, r, result.Email)
+}
+
+// ApiLoginCodeVerifyWithAuth is a convenience wrapper that allows callers to
+// pass a types.AuthSharedInterface (such as authImplementation) instead of
+// manually wiring Dependencies. It constructs the Dependencies struct using
+// the interface accessors and preserves the existing behaviour.
+func ApiLoginCodeVerifyWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) {
+	deps := Dependencies{
+		DisableRateLimit: a.GetDisableRateLimit(),
+		TemporaryKeyGet:  a.GetFuncTemporaryKeyGet(),
+	}
+
+	deps.AuthenticateViaUsername = func(w http.ResponseWriter, r *http.Request, email string) {
+		a.AuthenticateViaUsername(w, r, email, "", "")
+	}
+
+	ApiLoginCodeVerify(w, r, deps)
 }
 
 // LoginCodeVerify encapsulates the core business logic for verifying a

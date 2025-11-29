@@ -18,17 +18,21 @@ func NewAuthSharedForTest() types.AuthSharedInterface {
 }
 
 type authSharedTest struct {
-	endpoint                string
-	layout                  func(content string) string
-	logger                  *slog.Logger
-	registration            bool
-	passwordless            bool
-	verification            bool
-	temporaryKeyGet         func(key string) (string, error)
-	funcUserFindByAuthToken func(ctx context.Context, token string, options types.UserAuthOptions) (string, error)
-	redirectOnSuccess       string
-	loginURL                string
-	useCookies              bool
+	endpoint                 string
+	layout                   func(content string) string
+	logger                   *slog.Logger
+	registration             bool
+	passwordless             bool
+	verification             bool
+	temporaryKeyGet          func(key string) (string, error)
+	funcUserFindByAuthToken  func(ctx context.Context, token string, options types.UserAuthOptions) (string, error)
+	redirectOnSuccess        string
+	loginURL                 string
+	useCookies               bool
+	disableRateLimit         bool
+	passwordStrength         *types.PasswordStrengthConfig
+	passwordlessUserRegister func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) error
+	funcUserRegister         func(ctx context.Context, username, password, firstName, lastName string, options types.UserAuthOptions) error
 }
 
 func (a *authSharedTest) Router() *http.ServeMux { return http.NewServeMux() }
@@ -74,7 +78,39 @@ func (a *authSharedTest) SetFuncTemporaryKeyGet(fn func(key string) (string, err
 	a.temporaryKeyGet = fn
 }
 
+func (a *authSharedTest) GetDisableRateLimit() bool { return a.disableRateLimit }
+
+func (a *authSharedTest) SetDisableRateLimit(disable bool) { a.disableRateLimit = disable }
+
+func (a *authSharedTest) GetPasswordStrength() *types.PasswordStrengthConfig {
+	return a.passwordStrength
+}
+
+func (a *authSharedTest) SetPasswordStrength(cfg *types.PasswordStrengthConfig) {
+	a.passwordStrength = cfg
+}
+
+func (a *authSharedTest) GetPasswordlessUserRegister() func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) error {
+	return a.passwordlessUserRegister
+}
+
+func (a *authSharedTest) SetPasswordlessUserRegister(fn func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) error) {
+	a.passwordlessUserRegister = fn
+}
+
+func (a *authSharedTest) GetFuncUserRegister() func(ctx context.Context, username, password, firstName, lastName string, options types.UserAuthOptions) error {
+	return a.funcUserRegister
+}
+
+func (a *authSharedTest) SetFuncUserRegister(fn func(ctx context.Context, username, password, firstName, lastName string, options types.UserAuthOptions) error) {
+	a.funcUserRegister = fn
+}
+
 func (a *authSharedTest) TemporaryKeyGet(token string) (string, error) { return "", nil }
+
+func (a *authSharedTest) AuthenticateViaUsername(w http.ResponseWriter, r *http.Request, email, firstName, lastName string) {
+	// test double: no-op or can be extended per test needs
+}
 
 func (a *authSharedTest) LinkLogin() string { return a.loginURL }
 

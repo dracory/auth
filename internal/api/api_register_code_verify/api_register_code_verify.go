@@ -114,6 +114,43 @@ func ApiRegisterCodeVerify(w http.ResponseWriter, r *http.Request, deps Dependen
 	deps.AuthenticateViaUsername(w, r, result.Email, result.FirstName, result.LastName)
 }
 
+// ApiRegisterCodeVerifyWithAuth is a convenience wrapper that allows callers
+// to pass a types.AuthSharedInterface (such as authImplementation) instead of
+// manually wiring Dependencies. It constructs the Dependencies struct using
+// the interface accessors and preserves the existing behaviour.
+func ApiRegisterCodeVerifyWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) {
+	deps := Dependencies{
+		DisableRateLimit: a.GetDisableRateLimit(),
+		TemporaryKeyGet:  a.GetFuncTemporaryKeyGet(),
+		PasswordStrength: a.GetPasswordStrength(),
+		Passwordless:     a.IsPasswordless(),
+	}
+
+	if fn := a.GetPasswordlessUserRegister(); fn != nil {
+		deps.PasswordlessUserRegister = func(ctx context.Context, email, firstName, lastName string) error {
+			return fn(ctx, email, firstName, lastName, types.UserAuthOptions{
+				UserIp:    req.GetIP(r),
+				UserAgent: r.UserAgent(),
+			})
+		}
+	}
+
+	if fn := a.GetFuncUserRegister(); fn != nil {
+		deps.UserRegister = func(ctx context.Context, email, password, firstName, lastName string) error {
+			return fn(ctx, email, password, firstName, lastName, types.UserAuthOptions{
+				UserIp:    req.GetIP(r),
+				UserAgent: r.UserAgent(),
+			})
+		}
+	}
+
+	deps.AuthenticateViaUsername = func(w http.ResponseWriter, r *http.Request, email, firstName, lastName string) {
+		a.AuthenticateViaUsername(w, r, email, firstName, lastName)
+	}
+
+	ApiRegisterCodeVerify(w, r, deps)
+}
+
 // RegisterCodeVerify encapsulates the core business logic for verifying a
 // registration code, performing optional password validation and creating the
 // user. It does not log or write HTTP responses.

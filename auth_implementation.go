@@ -141,6 +141,42 @@ func (a *authImplementation) SetFuncUserFindByAuthToken(fn func(ctx context.Cont
 	a.funcUserFindByAuthToken = fn
 }
 
+func (a authImplementation) GetDisableRateLimit() bool {
+	return a.disableRateLimit
+}
+
+func (a *authImplementation) SetDisableRateLimit(disable bool) {
+	a.disableRateLimit = disable
+}
+
+func (a authImplementation) GetPasswordStrength() *authtypes.PasswordStrengthConfig {
+	return a.passwordStrength
+}
+
+func (a *authImplementation) SetPasswordStrength(cfg *authtypes.PasswordStrengthConfig) {
+	a.passwordStrength = cfg
+}
+
+func (a authImplementation) GetPasswordlessUserRegister() func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) error {
+	return a.passwordlessFuncUserRegister
+}
+
+func (a *authImplementation) SetPasswordlessUserRegister(fn func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) error) {
+	a.passwordlessFuncUserRegister = fn
+}
+
+func (a authImplementation) GetFuncUserRegister() func(ctx context.Context, username, password, firstName, lastName string, options types.UserAuthOptions) error {
+	return a.funcUserRegister
+}
+
+func (a *authImplementation) SetFuncUserRegister(fn func(ctx context.Context, username, password, firstName, lastName string, options types.UserAuthOptions) error) {
+	a.funcUserRegister = fn
+}
+
+func (a authImplementation) AuthenticateViaUsername(w http.ResponseWriter, r *http.Request, email, firstName, lastName string) {
+	a.authenticateViaUsername(w, r, email, firstName, lastName)
+}
+
 func (a authImplementation) GetFuncTemporaryKeyGet() func(key string) (string, error) {
 	return a.funcTemporaryKeyGet
 }
