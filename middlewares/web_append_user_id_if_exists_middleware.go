@@ -1,4 +1,4 @@
-package auth
+package middlewares
 
 import (
 	"context"
@@ -19,13 +19,13 @@ import (
 // If you need to redirect the user if authentication token not found,
 // or the user does not exist, take a look at the WebAuthOrRedirectMiddleware
 // middleware, which does exactly that
-func (a authImplementation) WebAppendUserIdIfExistsMiddleware(next http.Handler) http.Handler {
+func WebAppendUserIdIfExistsMiddleware(next http.Handler, a types.AuthSharedInterface) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		authToken := utils.AuthTokenRetrieve(r, a.useCookies)
+		authToken := utils.AuthTokenRetrieve(r, a.GetUseCookies())
 
 		if authToken != "" {
-			userID, err := a.funcUserFindByAuthToken(r.Context(), authToken, types.UserAuthOptions{
+			userID, err := a.GetFuncUserFindByAuthToken()(r.Context(), authToken, types.UserAuthOptions{
 				UserIp:    req.GetIP(r),
 				UserAgent: r.UserAgent(),
 			})
@@ -35,7 +35,7 @@ func (a authImplementation) WebAppendUserIdIfExistsMiddleware(next http.Handler)
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), AuthenticatedUserID{}, userID)
+			ctx := context.WithValue(r.Context(), types.AuthenticatedUserID{}, userID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}

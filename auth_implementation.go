@@ -125,6 +125,22 @@ func (a authImplementation) GetCurrentUserID(r *http.Request) string {
 	return authenticatedUserID.(string)
 }
 
+func (a authImplementation) GetUseCookies() bool {
+	return a.useCookies
+}
+
+func (a authImplementation) GetFuncUserFindByAuthToken() func(ctx context.Context, token string, options types.UserAuthOptions) (string, error) {
+	return a.funcUserFindByAuthToken
+}
+
+func (a *authImplementation) SetUseCookies(useCookies bool) {
+	a.useCookies = useCookies
+}
+
+func (a *authImplementation) SetFuncUserFindByAuthToken(fn func(ctx context.Context, token string, options types.UserAuthOptions) (string, error)) {
+	a.funcUserFindByAuthToken = fn
+}
+
 func (a authImplementation) GetFuncTemporaryKeyGet() func(key string) (string, error) {
 	return a.funcTemporaryKeyGet
 }

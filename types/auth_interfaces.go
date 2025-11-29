@@ -1,6 +1,7 @@
 package types
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 )
@@ -18,7 +19,7 @@ type AuthSharedInterface interface {
 
 	// Middlewares for protecting or enriching routes.
 	WebAuthOrRedirectMiddleware(next http.Handler) http.Handler
-	ApiAuthOrErrorMiddleware(next http.Handler) http.Handler
+	// ApiAuthOrErrorMiddleware(next http.Handler) http.Handler
 	WebAppendUserIdIfExistsMiddleware(next http.Handler) http.Handler
 
 	// Current user lookup from the request context.
@@ -38,7 +39,7 @@ type AuthSharedInterface interface {
 	LinkApiRegisterCodeVerify() string
 
 	// ======================================================================
-	// Accessors
+	// Accessors (Setters and Getters)
 	// ======================================================================
 
 	GetEndpoint() string
@@ -50,9 +51,14 @@ type AuthSharedInterface interface {
 	GetLayout() func(content string) string
 	SetLayout(layout func(content string) string)
 
-	// Accessors for the temporary key retrieval function used in password reset flows.
 	GetFuncTemporaryKeyGet() func(key string) (string, error)
 	SetFuncTemporaryKeyGet(fn func(key string) (string, error))
+
+	GetUseCookies() bool
+	SetUseCookies(useCookies bool)
+
+	GetFuncUserFindByAuthToken() func(ctx context.Context, token string, options UserAuthOptions) (userID string, err error)
+	SetFuncUserFindByAuthToken(fn func(ctx context.Context, token string, options UserAuthOptions) (userID string, err error))
 }
 
 // AuthPasswordInterface represents username/password based authentication.

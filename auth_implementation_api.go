@@ -14,6 +14,7 @@ import (
 	"github.com/dracory/auth/internal/api/api_register"
 	"github.com/dracory/auth/internal/api/api_register_code_verify"
 	"github.com/dracory/auth/types"
+	"github.com/dracory/auth/utils"
 	"github.com/dracory/req"
 )
 
@@ -93,7 +94,7 @@ func (a authImplementation) apiLogout(w http.ResponseWriter, r *http.Request) {
 		},
 		UseCookies: a.useCookies,
 		AuthTokenRetrieve: func(r *http.Request, useCookies bool) string {
-			return AuthTokenRetrieve(r, useCookies)
+			return utils.AuthTokenRetrieve(r, useCookies)
 		},
 		RemoveAuthCookie: func(w http.ResponseWriter, r *http.Request) {
 			a.removeAuthCookie(w, r)

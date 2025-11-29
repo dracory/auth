@@ -1,4 +1,4 @@
-package auth
+package middlewares
 
 import (
 	"context"
@@ -17,17 +17,17 @@ import (
 // If you need to only find if the authentication token is successful
 // without redirection please use the WebAppendUserIdIfExistsMiddleware
 // which does exactly that without side effects
-func (a authImplementation) WebAuthOrRedirectMiddleware(next http.Handler) http.Handler {
+func WebAuthOrRedirectMiddleware(next http.Handler, a types.AuthSharedInterface) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		authToken := utils.AuthTokenRetrieve(r, a.useCookies)
+		authToken := utils.AuthTokenRetrieve(r, a.GetUseCookies())
 
 		if authToken == "" {
 			http.Redirect(w, r, a.LinkLogin(), http.StatusTemporaryRedirect)
 			return
 		}
 
-		userID, err := a.funcUserFindByAuthToken(r.Context(), authToken, types.UserAuthOptions{
+		userID, err := a.GetFuncUserFindByAuthToken()(r.Context(), authToken, types.UserAuthOptions{
 			UserIp:    req.GetIP(r),
 			UserAgent: r.UserAgent(),
 		})
@@ -42,7 +42,7 @@ func (a authImplementation) WebAuthOrRedirectMiddleware(next http.Handler) http.
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), AuthenticatedUserID{}, userID)
+		ctx := context.WithValue(r.Context(), types.AuthenticatedUserID{}, userID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
