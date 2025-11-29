@@ -1,31 +1,41 @@
 package api_password_restore
 
 import (
+	"bytes"
 	"context"
 	"errors"
-	"net/http"
-	"net/http/httptest"
+	"io"
+	"log/slog"
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/dracory/auth/internal/testutils"
 )
 
-func makePostRequest(t *testing.T, path string, values url.Values) (*httptest.ResponseRecorder, *http.Request) {
-	body := strings.NewReader(values.Encode())
-	req, err := http.NewRequest("POST", path, body)
-	if err != nil {
-		t.Fatalf("http.NewRequest() error = %v", err)
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	recorder := httptest.NewRecorder()
-	return recorder, req
-}
-
 func TestApiPasswordRestoreRequiresEmail(t *testing.T) {
-	deps := Dependencies{}
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	deps, err := NewDependencies(
+		func(ctx context.Context, email, firstName, lastName string) (string, error) {
+			return "", nil
+		},
+		func(key string, value string, expiresSeconds int) error {
+			return nil
+		},
+		3600,
+		func(ctx context.Context, userID, token string) string {
+			return ""
+		},
+		func(ctx context.Context, userID, subject, body string) error {
+			return nil
+		},
+		logger,
+	)
+	if err != nil {
+		t.Fatalf("NewDependencies() error = %v", err)
+	}
 
-	recorder, req := makePostRequest(t, "/api/password-restore", url.Values{})
+	recorder, req := testutils.MakePostRequest(t, "/api/password-restore", url.Values{})
 	ApiPasswordRestore(recorder, req, deps)
 
 	body := recorder.Body.String()
@@ -38,12 +48,31 @@ func TestApiPasswordRestoreRequiresEmail(t *testing.T) {
 }
 
 func TestApiPasswordRestoreRequiresFirstName(t *testing.T) {
-	deps := Dependencies{}
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	deps, err := NewDependencies(
+		func(ctx context.Context, email, firstName, lastName string) (string, error) {
+			return "", nil
+		},
+		func(key string, value string, expiresSeconds int) error {
+			return nil
+		},
+		3600,
+		func(ctx context.Context, userID, token string) string {
+			return ""
+		},
+		func(ctx context.Context, userID, subject, body string) error {
+			return nil
+		},
+		logger,
+	)
+	if err != nil {
+		t.Fatalf("NewDependencies() error = %v", err)
+	}
 
 	values := url.Values{
 		"email": {"test@test.com"},
 	}
-	recorder, req := makePostRequest(t, "/api/password-restore", values)
+	recorder, req := testutils.MakePostRequest(t, "/api/password-restore", values)
 	ApiPasswordRestore(recorder, req, deps)
 
 	body := recorder.Body.String()
@@ -53,13 +82,31 @@ func TestApiPasswordRestoreRequiresFirstName(t *testing.T) {
 }
 
 func TestApiPasswordRestoreRequiresLastName(t *testing.T) {
-	deps := Dependencies{}
-
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	deps, err := NewDependencies(
+		func(ctx context.Context, email, firstName, lastName string) (string, error) {
+			return "", nil
+		},
+		func(key string, value string, expiresSeconds int) error {
+			return nil
+		},
+		3600,
+		func(ctx context.Context, userID, token string) string {
+			return ""
+		},
+		func(ctx context.Context, userID, subject, body string) error {
+			return nil
+		},
+		logger,
+	)
+	if err != nil {
+		t.Fatalf("NewDependencies() error = %v", err)
+	}
 	values := url.Values{
 		"email":      {"test@test.com"},
 		"first_name": {"John"},
 	}
-	recorder, req := makePostRequest(t, "/api/password-restore", values)
+	recorder, req := testutils.MakePostRequest(t, "/api/password-restore", values)
 	ApiPasswordRestore(recorder, req, deps)
 
 	body := recorder.Body.String()
@@ -69,18 +116,32 @@ func TestApiPasswordRestoreRequiresLastName(t *testing.T) {
 }
 
 func TestApiPasswordRestoreUserNotFound(t *testing.T) {
-	deps := Dependencies{
-		UserFindByUsername: func(ctx context.Context, email, firstName, lastName string) (string, error) {
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	deps, err := NewDependencies(
+		func(ctx context.Context, email, firstName, lastName string) (string, error) {
 			return "", nil
 		},
+		func(key string, value string, expiresSeconds int) error {
+			return nil
+		},
+		3600,
+		func(ctx context.Context, userID, token string) string {
+			return ""
+		},
+		func(ctx context.Context, userID, subject, body string) error {
+			return nil
+		},
+		logger,
+	)
+	if err != nil {
+		t.Fatalf("NewDependencies() error = %v", err)
 	}
-
 	values := url.Values{
 		"email":      {"test@test.com"},
 		"first_name": {"John"},
 		"last_name":  {"Doe"},
 	}
-	recorder, req := makePostRequest(t, "/api/password-restore", values)
+	recorder, req := testutils.MakePostRequest(t, "/api/password-restore", values)
 	ApiPasswordRestore(recorder, req, deps)
 
 	body := recorder.Body.String()
@@ -90,10 +151,27 @@ func TestApiPasswordRestoreUserNotFound(t *testing.T) {
 }
 
 func TestApiPasswordRestoreInternalError(t *testing.T) {
-	deps := Dependencies{
-		UserFindByUsername: func(ctx context.Context, email, firstName, lastName string) (string, error) {
+	var logBuf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&logBuf, nil))
+
+	deps, err := NewDependencies(
+		func(ctx context.Context, email, firstName, lastName string) (string, error) {
 			return "", errors.New("db error")
 		},
+		func(key string, value string, expiresSeconds int) error {
+			return nil
+		},
+		3600,
+		func(ctx context.Context, userID, token string) string {
+			return ""
+		},
+		func(ctx context.Context, userID, subject, body string) error {
+			return nil
+		},
+		logger,
+	)
+	if err != nil {
+		t.Fatalf("NewDependencies() error = %v", err)
 	}
 
 	values := url.Values{
@@ -101,12 +179,20 @@ func TestApiPasswordRestoreInternalError(t *testing.T) {
 		"first_name": {"John"},
 		"last_name":  {"Doe"},
 	}
-	recorder, req := makePostRequest(t, "/api/password-restore", values)
+
+	recorder, req := testutils.MakePostRequest(t, "/api/password-restore", values)
 	ApiPasswordRestore(recorder, req, deps)
 
 	body := recorder.Body.String()
-	if !strings.Contains(body, "\"message\":\"Internal server error\"") {
-		t.Fatalf("expected internal server error message, got %q", body)
+
+	expected := `"message":"Internal server error. Please try again later"`
+	if !strings.Contains(body, expected) {
+		t.Fatalf("expected: %q, got: %q", expected, body)
+	}
+
+	t.Log(logBuf.String())
+	if !strings.Contains(logBuf.String(), "db error") {
+		t.Fatalf("expected logger to contain underlying error 'db error', got: %q", logBuf.String())
 	}
 }
 
@@ -115,23 +201,27 @@ func TestApiPasswordRestoreSuccess(t *testing.T) {
 	tempKeySetCalled := false
 	emailSent := false
 
-	deps := Dependencies{
-		UserFindByUsername: func(ctx context.Context, email, firstName, lastName string) (string, error) {
+	deps, err := NewDependencies(
+		func(ctx context.Context, email, firstName, lastName string) (string, error) {
 			userFound = true
 			return "user123", nil
 		},
-		TemporaryKeySet: func(key string, value string, expiresSeconds int) error {
+		func(key string, value string, expiresSeconds int) error {
 			tempKeySetCalled = true
 			return nil
 		},
-		ExpiresSeconds: 3600,
-		EmailTemplate: func(ctx context.Context, userID, token string) string {
+		3600,
+		func(ctx context.Context, userID, token string) string {
 			return "email-body"
 		},
-		EmailSend: func(ctx context.Context, userID, subject, body string) error {
+		func(ctx context.Context, userID, subject, body string) error {
 			emailSent = true
 			return nil
 		},
+		slog.New(slog.NewTextHandler(io.Discard, nil)),
+	)
+	if err != nil {
+		t.Fatalf("NewDependencies() error = %v", err)
 	}
 
 	values := url.Values{
@@ -139,7 +229,7 @@ func TestApiPasswordRestoreSuccess(t *testing.T) {
 		"first_name": {"John"},
 		"last_name":  {"Doe"},
 	}
-	recorder, req := makePostRequest(t, "/api/password-restore", values)
+	recorder, req := testutils.MakePostRequest(t, "/api/password-restore", values)
 	ApiPasswordRestore(recorder, req, deps)
 
 	body := recorder.Body.String()

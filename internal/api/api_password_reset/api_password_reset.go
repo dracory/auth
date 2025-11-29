@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/dracory/api"
-	authutils "github.com/dracory/auth/utils"
+	"github.com/dracory/auth/utils"
 	"github.com/dracory/req"
 )
 
@@ -120,7 +120,7 @@ func PasswordReset(ctx context.Context, r *http.Request, deps Dependencies) (*Pa
 	}
 
 	if deps.PasswordStrength != nil {
-		if err := authutils.ValidatePasswordStrength(password, deps.PasswordStrength); err != nil {
+		if err := utils.ValidatePasswordStrength(password, deps.PasswordStrength); err != nil {
 			return nil, &PasswordResetError{
 				Code: PasswordResetErrorCodePasswordStrength,
 				Err:  err,

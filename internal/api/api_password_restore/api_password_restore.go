@@ -2,12 +2,12 @@ package api_password_restore
 
 import (
 	"context"
-	"errors"
 	"html"
+	"log/slog"
 	"net/http"
 
 	"github.com/dracory/api"
-	authutils "github.com/dracory/auth/utils"
+	"github.com/dracory/auth/utils"
 	"github.com/dracory/req"
 )
 
@@ -47,143 +47,98 @@ type PasswordRestoreResult struct {
 // ApiPasswordRestore is the HTTP-level helper that wires request/response
 // handling to the core PasswordRestore business logic using the provided
 // dependencies.
-func ApiPasswordRestore(w http.ResponseWriter, r *http.Request, deps Dependencies) {
-	result, perr := PasswordRestore(r.Context(), r, deps)
-	if perr != nil {
-		switch perr.Code {
-		case PasswordRestoreErrorCodeValidation:
-			api.Respond(w, r, api.Error(perr.Message))
-			return
-		case PasswordRestoreErrorCodeUserLookup:
-			api.Respond(w, r, api.Error(perr.Message))
-			return
-		case PasswordRestoreErrorCodeCodeGenerate,
-			PasswordRestoreErrorCodeTokenStore,
-			PasswordRestoreErrorCodeEmailSend,
-			PasswordRestoreErrorCodeInternalError:
-			api.Respond(w, r, api.Error("Internal server error. Please try again later"))
-			return
-		default:
-			api.Respond(w, r, api.Error("Internal server error. Please try again later"))
-			return
-		}
+func ApiPasswordRestore(w http.ResponseWriter, r *http.Request, deps dependencies) {
+	successMessage, errorMessage := passwordRestore(r.Context(), r, deps)
+
+	if errorMessage != "" {
+		api.Respond(w, r, api.Error(errorMessage))
+		return
 	}
 
-	api.Respond(w, r, api.Success(result.SuccessMessage))
+	api.Respond(w, r, api.Success(successMessage))
 }
 
-// PasswordRestore encapsulates core business logic for issuing a password
-// reset token and sending an email. It does not log or write HTTP responses.
-func PasswordRestore(ctx context.Context, r *http.Request, deps Dependencies) (*PasswordRestoreResult, *PasswordRestoreError) {
+// passwordRestore encapsulates core business logic for issuing a password
+// reset token and sending an email. It does not log or write HTTP responses
+// or perform dependency validation; dependencies are assumed to be valid.
+func passwordRestore(ctx context.Context, r *http.Request, dependencies dependencies) (successMessage string, errorMessage string) {
 	email := req.GetStringTrimmed(r, "email")
 	firstName := html.EscapeString(req.GetStringTrimmed(r, "first_name"))
 	lastName := html.EscapeString(req.GetStringTrimmed(r, "last_name"))
 
 	if email == "" {
-		return nil, &PasswordRestoreError{
-			Code:    PasswordRestoreErrorCodeValidation,
-			Message: "Email is required field",
-		}
+		return "", ERROR_EMAIL_REQUIRED
 	}
 
-	if msg := authutils.ValidateEmailFormat(email); msg != "" {
-		return nil, &PasswordRestoreError{
-			Code:    PasswordRestoreErrorCodeValidation,
-			Message: msg,
-		}
+	if msg := utils.ValidateEmailFormat(email); msg != "" {
+		return "", msg
 	}
 
 	if firstName == "" {
-		return nil, &PasswordRestoreError{
-			Code:    PasswordRestoreErrorCodeValidation,
-			Message: "First name is required field",
-		}
+		return "", ERROR_FIRST_NAME_REQUIRED
 	}
 
 	if lastName == "" {
-		return nil, &PasswordRestoreError{
-			Code:    PasswordRestoreErrorCodeValidation,
-			Message: "Last name is required field",
-		}
+		return "", ERROR_LAST_NAME_REQUIRED
 	}
 
-	if deps.UserFindByUsername == nil {
-		return nil, &PasswordRestoreError{
-			Code:      PasswordRestoreErrorCodeUserLookup,
-			Message:   "Internal server error",
-			Email:     email,
-			FirstName: firstName,
-			LastName:  lastName,
-		}
-	}
-
-	userID, errUser := deps.UserFindByUsername(ctx, email, firstName, lastName)
-	if errUser != nil {
-		return nil, &PasswordRestoreError{
-			Code:      PasswordRestoreErrorCodeUserLookup,
-			Message:   "Internal server error",
-			Err:       errUser,
-			Email:     email,
-			FirstName: firstName,
-			LastName:  lastName,
-		}
+	userID, err := dependencies.UserFindByUsername(ctx, email, firstName, lastName)
+	if err != nil {
+		dependencies.Logger.Error(
+			"user not found",
+			slog.String("error", err.Error()),
+			slog.String("email", email),
+			slog.String("first_name", firstName),
+			slog.String("last_name", lastName),
+		)
+		return "", ERROR_INTERNAL_SERVER
 	}
 
 	if userID == "" {
-		return nil, &PasswordRestoreError{
-			Code:    PasswordRestoreErrorCodeValidation,
-			Message: "User not found",
-		}
+		return "", ERROR_USER_NOT_FOUND
 	}
 
-	resetToken, errToken := authutils.GeneratePasswordResetToken()
-	if errToken != nil {
-		return nil, &PasswordRestoreError{
-			Code:   PasswordRestoreErrorCodeCodeGenerate,
-			Err:    errToken,
-			UserID: userID,
-		}
+	resetToken, err := utils.GeneratePasswordResetToken()
+	if err != nil {
+		dependencies.Logger.Error(
+			"failed to generate password reset token",
+			slog.String("error", err.Error()),
+			slog.String("email", email),
+			slog.String("first_name", firstName),
+			slog.String("last_name", lastName),
+		)
+		return "", ERROR_INTERNAL_SERVER
 	}
 
-	if deps.TemporaryKeySet == nil {
-		return nil, &PasswordRestoreError{
-			Code:   PasswordRestoreErrorCodeTokenStore,
-			Err:    errors.New("temporary key store is not configured"),
-			UserID: userID,
-		}
-	}
-
-	expires := deps.ExpiresSeconds
+	expires := dependencies.ExpiresSeconds
 	if expires <= 0 {
 		// default: one hour
 		expires = 3600
 	}
 
-	if errTemp := deps.TemporaryKeySet(resetToken, userID, expires); errTemp != nil {
-		return nil, &PasswordRestoreError{
-			Code:   PasswordRestoreErrorCodeTokenStore,
-			Err:    errTemp,
-			UserID: userID,
-		}
+	if err := dependencies.TemporaryKeySet(resetToken, userID, expires); err != nil {
+		dependencies.Logger.Error(
+			"failed to store temporary key",
+			slog.String("error", err.Error()),
+			slog.String("email", email),
+			slog.String("first_name", firstName),
+			slog.String("last_name", lastName),
+		)
+		return "", ERROR_INTERNAL_SERVER
 	}
 
-	if deps.EmailTemplate == nil || deps.EmailSend == nil {
-		return nil, &PasswordRestoreError{
-			Code:   PasswordRestoreErrorCodeInternalError,
-			Err:    errors.New("email template or sender is not configured"),
-			UserID: userID,
-		}
+	emailContent := dependencies.EmailTemplate(ctx, userID, resetToken)
+
+	if errEmail := dependencies.EmailSend(ctx, userID, "Password Restore", emailContent); errEmail != nil {
+		dependencies.Logger.Error(
+			"failed to send email",
+			slog.String("error", errEmail.Error()),
+			slog.String("email", email),
+			slog.String("first_name", firstName),
+			slog.String("last_name", lastName),
+		)
+		return "", ERROR_INTERNAL_SERVER
 	}
 
-	emailContent := deps.EmailTemplate(ctx, userID, resetToken)
-
-	if errEmail := deps.EmailSend(ctx, userID, "Password Restore", emailContent); errEmail != nil {
-		return nil, &PasswordRestoreError{
-			Code:   PasswordRestoreErrorCodeEmailSend,
-			Err:    errEmail,
-			UserID: userID,
-		}
-	}
-
-	return &PasswordRestoreResult{SuccessMessage: "Password reset link was sent to your e-mail"}, nil
+	return "Password reset link was sent to your e-mail", ""
 }

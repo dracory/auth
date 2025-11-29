@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 
 	"github.com/dracory/auth/internal/api/api_authenticate_via_username"
@@ -96,25 +97,35 @@ func (a authImplementation) apiLogout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a authImplementation) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
-	api_password_restore.ApiPasswordRestore(w, r, api_password_restore.Dependencies{
-		UserFindByUsername: func(ctx context.Context, email, firstName, lastName string) (string, error) {
+	deps, err := api_password_restore.NewDependencies(
+		func(ctx context.Context, email, firstName, lastName string) (string, error) {
 			return a.funcUserFindByUsername(ctx, email, firstName, lastName, UserAuthOptions{
 				UserIp:    req.GetIP(r),
 				UserAgent: r.UserAgent(),
 			})
 		},
-		TemporaryKeySet: a.funcTemporaryKeySet,
-		ExpiresSeconds:  int(DefaultPasswordResetExpiration.Seconds()),
-		EmailTemplate: func(ctx context.Context, userID, token string) string {
+		a.funcTemporaryKeySet,
+		int(DefaultPasswordResetExpiration.Seconds()),
+		func(ctx context.Context, userID, token string) string {
 			return a.funcEmailTemplatePasswordRestore(ctx, userID, a.LinkPasswordReset(token), UserAuthOptions{
 				UserIp:    req.GetIP(r),
 				UserAgent: r.UserAgent(),
 			})
 		},
-		EmailSend: func(ctx context.Context, userID, subject, body string) error {
+		func(ctx context.Context, userID, subject, body string) error {
 			return a.funcEmailSend(ctx, userID, subject, body)
 		},
-	})
+		a.GetLogger(),
+	)
+	if err != nil {
+		a.GetLogger().Error("password restore dependencies misconfigured",
+			slog.String("error", err.Error()),
+		)
+		http.Error(w, "Internal server error. Please try again later", http.StatusInternalServerError)
+		return
+	}
+
+	api_password_restore.ApiPasswordRestore(w, r, deps)
 }
 
 func (a authImplementation) apiPasswordReset(w http.ResponseWriter, r *http.Request) {
