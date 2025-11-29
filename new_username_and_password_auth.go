@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/dracory/auth/internal/emails"
-	authtypes "github.com/dracory/auth/types"
+	"github.com/dracory/auth/types"
 	"github.com/dracory/auth/utils"
 	"github.com/dracory/csrf"
 	"github.com/dracory/req"
 )
 
-func NewUsernameAndPasswordAuth(config ConfigUsernameAndPassword) (authtypes.AuthPasswordInterface, error) {
+func NewUsernameAndPasswordAuth(config ConfigUsernameAndPassword) (types.AuthPasswordInterface, error) {
 	if err := validateUsernameAndPasswordConfig(config); err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func NewUsernameAndPasswordAuth(config ConfigUsernameAndPassword) (authtypes.Aut
 	auth.funcUserStoreAuthToken = config.FuncUserStoreAuthToken
 	auth.passwordStrength = config.PasswordStrength
 	if auth.passwordStrength == nil {
-		auth.passwordStrength = &authtypes.PasswordStrengthConfig{
+		auth.passwordStrength = &types.PasswordStrengthConfig{
 			MinLength:         8,
 			RequireUppercase:  true,
 			RequireLowercase:  true,
