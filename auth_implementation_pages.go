@@ -35,12 +35,7 @@ func (a authImplementation) pageRegister(w http.ResponseWriter, r *http.Request)
 }
 
 func (a authImplementation) pageRegisterCodeVerify(w http.ResponseWriter, r *http.Request) {
-	page_register_code_verify.PageRegisterCodeVerify(w, r, page_register_code_verify.Dependencies{
-		Endpoint:          a.endpoint,
-		RedirectOnSuccess: a.LinkRedirectOnSuccess(),
-		Layout:            a.funcLayout,
-		Logger:            a.GetLogger(),
-	})
+	page_register_code_verify.PageRegisterCodeVerify(w, r, &a)
 }
 
 func (a authImplementation) pageLogout(w http.ResponseWriter, r *http.Request) {
