@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	authtypes "github.com/dracory/auth/types"
+	"github.com/dracory/auth/types"
 )
 
 // testSetupUsernameAndPasswordAuth creates a new Auth for testing
@@ -31,7 +31,7 @@ func testSetupUsernameAndPasswordAuth() (*authImplementation, error) {
 		FuncEmailSend: func(ctx context.Context, userID string, emailSubject string, emailBody string) (err error) {
 			return nil
 		},
-		PasswordStrength: &authtypes.PasswordStrengthConfig{},
+		PasswordStrength: &types.PasswordStrengthConfig{},
 		UseCookies:       true,
 	})
 	if err != nil {

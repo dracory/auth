@@ -7,7 +7,7 @@ import (
 
 	"github.com/dracory/req"
 
-	authutils "github.com/dracory/auth/utils"
+	"github.com/dracory/auth/utils"
 )
 
 // LoginPasswordlessErrorCode categorizes the possible error sources in the passwordless login flow.
@@ -54,14 +54,14 @@ func loginPasswordless(ctx context.Context, r *http.Request, deps LoginPasswordl
 		}
 	}
 
-	if msg := authutils.ValidateEmailFormat(email); msg != "" {
+	if msg := utils.ValidateEmailFormat(email); msg != "" {
 		return nil, &LoginPasswordlessError{
 			Code:    LoginPasswordlessErrorCodeValidation,
 			Message: msg,
 		}
 	}
 
-	verificationCode, err := authutils.GenerateVerificationCode(deps.DisableRateLimit)
+	verificationCode, err := utils.GenerateVerificationCode(deps.DisableRateLimit)
 	if err != nil {
 		return nil, &LoginPasswordlessError{
 			Code: LoginPasswordlessErrorCodeCodeGeneration,

@@ -32,9 +32,8 @@ func TestApiLogin_UsernameAndPassword_Smoke(t *testing.T) {
 		"password": {"1234"},
 	}
 
-	recorder, req := makePostRequest(t, "/api/login", values)
-	handler := http.HandlerFunc(authInstance.apiLogin)
-	handler.ServeHTTP(recorder, req)
+	recorder, req := makePostRequest(t, authInstance.LinkApiLogin(), values)
+	authInstance.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Fatalf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -56,9 +55,8 @@ func TestApiLogin_Passwordless_Smoke(t *testing.T) {
 		"email": {"test@test.com"},
 	}
 
-	recorder, req := makePostRequest(t, "/api/login", values)
-	handler := http.HandlerFunc(authInstance.apiLogin)
-	handler.ServeHTTP(recorder, req)
+	recorder, req := makePostRequest(t, authInstance.LinkApiLogin(), values)
+	authInstance.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Fatalf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -83,9 +81,8 @@ func TestApiRegister_UsernameAndPassword_Smoke(t *testing.T) {
 		"password":   {"1234"},
 	}
 
-	recorder, req := makePostRequest(t, "/api/register", values)
-	handler := http.HandlerFunc(authInstance.apiRegister)
-	handler.ServeHTTP(recorder, req)
+	recorder, req := makePostRequest(t, authInstance.LinkApiRegister(), values)
+	authInstance.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Fatalf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -109,9 +106,8 @@ func TestApiRegister_Passwordless_Smoke(t *testing.T) {
 		"email":      {"test@test.com"},
 	}
 
-	recorder, req := makePostRequest(t, "/api/register", values)
-	handler := http.HandlerFunc(authInstance.apiRegister)
-	handler.ServeHTTP(recorder, req)
+	recorder, req := makePostRequest(t, authInstance.LinkApiRegister(), values)
+	authInstance.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Fatalf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -130,10 +126,9 @@ func TestApiLogout_Smoke(t *testing.T) {
 	}
 
 	recorder := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodPost, "/api/logout", nil)
+	req := httptest.NewRequest(http.MethodPost, authInstance.LinkApiLogout(), nil)
 
-	handler := http.HandlerFunc(authInstance.apiLogout)
-	handler.ServeHTTP(recorder, req)
+	authInstance.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Fatalf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -160,9 +155,8 @@ func TestApiPasswordRestore_Smoke(t *testing.T) {
 		"last_name":  {"Doe"},
 	}
 
-	recorder, req := makePostRequest(t, "/api/restore-password", values)
-	handler := http.HandlerFunc(authInstance.apiPasswordRestore)
-	handler.ServeHTTP(recorder, req)
+	recorder, req := makePostRequest(t, authInstance.LinkApiPasswordRestore(), values)
+	authInstance.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Fatalf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -186,9 +180,8 @@ func TestApiPasswordReset_Smoke(t *testing.T) {
 		"password_confirm": {"password123"},
 	}
 
-	recorder, req := makePostRequest(t, "/api/reset-password", values)
-	handler := http.HandlerFunc(authInstance.apiPasswordReset)
-	handler.ServeHTTP(recorder, req)
+	recorder, req := makePostRequest(t, authInstance.LinkApiPasswordReset(), values)
+	authInstance.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Fatalf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -210,9 +203,8 @@ func TestApiLoginCodeVerify_Smoke(t *testing.T) {
 		"verification_code": {"BCDFGHJK"},
 	}
 
-	recorder, req := makePostRequest(t, "/api/login-code-verify", values)
-	handler := http.HandlerFunc(authInstance.apiLoginCodeVerify)
-	handler.ServeHTTP(recorder, req)
+	recorder, req := makePostRequest(t, authInstance.LinkApiLoginCodeVerify(), values)
+	authInstance.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Fatalf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -234,9 +226,8 @@ func TestApiRegisterCodeVerify_Smoke(t *testing.T) {
 		"verification_code": {"BCDFGHJK"},
 	}
 
-	recorder, req := makePostRequest(t, "/api/register-code-verify", values)
-	handler := http.HandlerFunc(authInstance.apiRegisterCodeVerify)
-	handler.ServeHTTP(recorder, req)
+	recorder, req := makePostRequest(t, authInstance.LinkApiRegisterCodeVerify(), values)
+	authInstance.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Fatalf("handler returned wrong status code: got %v want %v", status, http.StatusOK)

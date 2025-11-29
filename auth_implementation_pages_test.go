@@ -13,14 +13,13 @@ func TestPageLogin_UsernameAndPassword(t *testing.T) {
 		t.Fatal(errAuth)
 	}
 
-	req, err := http.NewRequest("GET", "/", nil)
+	req, err := http.NewRequest("GET", auth.LinkLogin(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(auth.pageLogin)
-	handler.ServeHTTP(recorder, req)
+	auth.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -47,14 +46,13 @@ func TestPageLogin_Passwordless(t *testing.T) {
 		t.Fatal(errAuth)
 	}
 
-	req, err := http.NewRequest("GET", "/", nil)
+	req, err := http.NewRequest("GET", auth.LinkLogin(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(auth.pageLogin)
-	handler.ServeHTTP(recorder, req)
+	auth.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -81,14 +79,16 @@ func TestPageRegister_UsernameAndPassword(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req, err := http.NewRequest("GET", "/", nil)
+	// Enable registration so the router exposes registration routes.
+	authInstance.enableRegistration = true
+
+	req, err := http.NewRequest("GET", authInstance.LinkRegister(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(authInstance.pageRegister)
-	handler.ServeHTTP(recorder, req)
+	authInstance.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -119,14 +119,16 @@ func TestPageRegister_Passwordless(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req, err := http.NewRequest("GET", "/", nil)
+	// Enable registration so the router exposes registration routes.
+	authInstance.enableRegistration = true
+
+	req, err := http.NewRequest("GET", authInstance.LinkRegister(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(authInstance.pageRegister)
-	handler.ServeHTTP(recorder, req)
+	authInstance.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -156,14 +158,16 @@ func TestPageRegisterCodeVerify(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req, err := http.NewRequest("GET", "/", nil)
+	// Enable registration so the router exposes registration code verify route.
+	authInstance.enableRegistration = true
+
+	req, err := http.NewRequest("GET", authInstance.LinkRegisterCodeVerify(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(authInstance.pageRegisterCodeVerify)
-	handler.ServeHTTP(recorder, req)
+	authInstance.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -191,14 +195,13 @@ func TestPageLogout(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req, err := http.NewRequest("GET", "/", nil)
+	req, err := http.NewRequest("GET", authInstance.LinkLogout(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(authInstance.pageLogout)
-	handler.ServeHTTP(recorder, req)
+	authInstance.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -226,14 +229,13 @@ func TestPagePasswordRestore(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req, err := http.NewRequest("GET", "/", nil)
+	req, err := http.NewRequest("GET", authInstance.LinkPasswordRestore(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(authInstance.pagePasswordRestore)
-	handler.ServeHTTP(recorder, req)
+	authInstance.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -271,14 +273,13 @@ func TestPagePasswordReset_ValidTokenShowsForm(t *testing.T) {
 		return "", nil
 	}
 
-	req, err := http.NewRequest("GET", "/?t=valid-token", nil)
+	req, err := http.NewRequest("GET", authInstance.LinkPasswordReset("valid-token"), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(authInstance.pagePasswordReset)
-	handler.ServeHTTP(recorder, req)
+	authInstance.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -308,14 +309,17 @@ func TestPagePasswordReset_MissingTokenShowsError(t *testing.T) {
 	}
 
 	// No token query parameter
-	req, err := http.NewRequest("GET", "/", nil)
+	passwordResetURL := authInstance.LinkPasswordReset("dummy")
+	if idx := strings.Index(passwordResetURL, "?"); idx != -1 {
+		passwordResetURL = passwordResetURL[:idx]
+	}
+	req, err := http.NewRequest("GET", passwordResetURL, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(authInstance.pagePasswordReset)
-	handler.ServeHTTP(recorder, req)
+	authInstance.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -334,14 +338,13 @@ func TestPageLoginCodeVerify(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req, err := http.NewRequest("GET", "/", nil)
+	req, err := http.NewRequest("GET", authInstance.LinkLoginCodeVerify(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(authInstance.pageLoginCodeVerify)
-	handler.ServeHTTP(recorder, req)
+	authInstance.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
