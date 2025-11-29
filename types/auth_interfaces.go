@@ -13,6 +13,8 @@ type AuthSharedInterface interface {
 	Router() *http.ServeMux
 
 	IsRegistrationEnabled() bool
+	IsPasswordless() bool
+	IsVerificationEnabled() bool
 
 	// Middlewares for protecting or enriching routes.
 	WebAuthOrRedirectMiddleware(next http.Handler) http.Handler

@@ -21,12 +21,18 @@ type authSharedTest struct {
 	layout            func(content string) string
 	logger            *slog.Logger
 	registration      bool
+	passwordless      bool
+	verification      bool
 	redirectOnSuccess string
 }
 
 func (a *authSharedTest) Router() *http.ServeMux { return http.NewServeMux() }
 
 func (a *authSharedTest) IsRegistrationEnabled() bool { return a.registration }
+
+func (a *authSharedTest) IsPasswordless() bool { return a.passwordless }
+
+func (a *authSharedTest) IsVerificationEnabled() bool { return a.verification }
 
 func (a *authSharedTest) WebAuthOrRedirectMiddleware(next http.Handler) http.Handler { return next }
 
@@ -79,3 +85,22 @@ func (a *authSharedTest) GetLayout() func(content string) string {
 func (a *authSharedTest) SetLayout(layout func(content string) string) { a.layout = layout }
 
 func (a *authSharedTest) SetRedirectOnSuccess(url string) { a.redirectOnSuccess = url }
+
+// Test helpers to configure additional flags on the shared auth test double.
+func SetRegistrationForTest(a types.AuthSharedInterface, registration bool) {
+	if v, ok := a.(*authSharedTest); ok {
+		v.registration = registration
+	}
+}
+
+func SetPasswordlessForTest(a types.AuthSharedInterface, passwordless bool) {
+	if v, ok := a.(*authSharedTest); ok {
+		v.passwordless = passwordless
+	}
+}
+
+func SetVerificationForTest(a types.AuthSharedInterface, verification bool) {
+	if v, ok := a.(*authSharedTest); ok {
+		v.verification = verification
+	}
+}

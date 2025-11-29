@@ -97,6 +97,14 @@ func (a authImplementation) IsRegistrationEnabled() bool {
 	return a.enableRegistration
 }
 
+func (a authImplementation) IsPasswordless() bool {
+	return a.passwordless
+}
+
+func (a authImplementation) IsVerificationEnabled() bool {
+	return a.enableVerification
+}
+
 // GetLogger returns the configured structured logger for this Auth instance.
 // If no logger was explicitly provided, it falls back to slog.Default().
 // Under normal library usage this method always returns a non-nil *slog.Logger.

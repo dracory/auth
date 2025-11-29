@@ -1,24 +1,17 @@
 package page_login
 
 import (
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/dracory/auth/internal/testutils"
 )
 
 func TestPageLogin_UsernameAndPassword(t *testing.T) {
-	deps := Dependencies{
-		Passwordless:       false,
-		EnableRegistration: true,
-		Endpoint:           "http://localhost/auth",
-		RedirectOnSuccess:  "http://localhost/dashboard",
-		Layout: func(content string) string {
-			return content
-		},
-		Logger: slog.Default(),
-	}
+	a := testutils.NewAuthSharedForTest()
+	testutils.SetRegistrationForTest(a, true)
 
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
@@ -26,7 +19,7 @@ func TestPageLogin_UsernameAndPassword(t *testing.T) {
 	}
 
 	recorder := httptest.NewRecorder()
-	PageLogin(recorder, req, deps)
+	PageLogin(recorder, req, a)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -48,16 +41,9 @@ func TestPageLogin_UsernameAndPassword(t *testing.T) {
 }
 
 func TestPageLogin_Passwordless(t *testing.T) {
-	deps := Dependencies{
-		Passwordless:       true,
-		EnableRegistration: true,
-		Endpoint:           "http://localhost/auth",
-		RedirectOnSuccess:  "http://localhost/dashboard", // unused in passwordless branch
-		Layout: func(content string) string {
-			return content
-		},
-		Logger: slog.Default(),
-	}
+	a := testutils.NewAuthSharedForTest()
+	testutils.SetRegistrationForTest(a, true)
+	testutils.SetPasswordlessForTest(a, true)
 
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
@@ -65,7 +51,7 @@ func TestPageLogin_Passwordless(t *testing.T) {
 	}
 
 	recorder := httptest.NewRecorder()
-	PageLogin(recorder, req, deps)
+	PageLogin(recorder, req, a)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)

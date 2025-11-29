@@ -14,14 +14,7 @@ import (
 )
 
 func (a authImplementation) pageLogin(w http.ResponseWriter, r *http.Request) {
-	page_login.PageLogin(w, r, page_login.Dependencies{
-		Passwordless:       a.passwordless,
-		EnableRegistration: a.enableRegistration,
-		Endpoint:           a.endpoint,
-		RedirectOnSuccess:  a.LinkRedirectOnSuccess(),
-		Layout:             a.funcLayout,
-		Logger:             a.GetLogger(),
-	})
+	page_login.PageLogin(w, r, &a)
 }
 
 func (a authImplementation) pageRegister(w http.ResponseWriter, r *http.Request) {

@@ -5,37 +5,39 @@ import (
 
 	"github.com/dracory/auth/internal/links"
 	"github.com/dracory/auth/internal/ui/shared"
+	"github.com/dracory/auth/types"
 )
 
 // PageLogin renders the login page using the provided dependencies and writes
 // the result to the ResponseWriter.
-func PageLogin(w http.ResponseWriter, r *http.Request, deps Dependencies) {
+
+func PageLogin(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) {
 	content := ""
 	scripts := ""
-	if deps.Passwordless {
-		content = LoginPasswordlessContent(deps.EnableRegistration, links.Register(deps.Endpoint))
+	if a.IsPasswordless() {
+		content = LoginPasswordlessContent(a.IsRegistrationEnabled(), links.Register(a.GetEndpoint()))
 		scripts = LoginPasswordlessScripts(
-			links.ApiLogin(deps.Endpoint),
-			links.LoginCodeVerify(deps.Endpoint),
+			links.ApiLogin(a.GetEndpoint()),
+			links.LoginCodeVerify(a.GetEndpoint()),
 		)
 	} else {
 		content = LoginContent(
-			deps.EnableRegistration,
-			links.Register(deps.Endpoint),
-			links.PasswordRestore(deps.Endpoint),
+			a.IsRegistrationEnabled(),
+			links.Register(a.GetEndpoint()),
+			links.PasswordRestore(a.GetEndpoint()),
 		)
 		scripts = LoginScripts(
-			links.ApiLogin(deps.Endpoint),
-			deps.RedirectOnSuccess,
+			links.ApiLogin(a.GetEndpoint()),
+			a.LinkRedirectOnSuccess(),
 		)
 	}
 
 	shared.PageRender(w, shared.PageOptions{
 		Title:      "Login",
-		Layout:     deps.Layout,
+		Layout:     a.GetLayout(),
 		Content:    content,
 		Scripts:    scripts,
-		Logger:     deps.Logger,
+		Logger:     a.GetLogger(),
 		LogMessage: "failed to write login page response",
 	})
 }
