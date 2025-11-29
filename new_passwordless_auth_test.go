@@ -8,7 +8,7 @@ import (
 )
 
 func TestNewPasswordlessAuth_EndpointRequired(t *testing.T) {
-	_, err := NewPasswordlessAuth(ConfigPasswordless{})
+	_, err := NewPasswordlessAuth(types.ConfigPasswordless{})
 	if err == nil {
 		t.Fatal("Error SHOULD NOT BE NULL")
 	}
@@ -18,7 +18,7 @@ func TestNewPasswordlessAuth_EndpointRequired(t *testing.T) {
 }
 
 func TestNewPasswordlessAuth_UrlToRedirectOnSuccessIsRequired(t *testing.T) {
-	_, err := NewPasswordlessAuth(ConfigPasswordless{
+	_, err := NewPasswordlessAuth(types.ConfigPasswordless{
 		Endpoint: "/auth",
 	})
 	if err == nil {
@@ -30,7 +30,7 @@ func TestNewPasswordlessAuth_UrlToRedirectOnSuccessIsRequired(t *testing.T) {
 }
 
 func TestNewPasswordlessAuth_FuncTemporaryKeyGetIsRequired(t *testing.T) {
-	_, err := NewPasswordlessAuth(ConfigPasswordless{
+	_, err := NewPasswordlessAuth(types.ConfigPasswordless{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/user",
 	})
@@ -43,7 +43,7 @@ func TestNewPasswordlessAuth_FuncTemporaryKeyGetIsRequired(t *testing.T) {
 }
 
 func TestNewPasswordlessAuth_FuncTemporaryKeySetIsRequired(t *testing.T) {
-	_, err := NewPasswordlessAuth(ConfigPasswordless{
+	_, err := NewPasswordlessAuth(types.ConfigPasswordless{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/user",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
@@ -57,7 +57,7 @@ func TestNewPasswordlessAuth_FuncTemporaryKeySetIsRequired(t *testing.T) {
 }
 
 func TestNewPasswordlessAuth_FuncUserFindByAuthTokenIsRequired(t *testing.T) {
-	_, err := NewPasswordlessAuth(ConfigPasswordless{
+	_, err := NewPasswordlessAuth(types.ConfigPasswordless{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/user",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
@@ -72,7 +72,7 @@ func TestNewPasswordlessAuth_FuncUserFindByAuthTokenIsRequired(t *testing.T) {
 }
 
 func TestNewPasswordlessAuth_FuncUserFindByEmailIsRequired(t *testing.T) {
-	_, err := NewPasswordlessAuth(ConfigPasswordless{
+	_, err := NewPasswordlessAuth(types.ConfigPasswordless{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/user",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
@@ -90,7 +90,7 @@ func TestNewPasswordlessAuth_FuncUserFindByEmailIsRequired(t *testing.T) {
 }
 
 func TestNewPasswordlessAuth_FuncUserLogoutIsRequired(t *testing.T) {
-	_, err := NewPasswordlessAuth(ConfigPasswordless{
+	_, err := NewPasswordlessAuth(types.ConfigPasswordless{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/user",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
@@ -111,7 +111,7 @@ func TestNewPasswordlessAuth_FuncUserLogoutIsRequired(t *testing.T) {
 }
 
 func TestNewPasswordlessAuth_FuncUserStoreTokenFuncUserStoreTokenIsRequired(t *testing.T) {
-	_, err := NewPasswordlessAuth(ConfigPasswordless{
+	_, err := NewPasswordlessAuth(types.ConfigPasswordless{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/user",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
@@ -133,7 +133,7 @@ func TestNewPasswordlessAuth_FuncUserStoreTokenFuncUserStoreTokenIsRequired(t *t
 }
 
 func TestNewPasswordlessAuth_FuncEmailSendIsRequired(t *testing.T) {
-	_, err := NewPasswordlessAuth(ConfigPasswordless{
+	_, err := NewPasswordlessAuth(types.ConfigPasswordless{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/user",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
@@ -156,7 +156,7 @@ func TestNewPasswordlessAuth_FuncEmailSendIsRequired(t *testing.T) {
 }
 
 func TestNewPasswordlessAuth_UseCookiesAndLocalStorageCannotBeBothFalse(t *testing.T) {
-	_, err := NewPasswordlessAuth(ConfigPasswordless{
+	_, err := NewPasswordlessAuth(types.ConfigPasswordless{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/user",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
@@ -180,7 +180,7 @@ func TestNewPasswordlessAuth_UseCookiesAndLocalStorageCannotBeBothFalse(t *testi
 }
 
 func TestNewPasswordlessAuth_UseCookiesAndLocalStorageCannotBeBothTrue(t *testing.T) {
-	_, err := NewPasswordlessAuth(ConfigPasswordless{
+	_, err := NewPasswordlessAuth(types.ConfigPasswordless{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/user",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
@@ -206,7 +206,7 @@ func TestNewPasswordlessAuth_UseCookiesAndLocalStorageCannotBeBothTrue(t *testin
 }
 
 func TestNewPasswordlessAuth_UseCookiesAndLocalStorageCannotBeBothTruee(t *testing.T) {
-	auth, err := NewPasswordlessAuth(ConfigPasswordless{
+	auth, err := NewPasswordlessAuth(types.ConfigPasswordless{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/user",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },

@@ -7,11 +7,10 @@ import (
 
 	"github.com/dracory/auth/internal/emails"
 	"github.com/dracory/auth/types"
-	authtypes "github.com/dracory/auth/types"
 	"github.com/dracory/auth/utils"
 )
 
-func NewPasswordlessAuth(config ConfigPasswordless) (authtypes.AuthPasswordlessInterface, error) {
+func NewPasswordlessAuth(config types.ConfigPasswordless) (types.AuthPasswordlessInterface, error) {
 	if err := validatePasswordlessConfig(config); err != nil {
 		return nil, err
 	}
@@ -84,7 +83,7 @@ func NewPasswordlessAuth(config ConfigPasswordless) (authtypes.AuthPasswordlessI
 // validatePasswordlessConfig performs validation of the ConfigPasswordless
 // values and returns a descriptive error if any required field is missing
 // or invalid.
-func validatePasswordlessConfig(config ConfigPasswordless) error {
+func validatePasswordlessConfig(config types.ConfigPasswordless) error {
 	if config.Endpoint == "" {
 		return errors.New("auth: endpoint is required")
 	}

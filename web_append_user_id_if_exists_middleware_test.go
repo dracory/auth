@@ -10,8 +10,8 @@ import (
 	"github.com/dracory/auth/types"
 )
 
-func TestBlockRobotsMiddlewareShouldPassForHomeWithoutSlash(t *testing.T) {
-	auth, err := NewPasswordlessAuth(ConfigPasswordless{
+func TestWebAppendUserIDIfExistsMiddleware(t *testing.T) {
+	auth, err := NewPasswordlessAuth(types.ConfigPasswordless{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/user",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },

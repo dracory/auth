@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	auth "github.com/dracory/auth"
+	"github.com/dracory/auth/types"
 	authtypes "github.com/dracory/auth/types"
 	"github.com/jordan-wright/email"
 )
@@ -151,7 +152,7 @@ func passwordlessEmailSend(_ context.Context, to, subject, body string) error {
 }
 
 func main() {
-	authInstance, err := auth.NewPasswordlessAuth(auth.ConfigPasswordless{
+	authInstance, err := auth.NewPasswordlessAuth(types.ConfigPasswordless{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/dashboard",
 		UseCookies:           true,

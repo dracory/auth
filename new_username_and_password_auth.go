@@ -13,7 +13,7 @@ import (
 	"github.com/dracory/req"
 )
 
-func NewUsernameAndPasswordAuth(config ConfigUsernameAndPassword) (types.AuthPasswordInterface, error) {
+func NewUsernameAndPasswordAuth(config types.ConfigUsernameAndPassword) (types.AuthPasswordInterface, error) {
 	if err := validateUsernameAndPasswordConfig(config); err != nil {
 		return nil, err
 	}
@@ -132,7 +132,7 @@ func NewUsernameAndPasswordAuth(config ConfigUsernameAndPassword) (types.AuthPas
 // validateUsernameAndPasswordConfig performs validation of the
 // ConfigUsernameAndPassword values and returns a descriptive error
 // if any required field is missing or invalid.
-func validateUsernameAndPasswordConfig(config ConfigUsernameAndPassword) error {
+func validateUsernameAndPasswordConfig(config types.ConfigUsernameAndPassword) error {
 	if config.Endpoint == "" {
 		return errors.New("auth: endpoint is required")
 	}

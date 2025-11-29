@@ -8,7 +8,7 @@ import (
 )
 
 func TestNewUsernameAndPasswordAuth_EndpointRequired(t *testing.T) {
-	_, err := NewUsernameAndPasswordAuth(ConfigUsernameAndPassword{})
+	_, err := NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{})
 	if err == nil {
 		t.Fatal("Error SHOULD NOT BE NULL")
 	}
@@ -18,7 +18,7 @@ func TestNewUsernameAndPasswordAuth_EndpointRequired(t *testing.T) {
 }
 
 func TestNewUsernameAndPasswordAuth_UrlToRedirectOnSuccessIsRequired(t *testing.T) {
-	_, err := NewUsernameAndPasswordAuth(ConfigUsernameAndPassword{
+	_, err := NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
 		Endpoint: "/auth",
 	})
 	if err == nil {
@@ -30,7 +30,7 @@ func TestNewUsernameAndPasswordAuth_UrlToRedirectOnSuccessIsRequired(t *testing.
 }
 
 func TestNewUsernameAndPasswordAuth_FuncTemporaryKeyGetIsRequired(t *testing.T) {
-	_, err := NewUsernameAndPasswordAuth(ConfigUsernameAndPassword{
+	_, err := NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/user",
 	})
@@ -43,7 +43,7 @@ func TestNewUsernameAndPasswordAuth_FuncTemporaryKeyGetIsRequired(t *testing.T) 
 }
 
 func TestNewUsernameAndPasswordAuth_FuncTemporaryKeySetIsRequired(t *testing.T) {
-	_, err := NewUsernameAndPasswordAuth(ConfigUsernameAndPassword{
+	_, err := NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/user",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
@@ -57,7 +57,7 @@ func TestNewUsernameAndPasswordAuth_FuncTemporaryKeySetIsRequired(t *testing.T) 
 }
 
 func TestNewUsernameAndPasswordAuth_FuncUserFindByAuthTokenIsRequired(t *testing.T) {
-	_, err := NewUsernameAndPasswordAuth(ConfigUsernameAndPassword{
+	_, err := NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/user",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
@@ -72,7 +72,7 @@ func TestNewUsernameAndPasswordAuth_FuncUserFindByAuthTokenIsRequired(t *testing
 }
 
 func TestNewUsernameAndPasswordAuth_FuncUserFindByUsernameIsRequired(t *testing.T) {
-	_, err := NewUsernameAndPasswordAuth(ConfigUsernameAndPassword{
+	_, err := NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/user",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
@@ -90,7 +90,7 @@ func TestNewUsernameAndPasswordAuth_FuncUserFindByUsernameIsRequired(t *testing.
 }
 
 func TestNewUsernameAndPasswordAuth_FuncUserLoginIsRequired(t *testing.T) {
-	_, err := NewUsernameAndPasswordAuth(ConfigUsernameAndPassword{
+	_, err := NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/user",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
@@ -111,7 +111,7 @@ func TestNewUsernameAndPasswordAuth_FuncUserLoginIsRequired(t *testing.T) {
 }
 
 func TestNewUsernameAndPasswordAuth_FuncUserLogoutIsRequired(t *testing.T) {
-	_, err := NewUsernameAndPasswordAuth(ConfigUsernameAndPassword{
+	_, err := NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/user",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
@@ -135,7 +135,7 @@ func TestNewUsernameAndPasswordAuth_FuncUserLogoutIsRequired(t *testing.T) {
 }
 
 func TestNewUsernameAndPasswordAuth_FuncUserStoreTokenFuncUserStoreTokenIsRequired(t *testing.T) {
-	_, err := NewUsernameAndPasswordAuth(ConfigUsernameAndPassword{
+	_, err := NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/user",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
@@ -160,7 +160,7 @@ func TestNewUsernameAndPasswordAuth_FuncUserStoreTokenFuncUserStoreTokenIsRequir
 }
 
 func TestNewUsernameAndPasswordAuth_FuncEmailSendIsRequired(t *testing.T) {
-	_, err := NewUsernameAndPasswordAuth(ConfigUsernameAndPassword{
+	_, err := NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/user",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
@@ -186,7 +186,7 @@ func TestNewUsernameAndPasswordAuth_FuncEmailSendIsRequired(t *testing.T) {
 }
 
 func TestNewUsernameAndPasswordAuth_UseCookiesAndLocalStorageCannotBeBothFalse(t *testing.T) {
-	_, err := NewUsernameAndPasswordAuth(ConfigUsernameAndPassword{
+	_, err := NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/user",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
@@ -213,7 +213,7 @@ func TestNewUsernameAndPasswordAuth_UseCookiesAndLocalStorageCannotBeBothFalse(t
 }
 
 func TestNewUsernameAndPasswordAuth_UseCookiesAndLocalStorageCannotBeBothTrue(t *testing.T) {
-	_, err := NewUsernameAndPasswordAuth(ConfigUsernameAndPassword{
+	_, err := NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/user",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
@@ -242,7 +242,7 @@ func TestNewUsernameAndPasswordAuth_UseCookiesAndLocalStorageCannotBeBothTrue(t 
 }
 
 func TestNewUsernameAndPasswordAuth_UseCookiesAndLocalStorageCannotBeBothTruee(t *testing.T) {
-	auth, err := NewUsernameAndPasswordAuth(ConfigUsernameAndPassword{
+	auth, err := NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/user",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
@@ -273,7 +273,7 @@ func TestNewUsernameAndPasswordAuth_UseCookiesAndLocalStorageCannotBeBothTruee(t
 }
 
 func TestNewUsernameAndPasswordAuth_CSRFSecretRequiredWhenEnabled(t *testing.T) {
-	_, err := NewUsernameAndPasswordAuth(ConfigUsernameAndPassword{
+	_, err := NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/user",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
@@ -303,7 +303,7 @@ func TestNewUsernameAndPasswordAuth_CSRFSecretRequiredWhenEnabled(t *testing.T) 
 }
 
 func TestNewUsernameAndPasswordAuth_CSRFEnabledWithSecretSucceeds(t *testing.T) {
-	auth, err := NewUsernameAndPasswordAuth(ConfigUsernameAndPassword{
+	auth, err := NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/user",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },

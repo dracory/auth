@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	auth "github.com/dracory/auth"
+	"github.com/dracory/auth/types"
 	authtypes "github.com/dracory/auth/types"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -191,7 +192,7 @@ func exampleEmailSend(_ context.Context, email, subject, body string) error {
 }
 
 func main() {
-	authInstance, err := auth.NewUsernameAndPasswordAuth(auth.ConfigUsernameAndPassword{
+	authInstance, err := auth.NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/dashboard",
 		UseCookies:           true,

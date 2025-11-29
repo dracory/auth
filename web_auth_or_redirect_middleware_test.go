@@ -12,7 +12,7 @@ import (
 )
 
 func newPasswordlessAuthForMiddlewareTests(useCookies bool) (*authImplementation, error) {
-	instance, err := NewPasswordlessAuth(ConfigPasswordless{
+	instance, err := NewPasswordlessAuth(types.ConfigPasswordless{
 		Endpoint:             "/auth",
 		UrlRedirectOnSuccess: "/user",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },

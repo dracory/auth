@@ -10,7 +10,7 @@ import (
 // testSetupUsernameAndPasswordAuth creates a new Auth for testing
 func testSetupUsernameAndPasswordAuth() (*authImplementation, error) {
 	endpoint := "http://localhost/auth"
-	instance, err := NewUsernameAndPasswordAuth(ConfigUsernameAndPassword{
+	instance, err := NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
 		Endpoint:             endpoint,
 		UrlRedirectOnSuccess: "http://localhost/dashboard",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
@@ -47,7 +47,7 @@ func testSetupUsernameAndPasswordAuth() (*authImplementation, error) {
 // testSetupPasswordlessAuth creates a new Auth for testing
 func testSetupPasswordlessAuth() (*authImplementation, error) {
 	endpoint := "http://localhost/auth"
-	instance, err := NewPasswordlessAuth(ConfigPasswordless{
+	instance, err := NewPasswordlessAuth(types.ConfigPasswordless{
 		Endpoint:             endpoint,
 		UrlRedirectOnSuccess: "http://localhost/dashboard",
 		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
