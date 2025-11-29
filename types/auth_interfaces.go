@@ -54,6 +54,9 @@ type AuthSharedInterface interface {
 	GetFuncTemporaryKeyGet() func(key string) (string, error)
 	SetFuncTemporaryKeyGet(fn func(key string) (string, error))
 
+	GetFuncTemporaryKeySet() func(key string, value string, expiresSeconds int) error
+	SetFuncTemporaryKeySet(fn func(key string, value string, expiresSeconds int) error)
+
 	GetUseCookies() bool
 	SetUseCookies(useCookies bool)
 
@@ -84,6 +87,12 @@ type AuthSharedInterface interface {
 
 	GetFuncUserFindByUsername() func(ctx context.Context, username, firstName, lastName string, options UserAuthOptions) (string, error)
 	SetFuncUserFindByUsername(fn func(ctx context.Context, username, firstName, lastName string, options UserAuthOptions) (string, error))
+
+	GetFuncEmailTemplatePasswordRestore() func(ctx context.Context, userID string, passwordRestoreLink string, options UserAuthOptions) string
+	SetFuncEmailTemplatePasswordRestore(fn func(ctx context.Context, userID string, passwordRestoreLink string, options UserAuthOptions) string)
+
+	GetFuncEmailSend() func(ctx context.Context, userID, emailSubject, emailBody string) error
+	SetFuncEmailSend(fn func(ctx context.Context, userID, emailSubject, emailBody string) error)
 
 	GetFuncUserStoreAuthToken() func(ctx context.Context, token, userID string, options UserAuthOptions) error
 	SetFuncUserStoreAuthToken(fn func(ctx context.Context, token, userID string, options UserAuthOptions) error)

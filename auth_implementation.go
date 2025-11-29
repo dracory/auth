@@ -205,6 +205,22 @@ func (a *authImplementation) SetFuncUserFindByUsername(fn func(ctx context.Conte
 	a.funcUserFindByUsername = fn
 }
 
+func (a authImplementation) GetFuncEmailTemplatePasswordRestore() func(ctx context.Context, userID string, passwordRestoreLink string, options types.UserAuthOptions) string {
+	return a.funcEmailTemplatePasswordRestore
+}
+
+func (a *authImplementation) SetFuncEmailTemplatePasswordRestore(fn func(ctx context.Context, userID string, passwordRestoreLink string, options types.UserAuthOptions) string) {
+	a.funcEmailTemplatePasswordRestore = fn
+}
+
+func (a authImplementation) GetFuncEmailSend() func(ctx context.Context, userID, emailSubject, emailBody string) error {
+	return a.funcEmailSend
+}
+
+func (a *authImplementation) SetFuncEmailSend(fn func(ctx context.Context, userID, emailSubject, emailBody string) error) {
+	a.funcEmailSend = fn
+}
+
 func (a authImplementation) GetFuncUserStoreAuthToken() func(ctx context.Context, token, userID string, options types.UserAuthOptions) error {
 	return a.funcUserStoreAuthToken
 }
@@ -231,6 +247,14 @@ func (a authImplementation) GetFuncTemporaryKeyGet() func(key string) (string, e
 
 func (a *authImplementation) SetFuncTemporaryKeyGet(fn func(key string) (string, error)) {
 	a.funcTemporaryKeyGet = fn
+}
+
+func (a authImplementation) GetFuncTemporaryKeySet() func(key string, value string, expiresSeconds int) error {
+	return a.funcTemporaryKeySet
+}
+
+func (a *authImplementation) SetFuncTemporaryKeySet(fn func(key string, value string, expiresSeconds int) error) {
+	a.funcTemporaryKeySet = fn
 }
 
 func (a authImplementation) LinkApiLogin() string {

@@ -2,11 +2,13 @@ package api_password_restore
 
 import (
 	"context"
+	"errors"
 	"html"
 	"log/slog"
 	"net/http"
 
 	"github.com/dracory/api"
+	"github.com/dracory/auth/types"
 	"github.com/dracory/auth/utils"
 	"github.com/dracory/req"
 )
@@ -56,6 +58,67 @@ func ApiPasswordRestore(w http.ResponseWriter, r *http.Request, deps dependencie
 	}
 
 	api.Respond(w, r, api.Success(successMessage))
+}
+
+// ApiPasswordRestoreWithAuth is a convenience wrapper that allows callers to
+// pass a types.AuthSharedInterface (such as authImplementation) instead of
+// manually wiring dependencies. It constructs the dependencies struct using the
+// interface accessors and preserves the existing behaviour.
+func ApiPasswordRestoreWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) {
+	passwordAuth, ok := a.(types.AuthPasswordInterface)
+	if !ok {
+		if logger := a.GetLogger(); logger != nil {
+			logger.Error("password restore requires AuthPasswordInterface")
+		}
+		http.Error(w, "Internal server error. Please try again later", http.StatusInternalServerError)
+		return
+	}
+
+	userFindByUsername := a.GetFuncUserFindByUsername()
+	temporaryKeySet := a.GetFuncTemporaryKeySet()
+	emailTemplatePasswordRestore := a.GetFuncEmailTemplatePasswordRestore()
+	emailSend := a.GetFuncEmailSend()
+
+	deps, err := NewDependencies(
+		func(ctx context.Context, email, firstName, lastName string) (string, error) {
+			if userFindByUsername == nil {
+				return "", errors.New("UserFindByUsername is not configured")
+			}
+			return userFindByUsername(ctx, email, firstName, lastName, types.UserAuthOptions{
+				UserIp:    req.GetIP(r),
+				UserAgent: r.UserAgent(),
+			})
+		},
+		temporaryKeySet,
+		0,
+		func(ctx context.Context, userID, token string) string {
+			if emailTemplatePasswordRestore == nil {
+				return ""
+			}
+			return emailTemplatePasswordRestore(ctx, userID, passwordAuth.LinkPasswordReset(token), types.UserAuthOptions{
+				UserIp:    req.GetIP(r),
+				UserAgent: r.UserAgent(),
+			})
+		},
+		func(ctx context.Context, userID, subject, body string) error {
+			if emailSend == nil {
+				return errors.New("EmailSend is not configured")
+			}
+			return emailSend(ctx, userID, subject, body)
+		},
+		a.GetLogger(),
+	)
+	if err != nil {
+		if logger := a.GetLogger(); logger != nil {
+			logger.Error("password restore dependencies misconfigured",
+				slog.String("error", err.Error()),
+			)
+		}
+		http.Error(w, "Internal server error. Please try again later", http.StatusInternalServerError)
+		return
+	}
+
+	ApiPasswordRestore(w, r, deps)
 }
 
 // passwordRestore encapsulates core business logic for issuing a password

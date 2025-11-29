@@ -18,26 +18,29 @@ func NewAuthSharedForTest() types.AuthSharedInterface {
 }
 
 type authSharedTest struct {
-	endpoint                    string
-	layout                      func(content string) string
-	logger                      *slog.Logger
-	registration                bool
-	passwordless                bool
-	verification                bool
-	temporaryKeyGet             func(key string) (string, error)
-	funcUserFindByAuthToken     func(ctx context.Context, token string, options types.UserAuthOptions) (string, error)
-	redirectOnSuccess           string
-	loginURL                    string
-	useCookies                  bool
-	disableRateLimit            bool
-	passwordStrength            *types.PasswordStrengthConfig
-	passwordlessUserRegister    func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) error
-	funcUserRegister            func(ctx context.Context, username, password, firstName, lastName string, options types.UserAuthOptions) error
-	funcUserPasswordChange      func(ctx context.Context, userID, password string, options types.UserAuthOptions) error
-	funcUserLogout              func(ctx context.Context, userID string, options types.UserAuthOptions) error
-	passwordlessUserFindByEmail func(ctx context.Context, email string, options types.UserAuthOptions) (string, error)
-	funcUserFindByUsername      func(ctx context.Context, username, firstName, lastName string, options types.UserAuthOptions) (string, error)
-	funcUserStoreAuthToken      func(ctx context.Context, token, userID string, options types.UserAuthOptions) error
+	endpoint                     string
+	layout                       func(content string) string
+	logger                       *slog.Logger
+	registration                 bool
+	passwordless                 bool
+	verification                 bool
+	temporaryKeyGet              func(key string) (string, error)
+	temporaryKeySet              func(key string, value string, expiresSeconds int) error
+	funcUserFindByAuthToken      func(ctx context.Context, token string, options types.UserAuthOptions) (string, error)
+	redirectOnSuccess            string
+	loginURL                     string
+	useCookies                   bool
+	disableRateLimit             bool
+	passwordStrength             *types.PasswordStrengthConfig
+	passwordlessUserRegister     func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) error
+	funcUserRegister             func(ctx context.Context, username, password, firstName, lastName string, options types.UserAuthOptions) error
+	funcUserPasswordChange       func(ctx context.Context, userID, password string, options types.UserAuthOptions) error
+	funcUserLogout               func(ctx context.Context, userID string, options types.UserAuthOptions) error
+	passwordlessUserFindByEmail  func(ctx context.Context, email string, options types.UserAuthOptions) (string, error)
+	funcUserFindByUsername       func(ctx context.Context, username, firstName, lastName string, options types.UserAuthOptions) (string, error)
+	funcUserStoreAuthToken       func(ctx context.Context, token, userID string, options types.UserAuthOptions) error
+	emailTemplatePasswordRestore func(ctx context.Context, userID string, passwordRestoreLink string, options types.UserAuthOptions) string
+	emailSend                    func(ctx context.Context, userID, emailSubject, emailBody string) error
 }
 
 func (a *authSharedTest) Router() *http.ServeMux { return http.NewServeMux() }
@@ -66,6 +69,10 @@ func (a *authSharedTest) GetFuncTemporaryKeyGet() func(key string) (string, erro
 	return a.temporaryKeyGet
 }
 
+func (a *authSharedTest) GetFuncTemporaryKeySet() func(key string, value string, expiresSeconds int) error {
+	return a.temporaryKeySet
+}
+
 func (a *authSharedTest) GetFuncUserFindByAuthToken() func(ctx context.Context, token string, options types.UserAuthOptions) (string, error) {
 	if a.funcUserFindByAuthToken != nil {
 		return a.funcUserFindByAuthToken
@@ -81,6 +88,10 @@ func (a *authSharedTest) SetFuncUserFindByAuthToken(fn func(ctx context.Context,
 
 func (a *authSharedTest) SetFuncTemporaryKeyGet(fn func(key string) (string, error)) {
 	a.temporaryKeyGet = fn
+}
+
+func (a *authSharedTest) SetFuncTemporaryKeySet(fn func(key string, value string, expiresSeconds int) error) {
+	a.temporaryKeySet = fn
 }
 
 func (a *authSharedTest) GetDisableRateLimit() bool { return a.disableRateLimit }
@@ -133,6 +144,22 @@ func (a *authSharedTest) GetPasswordlessUserFindByEmail() func(ctx context.Conte
 
 func (a *authSharedTest) SetPasswordlessUserFindByEmail(fn func(ctx context.Context, email string, options types.UserAuthOptions) (string, error)) {
 	a.passwordlessUserFindByEmail = fn
+}
+
+func (a *authSharedTest) GetFuncEmailTemplatePasswordRestore() func(ctx context.Context, userID string, passwordRestoreLink string, options types.UserAuthOptions) string {
+	return a.emailTemplatePasswordRestore
+}
+
+func (a *authSharedTest) SetFuncEmailTemplatePasswordRestore(fn func(ctx context.Context, userID string, passwordRestoreLink string, options types.UserAuthOptions) string) {
+	a.emailTemplatePasswordRestore = fn
+}
+
+func (a *authSharedTest) GetFuncEmailSend() func(ctx context.Context, userID, emailSubject, emailBody string) error {
+	return a.emailSend
+}
+
+func (a *authSharedTest) SetFuncEmailSend(fn func(ctx context.Context, userID, emailSubject, emailBody string) error) {
+	a.emailSend = fn
 }
 
 func (a *authSharedTest) GetFuncUserFindByUsername() func(ctx context.Context, username, firstName, lastName string, options types.UserAuthOptions) (string, error) {

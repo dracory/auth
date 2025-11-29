@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"log/slog"
 	"net/http"
 
 	"github.com/dracory/auth/internal/api/api_authenticate_via_username"
@@ -82,35 +81,7 @@ func (a authImplementation) apiLogout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a authImplementation) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
-	dependencies, err := api_password_restore.NewDependencies(
-		func(ctx context.Context, email, firstName, lastName string) (string, error) {
-			return a.funcUserFindByUsername(ctx, email, firstName, lastName, types.UserAuthOptions{
-				UserIp:    req.GetIP(r),
-				UserAgent: r.UserAgent(),
-			})
-		},
-		a.funcTemporaryKeySet,
-		int(DefaultPasswordResetExpiration.Seconds()),
-		func(ctx context.Context, userID, token string) string {
-			return a.funcEmailTemplatePasswordRestore(ctx, userID, a.LinkPasswordReset(token), types.UserAuthOptions{
-				UserIp:    req.GetIP(r),
-				UserAgent: r.UserAgent(),
-			})
-		},
-		func(ctx context.Context, userID, subject, body string) error {
-			return a.funcEmailSend(ctx, userID, subject, body)
-		},
-		a.GetLogger(),
-	)
-	if err != nil {
-		a.GetLogger().Error("password restore dependencies misconfigured",
-			slog.String("error", err.Error()),
-		)
-		http.Error(w, "Internal server error. Please try again later", http.StatusInternalServerError)
-		return
-	}
-
-	api_password_restore.ApiPasswordRestore(w, r, dependencies)
+	api_password_restore.ApiPasswordRestoreWithAuth(w, r, &a)
 }
 
 func (a authImplementation) apiPasswordReset(w http.ResponseWriter, r *http.Request) {
