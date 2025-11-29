@@ -37,7 +37,10 @@ type AuthSharedInterface interface {
 	LinkApiRegister() string
 	LinkApiRegisterCodeVerify() string
 
+	// ======================================================================
 	// Accessors
+	// ======================================================================
+
 	GetEndpoint() string
 	SetEndpoint(endpoint string)
 
@@ -46,6 +49,10 @@ type AuthSharedInterface interface {
 
 	GetLayout() func(content string) string
 	SetLayout(layout func(content string) string)
+
+	// Accessors for the temporary key retrieval function used in password reset flows.
+	GetFuncTemporaryKeyGet() func(key string) (string, error)
+	SetFuncTemporaryKeyGet(fn func(key string) (string, error))
 }
 
 // AuthPasswordInterface represents username/password based authentication.

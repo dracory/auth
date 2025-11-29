@@ -1,22 +1,16 @@
 package page_password_reset
 
 import (
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/dracory/auth/internal/testutils"
 )
 
 func TestPagePasswordReset_ValidTokenShowsForm(t *testing.T) {
-	deps := Dependencies{
-		Endpoint:           "http://localhost/auth",
-		EnableRegistration: true,
-		Token:              "valid-token",
-		ErrorMessage:       "",
-		Layout:             func(content string) string { return content },
-		Logger:             slog.Default(),
-	}
+	a := testutils.NewAuthSharedForTest()
 
 	req, err := http.NewRequest("GET", "/?t=valid-token", nil)
 	if err != nil {
@@ -24,7 +18,7 @@ func TestPagePasswordReset_ValidTokenShowsForm(t *testing.T) {
 	}
 
 	recorder := httptest.NewRecorder()
-	PagePasswordReset(recorder, req, deps)
+	PagePasswordReset(recorder, req, a)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -48,14 +42,7 @@ func TestPagePasswordReset_ValidTokenShowsForm(t *testing.T) {
 }
 
 func TestPagePasswordReset_MissingTokenShowsError(t *testing.T) {
-	deps := Dependencies{
-		Endpoint:           "http://localhost/auth",
-		EnableRegistration: true,
-		Token:              "",
-		ErrorMessage:       "Link is invalid",
-		Layout:             func(content string) string { return content },
-		Logger:             slog.Default(),
-	}
+	a := testutils.NewAuthSharedForTest()
 
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
@@ -63,7 +50,7 @@ func TestPagePasswordReset_MissingTokenShowsError(t *testing.T) {
 	}
 
 	recorder := httptest.NewRecorder()
-	PagePasswordReset(recorder, req, deps)
+	PagePasswordReset(recorder, req, a)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)

@@ -1,21 +1,19 @@
 package page_register
 
 import (
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/dracory/auth/internal/testutils"
 )
 
 func TestPageRegister_UsernameAndPassword(t *testing.T) {
-	deps := Dependencies{
-		Passwordless:       false,
-		EnableVerification: false,
-		Endpoint:           "http://localhost/auth",
-		Layout:             func(content string) string { return content },
-		Logger:             slog.Default(),
-	}
+	a := testutils.NewAuthSharedForTest()
+	// Username/password branch with verification disabled.
+	testutils.SetPasswordlessForTest(a, false)
+	testutils.SetVerificationForTest(a, false)
 
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
@@ -23,7 +21,7 @@ func TestPageRegister_UsernameAndPassword(t *testing.T) {
 	}
 
 	recorder := httptest.NewRecorder()
-	PageRegister(recorder, req, deps)
+	PageRegister(recorder, req, a)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -49,13 +47,9 @@ func TestPageRegister_UsernameAndPassword(t *testing.T) {
 }
 
 func TestPageRegister_Passwordless(t *testing.T) {
-	deps := Dependencies{
-		Passwordless:       true,
-		EnableVerification: true,
-		Endpoint:           "http://localhost/auth",
-		Layout:             func(content string) string { return content },
-		Logger:             slog.Default(),
-	}
+	a := testutils.NewAuthSharedForTest()
+	testutils.SetPasswordlessForTest(a, true)
+	testutils.SetVerificationForTest(a, true)
 
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
@@ -63,7 +57,7 @@ func TestPageRegister_Passwordless(t *testing.T) {
 	}
 
 	recorder := httptest.NewRecorder()
-	PageRegister(recorder, req, deps)
+	PageRegister(recorder, req, a)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)

@@ -5,41 +5,43 @@ import (
 
 	"github.com/dracory/auth/internal/links"
 	"github.com/dracory/auth/internal/ui/shared"
+	"github.com/dracory/auth/types"
 )
 
 // PageRegister renders the register page using the provided dependencies and
 // writes the result to the ResponseWriter.
-func PageRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
+
+func PageRegister(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) {
 	content := ""
 	scripts := ""
 
-	if deps.Passwordless {
-		content = RegisterPasswordlessContent(links.Login(deps.Endpoint))
+	if a.IsPasswordless() {
+		content = RegisterPasswordlessContent(links.Login(a.GetEndpoint()))
 		scripts = RegisterPasswordlessScripts(
-			links.ApiRegister(deps.Endpoint),
-			links.RegisterCodeVerify(deps.Endpoint),
+			links.ApiRegister(a.GetEndpoint()),
+			links.RegisterCodeVerify(a.GetEndpoint()),
 		)
 	} else {
 		content = RegisterUsernameAndPasswordContent(
-			links.Login(deps.Endpoint),
-			links.PasswordRestore(deps.Endpoint),
+			links.Login(a.GetEndpoint()),
+			links.PasswordRestore(a.GetEndpoint()),
 		)
-		urlSuccess := links.Login(deps.Endpoint)
-		if deps.EnableVerification {
-			urlSuccess = links.RegisterCodeVerify(deps.Endpoint)
+		urlSuccess := links.Login(a.GetEndpoint())
+		if a.IsVerificationEnabled() {
+			urlSuccess = links.RegisterCodeVerify(a.GetEndpoint())
 		}
 		scripts = RegisterUsernameAndPasswordScripts(
-			links.ApiRegister(deps.Endpoint),
+			links.ApiRegister(a.GetEndpoint()),
 			urlSuccess,
 		)
 	}
 
 	shared.PageRender(w, shared.PageOptions{
 		Title:      "Register",
-		Layout:     deps.Layout,
+		Layout:     a.GetLayout(),
 		Content:    content,
 		Scripts:    scripts,
-		Logger:     deps.Logger,
+		Logger:     a.GetLogger(),
 		LogMessage: "failed to write register page response",
 	})
 }

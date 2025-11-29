@@ -23,6 +23,7 @@ type authSharedTest struct {
 	registration      bool
 	passwordless      bool
 	verification      bool
+	temporaryKeyGet   func(key string) (string, error)
 	redirectOnSuccess string
 }
 
@@ -43,6 +44,16 @@ func (a *authSharedTest) WebAppendUserIdIfExistsMiddleware(next http.Handler) ht
 }
 
 func (a *authSharedTest) GetCurrentUserID(r *http.Request) string { return "" }
+
+func (a *authSharedTest) GetFuncTemporaryKeyGet() func(key string) (string, error) {
+	return a.temporaryKeyGet
+}
+
+func (a *authSharedTest) SetFuncTemporaryKeyGet(fn func(key string) (string, error)) {
+	a.temporaryKeyGet = fn
+}
+
+func (a *authSharedTest) TemporaryKeyGet(token string) (string, error) { return "", nil }
 
 func (a *authSharedTest) LinkLogin() string { return "" }
 

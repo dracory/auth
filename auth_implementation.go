@@ -129,6 +129,14 @@ func (a authImplementation) GetCurrentUserID(r *http.Request) string {
 	return authenticatedUserID.(string)
 }
 
+func (a authImplementation) GetFuncTemporaryKeyGet() func(key string) (string, error) {
+	return a.funcTemporaryKeyGet
+}
+
+func (a *authImplementation) SetFuncTemporaryKeyGet(fn func(key string) (string, error)) {
+	a.funcTemporaryKeyGet = fn
+}
+
 func (a authImplementation) LinkApiLogin() string {
 	return links.ApiLogin(a.endpoint)
 }
