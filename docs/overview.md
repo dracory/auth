@@ -50,6 +50,13 @@ graph TB
         C --> F[Middleware]
     end
     
+    subgraph "Package Organization"
+        T[types/]
+        U[utils/]
+        IA[internal/api/]
+        IU[internal/ui/]
+    end
+    
     subgraph "Flows"
         G[Passwordless Flow]
         H[Username/Password Flow]
@@ -63,6 +70,10 @@ graph TB
     
     A --> C
     B --> C
+    C --> T
+    C --> U
+    C --> IA
+    C --> IU
     C --> G
     C --> H
     G --> I
@@ -73,16 +84,118 @@ graph TB
     H --> K
     
     style C fill:#4CAF50
-    style I fill:#2196F3
-    style J fill:#2196F3
-    style K fill:#2196F3
+    style T fill:#FF9800
+    style U fill:#FF9800
+    style IA fill:#2196F3
+    style IU fill:#2196F3
+    style I fill:#9C27B0
+    style J fill:#9C27B0
+    style K fill:#9C27B0
 ```
+
+---
+
+## 📦 Package Organization
+
+The library is organized into focused packages for maintainability:
+
+### `types/` - Type Definitions
+
+All configuration structs, interfaces, and type definitions:
+
+- **[auth_interfaces.go](file:///d:/PROJECTs/_modules_dracory/auth/types/auth_interfaces.go)** - Core interfaces (`AuthSharedInterface`, etc.)
+- **[config_passwordless.go](file:///d:/PROJECTs/_modules_dracory/auth/types/config_passwordless.go)** - `ConfigPasswordless` struct
+- **[config_username_and_password.go](file:///d:/PROJECTs/_modules_dracory/auth/types/config_username_and_password.go)** - `ConfigUsernameAndPassword` struct
+- **[user_auth_options.go](file:///d:/PROJECTs/_modules_dracory/auth/types/user_auth_options.go)** - `UserAuthOptions` type
+- **[password.go](file:///d:/PROJECTs/_modules_dracory/auth/types/password.go)** - Password-related types
+- **[cookie_config.go](file:///d:/PROJECTs/_modules_dracory/auth/types/cookie_config.go)** - Cookie configuration
+- **[constants.go](file:///d:/PROJECTs/_modules_dracory/auth/types/constants.go)** - Type-level constants
+
+**Usage:** Import as `"github.com/dracory/auth/types"`
+
+### `utils/` - Utility Functions
+
+Reusable utility functions used throughout the library:
+
+- **[auth_cookies.go](file:///d:/PROJECTs/_modules_dracory/auth/utils/auth_cookies.go)** - Cookie management helpers
+- **[auth_token_retrieve.go](file:///d:/PROJECTs/_modules_dracory/auth/utils/auth_token_retrieve.go)** - Token extraction from requests
+- **[bearer_token_from_header.go](file:///d:/PROJECTs/_modules_dracory/auth/utils/bearer_token_from_header.go)** - Bearer token parsing
+- **[email_validation.go](file:///d:/PROJECTs/_modules_dracory/auth/utils/email_validation.go)** - Email format validation
+- **[password_strength.go](file:///d:/PROJECTs/_modules_dracory/auth/utils/password_strength.go)** - Password strength checking
+- **[login_code.go](file:///d:/PROJECTs/_modules_dracory/auth/utils/login_code.go)** - Verification code generation and validation
+- **[rate_limiter.go](file:///d:/PROJECTs/_modules_dracory/auth/utils/rate_limiter.go)** - In-memory rate limiting implementation
+- **[cookies.go](file:///d:/PROJECTs/_modules_dracory/auth/utils/cookies.go)** - General cookie utilities
+- **[scribble.go](file:///d:/PROJECTs/_modules_dracory/auth/utils/scribble.go)** - JSON file storage helper
+
+**Usage:** Import as `"github.com/dracory/auth/utils"` (internal use only)
+
+### `internal/api/` - API Endpoint Handlers
+
+Each API endpoint has its own subdirectory with handler, dependencies, and tests:
+
+- **[api_login/](file:///d:/PROJECTs/_modules_dracory/auth/internal/api/api_login)** - Login endpoint (passwordless and username/password)
+- **[api_login_code_verify/](file:///d:/PROJECTs/_modules_dracory/auth/internal/api/api_login_code_verify)** - Passwordless code verification
+- **[api_register/](file:///d:/PROJECTs/_modules_dracory/auth/internal/api/api_register)** - Registration endpoint
+- **[api_register_code_verify/](file:///d:/PROJECTs/_modules_dracory/auth/internal/api/api_register_code_verify)** - Registration code verification
+- **[api_logout/](file:///d:/PROJECTs/_modules_dracory/auth/internal/api/api_logout)** - Logout endpoint
+- **[api_password_restore/](file:///d:/PROJECTs/_modules_dracory/auth/internal/api/api_password_restore)** - Password reset request
+- **[api_password_reset/](file:///d:/PROJECTs/_modules_dracory/auth/internal/api/api_password_reset)** - Password reset completion
+- **[api_authenticate_via_username/](file:///d:/PROJECTs/_modules_dracory/auth/internal/api/api_authenticate_via_username)** - Username authentication helper
+
+Each subdirectory typically contains:
+- Main handler file (e.g., `api_login.go`)
+- Dependencies interface (e.g., `dependencies.go`)
+- Tests (e.g., `api_login_test.go`)
+- Constants if needed (e.g., `constants.go`)
+
+### `internal/ui/` - UI Page Handlers
+
+Each UI page has its own subdirectory with handler, content generation, and tests:
+
+- **[page_login/](file:///d:/PROJECTs/_modules_dracory/auth/internal/ui/page_login)** - Login page
+- **[page_login_code_verify/](file:///d:/PROJECTs/_modules_dracory/auth/internal/ui/page_login_code_verify)** - Code verification page
+- **[page_register/](file:///d:/PROJECTs/_modules_dracory/auth/internal/ui/page_register)** - Registration page
+- **[page_register_code_verify/](file:///d:/PROJECTs/_modules_dracory/auth/internal/ui/page_register_code_verify)** - Registration verification page
+- **[page_logout/](file:///d:/PROJECTs/_modules_dracory/auth/internal/ui/page_logout)** - Logout page
+- **[page_password_restore/](file:///d:/PROJECTs/_modules_dracory/auth/internal/ui/page_password_restore)** - Password restore request page
+- **[page_password_reset/](file:///d:/PROJECTs/_modules_dracory/auth/internal/ui/page_password_reset)** - Password reset page
+- **[shared/](file:///d:/PROJECTs/_modules_dracory/auth/internal/ui/shared)** - Shared UI components and utilities
+
+Each page subdirectory typically contains:
+- Main page handler (e.g., `page_login.go`)
+- Content generation (e.g., `content.go`)
+- Dependencies interface (e.g., `dependencies.go`)
+- Tests (e.g., `page_login_test.go`)
+
+### `examples/` - Working Example Applications
+
+Complete, runnable example applications:
+
+- **[passwordless/](file:///d:/PROJECTs/_modules_dracory/auth/examples/passwordless)** - Passwordless authentication example
+  - In-memory storage
+  - Email sending via localhost:1025
+  - Complete callback implementations
+  
+- **[usernamepassword/](file:///d:/PROJECTs/_modules_dracory/auth/examples/usernamepassword)** - Username/password authentication example
+  - In-memory storage
+  - Password reset flow
+  - Email sending via localhost:1025
+  - Complete callback implementations
+
+### Root Package - Public API
+
+The root package provides the public API:
+
+- **Constructors:** `NewPasswordlessAuth()`, `NewUsernameAndPasswordAuth()`
+- **Middleware:** `WebAuthOrRedirectMiddleware()`, `ApiAuthOrErrorMiddleware()`, etc.
+- **Main type:** `authImplementation` (implements `AuthSharedInterface`)
+- **Delegation:** Thin wrappers that delegate to `internal/api/` and `internal/ui/` packages
 
 ---
 
 ## 🔑 Key Components
 
-### 1. **Auth Struct** ([auth.go](file:///d:/PROJECTs/_modules_dracory/auth/auth.go))
+### 1. **Auth Struct** ([auth_implementation.go](file:///d:/PROJECTs/_modules_dracory/auth/auth_implementation.go))
 
 The central struct that holds all configuration and provides methods for authentication operations.
 
@@ -102,9 +215,9 @@ The central struct that holds all configuration and provides methods for authent
 - `GetCurrentUserID()` - Retrieves authenticated user from context
 - `LinkLogin()`, `LinkRegister()`, etc. - URL helpers
 
-### 2. **Configuration Structs**
+### 2. **Configuration Structs** (in `types/` package)
 
-**[ConfigPasswordless](file:///d:/PROJECTs/_modules_dracory/auth/config_passwordless.go):**
+**[types.ConfigPasswordless](file:///d:/PROJECTs/_modules_dracory/auth/types/config_passwordless.go):**
 ```go
 type ConfigPasswordless struct {
     // Required
@@ -129,7 +242,7 @@ type ConfigPasswordless struct {
 }
 ```
 
-**[ConfigUsernameAndPassword](file:///d:/PROJECTs/_modules_dracory/auth/config_username_and_password.go):**
+**[types.ConfigUsernameAndPassword](file:///d:/PROJECTs/_modules_dracory/auth/types/config_username_and_password.go):**
 ```go
 type ConfigUsernameAndPassword struct {
     // Similar to passwordless, plus:
@@ -172,10 +285,10 @@ sequenceDiagram
 ```
 
 **Key Files:**
-- [api_login.go](file:///d:/PROJECTs/_modules_dracory/auth/api_login.go#L20-L56) - Sends verification code
-- [api_login_code_verify.go](file:///d:/PROJECTs/_modules_dracory/auth/api_login_code_verify.go) - Verifies code and authenticates
-- [page_login.go](file:///d:/PROJECTs/_modules_dracory/auth/page_login.go) - HTML login page
-- [page_login_code_verify.go](file:///d:/PROJECTs/_modules_dracory/auth/page_login_code_verify.go) - Code entry page
+- [internal/api/api_login/api_login.go](file:///d:/PROJECTs/_modules_dracory/auth/internal/api/api_login/api_login.go) - Sends verification code
+- [internal/api/api_login_code_verify/api_login_code_verify.go](file:///d:/PROJECTs/_modules_dracory/auth/internal/api/api_login_code_verify/api_login_code_verify.go) - Verifies code and authenticates
+- [internal/ui/page_login/page_login.go](file:///d:/PROJECTs/_modules_dracory/auth/internal/ui/page_login/page_login.go) - HTML login page
+- [internal/ui/page_login_code_verify/page_login_code_verify.go](file:///d:/PROJECTs/_modules_dracory/auth/internal/ui/page_login_code_verify/page_login_code_verify.go) - Code entry page
 
 #### Username/Password Flow
 
@@ -197,10 +310,10 @@ sequenceDiagram
 ```
 
 **Key Files:**
-- [api_login.go](file:///d:/PROJECTs/_modules_dracory/auth/api_login.go#L58-L79) - Authenticates user
+- [internal/api/api_login/api_login.go](file:///d:/PROJECTs/_modules_dracory/auth/internal/api/api_login/api_login.go) - Authenticates user
 - [login_with_username_and_password.go](file:///d:/PROJECTs/_modules_dracory/auth/login_with_username_and_password.go) - Core login logic
-- [api_password_restore.go](file:///d:/PROJECTs/_modules_dracory/auth/api_password_restore.go) - Password reset request
-- [api_password_reset.go](file:///d:/PROJECTs/_modules_dracory/auth/api_password_reset.go) - Password reset completion
+- [internal/api/api_password_restore/api_password_restore.go](file:///d:/PROJECTs/_modules_dracory/auth/internal/api/api_password_restore/api_password_restore.go) - Password reset request
+- [internal/api/api_password_reset/api_password_reset.go](file:///d:/PROJECTs/_modules_dracory/auth/internal/api/api_password_reset/api_password_reset.go) - Password reset completion
 
 ### 4. **Routing System** ([router.go](file:///d:/PROJECTs/_modules_dracory/auth/router.go))
 
@@ -224,7 +337,7 @@ The router handles all authentication endpoints:
 - `GET /auth/password-restore` - Password restore request page
 - `GET /auth/password-reset?t=TOKEN` - Password reset page
 
-All paths defined in [consts.go](file:///d:/PROJECTs/_modules_dracory/auth/consts.go).
+All paths defined in [constants.go](file:///d:/PROJECTs/_modules_dracory/auth/constants.go).
 
 ### 5. **Middleware** 
 
@@ -271,13 +384,30 @@ mux.Handle("/", auth.WebAppendUserIdIfExistsMiddleware(homeHandler))
 - ✅ Token generation and storage
 - ✅ Middleware behavior
 
-### 7. **Development Example**
+### 6. **Development Examples**
 
-The [development](file:///d:/PROJECTs/_modules_dracory/auth/development) directory contains a working example showing:
-- How to set up both auth flows
-- Integration with a JSON file store (Scribble)
-- Complete implementation of all required functions
-- Example of running two auth instances side-by-side
+The [examples](file:///d:/PROJECTs/_modules_dracory/auth/examples) directory contains working example applications:
+
+**[Passwordless Example](file:///d:/PROJECTs/_modules_dracory/auth/examples/passwordless):**
+- Complete passwordless authentication flow
+- In-memory storage implementation
+- Email sending via localhost:1025
+- Registration with verification codes
+- Protected dashboard route
+
+**[Username/Password Example](file:///d:/PROJECTs/_modules_dracory/auth/examples/usernamepassword):**
+- Traditional username/password authentication
+- Password reset flow
+- In-memory storage implementation
+- Email sending via localhost:1025
+- Registration with email verification
+- Protected dashboard route
+
+Both examples demonstrate:
+- Complete implementation of all required callback functions
+- Session/token management
+- Email template customization
+- Middleware usage for route protection
 
 ---
 
@@ -286,15 +416,20 @@ The [development](file:///d:/PROJECTs/_modules_dracory/auth/development) directo
 **Step 1: Choose Your Flow**
 
 ```go
+import (
+    "github.com/dracory/auth"
+    "github.com/dracory/auth/types"
+)
+
 // Passwordless
-auth, err := auth.NewPasswordlessAuth(auth.ConfigPasswordless{
+auth, err := auth.NewPasswordlessAuth(types.ConfigPasswordless{
     Endpoint: "/auth",
     UrlRedirectOnSuccess: "/dashboard",
     // ... implement required functions
 })
 
 // OR Username/Password
-auth, err := auth.NewUsernameAndPasswordAuth(auth.ConfigUsernameAndPassword{
+auth, err := auth.NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
     Endpoint: "/auth",
     UrlRedirectOnSuccess: "/dashboard",
     // ... implement required functions

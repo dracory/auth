@@ -61,6 +61,12 @@
 go get github.com/dracory/auth
 ```
 
+## 📁 Project Structure
+
+The library is organized into focused packages: `types/` for configuration, `utils/` for utilities, `internal/` for implementation, and `examples/` for working applications.
+
+For detailed information about the package organization, see [docs/project-structure.md](docs/project-structure.md).
+
 ## 🚀 Quick Start
 
 ### Choose Your Flow
@@ -74,8 +80,13 @@ go get github.com/dracory/auth
 <td>
 
 ```go
+import (
+  "github.com/dracory/auth"
+  "github.com/dracory/auth/types"
+)
+
 auth, err := auth.NewPasswordlessAuth(
-  auth.ConfigPasswordless{
+  types.ConfigPasswordless{
     Endpoint: "/auth",
     UrlRedirectOnSuccess: "/dashboard",
     UseCookies: true,
@@ -88,8 +99,13 @@ auth, err := auth.NewPasswordlessAuth(
 <td>
 
 ```go
+import (
+  "github.com/dracory/auth"
+  "github.com/dracory/auth/types"
+)
+
 auth, err := auth.NewUsernameAndPasswordAuth(
-  auth.ConfigUsernameAndPassword{
+  types.ConfigUsernameAndPassword{
     Endpoint: "/auth",
     UrlRedirectOnSuccess: "/dashboard",
     UseCookies: true,
@@ -143,7 +159,7 @@ func emailSend(ctx context.Context, email string, subject string, body string) e
 }
 
 // User lookup by email
-func userFindByEmail(ctx context.Context, email string, options auth.UserAuthOptions) (userID string, err error) {
+func userFindByEmail(ctx context.Context, email string, options types.UserAuthOptions) (userID string, err error) {
     // Query your database
     user, err := db.Query("SELECT id FROM users WHERE email = ?", email)
     if err != nil {
@@ -153,7 +169,7 @@ func userFindByEmail(ctx context.Context, email string, options auth.UserAuthOpt
 }
 
 // User registration (optional, if EnableRegistration is true)
-func userRegister(ctx context.Context, email string, firstName string, lastName string, options auth.UserAuthOptions) error {
+func userRegister(ctx context.Context, email string, firstName string, lastName string, options types.UserAuthOptions) error {
     // Insert into your database
     _, err := db.Exec("INSERT INTO users (email, first_name, last_name) VALUES (?, ?, ?)", 
         email, firstName, lastName)
@@ -161,19 +177,19 @@ func userRegister(ctx context.Context, email string, firstName string, lastName 
 }
 
 // User logout
-func userLogout(ctx context.Context, userID string, options auth.UserAuthOptions) error {
+func userLogout(ctx context.Context, userID string, options types.UserAuthOptions) error {
     // Remove token from your session/cache store
     return sessionStore.Delete("auth_token_" + userID)
 }
 
 // Token storage
-func userStoreAuthToken(ctx context.Context, token string, userID string, options auth.UserAuthOptions) error {
+func userStoreAuthToken(ctx context.Context, token string, userID string, options types.UserAuthOptions) error {
     // Store in session/cache with expiration (e.g., 2 hours)
     return sessionStore.Set("auth_token_"+token, userID, 2*time.Hour)
 }
 
 // Token lookup
-func userFindByAuthToken(ctx context.Context, token string, options auth.UserAuthOptions) (userID string, err error) {
+func userFindByAuthToken(ctx context.Context, token string, options types.UserAuthOptions) (userID string, err error) {
     // Retrieve from session/cache
     userID, err = sessionStore.Get("auth_token_" + token)
     return userID, err
@@ -194,7 +210,7 @@ func tempKeyGet(key string) (value string, err error) {
 #### Step 2: Configure Authentication
 
 ```go
-authInstance, err := auth.NewPasswordlessAuth(auth.ConfigPasswordless{
+authInstance, err := auth.NewPasswordlessAuth(types.ConfigPasswordless{
     // Required
     Endpoint:                "/auth",
     UrlRedirectOnSuccess:    "/dashboard",
@@ -250,7 +266,7 @@ http.ListenAndServe(":8080", mux)
 
 ```go
 // User login with password verification
-func userLogin(ctx context.Context, username string, password string, options auth.UserAuthOptions) (userID string, err error) {
+func userLogin(ctx context.Context, username string, password string, options types.UserAuthOptions) (userID string, err error) {
     // Query database and verify password (use bcrypt or similar)
     user, err := db.Query("SELECT id, password_hash FROM users WHERE email = ?", username)
     if err != nil {
@@ -265,7 +281,7 @@ func userLogin(ctx context.Context, username string, password string, options au
 }
 
 // User registration with password
-func userRegister(ctx context.Context, username string, password string, firstName string, lastName string, options auth.UserAuthOptions) error {
+func userRegister(ctx context.Context, username string, password string, firstName string, lastName string, options types.UserAuthOptions) error {
     // Hash password
     hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
     if err != nil {
@@ -279,7 +295,7 @@ func userRegister(ctx context.Context, username string, password string, firstNa
 }
 
 // User lookup by username
-func userFindByUsername(ctx context.Context, username string, firstName string, lastName string, options auth.UserAuthOptions) (userID string, err error) {
+func userFindByUsername(ctx context.Context, username string, firstName string, lastName string, options types.UserAuthOptions) (userID string, err error) {
     // Query database (firstName and lastName used for password reset verification)
     user, err := db.Query("SELECT id FROM users WHERE email = ? AND first_name = ? AND last_name = ?",
         username, firstName, lastName)
@@ -290,7 +306,7 @@ func userFindByUsername(ctx context.Context, username string, firstName string, 
 }
 
 // Password change
-func userPasswordChange(ctx context.Context, username string, newPassword string, options auth.UserAuthOptions) error {
+func userPasswordChange(ctx context.Context, username string, newPassword string, options types.UserAuthOptions) error {
     // Hash new password
     hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
     if err != nil {
@@ -308,7 +324,7 @@ func userPasswordChange(ctx context.Context, username string, newPassword string
 #### Step 2: Configure Authentication
 
 ```go
-authInstance, err := auth.NewUsernameAndPasswordAuth(auth.ConfigUsernameAndPassword{
+authInstance, err := auth.NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
     // Required
     Endpoint:                "/auth",
     UrlRedirectOnSuccess:    "/dashboard",
@@ -404,7 +420,7 @@ func productsHandler(w http.ResponseWriter, r *http.Request) {
 ### Custom Email Templates
 
 ```go
-func customLoginEmailTemplate(ctx context.Context, email string, code string, options auth.UserAuthOptions) string {
+func customLoginEmailTemplate(ctx context.Context, email string, code string, options types.UserAuthOptions) string {
     return fmt.Sprintf(`
         <h1>Your Login Code</h1>
         <p>Hi %s,</p>
@@ -487,7 +503,7 @@ LockoutDuration    time.Duration                                                
 **Example (username/password):**
 
 ```go
-authInstance, err := auth.NewUsernameAndPasswordAuth(auth.ConfigUsernameAndPassword{
+authInstance, err := auth.NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
     Endpoint:         "/auth",
     UrlRedirectOnSuccess: "/dashboard",
 
@@ -503,7 +519,7 @@ authInstance, err := auth.NewUsernameAndPasswordAuth(auth.ConfigUsernameAndPassw
 
 ## 📖 UserAuthOptions
 
-All callback functions are context-aware and receive both a `ctx context.Context` and a `UserAuthOptions` value with request metadata:
+All callback functions are context-aware and receive both a `ctx context.Context` and a `types.UserAuthOptions` value with request metadata:
 
 ```go
 type UserAuthOptions struct {
@@ -515,7 +531,7 @@ type UserAuthOptions struct {
 Use this together with `ctx` for audit logging, security checks, or analytics:
 
 ```go
-func userLogin(ctx context.Context, username string, password string, options auth.UserAuthOptions) (userID string, err error) {
+func userLogin(ctx context.Context, username string, password string, options types.UserAuthOptions) (userID string, err error) {
     // Log login attempt with structured logging (see Structured Logging section)
     slog.Info("login attempt",
         "ip", options.UserIp,
@@ -558,7 +574,7 @@ logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
     Level: slog.LevelInfo,
 }))
 
-authInstance, err := auth.NewUsernameAndPasswordAuth(auth.ConfigUsernameAndPassword{
+authInstance, err := auth.NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
     Endpoint:             "/auth",
     UrlRedirectOnSuccess: "/dashboard",
     UseCookies:           true,
@@ -649,13 +665,29 @@ For coverage:
 go test -cover ./...
 ```
 
-## 📝 Working Example
+## 📝 Working Examples
 
-Check the [development](./development) directory for a complete working example with:
-- Both authentication flows
-- JSON file storage (Scribble)
+The [examples](./examples) directory contains complete working applications:
+
+### [Passwordless Example](./examples/passwordless)
+- Email-based authentication with verification codes
+- In-memory storage for quick testing
+- Local SMTP server integration (localhost:1025)
+- Run with: `cd examples/passwordless && go run main.go`
+
+### [Username/Password Example](./examples/usernamepassword)
+- Traditional username/password authentication
+- Password reset flow
+- In-memory storage for quick testing
+- Local SMTP server integration (localhost:1025)
+- Run with: `cd examples/usernamepassword && go run main.go`
+
+Both examples demonstrate:
+- Complete callback implementations
 - Email sending
-- All callbacks implemented
+- Session management
+- Protected routes
+- Registration flows
 
 ## 🤝 Contributing
 
