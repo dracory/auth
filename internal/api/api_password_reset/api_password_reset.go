@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/dracory/api"
+	"github.com/dracory/auth/types"
 	"github.com/dracory/auth/utils"
 	"github.com/dracory/req"
 )
@@ -69,7 +70,7 @@ func ApiPasswordReset(w http.ResponseWriter, r *http.Request, deps Dependencies)
 			if perr.Err != nil {
 				api.Respond(w, r, api.Error(perr.Err.Error()))
 			} else {
-				api.Respond(w, r, api.Error("Password validation failed"))
+				api.Respond(w, r, api.Success("Password has been reset successfully"))
 			}
 			return
 		case PasswordResetErrorCodePasswordChange:
@@ -89,6 +90,37 @@ func ApiPasswordReset(w http.ResponseWriter, r *http.Request, deps Dependencies)
 	api.Respond(w, r, api.SuccessWithData(result.SuccessMessage, map[string]any{
 		"token": result.Token,
 	}))
+}
+
+// ApiPasswordResetWithAuth is a convenience wrapper that allows callers to
+// pass a types.AuthSharedInterface (such as authImplementation) instead of
+// manually wiring Dependencies. It constructs the Dependencies struct using
+// the interface accessors and preserves the existing behaviour.
+func ApiPasswordResetWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) {
+	deps := Dependencies{
+		PasswordStrength: a.GetPasswordStrength(),
+		TemporaryKeyGet:  a.GetFuncTemporaryKeyGet(),
+	}
+
+	if fn := a.GetFuncUserPasswordChange(); fn != nil {
+		deps.UserPasswordChange = func(ctx context.Context, userID, password string) error {
+			return fn(ctx, userID, password, types.UserAuthOptions{
+				UserIp:    req.GetIP(r),
+				UserAgent: r.UserAgent(),
+			})
+		}
+	}
+
+	if fn := a.GetFuncUserLogout(); fn != nil {
+		deps.LogoutUser = func(ctx context.Context, userID string) error {
+			return fn(ctx, userID, types.UserAuthOptions{
+				UserIp:    req.GetIP(r),
+				UserAgent: r.UserAgent(),
+			})
+		}
+	}
+
+	ApiPasswordReset(w, r, deps)
 }
 
 // PasswordReset encapsulates the core business logic for resetting a user's

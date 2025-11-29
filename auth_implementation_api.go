@@ -137,24 +137,7 @@ func (a authImplementation) apiPasswordRestore(w http.ResponseWriter, r *http.Re
 }
 
 func (a authImplementation) apiPasswordReset(w http.ResponseWriter, r *http.Request) {
-	dependencies := api_password_reset.Dependencies{
-		PasswordStrength: a.passwordStrength,
-		TemporaryKeyGet:  a.funcTemporaryKeyGet,
-		UserPasswordChange: func(ctx context.Context, userID, password string) error {
-			return a.funcUserPasswordChange(ctx, userID, password, types.UserAuthOptions{
-				UserIp:    req.GetIP(r),
-				UserAgent: r.UserAgent(),
-			})
-		},
-		LogoutUser: func(ctx context.Context, userID string) error {
-			return a.funcUserLogout(ctx, userID, types.UserAuthOptions{
-				UserIp:    req.GetIP(r),
-				UserAgent: r.UserAgent(),
-			})
-		},
-	}
-
-	api_password_reset.ApiPasswordReset(w, r, dependencies)
+	api_password_reset.ApiPasswordResetWithAuth(w, r, &a)
 }
 
 func (a authImplementation) apiLoginCodeVerify(w http.ResponseWriter, r *http.Request) {
@@ -166,31 +149,5 @@ func (a authImplementation) apiRegisterCodeVerify(w http.ResponseWriter, r *http
 }
 
 func (a authImplementation) authenticateViaUsername(w http.ResponseWriter, r *http.Request, username string, firstName string, lastName string) {
-	dependencies := api_authenticate_via_username.Dependencies{
-		Passwordless: a.passwordless,
-		PasswordlessUserFindByEmail: func(ctx context.Context, email string) (string, error) {
-			return a.passwordlessFuncUserFindByEmail(ctx, email, types.UserAuthOptions{
-				UserIp:    req.GetIP(r),
-				UserAgent: r.UserAgent(),
-			})
-		},
-		UserFindByUsername: func(ctx context.Context, username, firstName, lastName string) (string, error) {
-			return a.funcUserFindByUsername(ctx, username, firstName, lastName, types.UserAuthOptions{
-				UserIp:    req.GetIP(r),
-				UserAgent: r.UserAgent(),
-			})
-		},
-		UserStoreAuthToken: func(ctx context.Context, token, userID string) error {
-			return a.funcUserStoreAuthToken(ctx, token, userID, types.UserAuthOptions{
-				UserIp:    req.GetIP(r),
-				UserAgent: r.UserAgent(),
-			})
-		},
-		UseCookies: a.useCookies,
-		SetAuthCookie: func(w http.ResponseWriter, r *http.Request, token string) {
-			a.setAuthCookie(w, r, token)
-		},
-	}
-
-	api_authenticate_via_username.ApiAuthenticateViaUsername(w, r, username, firstName, lastName, dependencies)
+	api_authenticate_via_username.ApiAuthenticateViaUsernameWithAuth(w, r, username, firstName, lastName, &a)
 }

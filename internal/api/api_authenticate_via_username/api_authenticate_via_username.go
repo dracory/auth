@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	"github.com/dracory/api"
+	"github.com/dracory/auth/types"
+	"github.com/dracory/req"
 	"github.com/dracory/str"
 )
 
@@ -75,6 +77,50 @@ func ApiAuthenticateViaUsername(w http.ResponseWriter, r *http.Request, username
 	api.Respond(w, r, api.SuccessWithData("login success", map[string]any{
 		"token": result.Token,
 	}))
+}
+
+// ApiAuthenticateViaUsernameWithAuth is a convenience wrapper that allows
+// callers to pass a types.AuthSharedInterface (such as authImplementation)
+// instead of manually wiring Dependencies. It constructs the Dependencies
+// struct using the interface accessors and preserves the existing behaviour.
+func ApiAuthenticateViaUsernameWithAuth(w http.ResponseWriter, r *http.Request, username, firstName, lastName string, a types.AuthSharedInterface) {
+	deps := Dependencies{
+		Passwordless: a.IsPasswordless(),
+		UseCookies:   a.GetUseCookies(),
+	}
+
+	if fn := a.GetPasswordlessUserFindByEmail(); fn != nil {
+		deps.PasswordlessUserFindByEmail = func(ctx context.Context, email string) (string, error) {
+			return fn(ctx, email, types.UserAuthOptions{
+				UserIp:    req.GetIP(r),
+				UserAgent: r.UserAgent(),
+			})
+		}
+	}
+
+	if fn := a.GetFuncUserFindByUsername(); fn != nil {
+		deps.UserFindByUsername = func(ctx context.Context, username, firstName, lastName string) (string, error) {
+			return fn(ctx, username, firstName, lastName, types.UserAuthOptions{
+				UserIp:    req.GetIP(r),
+				UserAgent: r.UserAgent(),
+			})
+		}
+	}
+
+	if fn := a.GetFuncUserStoreAuthToken(); fn != nil {
+		deps.UserStoreAuthToken = func(ctx context.Context, token, userID string) error {
+			return fn(ctx, token, userID, types.UserAuthOptions{
+				UserIp:    req.GetIP(r),
+				UserAgent: r.UserAgent(),
+			})
+		}
+	}
+
+	deps.SetAuthCookie = func(w http.ResponseWriter, r *http.Request, token string) {
+		a.SetAuthCookie(w, r, token)
+	}
+
+	ApiAuthenticateViaUsername(w, r, username, firstName, lastName, deps)
 }
 
 // AuthenticateViaUsername contains the core business logic for authenticating

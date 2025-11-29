@@ -173,6 +173,50 @@ func (a *authImplementation) SetFuncUserRegister(fn func(ctx context.Context, us
 	a.funcUserRegister = fn
 }
 
+func (a authImplementation) GetFuncUserPasswordChange() func(ctx context.Context, userID, password string, options types.UserAuthOptions) error {
+	return a.funcUserPasswordChange
+}
+
+func (a *authImplementation) SetFuncUserPasswordChange(fn func(ctx context.Context, userID, password string, options types.UserAuthOptions) error) {
+	a.funcUserPasswordChange = fn
+}
+
+func (a authImplementation) GetFuncUserLogout() func(ctx context.Context, userID string, options types.UserAuthOptions) error {
+	return a.funcUserLogout
+}
+
+func (a *authImplementation) SetFuncUserLogout(fn func(ctx context.Context, userID string, options types.UserAuthOptions) error) {
+	a.funcUserLogout = fn
+}
+
+func (a authImplementation) GetPasswordlessUserFindByEmail() func(ctx context.Context, email string, options types.UserAuthOptions) (string, error) {
+	return a.passwordlessFuncUserFindByEmail
+}
+
+func (a *authImplementation) SetPasswordlessUserFindByEmail(fn func(ctx context.Context, email string, options types.UserAuthOptions) (string, error)) {
+	a.passwordlessFuncUserFindByEmail = fn
+}
+
+func (a authImplementation) GetFuncUserFindByUsername() func(ctx context.Context, username, firstName, lastName string, options types.UserAuthOptions) (string, error) {
+	return a.funcUserFindByUsername
+}
+
+func (a *authImplementation) SetFuncUserFindByUsername(fn func(ctx context.Context, username, firstName, lastName string, options types.UserAuthOptions) (string, error)) {
+	a.funcUserFindByUsername = fn
+}
+
+func (a authImplementation) GetFuncUserStoreAuthToken() func(ctx context.Context, token, userID string, options types.UserAuthOptions) error {
+	return a.funcUserStoreAuthToken
+}
+
+func (a *authImplementation) SetFuncUserStoreAuthToken(fn func(ctx context.Context, token, userID string, options types.UserAuthOptions) error) {
+	a.funcUserStoreAuthToken = fn
+}
+
+func (a authImplementation) SetAuthCookie(w http.ResponseWriter, r *http.Request, token string) {
+	a.setAuthCookie(w, r, token)
+}
+
 func (a authImplementation) AuthenticateViaUsername(w http.ResponseWriter, r *http.Request, email, firstName, lastName string) {
 	a.authenticateViaUsername(w, r, email, firstName, lastName)
 }

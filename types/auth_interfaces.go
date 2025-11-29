@@ -73,6 +73,23 @@ type AuthSharedInterface interface {
 	GetFuncUserRegister() func(ctx context.Context, username, password, firstName, lastName string, options UserAuthOptions) error
 	SetFuncUserRegister(fn func(ctx context.Context, username, password, firstName, lastName string, options UserAuthOptions) error)
 
+	GetFuncUserPasswordChange() func(ctx context.Context, userID, password string, options UserAuthOptions) error
+	SetFuncUserPasswordChange(fn func(ctx context.Context, userID, password string, options UserAuthOptions) error)
+
+	GetFuncUserLogout() func(ctx context.Context, userID string, options UserAuthOptions) error
+	SetFuncUserLogout(fn func(ctx context.Context, userID string, options UserAuthOptions) error)
+
+	GetPasswordlessUserFindByEmail() func(ctx context.Context, email string, options UserAuthOptions) (string, error)
+	SetPasswordlessUserFindByEmail(fn func(ctx context.Context, email string, options UserAuthOptions) (string, error))
+
+	GetFuncUserFindByUsername() func(ctx context.Context, username, firstName, lastName string, options UserAuthOptions) (string, error)
+	SetFuncUserFindByUsername(fn func(ctx context.Context, username, firstName, lastName string, options UserAuthOptions) (string, error))
+
+	GetFuncUserStoreAuthToken() func(ctx context.Context, token, userID string, options UserAuthOptions) error
+	SetFuncUserStoreAuthToken(fn func(ctx context.Context, token, userID string, options UserAuthOptions) error)
+
+	SetAuthCookie(w http.ResponseWriter, r *http.Request, token string)
+
 	// Final authentication step helpers used by internal API flows.
 	AuthenticateViaUsername(w http.ResponseWriter, r *http.Request, email, firstName, lastName string)
 }
