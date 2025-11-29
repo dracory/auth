@@ -72,10 +72,5 @@ func (a authImplementation) pagePasswordReset(w http.ResponseWriter, r *http.Req
 }
 
 func (a authImplementation) pageLoginCodeVerify(w http.ResponseWriter, r *http.Request) {
-	page_login_code_verify.PageLoginCodeVerify(w, r, page_login_code_verify.Dependencies{
-		Endpoint:          a.endpoint,
-		RedirectOnSuccess: a.LinkRedirectOnSuccess(),
-		Layout:            a.funcLayout,
-		Logger:            a.GetLogger(),
-	})
+	page_login_code_verify.PageLoginCodeVerify(w, r, &a)
 }

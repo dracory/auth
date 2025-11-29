@@ -1,20 +1,16 @@
 package page_login_code_verify
 
 import (
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/dracory/auth/internal/testutils"
 )
 
 func TestPageLoginCodeVerify(t *testing.T) {
-	deps := Dependencies{
-		Endpoint:          "http://localhost/auth",
-		RedirectOnSuccess: "http://localhost/dashboard",
-		Layout:            func(content string) string { return content },
-		Logger:            slog.Default(),
-	}
+	a := testutils.NewAuthSharedForTest()
 
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
@@ -22,7 +18,7 @@ func TestPageLoginCodeVerify(t *testing.T) {
 	}
 
 	recorder := httptest.NewRecorder()
-	PageLoginCodeVerify(recorder, req, deps)
+	PageLoginCodeVerify(recorder, req, a)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
