@@ -82,36 +82,16 @@ func (a authImplementation) getRoute(route string) func(w http.ResponseWriter, r
 	}
 
 	routes := map[string]func(w http.ResponseWriter, r *http.Request){
-		PathApiLogin: middlewares.WithRateLimit(
-			middlewares.RateLimitConfig{Check: a.checkRateLimit, Endpoint: "login"},
-			middlewares.WithCSRF(csrfCfg, a.apiLogin),
-		),
-		PathApiLoginCodeVerify: middlewares.WithRateLimit(
-			middlewares.RateLimitConfig{Check: a.checkRateLimit, Endpoint: "login_code_verify"},
-			a.apiLoginCodeVerify,
-		),
-		PathApiLogout: a.apiLogout,
-		PathApiRegister: middlewares.WithRateLimit(
-			middlewares.RateLimitConfig{Check: a.checkRateLimit, Endpoint: "register"},
-			middlewares.WithCSRF(csrfCfg, a.apiRegister),
-		),
-		PathApiRegisterCodeVerify: middlewares.WithRateLimit(
-			middlewares.RateLimitConfig{Check: a.checkRateLimit, Endpoint: "register_code_verify"},
-			a.apiRegisterCodeVerify,
-		),
-		PathApiResetPassword: middlewares.WithRateLimit(
-			middlewares.RateLimitConfig{Check: a.checkRateLimit, Endpoint: "password_reset"},
-			middlewares.WithCSRF(csrfCfg, a.apiPasswordReset),
-		),
-		PathApiRestorePassword: middlewares.WithRateLimit(
-			middlewares.RateLimitConfig{Check: a.checkRateLimit, Endpoint: "password_restore"},
-			a.apiPasswordRestore,
-		),
+		PathApiLogout:       a.apiLogout,
 		PathLogin:           a.pageLogin,
 		PathLoginCodeVerify: a.pageLoginCodeVerify,
 		PathLogout:          a.pageLogout,
 		PathPasswordReset:   a.pagePasswordReset,
 		PathPasswordRestore: a.pagePasswordRestore,
+	}
+
+	for path, handler := range a.buildAPIRoutes(csrfCfg) {
+		routes[path] = handler
 	}
 
 	if a.enableRegistration {
@@ -124,6 +104,38 @@ func (a authImplementation) getRoute(route string) func(w http.ResponseWriter, r
 	}
 
 	return a.notFoundHandler
+}
+
+func (a authImplementation) buildAPIRoutes(csrfCfg middlewares.CSRFConfig) map[string]func(http.ResponseWriter, *http.Request) {
+	routes := make(map[string]func(http.ResponseWriter, *http.Request))
+
+	apiRoutes := []struct {
+		path     string
+		endpoint string
+		handler  func(http.ResponseWriter, *http.Request)
+		useCSRF  bool
+	}{
+		{PathApiLogin, "login", a.apiLogin, true},
+		{PathApiLoginCodeVerify, "login_code_verify", a.apiLoginCodeVerify, false},
+		{PathApiRegister, "register", a.apiRegister, true},
+		{PathApiRegisterCodeVerify, "register_code_verify", a.apiRegisterCodeVerify, false},
+		{PathApiResetPassword, "password_reset", a.apiPasswordReset, true},
+		{PathApiRestorePassword, "password_restore", a.apiPasswordRestore, false},
+	}
+
+	for _, cfg := range apiRoutes {
+		h := cfg.handler
+		if cfg.useCSRF {
+			h = middlewares.WithCSRF(csrfCfg, h)
+		}
+
+		routes[cfg.path] = middlewares.WithRateLimit(
+			middlewares.RateLimitConfig{Check: a.checkRateLimit, Endpoint: cfg.endpoint},
+			h,
+		)
+	}
+
+	return routes
 }
 
 func (a authImplementation) notFoundHandler(w http.ResponseWriter, r *http.Request) {

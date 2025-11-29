@@ -8,8 +8,7 @@ import (
 
 	"github.com/dracory/auth/internal/links"
 	"github.com/dracory/auth/types"
-	authtypes "github.com/dracory/auth/types"
-	authutils "github.com/dracory/auth/utils"
+	"github.com/dracory/auth/utils"
 )
 
 // Auth defines the structure for the authentication
@@ -40,7 +39,7 @@ type authImplementation struct {
 	funcUserPasswordChange           func(ctx context.Context, username string, newPassword string, options types.UserAuthOptions) (err error)
 	funcUserRegister                 func(ctx context.Context, username string, password string, first_name string, last_name string, options types.UserAuthOptions) (err error)
 	funcUserFindByUsername           func(ctx context.Context, username string, first_name string, last_name string, options types.UserAuthOptions) (userID string, err error)
-	passwordStrength                 *authtypes.PasswordStrengthConfig
+	passwordStrength                 *types.PasswordStrengthConfig
 	// ===== END: username(email) and password options
 
 	// ===== START: passwordless options
@@ -55,7 +54,7 @@ type authImplementation struct {
 	// ===== START: rate limiting
 	disableRateLimit   bool
 	funcCheckRateLimit func(ip string, endpoint string) (allowed bool, retryAfter time.Duration, err error)
-	rateLimiter        *authutils.InMemoryRateLimiter
+	rateLimiter        *utils.InMemoryRateLimiter
 	// ===== END: rate limiting
 
 	cookieConfig CookieConfig
@@ -149,11 +148,11 @@ func (a *authImplementation) SetDisableRateLimit(disable bool) {
 	a.disableRateLimit = disable
 }
 
-func (a authImplementation) GetPasswordStrength() *authtypes.PasswordStrengthConfig {
+func (a authImplementation) GetPasswordStrength() *types.PasswordStrengthConfig {
 	return a.passwordStrength
 }
 
-func (a *authImplementation) SetPasswordStrength(cfg *authtypes.PasswordStrengthConfig) {
+func (a *authImplementation) SetPasswordStrength(cfg *types.PasswordStrengthConfig) {
 	a.passwordStrength = cfg
 }
 
