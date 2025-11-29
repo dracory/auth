@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/dracory/auth/internal/api/api_authenticate_via_username"
@@ -12,68 +11,14 @@ import (
 	"github.com/dracory/auth/internal/api/api_password_restore"
 	"github.com/dracory/auth/internal/api/api_register"
 	"github.com/dracory/auth/internal/api/api_register_code_verify"
-	"github.com/dracory/auth/types"
-	"github.com/dracory/req"
 )
 
 func (a authImplementation) apiLogin(w http.ResponseWriter, r *http.Request) {
-	dependencies := api_login.Dependencies{
-		Passwordless: a.passwordless,
-		PasswordlessDependencies: api_login.LoginPasswordlessDeps{
-			DisableRateLimit: a.disableRateLimit,
-			TemporaryKeySet:  a.funcTemporaryKeySet,
-			ExpiresSeconds:   int(DefaultVerificationCodeExpiration.Seconds()),
-			EmailTemplate: func(ctx context.Context, email string, verificationCode string) string {
-				return a.passwordlessFuncEmailTemplateLoginCode(ctx, email, verificationCode, types.UserAuthOptions{
-					UserIp:    req.GetIP(r),
-					UserAgent: r.UserAgent(),
-				})
-			},
-			EmailSend: a.passwordlessFuncEmailSend,
-		},
-		LoginWithUsernameAndPassword: func(ctx context.Context, email, password, ip, userAgent string) (string, string, string) {
-			response := a.LoginWithUsernameAndPassword(ctx, email, password, types.UserAuthOptions{
-				UserIp:    ip,
-				UserAgent: userAgent,
-			})
-			return response.SuccessMessage, response.Token, response.ErrorMessage
-		},
-		UseCookies: a.useCookies,
-		SetAuthCookie: func(w http.ResponseWriter, r *http.Request, token string) {
-			a.setAuthCookie(w, r, token)
-		},
-	}
-
-	api_login.ApiLogin(w, r, dependencies)
+	api_login.ApiLoginWithAuth(w, r, &a)
 }
 
 func (a authImplementation) apiRegister(w http.ResponseWriter, r *http.Request) {
-	dependencies := api_register.Dependencies{
-		Passwordless: a.passwordless,
-		RegisterPasswordlessInitDependencies: api_register.RegisterPasswordlessInitDependencies{
-			DisableRateLimit: a.disableRateLimit,
-			TemporaryKeySet:  a.funcTemporaryKeySet,
-			ExpiresSeconds:   int(DefaultVerificationCodeExpiration.Seconds()),
-			EmailTemplate: func(ctx context.Context, email string, verificationCode string) string {
-				return a.passwordlessFuncEmailTemplateRegisterCode(ctx, email, verificationCode, types.UserAuthOptions{
-					UserIp:    req.GetIP(r),
-					UserAgent: r.UserAgent(),
-				})
-			},
-			EmailSend: func(ctx context.Context, email string, subject string, body string) error {
-				return a.passwordlessFuncEmailSend(ctx, email, subject, body)
-			},
-		},
-		RegisterWithUsernameAndPassword: func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string) {
-			resp := a.RegisterWithUsernameAndPassword(ctx, email, password, firstName, lastName, types.UserAuthOptions{
-				UserIp:    ip,
-				UserAgent: userAgent,
-			})
-			return resp.SuccessMessage, resp.ErrorMessage
-		},
-	}
-
-	api_register.ApiRegister(w, r, dependencies)
+	api_register.ApiRegisterWithAuth(w, r, &a)
 }
 
 func (a authImplementation) apiLogout(w http.ResponseWriter, r *http.Request) {

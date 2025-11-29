@@ -94,6 +94,15 @@ type AuthSharedInterface interface {
 	GetFuncEmailSend() func(ctx context.Context, userID, emailSubject, emailBody string) error
 	SetFuncEmailSend(fn func(ctx context.Context, userID, emailSubject, emailBody string) error)
 
+	GetPasswordlessFuncEmailTemplateLoginCode() func(ctx context.Context, email string, passwordRestoreLink string, options UserAuthOptions) string
+	SetPasswordlessFuncEmailTemplateLoginCode(fn func(ctx context.Context, email string, passwordRestoreLink string, options UserAuthOptions) string)
+
+	GetPasswordlessFuncEmailTemplateRegisterCode() func(ctx context.Context, email string, passwordRestoreLink string, options UserAuthOptions) string
+	SetPasswordlessFuncEmailTemplateRegisterCode(fn func(ctx context.Context, email string, passwordRestoreLink string, options UserAuthOptions) string)
+
+	GetPasswordlessFuncEmailSend() func(ctx context.Context, email string, emailSubject, emailBody string) error
+	SetPasswordlessFuncEmailSend(fn func(ctx context.Context, email string, emailSubject, emailBody string) error)
+
 	GetFuncUserStoreAuthToken() func(ctx context.Context, token, userID string, options UserAuthOptions) error
 	SetFuncUserStoreAuthToken(fn func(ctx context.Context, token, userID string, options UserAuthOptions) error)
 
@@ -114,6 +123,12 @@ type AuthPasswordInterface interface {
 	LinkPasswordReset(token string) string
 	LinkApiPasswordRestore() string
 	LinkApiPasswordReset() string
+
+	// Generic username/password registration helper used by API layers.
+	RegisterUserWithPassword(ctx context.Context, email, password, firstName, lastName string, options UserAuthOptions) (successMessage, token, errorMessage string)
+
+	// Generic username/password login helper used by API layers.
+	LoginUserWithPassword(ctx context.Context, email, password string, options UserAuthOptions) (successMessage, token, errorMessage string)
 }
 
 // AuthPasswordlessInterface represents passwordless authentication flows.

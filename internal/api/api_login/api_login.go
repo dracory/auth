@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/dracory/api"
+	"github.com/dracory/auth/types"
 	"github.com/dracory/req"
 )
 
@@ -70,4 +71,57 @@ func ApiLogin(w http.ResponseWriter, r *http.Request, dependencies Dependencies)
 	api.Respond(w, r, api.SuccessWithData(successMessage, map[string]any{
 		"token": token,
 	}))
+}
+
+// ApiLoginWithAuth is a convenience wrapper that allows callers to pass a
+// types.AuthSharedInterface (such as authImplementation) instead of manually
+// wiring Dependencies. It constructs the Dependencies struct using the
+// interface accessors and preserves the existing behaviour.
+func ApiLoginWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) {
+	passwordAuth, ok := a.(types.AuthPasswordInterface)
+	if !ok {
+		if logger := a.GetLogger(); logger != nil {
+			logger.Error("login requires AuthPasswordInterface")
+		}
+		http.Error(w, "Internal server error. Please try again later", http.StatusInternalServerError)
+		return
+	}
+
+	deps := Dependencies{
+		Passwordless: a.IsPasswordless(),
+		PasswordlessDependencies: LoginPasswordlessDeps{
+			DisableRateLimit: a.GetDisableRateLimit(),
+			TemporaryKeySet:  a.GetFuncTemporaryKeySet(),
+			ExpiresSeconds:   0, // let business logic apply default
+			EmailTemplate: func(ctx context.Context, email string, verificationCode string) string {
+				fn := a.GetPasswordlessFuncEmailTemplateLoginCode()
+				if fn == nil {
+					return ""
+				}
+				return fn(ctx, email, verificationCode, types.UserAuthOptions{
+					UserIp:    req.GetIP(r),
+					UserAgent: r.UserAgent(),
+				})
+			},
+			EmailSend: func(ctx context.Context, email string, subject string, body string) error {
+				fn := a.GetPasswordlessFuncEmailSend()
+				if fn == nil {
+					return nil
+				}
+				return fn(ctx, email, subject, body)
+			},
+		},
+		LoginWithUsernameAndPassword: func(ctx context.Context, email, password, ip, userAgent string) (string, string, string) {
+			return passwordAuth.LoginUserWithPassword(ctx, email, password, types.UserAuthOptions{
+				UserIp:    ip,
+				UserAgent: userAgent,
+			})
+		},
+		UseCookies: a.GetUseCookies(),
+		SetAuthCookie: func(w http.ResponseWriter, r *http.Request, token string) {
+			a.SetAuthCookie(w, r, token)
+		},
+	}
+
+	ApiLogin(w, r, deps)
 }

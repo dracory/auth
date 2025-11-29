@@ -197,6 +197,30 @@ func (a *authImplementation) SetPasswordlessUserFindByEmail(fn func(ctx context.
 	a.passwordlessFuncUserFindByEmail = fn
 }
 
+func (a authImplementation) GetPasswordlessFuncEmailTemplateLoginCode() func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string {
+	return a.passwordlessFuncEmailTemplateLoginCode
+}
+
+func (a *authImplementation) SetPasswordlessFuncEmailTemplateLoginCode(fn func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string) {
+	a.passwordlessFuncEmailTemplateLoginCode = fn
+}
+
+func (a authImplementation) GetPasswordlessFuncEmailTemplateRegisterCode() func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string {
+	return a.passwordlessFuncEmailTemplateRegisterCode
+}
+
+func (a *authImplementation) SetPasswordlessFuncEmailTemplateRegisterCode(fn func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string) {
+	a.passwordlessFuncEmailTemplateRegisterCode = fn
+}
+
+func (a authImplementation) GetPasswordlessFuncEmailSend() func(ctx context.Context, email string, emailSubject string, emailBody string) error {
+	return a.passwordlessFuncEmailSend
+}
+
+func (a *authImplementation) SetPasswordlessFuncEmailSend(fn func(ctx context.Context, email string, emailSubject string, emailBody string) error) {
+	a.passwordlessFuncEmailSend = fn
+}
+
 func (a authImplementation) GetFuncUserFindByUsername() func(ctx context.Context, username, firstName, lastName string, options types.UserAuthOptions) (string, error) {
 	return a.funcUserFindByUsername
 }
@@ -329,4 +353,20 @@ func (a *authImplementation) RegistrationEnable() {
 // RegistrationDisable - disables registration
 func (a *authImplementation) RegistrationDisable() {
 	a.enableRegistration = false
+}
+
+// RegisterUserWithPassword is the AuthPasswordInterface adapter that delegates
+// to the existing RegisterWithUsernameAndPassword helper and maps its response
+// into the generic triple used by API layers.
+func (a authImplementation) RegisterUserWithPassword(ctx context.Context, email, password, firstName, lastName string, options types.UserAuthOptions) (string, string, string) {
+	resp := a.RegisterWithUsernameAndPassword(ctx, email, password, firstName, lastName, options)
+	return resp.SuccessMessage, resp.Token, resp.ErrorMessage
+}
+
+// LoginUserWithPassword is the AuthPasswordInterface adapter that delegates
+// to the existing LoginWithUsernameAndPassword helper and maps its response
+// into the generic triple used by API layers.
+func (a authImplementation) LoginUserWithPassword(ctx context.Context, email, password string, options types.UserAuthOptions) (string, string, string) {
+	resp := a.LoginWithUsernameAndPassword(ctx, email, password, options)
+	return resp.SuccessMessage, resp.Token, resp.ErrorMessage
 }

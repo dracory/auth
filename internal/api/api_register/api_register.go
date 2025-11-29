@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/dracory/api"
+	"github.com/dracory/auth/types"
 	authutils "github.com/dracory/auth/utils"
 	"github.com/dracory/req"
 )
@@ -59,6 +60,62 @@ func ApiRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 	}
 
 	api.Respond(w, r, api.Success(successMessage))
+}
+
+// ApiRegisterWithAuth is a convenience wrapper that allows callers to pass a
+// types.AuthSharedInterface (such as authImplementation) instead of manually
+// wiring Dependencies. It constructs the Dependencies struct using the
+// interface accessors and preserves the existing behaviour.
+func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) {
+	passwordAuth, ok := a.(types.AuthPasswordInterface)
+	if !ok {
+		if logger := a.GetLogger(); logger != nil {
+			logger.Error("registration requires AuthPasswordInterface")
+		}
+		http.Error(w, "Internal server error. Please try again later", http.StatusInternalServerError)
+		return
+	}
+
+	deps := Dependencies{}
+	deps.Passwordless = a.IsPasswordless()
+
+	// Configure passwordless branch dependencies if enabled.
+	if deps.Passwordless {
+		deps.RegisterPasswordlessInitDependencies = RegisterPasswordlessInitDependencies{
+			DisableRateLimit: a.GetDisableRateLimit(),
+			TemporaryKeySet:  a.GetFuncTemporaryKeySet(),
+			ExpiresSeconds:   0, // let RegisterPasswordlessInit apply default
+			EmailTemplate: func(ctx context.Context, email string, verificationCode string) string {
+				fn := a.GetPasswordlessFuncEmailTemplateRegisterCode()
+				if fn == nil {
+					return ""
+				}
+				return fn(ctx, email, verificationCode, types.UserAuthOptions{
+					UserIp:    req.GetIP(r),
+					UserAgent: r.UserAgent(),
+				})
+			},
+			EmailSend: func(ctx context.Context, email string, subject string, body string) error {
+				fn := a.GetPasswordlessFuncEmailSend()
+				if fn == nil {
+					return errors.New("Passwordless email sender is not configured")
+				}
+				return fn(ctx, email, subject, body)
+			},
+		}
+	}
+
+	// Configure username/password registration handler.
+	deps.RegisterWithUsernameAndPassword = func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string) {
+		// Delegate to the higher-level helper on AuthPasswordInterface.
+		successMessage, _, errorMessage := passwordAuth.RegisterUserWithPassword(ctx, email, password, firstName, lastName, types.UserAuthOptions{
+			UserIp:    ip,
+			UserAgent: userAgent,
+		})
+		return successMessage, errorMessage
+	}
+
+	ApiRegister(w, r, deps)
 }
 
 // RegisterPasswordlessInitDeps defines the dependencies required for the

@@ -18,29 +18,32 @@ func NewAuthSharedForTest() types.AuthSharedInterface {
 }
 
 type authSharedTest struct {
-	endpoint                     string
-	layout                       func(content string) string
-	logger                       *slog.Logger
-	registration                 bool
-	passwordless                 bool
-	verification                 bool
-	temporaryKeyGet              func(key string) (string, error)
-	temporaryKeySet              func(key string, value string, expiresSeconds int) error
-	funcUserFindByAuthToken      func(ctx context.Context, token string, options types.UserAuthOptions) (string, error)
-	redirectOnSuccess            string
-	loginURL                     string
-	useCookies                   bool
-	disableRateLimit             bool
-	passwordStrength             *types.PasswordStrengthConfig
-	passwordlessUserRegister     func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) error
-	funcUserRegister             func(ctx context.Context, username, password, firstName, lastName string, options types.UserAuthOptions) error
-	funcUserPasswordChange       func(ctx context.Context, userID, password string, options types.UserAuthOptions) error
-	funcUserLogout               func(ctx context.Context, userID string, options types.UserAuthOptions) error
-	passwordlessUserFindByEmail  func(ctx context.Context, email string, options types.UserAuthOptions) (string, error)
-	funcUserFindByUsername       func(ctx context.Context, username, firstName, lastName string, options types.UserAuthOptions) (string, error)
-	funcUserStoreAuthToken       func(ctx context.Context, token, userID string, options types.UserAuthOptions) error
-	emailTemplatePasswordRestore func(ctx context.Context, userID string, passwordRestoreLink string, options types.UserAuthOptions) string
-	emailSend                    func(ctx context.Context, userID, emailSubject, emailBody string) error
+	endpoint                              string
+	layout                                func(content string) string
+	logger                                *slog.Logger
+	registration                          bool
+	passwordless                          bool
+	verification                          bool
+	temporaryKeyGet                       func(key string) (string, error)
+	temporaryKeySet                       func(key string, value string, expiresSeconds int) error
+	funcUserFindByAuthToken               func(ctx context.Context, token string, options types.UserAuthOptions) (string, error)
+	redirectOnSuccess                     string
+	loginURL                              string
+	useCookies                            bool
+	disableRateLimit                      bool
+	passwordStrength                      *types.PasswordStrengthConfig
+	passwordlessUserRegister              func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) error
+	funcUserRegister                      func(ctx context.Context, username, password, firstName, lastName string, options types.UserAuthOptions) error
+	funcUserPasswordChange                func(ctx context.Context, userID, password string, options types.UserAuthOptions) error
+	funcUserLogout                        func(ctx context.Context, userID string, options types.UserAuthOptions) error
+	passwordlessUserFindByEmail           func(ctx context.Context, email string, options types.UserAuthOptions) (string, error)
+	funcUserFindByUsername                func(ctx context.Context, username, firstName, lastName string, options types.UserAuthOptions) (string, error)
+	funcUserStoreAuthToken                func(ctx context.Context, token, userID string, options types.UserAuthOptions) error
+	emailTemplatePasswordRestore          func(ctx context.Context, userID string, passwordRestoreLink string, options types.UserAuthOptions) string
+	emailSend                             func(ctx context.Context, userID, emailSubject, emailBody string) error
+	passwordlessEmailTemplateLoginCode    func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string
+	passwordlessEmailTemplateRegisterCode func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string
+	passwordlessEmailSend                 func(ctx context.Context, email string, emailSubject, emailBody string) error
 }
 
 func (a *authSharedTest) Router() *http.ServeMux { return http.NewServeMux() }
@@ -112,6 +115,40 @@ func (a *authSharedTest) GetPasswordlessUserRegister() func(ctx context.Context,
 
 func (a *authSharedTest) SetPasswordlessUserRegister(fn func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) error) {
 	a.passwordlessUserRegister = fn
+}
+
+func (a *authSharedTest) GetPasswordlessFuncEmailTemplateLoginCode() func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string {
+	return a.passwordlessEmailTemplateLoginCode
+}
+
+func (a *authSharedTest) SetPasswordlessFuncEmailTemplateLoginCode(fn func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string) {
+	a.passwordlessEmailTemplateLoginCode = fn
+}
+
+func (a *authSharedTest) GetPasswordlessFuncEmailTemplateRegisterCode() func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string {
+	return a.passwordlessEmailTemplateRegisterCode
+}
+
+func (a *authSharedTest) SetPasswordlessFuncEmailTemplateRegisterCode(fn func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string) {
+	a.passwordlessEmailTemplateRegisterCode = fn
+}
+
+func (a *authSharedTest) GetPasswordlessFuncEmailSend() func(ctx context.Context, email string, emailSubject, emailBody string) error {
+	return a.passwordlessEmailSend
+}
+
+func (a *authSharedTest) SetPasswordlessFuncEmailSend(fn func(ctx context.Context, email string, emailSubject, emailBody string) error) {
+	a.passwordlessEmailSend = fn
+}
+
+func (a *authSharedTest) RegisterUserWithPassword(ctx context.Context, email, password, firstName, lastName string, options types.UserAuthOptions) (string, string, string) {
+	// Default test double: no-op registration.
+	return "", "", ""
+}
+
+func (a *authSharedTest) LoginUserWithPassword(ctx context.Context, email, password string, options types.UserAuthOptions) (string, string, string) {
+	// Default test double: no-op login.
+	return "", "", ""
 }
 
 func (a *authSharedTest) GetFuncUserRegister() func(ctx context.Context, username, password, firstName, lastName string, options types.UserAuthOptions) error {
