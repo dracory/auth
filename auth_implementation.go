@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/dracory/auth/internal/links"
+	"github.com/dracory/auth/middlewares"
 	"github.com/dracory/auth/types"
 	"github.com/dracory/auth/utils"
 )
@@ -368,4 +369,16 @@ func (a authImplementation) RegisterUserWithPassword(ctx context.Context, email,
 func (a authImplementation) LoginUserWithPassword(ctx context.Context, email, password string, options types.UserAuthOptions) (string, string, string) {
 	resp := a.LoginWithUsernameAndPassword(ctx, email, password, options)
 	return resp.SuccessMessage, resp.Token, resp.ErrorMessage
+}
+
+func (a *authImplementation) WebAuthOrRedirectMiddleware(next http.Handler) http.Handler {
+	return middlewares.WebAuthOrRedirectMiddleware(next, a)
+}
+
+func (a *authImplementation) ApiAuthOrErrorMiddleware(next http.Handler) http.Handler {
+	return middlewares.ApiAuthOrErrorMiddleware(next, a)
+}
+
+func (a *authImplementation) WebAppendUserIdIfExistsMiddleware(next http.Handler) http.Handler {
+	return middlewares.WebAppendUserIdIfExistsMiddleware(next, a)
 }
