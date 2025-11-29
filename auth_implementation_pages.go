@@ -3,7 +3,7 @@ package auth
 import (
 	"net/http"
 
-	page_login "github.com/dracory/auth/internal/ui/page_login"
+	"github.com/dracory/auth/internal/ui/page_login"
 	page_login_code_verify "github.com/dracory/auth/internal/ui/page_login_code_verify"
 	page_logout "github.com/dracory/auth/internal/ui/page_logout"
 	page_password_reset "github.com/dracory/auth/internal/ui/page_password_reset"
@@ -44,17 +44,7 @@ func (a authImplementation) pageRegisterCodeVerify(w http.ResponseWriter, r *htt
 }
 
 func (a authImplementation) pageLogout(w http.ResponseWriter, r *http.Request) {
-	logger := a.GetLogger()
-	urlApiLogout := a.LinkApiLogout()
-	logger.Debug("logout page initialized",
-		"api_logout_url", urlApiLogout,
-	)
-
-	page_logout.PageLogout(w, r, page_logout.Dependencies{
-		Endpoint: a.endpoint,
-		Layout:   a.funcLayout,
-		Logger:   logger,
-	})
+	page_logout.PageLogout(w, r, &a)
 }
 
 func (a authImplementation) pagePasswordRestore(w http.ResponseWriter, r *http.Request) {

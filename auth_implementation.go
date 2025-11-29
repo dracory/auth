@@ -77,6 +77,26 @@ type authImplementation struct {
 	logger          *slog.Logger
 }
 
+func (a authImplementation) GetEndpoint() string {
+	return a.endpoint
+}
+
+func (a *authImplementation) SetEndpoint(endpoint string) {
+	a.endpoint = endpoint
+}
+
+func (a authImplementation) GetLayout() func(content string) string {
+	return a.funcLayout
+}
+
+func (a *authImplementation) SetLayout(layout func(content string) string) {
+	a.funcLayout = layout
+}
+
+func (a authImplementation) IsRegistrationEnabled() bool {
+	return a.enableRegistration
+}
+
 // GetLogger returns the configured structured logger for this Auth instance.
 // If no logger was explicitly provided, it falls back to slog.Default().
 // Under normal library usage this method always returns a non-nil *slog.Logger.
@@ -85,6 +105,10 @@ func (a authImplementation) GetLogger() *slog.Logger {
 		return a.logger
 	}
 	return slog.Default()
+}
+
+func (a *authImplementation) SetLogger(logger *slog.Logger) {
+	a.logger = logger
 }
 
 // GetCurrentUserID returns the authenticated user ID stored in the request

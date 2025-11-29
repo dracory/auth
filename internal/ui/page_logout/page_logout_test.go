@@ -1,19 +1,16 @@
 package page_logout
 
 import (
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/dracory/auth/internal/testutils"
 )
 
 func TestPageLogout(t *testing.T) {
-	deps := Dependencies{
-		Endpoint: "http://localhost/auth",
-		Layout:   func(content string) string { return content },
-		Logger:   slog.Default(),
-	}
+	auth := testutils.NewAuthSharedForTest()
 
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
@@ -21,7 +18,7 @@ func TestPageLogout(t *testing.T) {
 	}
 
 	recorder := httptest.NewRecorder()
-	PageLogout(recorder, req, deps)
+	PageLogout(recorder, req, auth)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)

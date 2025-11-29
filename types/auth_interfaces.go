@@ -1,6 +1,9 @@
 package types
 
-import "net/http"
+import (
+	"log/slog"
+	"net/http"
+)
 
 // AuthSharedInterface defines the common behavior shared by all auth modes.
 // It includes routing helpers, middleware, current user access, and the
@@ -8,6 +11,8 @@ import "net/http"
 type AuthSharedInterface interface {
 	// Router returns an HTTP mux that serves all auth routes.
 	Router() *http.ServeMux
+
+	IsRegistrationEnabled() bool
 
 	// Middlewares for protecting or enriching routes.
 	WebAuthOrRedirectMiddleware(next http.Handler) http.Handler
@@ -29,6 +34,16 @@ type AuthSharedInterface interface {
 	LinkApiLogout() string
 	LinkApiRegister() string
 	LinkApiRegisterCodeVerify() string
+
+	// Accessors
+	GetEndpoint() string
+	SetEndpoint(endpoint string)
+
+	GetLogger() *slog.Logger
+	SetLogger(logger *slog.Logger)
+
+	GetLayout() func(content string) string
+	SetLayout(layout func(content string) string)
 }
 
 // AuthPasswordInterface represents username/password based authentication.

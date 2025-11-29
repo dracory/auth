@@ -17,7 +17,7 @@ import (
 )
 
 func (a authImplementation) apiLogin(w http.ResponseWriter, r *http.Request) {
-	api_login.ApiLogin(w, r, api_login.Dependencies{
+	dependencies := api_login.Dependencies{
 		Passwordless: a.passwordless,
 		PasswordlessDependencies: api_login.LoginPasswordlessDeps{
 			DisableRateLimit: a.disableRateLimit,
@@ -42,11 +42,13 @@ func (a authImplementation) apiLogin(w http.ResponseWriter, r *http.Request) {
 		SetAuthCookie: func(w http.ResponseWriter, r *http.Request, token string) {
 			a.setAuthCookie(w, r, token)
 		},
-	})
+	}
+
+	api_login.ApiLogin(w, r, dependencies)
 }
 
 func (a authImplementation) apiRegister(w http.ResponseWriter, r *http.Request) {
-	api_register.ApiRegister(w, r, api_register.Dependencies{
+	dependencies := api_register.Dependencies{
 		Passwordless: a.passwordless,
 		RegisterPasswordlessInitDependencies: api_register.RegisterPasswordlessInitDependencies{
 			DisableRateLimit: a.disableRateLimit,
@@ -69,11 +71,13 @@ func (a authImplementation) apiRegister(w http.ResponseWriter, r *http.Request) 
 			})
 			return resp.SuccessMessage, resp.ErrorMessage
 		},
-	})
+	}
+
+	api_register.ApiRegister(w, r, dependencies)
 }
 
 func (a authImplementation) apiLogout(w http.ResponseWriter, r *http.Request) {
-	api_logout.ApiLogout(w, r, api_logout.Dependencies{
+	dependencies := api_logout.Dependencies{
 		UserFromToken: func(ctx context.Context, token string) (string, error) {
 			return a.funcUserFindByAuthToken(ctx, token, UserAuthOptions{
 				UserIp:    req.GetIP(r),
@@ -93,11 +97,13 @@ func (a authImplementation) apiLogout(w http.ResponseWriter, r *http.Request) {
 		RemoveAuthCookie: func(w http.ResponseWriter, r *http.Request) {
 			a.removeAuthCookie(w, r)
 		},
-	})
+	}
+
+	api_logout.ApiLogout(w, r, dependencies)
 }
 
 func (a authImplementation) apiPasswordRestore(w http.ResponseWriter, r *http.Request) {
-	deps, err := api_password_restore.NewDependencies(
+	dependencies, err := api_password_restore.NewDependencies(
 		func(ctx context.Context, email, firstName, lastName string) (string, error) {
 			return a.funcUserFindByUsername(ctx, email, firstName, lastName, UserAuthOptions{
 				UserIp:    req.GetIP(r),
@@ -125,11 +131,11 @@ func (a authImplementation) apiPasswordRestore(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	api_password_restore.ApiPasswordRestore(w, r, deps)
+	api_password_restore.ApiPasswordRestore(w, r, dependencies)
 }
 
 func (a authImplementation) apiPasswordReset(w http.ResponseWriter, r *http.Request) {
-	api_password_reset.ApiPasswordReset(w, r, api_password_reset.Dependencies{
+	dependencies := api_password_reset.Dependencies{
 		PasswordStrength: a.passwordStrength,
 		TemporaryKeyGet:  a.funcTemporaryKeyGet,
 		UserPasswordChange: func(ctx context.Context, userID, password string) error {
@@ -144,21 +150,25 @@ func (a authImplementation) apiPasswordReset(w http.ResponseWriter, r *http.Requ
 				UserAgent: r.UserAgent(),
 			})
 		},
-	})
+	}
+
+	api_password_reset.ApiPasswordReset(w, r, dependencies)
 }
 
 func (a authImplementation) apiLoginCodeVerify(w http.ResponseWriter, r *http.Request) {
-	api_login_code_verify.ApiLoginCodeVerify(w, r, api_login_code_verify.Dependencies{
+	dependencies := api_login_code_verify.Dependencies{
 		DisableRateLimit: a.disableRateLimit,
 		TemporaryKeyGet:  a.funcTemporaryKeyGet,
 		AuthenticateViaUsername: func(w http.ResponseWriter, r *http.Request, email string) {
 			a.authenticateViaUsername(w, r, email, "", "")
 		},
-	})
+	}
+
+	api_login_code_verify.ApiLoginCodeVerify(w, r, dependencies)
 }
 
 func (a authImplementation) apiRegisterCodeVerify(w http.ResponseWriter, r *http.Request) {
-	api_register_code_verify.ApiRegisterCodeVerify(w, r, api_register_code_verify.Dependencies{
+	dependencies := api_register_code_verify.Dependencies{
 		DisableRateLimit: a.disableRateLimit,
 		TemporaryKeyGet:  a.funcTemporaryKeyGet,
 		PasswordStrength: a.passwordStrength,
@@ -178,11 +188,13 @@ func (a authImplementation) apiRegisterCodeVerify(w http.ResponseWriter, r *http
 		AuthenticateViaUsername: func(w http.ResponseWriter, r *http.Request, email, firstName, lastName string) {
 			a.authenticateViaUsername(w, r, email, firstName, lastName)
 		},
-	})
+	}
+
+	api_register_code_verify.ApiRegisterCodeVerify(w, r, dependencies)
 }
 
 func (a authImplementation) authenticateViaUsername(w http.ResponseWriter, r *http.Request, username string, firstName string, lastName string) {
-	api_authenticate_via_username.ApiAuthenticateViaUsername(w, r, username, firstName, lastName, api_authenticate_via_username.Dependencies{
+	dependencies := api_authenticate_via_username.Dependencies{
 		Passwordless: a.passwordless,
 		PasswordlessUserFindByEmail: func(ctx context.Context, email string) (string, error) {
 			return a.passwordlessFuncUserFindByEmail(ctx, email, UserAuthOptions{
@@ -206,5 +218,7 @@ func (a authImplementation) authenticateViaUsername(w http.ResponseWriter, r *ht
 		SetAuthCookie: func(w http.ResponseWriter, r *http.Request, token string) {
 			a.setAuthCookie(w, r, token)
 		},
-	})
+	}
+
+	api_authenticate_via_username.ApiAuthenticateViaUsername(w, r, username, firstName, lastName, dependencies)
 }
