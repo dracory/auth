@@ -256,20 +256,6 @@ mux.Handle("/", auth.WebAppendUserIdIfExistsMiddleware(homeHandler))
 ```
 
 ### 6. **Testing Approach**
-
-The package has **excellent test coverage** (90.2%) with 34 test files:
-
-**Testing Pattern:**
-- Uses `httptest` for HTTP handler testing
-- Custom assertion helpers in [assert_test.go](file:///d:/PROJECTs/_modules_dracory/auth/assert_test.go)
-- Test utilities in [testutils.go](file:///d:/PROJECTs/_modules_dracory/auth/testutils.go)
-- Each API/page handler has comprehensive tests
-
-**Example Test Structure** ([api_login_test.go](file:///d:/PROJECTs/_modules_dracory/auth/api_login_test.go)):
-```go
-func TestApiLoginUsernameAndPasswordRequiresEmail(t *testing.T) {
-    authInstance, err := testSetupUsernameAndPasswordAuth()
-    Nil(t, err)
     
     expectedMessage := `"message":"Email is required field"`
     HTTPBodyContainsf(t, authInstance.Router().ServeHTTP, "POST", 
