@@ -1,4 +1,4 @@
-package auth
+package testutils
 
 import (
 	"net/http"
