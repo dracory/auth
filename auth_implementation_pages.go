@@ -48,12 +48,7 @@ func (a authImplementation) pageLogout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a authImplementation) pagePasswordRestore(w http.ResponseWriter, r *http.Request) {
-	page_password_restore.PagePasswordRestore(w, r, page_password_restore.Dependencies{
-		EnableRegistration: a.enableRegistration,
-		Endpoint:           a.endpoint,
-		Layout:             a.funcLayout,
-		Logger:             a.GetLogger(),
-	})
+	page_password_restore.PagePasswordRestore(w, r, &a)
 }
 
 func (a authImplementation) pagePasswordReset(w http.ResponseWriter, r *http.Request) {

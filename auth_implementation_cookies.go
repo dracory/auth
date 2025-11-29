@@ -5,13 +5,20 @@ import (
 	"time"
 )
 
-type CookieConfig struct {
-	HttpOnly bool
-	Secure   bool
-	SameSite http.SameSite
-	MaxAge   int
-	Domain   string
-	Path     string
+func (a authImplementation) setAuthCookie(w http.ResponseWriter, r *http.Request, token string) {
+	cfg := a.cookieConfig
+	if cfg == (CookieConfig{}) {
+		cfg = defaultCookieConfig()
+	}
+	setCookieWithConfig(w, r, token, cfg)
+}
+
+func (a authImplementation) removeAuthCookie(w http.ResponseWriter, r *http.Request) {
+	cfg := a.cookieConfig
+	if cfg == (CookieConfig{}) {
+		cfg = defaultCookieConfig()
+	}
+	removeCookieWithConfig(w, r, cfg)
 }
 
 func defaultCookieConfig() CookieConfig {
@@ -91,20 +98,4 @@ func removeCookieWithConfig(w http.ResponseWriter, r *http.Request, cfg CookieCo
 	}
 
 	http.SetCookie(w, &cookie)
-}
-
-func (a authImplementation) setAuthCookie(w http.ResponseWriter, r *http.Request, token string) {
-	cfg := a.cookieConfig
-	if cfg == (CookieConfig{}) {
-		cfg = defaultCookieConfig()
-	}
-	setCookieWithConfig(w, r, token, cfg)
-}
-
-func (a authImplementation) removeAuthCookie(w http.ResponseWriter, r *http.Request) {
-	cfg := a.cookieConfig
-	if cfg == (CookieConfig{}) {
-		cfg = defaultCookieConfig()
-	}
-	removeCookieWithConfig(w, r, cfg)
 }

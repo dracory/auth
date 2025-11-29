@@ -1,20 +1,16 @@
 package page_password_restore
 
 import (
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/dracory/auth/internal/testutils"
 )
 
 func TestPagePasswordRestore(t *testing.T) {
-	deps := Dependencies{
-		EnableRegistration: true,
-		Endpoint:           "http://localhost/auth",
-		Layout:             func(content string) string { return content },
-		Logger:             slog.Default(),
-	}
+	auth := testutils.NewAuthSharedForTest()
 
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
@@ -22,7 +18,7 @@ func TestPagePasswordRestore(t *testing.T) {
 	}
 
 	recorder := httptest.NewRecorder()
-	PagePasswordRestore(recorder, req, deps)
+	PagePasswordRestore(recorder, req, auth)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)

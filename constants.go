@@ -1,6 +1,10 @@
 package auth
 
-import "time"
+import (
+	"time"
+
+	authtypes "github.com/dracory/auth/types"
+)
 
 type contextKey string
 
@@ -9,6 +13,8 @@ func (c contextKey) String() string {
 }
 
 type AuthenticatedUserID struct{}
+
+type CookieConfig = authtypes.CookieConfig
 
 const (
 	keyEndpoint = contextKey("endpoint")
