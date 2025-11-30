@@ -5,10 +5,13 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/dracory/auth/internal/testutils"
 )
 
 func TestPageLogin_UsernameAndPassword(t *testing.T) {
-	auth, errAuth := testSetupUsernameAndPasswordAuth()
+	config := testutils.NewUsernameAndPasswordConfigForTest()
+	auth, errAuth := NewUsernameAndPasswordAuth(config)
 	if errAuth != nil {
 		t.Fatal(errAuth)
 	}
@@ -41,7 +44,8 @@ func TestPageLogin_UsernameAndPassword(t *testing.T) {
 }
 
 func TestPageLogin_Passwordless(t *testing.T) {
-	auth, errAuth := testSetupPasswordlessAuth()
+	config := testutils.NewPasswordlessConfigForTest()
+	auth, errAuth := NewPasswordlessAuth(config)
 	if errAuth != nil {
 		t.Fatal(errAuth)
 	}
@@ -74,9 +78,15 @@ func TestPageLogin_Passwordless(t *testing.T) {
 }
 
 func TestPageRegister_UsernameAndPassword(t *testing.T) {
-	authInstance, err := testSetupUsernameAndPasswordAuth()
+	config := testutils.NewUsernameAndPasswordConfigForTest()
+	authShared, err := NewUsernameAndPasswordAuth(config)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	authInstance, ok := authShared.(*authImplementation)
+	if !ok {
+		t.Fatalf("expected *authImplementation from NewUsernameAndPasswordAuthForTest")
 	}
 
 	// Enable registration so the router exposes registration routes.
@@ -114,9 +124,15 @@ func TestPageRegister_UsernameAndPassword(t *testing.T) {
 }
 
 func TestPageRegister_Passwordless(t *testing.T) {
-	authInstance, err := testSetupPasswordlessAuth()
+	config := testutils.NewPasswordlessConfigForTest()
+	authShared, err := NewPasswordlessAuth(config)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	authInstance, ok := authShared.(*authImplementation)
+	if !ok {
+		t.Fatalf("expected *authImplementation from NewPasswordlessAuthForTest")
 	}
 
 	// Enable registration so the router exposes registration routes.
@@ -153,9 +169,15 @@ func TestPageRegister_Passwordless(t *testing.T) {
 }
 
 func TestPageRegisterCodeVerify(t *testing.T) {
-	authInstance, err := testSetupPasswordlessAuth()
+	config := testutils.NewPasswordlessConfigForTest()
+	authShared, err := NewPasswordlessAuth(config)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	authInstance, ok := authShared.(*authImplementation)
+	if !ok {
+		t.Fatalf("expected *authImplementation from NewPasswordlessAuthForTest")
 	}
 
 	// Enable registration so the router exposes registration code verify route.
@@ -190,7 +212,8 @@ func TestPageRegisterCodeVerify(t *testing.T) {
 }
 
 func TestPageLogout(t *testing.T) {
-	authInstance, err := testSetupUsernameAndPasswordAuth()
+	config := testutils.NewUsernameAndPasswordConfigForTest()
+	authInstance, err := NewUsernameAndPasswordAuth(config)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -224,7 +247,8 @@ func TestPageLogout(t *testing.T) {
 }
 
 func TestPagePasswordRestore(t *testing.T) {
-	authInstance, err := testSetupUsernameAndPasswordAuth()
+	config := testutils.NewUsernameAndPasswordConfigForTest()
+	authInstance, err := NewUsernameAndPasswordAuth(config)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -260,9 +284,15 @@ func TestPagePasswordRestore(t *testing.T) {
 }
 
 func TestPagePasswordReset_ValidTokenShowsForm(t *testing.T) {
-	authInstance, err := testSetupUsernameAndPasswordAuth()
+	config := testutils.NewUsernameAndPasswordConfigForTest()
+	authShared, err := NewUsernameAndPasswordAuth(config)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	authInstance, ok := authShared.(*authImplementation)
+	if !ok {
+		t.Fatalf("expected *authImplementation from NewUsernameAndPasswordAuthForTest")
 	}
 
 	// Mock token lookup to succeed
@@ -303,7 +333,8 @@ func TestPagePasswordReset_ValidTokenShowsForm(t *testing.T) {
 }
 
 func TestPagePasswordReset_MissingTokenShowsError(t *testing.T) {
-	authInstance, err := testSetupUsernameAndPasswordAuth()
+	config := testutils.NewUsernameAndPasswordConfigForTest()
+	authInstance, err := NewUsernameAndPasswordAuth(config)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -333,7 +364,8 @@ func TestPagePasswordReset_MissingTokenShowsError(t *testing.T) {
 }
 
 func TestPageLoginCodeVerify(t *testing.T) {
-	authInstance, err := testSetupPasswordlessAuth()
+	config := testutils.NewPasswordlessConfigForTest()
+	authInstance, err := NewPasswordlessAuth(config)
 	if err != nil {
 		t.Fatal(err)
 	}

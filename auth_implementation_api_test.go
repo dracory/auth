@@ -6,23 +6,13 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/dracory/auth/internal/testutils"
 )
 
-// helper to build a POST request with form values
-func makePostRequest(t *testing.T, path string, values url.Values) (*httptest.ResponseRecorder, *http.Request) {
-	body := strings.NewReader(values.Encode())
-	req, err := http.NewRequest(http.MethodPost, path, body)
-	if err != nil {
-		t.Fatalf("http.NewRequest() error = %v", err)
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	recorder := httptest.NewRecorder()
-	return recorder, req
-}
-
 func TestApiLogin_UsernameAndPassword_Smoke(t *testing.T) {
-	authInstance, err := testSetupUsernameAndPasswordAuth()
+	config := testutils.NewUsernameAndPasswordConfigForTest()
+	authShared, err := NewUsernameAndPasswordAuth(config)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -32,8 +22,8 @@ func TestApiLogin_UsernameAndPassword_Smoke(t *testing.T) {
 		"password": {"1234"},
 	}
 
-	recorder, req := makePostRequest(t, authInstance.LinkApiLogin(), values)
-	authInstance.Router().ServeHTTP(recorder, req)
+	recorder, req := testutils.MakePostRequest(t, authShared.LinkApiLogin(), values)
+	authShared.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Fatalf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -46,7 +36,8 @@ func TestApiLogin_UsernameAndPassword_Smoke(t *testing.T) {
 }
 
 func TestApiLogin_Passwordless_Smoke(t *testing.T) {
-	authInstance, err := testSetupPasswordlessAuth()
+	config := testutils.NewPasswordlessConfigForTest()
+	authShared, err := NewPasswordlessAuth(config)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,8 +46,8 @@ func TestApiLogin_Passwordless_Smoke(t *testing.T) {
 		"email": {"test@test.com"},
 	}
 
-	recorder, req := makePostRequest(t, authInstance.LinkApiLogin(), values)
-	authInstance.Router().ServeHTTP(recorder, req)
+	recorder, req := testutils.MakePostRequest(t, authShared.LinkApiLogin(), values)
+	authShared.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Fatalf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -69,7 +60,8 @@ func TestApiLogin_Passwordless_Smoke(t *testing.T) {
 }
 
 func TestApiRegister_UsernameAndPassword_Smoke(t *testing.T) {
-	authInstance, err := testSetupUsernameAndPasswordAuth()
+	config := testutils.NewUsernameAndPasswordConfigForTest()
+	authShared, err := NewUsernameAndPasswordAuth(config)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,8 +73,8 @@ func TestApiRegister_UsernameAndPassword_Smoke(t *testing.T) {
 		"password":   {"1234"},
 	}
 
-	recorder, req := makePostRequest(t, authInstance.LinkApiRegister(), values)
-	authInstance.Router().ServeHTTP(recorder, req)
+	recorder, req := testutils.MakePostRequest(t, authShared.LinkApiRegister(), values)
+	authShared.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Fatalf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -95,7 +87,8 @@ func TestApiRegister_UsernameAndPassword_Smoke(t *testing.T) {
 }
 
 func TestApiRegister_Passwordless_Smoke(t *testing.T) {
-	authInstance, err := testSetupPasswordlessAuth()
+	config := testutils.NewPasswordlessConfigForTest()
+	authShared, err := NewPasswordlessAuth(config)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,8 +99,8 @@ func TestApiRegister_Passwordless_Smoke(t *testing.T) {
 		"email":      {"test@test.com"},
 	}
 
-	recorder, req := makePostRequest(t, authInstance.LinkApiRegister(), values)
-	authInstance.Router().ServeHTTP(recorder, req)
+	recorder, req := testutils.MakePostRequest(t, authShared.LinkApiRegister(), values)
+	authShared.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Fatalf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -120,15 +113,16 @@ func TestApiRegister_Passwordless_Smoke(t *testing.T) {
 }
 
 func TestApiLogout_Smoke(t *testing.T) {
-	authInstance, err := testSetupUsernameAndPasswordAuth()
+	config := testutils.NewUsernameAndPasswordConfigForTest()
+	authShared, err := NewUsernameAndPasswordAuth(config)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	recorder := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodPost, authInstance.LinkApiLogout(), nil)
+	req := httptest.NewRequest(http.MethodPost, authShared.LinkApiLogout(), nil)
 
-	authInstance.Router().ServeHTTP(recorder, req)
+	authShared.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Fatalf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -144,7 +138,8 @@ func TestApiLogout_Smoke(t *testing.T) {
 }
 
 func TestApiPasswordRestore_Smoke(t *testing.T) {
-	authInstance, err := testSetupUsernameAndPasswordAuth()
+	config := testutils.NewUsernameAndPasswordConfigForTest()
+	authShared, err := NewUsernameAndPasswordAuth(config)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -155,8 +150,8 @@ func TestApiPasswordRestore_Smoke(t *testing.T) {
 		"last_name":  {"Doe"},
 	}
 
-	recorder, req := makePostRequest(t, authInstance.LinkApiPasswordRestore(), values)
-	authInstance.Router().ServeHTTP(recorder, req)
+	recorder, req := testutils.MakePostRequest(t, authShared.LinkApiPasswordRestore(), values)
+	authShared.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Fatalf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -169,7 +164,8 @@ func TestApiPasswordRestore_Smoke(t *testing.T) {
 }
 
 func TestApiPasswordReset_Smoke(t *testing.T) {
-	authInstance, err := testSetupUsernameAndPasswordAuth()
+	config := testutils.NewUsernameAndPasswordConfigForTest()
+	authShared, err := NewUsernameAndPasswordAuth(config)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -180,8 +176,8 @@ func TestApiPasswordReset_Smoke(t *testing.T) {
 		"password_confirm": {"password123"},
 	}
 
-	recorder, req := makePostRequest(t, authInstance.LinkApiPasswordReset(), values)
-	authInstance.Router().ServeHTTP(recorder, req)
+	recorder, req := testutils.MakePostRequest(t, authShared.LinkApiPasswordReset(), values)
+	authShared.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Fatalf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -194,7 +190,8 @@ func TestApiPasswordReset_Smoke(t *testing.T) {
 }
 
 func TestApiLoginCodeVerify_Smoke(t *testing.T) {
-	authInstance, err := testSetupPasswordlessAuth()
+	config := testutils.NewPasswordlessConfigForTest()
+	authShared, err := NewPasswordlessAuth(config)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -203,8 +200,8 @@ func TestApiLoginCodeVerify_Smoke(t *testing.T) {
 		"verification_code": {"BCDFGHJK"},
 	}
 
-	recorder, req := makePostRequest(t, authInstance.LinkApiLoginCodeVerify(), values)
-	authInstance.Router().ServeHTTP(recorder, req)
+	recorder, req := testutils.MakePostRequest(t, authShared.LinkApiLoginCodeVerify(), values)
+	authShared.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Fatalf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
@@ -217,7 +214,8 @@ func TestApiLoginCodeVerify_Smoke(t *testing.T) {
 }
 
 func TestApiRegisterCodeVerify_Smoke(t *testing.T) {
-	authInstance, err := testSetupPasswordlessAuth()
+	config := testutils.NewPasswordlessConfigForTest()
+	authShared, err := NewPasswordlessAuth(config)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -226,8 +224,8 @@ func TestApiRegisterCodeVerify_Smoke(t *testing.T) {
 		"verification_code": {"BCDFGHJK"},
 	}
 
-	recorder, req := makePostRequest(t, authInstance.LinkApiRegisterCodeVerify(), values)
-	authInstance.Router().ServeHTTP(recorder, req)
+	recorder, req := testutils.MakePostRequest(t, authShared.LinkApiRegisterCodeVerify(), values)
+	authShared.Router().ServeHTTP(recorder, req)
 
 	if status := recorder.Code; status != http.StatusOK {
 		t.Fatalf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
