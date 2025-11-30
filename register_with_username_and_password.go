@@ -2,10 +2,9 @@ package auth
 
 import (
 	"context"
-	"encoding/json"
 
+	"github.com/dracory/auth/internal/core"
 	"github.com/dracory/auth/types"
-	authutils "github.com/dracory/auth/utils"
 )
 
 type RegisterUsernameAndPasswordResponse struct {
@@ -15,123 +14,41 @@ type RegisterUsernameAndPasswordResponse struct {
 }
 
 func (a authImplementation) RegisterWithUsernameAndPassword(ctx context.Context, email string, password string, firstName string, lastName string, options types.UserAuthOptions) (response RegisterUsernameAndPasswordResponse) {
-	if firstName == "" {
-		response.ErrorMessage = "First name is required field"
-		return response
+	logger := a.GetLogger()
+
+	deps := core.RegisterWithUsernameAndPasswordDeps{
+		EnableVerification:            a.enableVerification,
+		DisableRateLimit:              a.disableRateLimit,
+		PasswordStrength:              a.passwordStrength,
+		VerificationCodeExpiration:    DefaultVerificationCodeExpiration,
+		FuncUserRegister:              a.funcUserRegister,
+		FuncTemporaryKeySet:           a.funcTemporaryKeySet,
+		FuncEmailTemplateRegisterCode: a.funcEmailTemplateRegisterCode,
+		FuncEmailSend:                 a.funcEmailSend,
+		Logger:                        logger,
+		HandleCodeGenerationError: func(err error) (string, string) {
+			v := NewCodeGenerationError(err)
+			return v.Message, v.Code
+		},
+		HandleSerializationError: func(err error) (string, string) {
+			v := NewSerializationError(err)
+			return v.Message, v.Code
+		},
+		HandleTokenStoreError: func(err error) (string, string) {
+			v := NewTokenStoreError(err)
+			return v.Message, v.Code
+		},
+		HandleEmailSendError: func(err error) (string, string) {
+			v := NewEmailSendError(err)
+			return v.Message, v.Code
+		},
 	}
 
-	if lastName == "" {
-		response.ErrorMessage = "Last name is required field"
-		return response
+	res := core.RegisterWithUsernameAndPassword(ctx, email, password, firstName, lastName, options, deps)
+
+	return RegisterUsernameAndPasswordResponse{
+		ErrorMessage:   res.ErrorMessage,
+		SuccessMessage: res.SuccessMessage,
+		Token:          res.Token,
 	}
-
-	if email == "" {
-		response.ErrorMessage = "Email is required field"
-		return response
-	}
-
-	if password == "" {
-		response.ErrorMessage = "Password is required field"
-		return response
-	}
-
-	if err := authutils.ValidatePasswordStrength(password, a.passwordStrength); err != nil {
-		response.ErrorMessage = err.Error()
-		return response
-	}
-
-	if msg := authutils.ValidateEmailFormat(email); msg != "" {
-		response.ErrorMessage = msg
-		return response
-	}
-
-	if a.funcUserRegister == nil {
-		response.ErrorMessage = "registration failed. FuncUserRegister function not defined"
-		return response
-	}
-
-	if !a.enableVerification {
-		err := a.funcUserRegister(ctx, email, password, firstName, lastName, options)
-
-		if err != nil {
-			response.ErrorMessage = "registration failed."
-			return response
-		}
-
-		response.SuccessMessage = "registration success"
-		return response
-	}
-
-	verificationCode, errRandom := authutils.GenerateVerificationCode(a.disableRateLimit)
-	if errRandom != nil {
-		authErr := NewCodeGenerationError(errRandom)
-		response.ErrorMessage = authErr.Message
-		logger := a.GetLogger()
-		logger.Error("registration code generation failed",
-			"error", authErr.InternalErr,
-			"error_code", authErr.Code,
-			"email", email,
-			"ip", options.UserIp,
-			"user_agent", options.UserAgent,
-		)
-		return response
-	}
-
-	json, errJson := json.Marshal(map[string]string{
-		"email":      email,
-		"first_name": firstName,
-		"last_name":  lastName,
-		"password":   password,
-	})
-
-	if errJson != nil {
-		authErr := NewSerializationError(errJson)
-		response.ErrorMessage = authErr.Message
-		logger := a.GetLogger()
-		logger.Error("registration data serialization failed",
-			"error", authErr.InternalErr,
-			"error_code", authErr.Code,
-			"email", email,
-			"ip", options.UserIp,
-			"user_agent", options.UserAgent,
-		)
-		return response
-	}
-
-	errTempTokenSave := a.funcTemporaryKeySet(verificationCode, string(json), int(DefaultVerificationCodeExpiration.Seconds()))
-
-	if errTempTokenSave != nil {
-		authErr := NewTokenStoreError(errTempTokenSave)
-		response.ErrorMessage = authErr.Message
-		logger := a.GetLogger()
-		logger.Error("registration code token store failed",
-			"error", authErr.InternalErr,
-			"error_code", authErr.Code,
-			"email", email,
-			"ip", options.UserIp,
-			"user_agent", options.UserAgent,
-		)
-		return response
-	}
-
-	emailContent := a.funcEmailTemplateRegisterCode(ctx, email, verificationCode, options)
-
-	errEmailSent := a.funcEmailSend(ctx, email, "Registration Code", emailContent)
-
-	if errEmailSent != nil {
-		authErr := NewEmailSendError(errEmailSent)
-		response.ErrorMessage = authErr.Message
-		logger := a.GetLogger()
-		logger.Error("registration email send failed",
-			"error", authErr.InternalErr,
-			"error_code", authErr.Code,
-			"email", email,
-			"ip", options.UserIp,
-			"user_agent", options.UserAgent,
-		)
-		return response
-	}
-
-	response.SuccessMessage = "Registration code was sent successfully"
-	return response
 }
