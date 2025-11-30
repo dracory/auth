@@ -1,8 +1,9 @@
-package auth
+package helpers
 
 import "github.com/dracory/hb"
 
-func (a authImplementation) layout(content string) string {
+// Layout builds the default HTML layout for auth pages.
+func Layout(content string) string {
 	font := hb.NewStyleURL("https://fonts.bunny.net/css?family=Nunito").ToHTML()
 	style := hb.NewStyle(`
 	html, body {

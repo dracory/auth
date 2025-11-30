@@ -1,25 +1,34 @@
-package auth
+package helpers
 
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/dracory/api"
+	"github.com/dracory/auth/utils"
 )
 
-// checkRateLimit verifies if a request should be allowed based on rate limiting rules
-// Returns true if allowed, false if rate limited
-func (a authImplementation) checkRateLimit(w http.ResponseWriter, r *http.Request, endpoint string) bool {
+// CheckRateLimit verifies if a request should be allowed based on rate limiting rules.
+// It returns true if allowed, false if rate limited.
+func CheckRateLimit(
+	w http.ResponseWriter,
+	r *http.Request,
+	endpoint string,
+	disableRateLimit bool,
+	customCheck func(ip string, endpoint string) (allowed bool, retryAfter time.Duration, err error),
+	limiter *utils.InMemoryRateLimiter,
+) bool {
 	// If rate limiting is disabled, allow all requests
-	if a.disableRateLimit {
+	if disableRateLimit {
 		return true
 	}
 
-	ip := getClientIP(r)
+	ip := GetClientIP(r)
 
 	// Use custom rate limit function if provided
-	if a.funcCheckRateLimit != nil {
-		allowed, retryAfter, err := a.funcCheckRateLimit(ip, endpoint)
+	if customCheck != nil {
+		allowed, retryAfter, err := customCheck(ip, endpoint)
 		if err != nil {
 			// Log error but don't block request on rate limiter errors
 			// In production, you might want to handle this differently
@@ -35,12 +44,12 @@ func (a authImplementation) checkRateLimit(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Use default in-memory rate limiter
-	if a.rateLimiter == nil {
+	if limiter == nil {
 		// This shouldn't happen if properly initialized, but fail open for safety
 		return true
 	}
 
-	result := a.rateLimiter.Check(ip, endpoint)
+	result := limiter.Check(ip, endpoint)
 	if !result.Allowed {
 		w.WriteHeader(http.StatusTooManyRequests)
 		w.Header().Set("Retry-After", fmt.Sprintf("%.0f", result.RetryAfter.Seconds()))
@@ -51,9 +60,9 @@ func (a authImplementation) checkRateLimit(w http.ResponseWriter, r *http.Reques
 	return true
 }
 
-// getClientIP extracts the client IP from the request
-// Checks X-Forwarded-For and X-Real-IP headers first, then falls back to RemoteAddr
-func getClientIP(r *http.Request) string {
+// GetClientIP extracts the client IP from the request.
+// It checks X-Forwarded-For and X-Real-IP headers first, then falls back to RemoteAddr.
+func GetClientIP(r *http.Request) string {
 	// Check X-Forwarded-For header (can contain multiple IPs, use the first one)
 	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
 		// Take the first IP in the list

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/dracory/auth/internal/helpers"
 	"github.com/dracory/auth/internal/middlewares"
 	"github.com/dracory/req"
 	"github.com/dracory/str"
@@ -130,7 +131,12 @@ func (a authImplementation) buildAPIRoutes(csrfCfg middlewares.CSRFConfig) map[s
 		}
 
 		routes[cfg.path] = middlewares.WithRateLimit(
-			middlewares.RateLimitConfig{Check: a.checkRateLimit, Endpoint: cfg.endpoint},
+			middlewares.RateLimitConfig{
+				Check: func(w http.ResponseWriter, r *http.Request, endpoint string) bool {
+					return helpers.CheckRateLimit(w, r, endpoint, a.disableRateLimit, a.funcCheckRateLimit, a.rateLimiter)
+				},
+				Endpoint: cfg.endpoint,
+			},
 			h,
 		)
 	}

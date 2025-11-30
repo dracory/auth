@@ -1,4 +1,4 @@
-package auth
+package helpers
 
 import (
 	"strings"
@@ -6,10 +6,8 @@ import (
 )
 
 func TestLayoutWrapsContentWithFontAndStyle(t *testing.T) {
-	authInstance := &authImplementation{}
-
 	content := "<p>Hello World</p>"
-	html := authInstance.layout(content)
+	html := Layout(content)
 
 	if html == "" {
 		t.Fatalf("expected non-empty layout output")
