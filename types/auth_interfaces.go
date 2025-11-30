@@ -70,6 +70,9 @@ type AuthSharedInterface interface {
 	GetPasswordStrength() *PasswordStrengthConfig
 	SetPasswordStrength(cfg *PasswordStrengthConfig)
 
+	GetFuncUserLogin() func(ctx context.Context, username, password string, options UserAuthOptions) (string, error)
+	SetFuncUserLogin(fn func(ctx context.Context, username, password string, options UserAuthOptions) (string, error))
+
 	GetPasswordlessUserRegister() func(ctx context.Context, email, firstName, lastName string, options UserAuthOptions) error
 	SetPasswordlessUserRegister(fn func(ctx context.Context, email, firstName, lastName string, options UserAuthOptions) error)
 
@@ -90,6 +93,9 @@ type AuthSharedInterface interface {
 
 	GetFuncEmailTemplatePasswordRestore() func(ctx context.Context, userID string, passwordRestoreLink string, options UserAuthOptions) string
 	SetFuncEmailTemplatePasswordRestore(fn func(ctx context.Context, userID string, passwordRestoreLink string, options UserAuthOptions) string)
+
+	GetFuncEmailTemplateRegisterCode() func(ctx context.Context, email string, passwordRestoreLink string, options UserAuthOptions) string
+	SetFuncEmailTemplateRegisterCode(fn func(ctx context.Context, email string, passwordRestoreLink string, options UserAuthOptions) string)
 
 	GetFuncEmailSend() func(ctx context.Context, userID, emailSubject, emailBody string) error
 	SetFuncEmailSend(fn func(ctx context.Context, userID, emailSubject, emailBody string) error)

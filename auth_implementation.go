@@ -157,6 +157,14 @@ func (a *authImplementation) SetPasswordStrength(cfg *types.PasswordStrengthConf
 	a.passwordStrength = cfg
 }
 
+func (a authImplementation) GetFuncUserLogin() func(ctx context.Context, username, password string, options types.UserAuthOptions) (string, error) {
+	return a.funcUserLogin
+}
+
+func (a *authImplementation) SetFuncUserLogin(fn func(ctx context.Context, username, password string, options types.UserAuthOptions) (string, error)) {
+	a.funcUserLogin = fn
+}
+
 func (a authImplementation) GetPasswordlessUserRegister() func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) error {
 	return a.passwordlessFuncUserRegister
 }
@@ -235,6 +243,14 @@ func (a authImplementation) GetFuncEmailTemplatePasswordRestore() func(ctx conte
 
 func (a *authImplementation) SetFuncEmailTemplatePasswordRestore(fn func(ctx context.Context, userID string, passwordRestoreLink string, options types.UserAuthOptions) string) {
 	a.funcEmailTemplatePasswordRestore = fn
+}
+
+func (a authImplementation) GetFuncEmailTemplateRegisterCode() func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string {
+	return a.funcEmailTemplateRegisterCode
+}
+
+func (a *authImplementation) SetFuncEmailTemplateRegisterCode(fn func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string) {
+	a.funcEmailTemplateRegisterCode = fn
 }
 
 func (a authImplementation) GetFuncEmailSend() func(ctx context.Context, userID, emailSubject, emailBody string) error {

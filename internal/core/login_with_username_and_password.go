@@ -2,20 +2,11 @@ package core
 
 import (
 	"context"
-	"log/slog"
 
 	"github.com/dracory/auth/types"
 	authutils "github.com/dracory/auth/utils"
+	"github.com/dracory/str"
 )
-
-type LoginWithUsernameAndPasswordDeps struct {
-	FuncUserLogin             func(ctx context.Context, username string, password string, options types.UserAuthOptions) (userID string, err error)
-	FuncUserStoreAuthToken    func(ctx context.Context, token string, userID string, options types.UserAuthOptions) error
-	TokenGenerator            func() (string, error)
-	Logger                    *slog.Logger
-	HandleCodeGenerationError func(err error) (message string, code string)
-	HandleTokenStoreError     func(err error) (message string, code string)
-}
 
 type LoginWithUsernameAndPasswordResult struct {
 	ErrorMessage   string
@@ -25,10 +16,10 @@ type LoginWithUsernameAndPasswordResult struct {
 
 func LoginWithUsernameAndPassword(
 	ctx context.Context,
+	a types.AuthPasswordInterface,
 	email string,
 	password string,
 	options types.UserAuthOptions,
-	deps LoginWithUsernameAndPasswordDeps,
 ) LoginWithUsernameAndPasswordResult {
 	var response LoginWithUsernameAndPasswordResult
 
@@ -47,11 +38,14 @@ func LoginWithUsernameAndPassword(
 		return response
 	}
 
-	userID, err := deps.FuncUserLogin(ctx, email, password, options)
+	loginFn := a.GetFuncUserLogin()
+	storeFn := a.GetFuncUserStoreAuthToken()
+	logger := a.GetLogger()
+
+	userID, err := loginFn(ctx, email, password, options)
 
 	if err != nil {
 		response.ErrorMessage = "Invalid credentials"
-		logger := deps.Logger
 		if logger != nil {
 			logger.Error("login with username and password failed",
 				"error", err,
@@ -68,15 +62,13 @@ func LoginWithUsernameAndPassword(
 		return response
 	}
 
-	token, errRandom := deps.TokenGenerator()
+	token, errRandom := str.RandomFromGamma(32, "BCDFGHJKLMNPQRSTVXYZ")
 	if errRandom != nil {
-		msg, code := deps.HandleCodeGenerationError(errRandom)
-		response.ErrorMessage = msg
-		logger := deps.Logger
+		response.ErrorMessage = "Failed to generate verification code. Please try again later"
 		if logger != nil {
 			logger.Error("auth token generation failed",
 				"error", errRandom,
-				"error_code", code,
+				"error_code", "CODE_GENERATION_FAILED",
 				"email", email,
 				"ip", options.UserIp,
 				"user_agent", options.UserAgent,
@@ -85,16 +77,14 @@ func LoginWithUsernameAndPassword(
 		return response
 	}
 
-	errSession := deps.FuncUserStoreAuthToken(ctx, token, userID, options)
+	errSession := storeFn(ctx, token, userID, options)
 
 	if errSession != nil {
-		msg, code := deps.HandleTokenStoreError(errSession)
-		response.ErrorMessage = msg
-		logger := deps.Logger
+		response.ErrorMessage = "Failed to process request. Please try again later"
 		if logger != nil {
 			logger.Error("auth token store failed",
 				"error", errSession,
-				"error_code", code,
+				"error_code", "TOKEN_STORE_FAILED",
 				"email", email,
 				"user_id", userID,
 				"ip", options.UserIp,

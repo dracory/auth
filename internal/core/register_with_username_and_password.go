@@ -3,31 +3,11 @@ package core
 import (
 	"context"
 	"encoding/json"
-	"log/slog"
 	"time"
 
 	"github.com/dracory/auth/types"
 	authutils "github.com/dracory/auth/utils"
 )
-
-type RegisterWithUsernameAndPasswordDeps struct {
-	EnableVerification         bool
-	DisableRateLimit           bool
-	PasswordStrength           *types.PasswordStrengthConfig
-	VerificationCodeExpiration time.Duration
-
-	FuncUserRegister              func(ctx context.Context, username, password, firstName, lastName string, options types.UserAuthOptions) error
-	FuncTemporaryKeySet           func(key string, value string, expiresSeconds int) error
-	FuncEmailTemplateRegisterCode func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string
-	FuncEmailSend                 func(ctx context.Context, userID string, emailSubject string, emailBody string) error
-
-	Logger *slog.Logger
-
-	HandleCodeGenerationError func(err error) (message string, code string)
-	HandleSerializationError  func(err error) (message string, code string)
-	HandleTokenStoreError     func(err error) (message string, code string)
-	HandleEmailSendError      func(err error) (message string, code string)
-}
 
 type RegisterWithUsernameAndPasswordResult struct {
 	ErrorMessage   string
@@ -42,7 +22,8 @@ func RegisterWithUsernameAndPassword(
 	firstName string,
 	lastName string,
 	options types.UserAuthOptions,
-	deps RegisterWithUsernameAndPasswordDeps,
+	a types.AuthPasswordInterface,
+	verificationExpiration time.Duration,
 ) RegisterWithUsernameAndPasswordResult {
 	var response RegisterWithUsernameAndPasswordResult
 
@@ -66,7 +47,7 @@ func RegisterWithUsernameAndPassword(
 		return response
 	}
 
-	if err := authutils.ValidatePasswordStrength(password, deps.PasswordStrength); err != nil {
+	if err := authutils.ValidatePasswordStrength(password, a.GetPasswordStrength()); err != nil {
 		response.ErrorMessage = err.Error()
 		return response
 	}
@@ -76,13 +57,14 @@ func RegisterWithUsernameAndPassword(
 		return response
 	}
 
-	if deps.FuncUserRegister == nil {
+	registerFn := a.GetFuncUserRegister()
+	if registerFn == nil {
 		response.ErrorMessage = "registration failed. FuncUserRegister function not defined"
 		return response
 	}
 
-	if !deps.EnableVerification {
-		if err := deps.FuncUserRegister(ctx, email, password, firstName, lastName, options); err != nil {
+	if !a.IsVerificationEnabled() {
+		if err := registerFn(ctx, email, password, firstName, lastName, options); err != nil {
 			response.ErrorMessage = "registration failed."
 			return response
 		}
@@ -91,15 +73,15 @@ func RegisterWithUsernameAndPassword(
 		return response
 	}
 
-	verificationCode, errRandom := authutils.GenerateVerificationCode(deps.DisableRateLimit)
+	logger := a.GetLogger()
+
+	verificationCode, errRandom := authutils.GenerateVerificationCode(a.GetDisableRateLimit())
 	if errRandom != nil {
-		msg, code := deps.HandleCodeGenerationError(errRandom)
-		response.ErrorMessage = msg
-		logger := deps.Logger
+		response.ErrorMessage = "Failed to generate verification code. Please try again later"
 		if logger != nil {
 			logger.Error("registration code generation failed",
 				"error", errRandom,
-				"error_code", code,
+				"error_code", "CODE_GENERATION_FAILED",
 				"email", email,
 				"ip", options.UserIp,
 				"user_agent", options.UserAgent,
@@ -115,13 +97,11 @@ func RegisterWithUsernameAndPassword(
 		"password":   password,
 	})
 	if errJson != nil {
-		msg, code := deps.HandleSerializationError(errJson)
-		response.ErrorMessage = msg
-		logger := deps.Logger
+		response.ErrorMessage = "Failed to process request. Please try again later"
 		if logger != nil {
 			logger.Error("registration data serialization failed",
 				"error", errJson,
-				"error_code", code,
+				"error_code", "SERIALIZATION_FAILED",
 				"email", email,
 				"ip", options.UserIp,
 				"user_agent", options.UserAgent,
@@ -130,15 +110,14 @@ func RegisterWithUsernameAndPassword(
 		return response
 	}
 
-	errTempTokenSave := deps.FuncTemporaryKeySet(verificationCode, string(jsonPayload), int(deps.VerificationCodeExpiration.Seconds()))
+	temporaryKeySet := a.GetFuncTemporaryKeySet()
+	errTempTokenSave := temporaryKeySet(verificationCode, string(jsonPayload), int(verificationExpiration.Seconds()))
 	if errTempTokenSave != nil {
-		msg, code := deps.HandleTokenStoreError(errTempTokenSave)
-		response.ErrorMessage = msg
-		logger := deps.Logger
+		response.ErrorMessage = "Failed to process request. Please try again later"
 		if logger != nil {
 			logger.Error("registration code token store failed",
 				"error", errTempTokenSave,
-				"error_code", code,
+				"error_code", "TOKEN_STORE_FAILED",
 				"email", email,
 				"ip", options.UserIp,
 				"user_agent", options.UserAgent,
@@ -147,16 +126,26 @@ func RegisterWithUsernameAndPassword(
 		return response
 	}
 
-	emailContent := deps.FuncEmailTemplateRegisterCode(ctx, email, verificationCode, options)
+	emailTemplate := a.GetFuncEmailTemplateRegisterCode()
+	if emailTemplate == nil {
+		response.ErrorMessage = "registration failed. FuncEmailTemplateRegisterCode function not defined"
+		return response
+	}
 
-	if errEmailSent := deps.FuncEmailSend(ctx, email, "Registration Code", emailContent); errEmailSent != nil {
-		msg, code := deps.HandleEmailSendError(errEmailSent)
-		response.ErrorMessage = msg
-		logger := deps.Logger
+	emailSend := a.GetFuncEmailSend()
+	if emailSend == nil {
+		response.ErrorMessage = "registration failed. FuncEmailSend function not defined"
+		return response
+	}
+
+	emailContent := emailTemplate(ctx, email, verificationCode, options)
+
+	if errEmailSent := emailSend(ctx, email, "Registration Code", emailContent); errEmailSent != nil {
+		response.ErrorMessage = "Failed to send email. Please try again later"
 		if logger != nil {
 			logger.Error("registration email send failed",
 				"error", errEmailSent,
-				"error_code", code,
+				"error_code", "EMAIL_SEND_FAILED",
 				"email", email,
 				"ip", options.UserIp,
 				"user_agent", options.UserAgent,

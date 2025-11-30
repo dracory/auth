@@ -5,7 +5,6 @@ import (
 
 	"github.com/dracory/auth/internal/core"
 	"github.com/dracory/auth/types"
-	"github.com/dracory/str"
 )
 
 type LoginUsernameAndPasswordResponse struct {
@@ -15,26 +14,7 @@ type LoginUsernameAndPasswordResponse struct {
 }
 
 func (a authImplementation) LoginWithUsernameAndPassword(ctx context.Context, email string, password string, options types.UserAuthOptions) (response LoginUsernameAndPasswordResponse) {
-	logger := a.GetLogger()
-
-	deps := core.LoginWithUsernameAndPasswordDeps{
-		FuncUserLogin:          a.funcUserLogin,
-		FuncUserStoreAuthToken: a.funcUserStoreAuthToken,
-		TokenGenerator: func() (string, error) {
-			return str.RandomFromGamma(32, LoginCodeGamma)
-		},
-		Logger: logger,
-		HandleCodeGenerationError: func(err error) (string, string) {
-			authErr := NewCodeGenerationError(err)
-			return authErr.Message, authErr.Code
-		},
-		HandleTokenStoreError: func(err error) (string, string) {
-			authErr := NewTokenStoreError(err)
-			return authErr.Message, authErr.Code
-		},
-	}
-
-	res := core.LoginWithUsernameAndPassword(ctx, email, password, options, deps)
+	res := core.LoginWithUsernameAndPassword(ctx, &a, email, password, options)
 	return LoginUsernameAndPasswordResponse{
 		ErrorMessage:   res.ErrorMessage,
 		SuccessMessage: res.SuccessMessage,

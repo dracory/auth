@@ -32,6 +32,7 @@ type authSharedTest struct {
 	useCookies                            bool
 	disableRateLimit                      bool
 	passwordStrength                      *types.PasswordStrengthConfig
+	funcUserLogin                         func(ctx context.Context, username, password string, options types.UserAuthOptions) (string, error)
 	passwordlessUserRegister              func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) error
 	funcUserRegister                      func(ctx context.Context, username, password, firstName, lastName string, options types.UserAuthOptions) error
 	funcUserPasswordChange                func(ctx context.Context, userID, password string, options types.UserAuthOptions) error
@@ -40,6 +41,7 @@ type authSharedTest struct {
 	funcUserFindByUsername                func(ctx context.Context, username, firstName, lastName string, options types.UserAuthOptions) (string, error)
 	funcUserStoreAuthToken                func(ctx context.Context, token, userID string, options types.UserAuthOptions) error
 	emailTemplatePasswordRestore          func(ctx context.Context, userID string, passwordRestoreLink string, options types.UserAuthOptions) string
+	emailTemplateRegisterCode             func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string
 	emailSend                             func(ctx context.Context, userID, emailSubject, emailBody string) error
 	passwordlessEmailTemplateLoginCode    func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string
 	passwordlessEmailTemplateRegisterCode func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string
@@ -107,6 +109,14 @@ func (a *authSharedTest) GetPasswordStrength() *types.PasswordStrengthConfig {
 
 func (a *authSharedTest) SetPasswordStrength(cfg *types.PasswordStrengthConfig) {
 	a.passwordStrength = cfg
+}
+
+func (a *authSharedTest) GetFuncUserLogin() func(ctx context.Context, username, password string, options types.UserAuthOptions) (string, error) {
+	return a.funcUserLogin
+}
+
+func (a *authSharedTest) SetFuncUserLogin(fn func(ctx context.Context, username, password string, options types.UserAuthOptions) (string, error)) {
+	a.funcUserLogin = fn
 }
 
 func (a *authSharedTest) GetPasswordlessUserRegister() func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) error {
@@ -189,6 +199,14 @@ func (a *authSharedTest) GetFuncEmailTemplatePasswordRestore() func(ctx context.
 
 func (a *authSharedTest) SetFuncEmailTemplatePasswordRestore(fn func(ctx context.Context, userID string, passwordRestoreLink string, options types.UserAuthOptions) string) {
 	a.emailTemplatePasswordRestore = fn
+}
+
+func (a *authSharedTest) GetFuncEmailTemplateRegisterCode() func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string {
+	return a.emailTemplateRegisterCode
+}
+
+func (a *authSharedTest) SetFuncEmailTemplateRegisterCode(fn func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string) {
+	a.emailTemplateRegisterCode = fn
 }
 
 func (a *authSharedTest) GetFuncEmailSend() func(ctx context.Context, userID, emailSubject, emailBody string) error {
