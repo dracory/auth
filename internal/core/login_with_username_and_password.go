@@ -62,7 +62,9 @@ func LoginWithUsernameAndPassword(
 		return response
 	}
 
-	token, errRandom := str.RandomFromGamma(32, "BCDFGHJKLMNPQRSTVXYZ")
+	// Reuse the shared login/verification gamma from utils to avoid
+	// duplicating the character set. We keep length at 32 for auth tokens.
+	token, errRandom := str.RandomFromGamma(32, authutils.LoginCodeGamma(false))
 	if errRandom != nil {
 		response.ErrorMessage = "Failed to generate verification code. Please try again later"
 		if logger != nil {
