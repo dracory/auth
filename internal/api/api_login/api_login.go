@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/dracory/api"
+	"github.com/dracory/auth/internal/core"
 	"github.com/dracory/auth/types"
 	"github.com/dracory/req"
 )
@@ -112,10 +113,11 @@ func ApiLoginWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthShared
 			},
 		},
 		LoginWithUsernameAndPassword: func(ctx context.Context, email, password, ip, userAgent string) (string, string, string) {
-			return passwordAuth.LoginUserWithPassword(ctx, email, password, types.UserAuthOptions{
+			res := core.LoginWithUsernameAndPassword(ctx, passwordAuth, email, password, types.UserAuthOptions{
 				UserIp:    ip,
 				UserAgent: userAgent,
 			})
+			return res.SuccessMessage, res.Token, res.ErrorMessage
 		},
 		UseCookies: a.GetUseCookies(),
 		SetAuthCookie: func(w http.ResponseWriter, r *http.Request, token string) {

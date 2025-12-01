@@ -6,8 +6,10 @@ import (
 	"errors"
 	"html"
 	"net/http"
+	"time"
 
 	"github.com/dracory/api"
+	"github.com/dracory/auth/internal/core"
 	"github.com/dracory/auth/types"
 	authutils "github.com/dracory/auth/utils"
 	"github.com/dracory/req"
@@ -107,12 +109,21 @@ func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSha
 
 	// Configure username/password registration handler.
 	deps.RegisterWithUsernameAndPassword = func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string) {
-		// Delegate to the higher-level helper on AuthPasswordInterface.
-		successMessage, _, errorMessage := passwordAuth.RegisterUserWithPassword(ctx, email, password, firstName, lastName, types.UserAuthOptions{
-			UserIp:    ip,
-			UserAgent: userAgent,
-		})
-		return successMessage, errorMessage
+		// Delegate to the core registration helper and adapt its result.
+		res := core.RegisterWithUsernameAndPassword(
+			ctx,
+			email,
+			password,
+			firstName,
+			lastName,
+			types.UserAuthOptions{
+				UserIp:    ip,
+				UserAgent: userAgent,
+			},
+			passwordAuth,
+			time.Hour,
+		)
+		return res.SuccessMessage, res.ErrorMessage
 	}
 
 	ApiRegister(w, r, deps)

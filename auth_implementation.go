@@ -371,22 +371,6 @@ func (a *authImplementation) RegistrationDisable() {
 	a.enableRegistration = false
 }
 
-// RegisterUserWithPassword is the AuthPasswordInterface adapter that delegates
-// to the existing RegisterWithUsernameAndPassword helper and maps its response
-// into the generic triple used by API layers.
-func (a authImplementation) RegisterUserWithPassword(ctx context.Context, email, password, firstName, lastName string, options types.UserAuthOptions) (string, string, string) {
-	resp := a.RegisterWithUsernameAndPassword(ctx, email, password, firstName, lastName, options)
-	return resp.SuccessMessage, resp.Token, resp.ErrorMessage
-}
-
-// LoginUserWithPassword is the AuthPasswordInterface adapter that delegates
-// to the existing LoginWithUsernameAndPassword helper and maps its response
-// into the generic triple used by API layers.
-func (a authImplementation) LoginUserWithPassword(ctx context.Context, email, password string, options types.UserAuthOptions) (string, string, string) {
-	resp := a.LoginWithUsernameAndPassword(ctx, email, password, options)
-	return resp.SuccessMessage, resp.Token, resp.ErrorMessage
-}
-
 func (a *authImplementation) WebAuthOrRedirectMiddleware(next http.Handler) http.Handler {
 	return middlewares.WebAuthOrRedirectMiddleware(next, a)
 }

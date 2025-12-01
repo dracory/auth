@@ -129,12 +129,6 @@ type AuthPasswordInterface interface {
 	LinkPasswordReset(token string) string
 	LinkApiPasswordRestore() string
 	LinkApiPasswordReset() string
-
-	// Generic username/password registration helper used by API layers.
-	RegisterUserWithPassword(ctx context.Context, email, password, firstName, lastName string, options UserAuthOptions) (successMessage, token, errorMessage string)
-
-	// Generic username/password login helper used by API layers.
-	LoginUserWithPassword(ctx context.Context, email, password string, options UserAuthOptions) (successMessage, token, errorMessage string)
 }
 
 // AuthPasswordlessInterface represents passwordless authentication flows.

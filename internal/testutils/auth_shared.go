@@ -265,6 +265,16 @@ func (a *authSharedTest) LinkApiRegister() string { return "" }
 
 func (a *authSharedTest) LinkApiRegisterCodeVerify() string { return "" }
 
+// AuthPasswordInterface additional URL helpers. For tests we can return
+// empty strings as they are not used by the core logic under test.
+func (a *authSharedTest) LinkPasswordRestore() string { return "" }
+
+func (a *authSharedTest) LinkPasswordReset(token string) string { return "" }
+
+func (a *authSharedTest) LinkApiPasswordRestore() string { return "" }
+
+func (a *authSharedTest) LinkApiPasswordReset() string { return "" }
+
 func (a *authSharedTest) GetEndpoint() string { return a.endpoint }
 
 func (a *authSharedTest) SetEndpoint(endpoint string) { a.endpoint = endpoint }
