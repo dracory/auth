@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Dracory Auth LiveWiki</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="description" content="Dracory Auth Library Documentation">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+
+    <!-- Theme: Simple Dark -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
+
+    <style>
+        /* Custom Tweaks for Dark/Light mode support preference if needed, defaulting to Vue theme for now */
+        :root {
+            --theme-color: #42b983;
+        }
+
+        .sidebar {
+            padding-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">Loading LiveWiki...</div>
+
+    <script>
+        window.$docsify = {
+            name: 'Dracory Auth',
+            repo: 'https://github.com/dracory/auth', // Assuming this is the repo, can be empty
+            loadSidebar: true,
+            subMaxLevel: 2,
+            auto2top: true,
+            search: {
+                maxAge: 86400000,
+                paths: 'auto',
+                placeholder: 'Search...',
+                noData: 'No Results!',
+                depth: 6,
+                hideOtherSidebarContent: false,
+            },
+            homepage: 'overview.md', // Set overview as the landing page instead of README.md
+            notFoundPage: true,
+        }
+    </script>
+
+    <!-- Docsify Core -->
+    <script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
+
+    <!-- Plugins -->
+    <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/zoom-image.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/docsify-copy-code/dist/docsify-copy-code.min.js"></script>
+
+    <!-- Mermaid Support -->
+    <script src="//cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script src="//unpkg.com/docsify-mermaid@2.0.0/dist/docsify-mermaid.js"></script>
+    <script>mermaid.initialize({ startOnLoad: true });</script>
+
+</body>
+
+</html>
