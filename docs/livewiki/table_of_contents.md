@@ -26,6 +26,8 @@ Welcome to the LiveWiki for the Dracory Auth Service. This documentation serves 
     *   Workflow, testing, and contribution details.
 8.  **[Troubleshooting](troubleshooting.md)**
     *   Common issues and how to resolve them.
+9.  **[LLM Context](llm-context.md)**
+    *   Single-file codebase summary optimized for AI/LLM consumption.
 
 ## Module Documentation
 
