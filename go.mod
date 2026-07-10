@@ -9,7 +9,7 @@ require (
 	github.com/dracory/req v0.1.0
 	github.com/dracory/str v0.17.0
 	github.com/dracory/uncdn v0.9.0
-	golang.org/x/crypto v0.51.0
+	golang.org/x/crypto v0.52.0
 )
 
 require (
