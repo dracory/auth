@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"sync"
 	"testing"
 	"time"
 )
@@ -104,4 +105,77 @@ func TestInMemoryRateLimiter_SeparatesKeysByIpAndEndpoint(t *testing.T) {
 	if !res.Allowed {
 		t.Fatalf("expected attempt from different IP to be allowed")
 	}
+}
+
+// TestInMemoryRateLimiter_ConcurrentRaceCondition proves the data race in
+// InMemoryRateLimiter.Check by hammering the same ip+endpoint key from many
+// goroutines simultaneously. Run with: go test -race ./utils/...
+func TestInMemoryRateLimiter_ConcurrentRaceCondition(t *testing.T) {
+	limiter := NewInMemoryRateLimiter(1000, 10*time.Second, 10*time.Second)
+	defer limiter.Stop()
+
+	ip := "127.0.0.1"
+	endpoint := "login"
+
+	const goroutines = 100
+	const iterationsPerGoroutine = 50
+
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+	for i := 0; i < goroutines; i++ {
+		go func() {
+			defer wg.Done()
+			for j := 0; j < iterationsPerGoroutine; j++ {
+				limiter.Check(ip, endpoint)
+			}
+		}()
+	}
+	wg.Wait()
+}
+
+// TestInMemoryRateLimiter_ConcurrentRaceCondition_Bypass proves the data race
+// by demonstrating its observable security effect: rate limit bypass.
+// Without synchronization, multiple goroutines read len(record.timestamps) <
+// maxAttempts simultaneously, all pass the check, and all append — so more
+// requests are allowed than the limit permits.
+//
+// With maxAttempts=1, only ONE goroutine should ever get Allowed=true.
+// If more than one does, the race is proven.
+// Note: this test may not trigger on every run without -race; the race
+// detector on CI (see .github/workflows/test.yml) provides definitive proof.
+func TestInMemoryRateLimiter_ConcurrentRaceCondition_Bypass(t *testing.T) {
+	limiter := NewInMemoryRateLimiter(1, 1*time.Hour, 1*time.Hour)
+	defer limiter.Stop()
+
+	ip := "127.0.0.1"
+	endpoint := "login"
+
+	const goroutines = 100
+
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+
+	allowedCount := int64(0)
+	var countMu sync.Mutex
+
+	for i := 0; i < goroutines; i++ {
+		go func() {
+			defer wg.Done()
+			result := limiter.Check(ip, endpoint)
+			if result.Allowed {
+				countMu.Lock()
+				allowedCount++
+				countMu.Unlock()
+			}
+		}()
+	}
+	wg.Wait()
+
+	if allowedCount > 1 {
+		t.Fatalf("RATE LIMIT BYPASS: maxAttempts=1 but %d goroutines were allowed (expected at most 1). "+
+			"This proves the data race: concurrent goroutines read len(record.timestamps) < maxAttempts "+
+			"simultaneously before any of them appends.", allowedCount)
+	}
+
+	t.Logf("allowedCount=%d (race may not manifest on every run; use -race for definitive detection)", allowedCount)
 }
