@@ -42,7 +42,7 @@ func CheckRateLimit(
 			}
 			w.WriteHeader(http.StatusTooManyRequests)
 			w.Header().Set("Retry-After", fmt.Sprintf("%.0f", retryAfter.Seconds()))
-			api.Respond(w, r, api.Error("Too many requests. Please try again later."))
+			api.Respond(w, r, api.Error(types.MsgTooManyRequests))
 			return false
 		}
 		return true
@@ -61,7 +61,7 @@ func CheckRateLimit(
 		}
 		w.WriteHeader(http.StatusTooManyRequests)
 		w.Header().Set("Retry-After", fmt.Sprintf("%.0f", result.RetryAfter.Seconds()))
-		api.Respond(w, r, api.Error("Too many requests. Please try again later."))
+		api.Respond(w, r, api.Error(types.MsgTooManyRequests))
 		return false
 	}
 

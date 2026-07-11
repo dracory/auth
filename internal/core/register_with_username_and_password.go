@@ -149,7 +149,7 @@ func RegisterWithUsernameAndPassword(
 
 	emailContent := emailTemplate(ctx, email, verificationCode, options)
 
-	if errEmailSent := emailSend(ctx, email, "Registration Code", emailContent); errEmailSent != nil {
+	if errEmailSent := emailSend(ctx, email, types.EmailSubjectRegistrationCode, emailContent); errEmailSent != nil {
 		response.ErrorMessage = types.MsgFailedToSendEmail
 		if logger != nil {
 			logger.Error("registration email send failed",

@@ -7,8 +7,8 @@ import (
 
 func TestMessageConstants(t *testing.T) {
 	tests := []struct {
-		name    string
-		value   string
+		name         string
+		value        string
 		wantNonEmpty bool
 	}{
 		{"MsgEmailRequired", MsgEmailRequired, true},
@@ -38,6 +38,8 @@ func TestMessageConstants(t *testing.T) {
 		{"MsgFailedToGenerateCode", MsgFailedToGenerateCode, true},
 		{"MsgFailedToSendEmail", MsgFailedToSendEmail, true},
 		{"MsgLinkNotValidOrExpired", MsgLinkNotValidOrExpired, true},
+		{"MsgTooManyRequests", MsgTooManyRequests, true},
+		{"EmailSubjectRegistrationCode", EmailSubjectRegistrationCode, true},
 		{"MsgLoginSuccess", MsgLoginSuccess, true},
 		{"MsgRegistrationSuccess", MsgRegistrationSuccess, true},
 		{"MsgRegistrationCodeSent", MsgRegistrationCodeSent, true},
@@ -87,6 +89,8 @@ func TestMessageConstantsNoDuplicates(t *testing.T) {
 		{"MsgFailedToGenerateCode", MsgFailedToGenerateCode},
 		{"MsgFailedToSendEmail", MsgFailedToSendEmail},
 		{"MsgLinkNotValidOrExpired", MsgLinkNotValidOrExpired},
+		{"MsgTooManyRequests", MsgTooManyRequests},
+		{"EmailSubjectRegistrationCode", EmailSubjectRegistrationCode},
 		{"MsgLoginSuccess", MsgLoginSuccess},
 		{"MsgRegistrationSuccess", MsgRegistrationSuccess},
 		{"MsgRegistrationCodeSent", MsgRegistrationCodeSent},

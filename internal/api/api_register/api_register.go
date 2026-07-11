@@ -266,7 +266,7 @@ func RegisterPasswordlessInit(ctx context.Context, r *http.Request, deps Registe
 
 	emailContent := deps.EmailTemplate(ctx, email, verificationCode)
 
-	if errEmail := deps.EmailSend(ctx, email, "Registration Code", emailContent); errEmail != nil {
+	if errEmail := deps.EmailSend(ctx, email, types.EmailSubjectRegistrationCode, emailContent); errEmail != nil {
 		return nil, &RegisterPasswordlessInitError{
 			Code: RegisterPasswordlessInitErrorCodeEmailSend,
 			Err:  errEmail,

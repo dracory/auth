@@ -10,11 +10,11 @@ import (
 type mockObservabilityHooks struct {
 	mu sync.Mutex
 
-	LoginAttempts       []loginAttempt
+	LoginAttempts        []loginAttempt
 	RegistrationAttempts []registrationAttempt
-	RateLimitHits       []rateLimitHit
-	SessionsCreated     []string
-	PasswordResets      []passwordReset
+	RateLimitHits        []rateLimitHit
+	SessionsCreated      []string
+	PasswordResets       []passwordReset
 }
 
 type loginAttempt struct {
@@ -72,7 +72,7 @@ func TestNoopObservabilityHooks(t *testing.T) {
 	hooks := NoopObservabilityHooks{}
 
 	// Verify all methods can be called without panicking
-	hooks.RecordLoginAttempt("password", true, nil)
+	hooks.RecordLoginAttempt(LoginMethodPassword, true, nil)
 	hooks.RecordRegistrationAttempt(true, nil)
 	hooks.RecordRateLimitHit("/login", "127.0.0.1")
 	hooks.RecordSessionCreated("user-123")
@@ -82,8 +82,8 @@ func TestNoopObservabilityHooks(t *testing.T) {
 func TestMockObservabilityHooks(t *testing.T) {
 	m := &mockObservabilityHooks{}
 
-	m.RecordLoginAttempt("password", false, nil)
-	m.RecordLoginAttempt("passwordless", true, nil)
+	m.RecordLoginAttempt(LoginMethodPassword, false, nil)
+	m.RecordLoginAttempt(LoginMethodPasswordless, true, nil)
 	m.RecordRegistrationAttempt(true, nil)
 	m.RecordRateLimitHit("/login", "1.2.3.4")
 	m.RecordSessionCreated("user-abc")
@@ -92,10 +92,10 @@ func TestMockObservabilityHooks(t *testing.T) {
 	if len(m.LoginAttempts) != 2 {
 		t.Fatalf("expected 2 login attempts, got %d", len(m.LoginAttempts))
 	}
-	if m.LoginAttempts[0].Method != "password" || m.LoginAttempts[0].Success != false {
+	if m.LoginAttempts[0].Method != LoginMethodPassword || m.LoginAttempts[0].Success != false {
 		t.Errorf("unexpected first login attempt: %+v", m.LoginAttempts[0])
 	}
-	if m.LoginAttempts[1].Method != "passwordless" || m.LoginAttempts[1].Success != true {
+	if m.LoginAttempts[1].Method != LoginMethodPasswordless || m.LoginAttempts[1].Success != true {
 		t.Errorf("unexpected second login attempt: %+v", m.LoginAttempts[1])
 	}
 
@@ -126,7 +126,7 @@ func TestMockObservabilityHooks_ConcurrentSafety(t *testing.T) {
 	for i := 0; i < goroutines; i++ {
 		go func() {
 			defer wg.Done()
-			m.RecordLoginAttempt("password", true, nil)
+			m.RecordLoginAttempt(LoginMethodPassword, true, nil)
 			m.RecordSessionCreated("user-concurrent")
 			m.RecordRateLimitHit("/api/login", "10.0.0.1")
 		}()

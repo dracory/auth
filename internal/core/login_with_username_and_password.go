@@ -55,13 +55,13 @@ func LoginWithUsernameAndPassword(
 				"user_agent", options.UserAgent,
 			)
 		}
-		hooks.RecordLoginAttempt("password", false, err)
+		hooks.RecordLoginAttempt(types.LoginMethodPassword, false, err)
 		return response
 	}
 
 	if userID == "" {
 		response.ErrorMessage = types.MsgInvalidCredentials
-		hooks.RecordLoginAttempt("password", false, nil)
+		hooks.RecordLoginAttempt(types.LoginMethodPassword, false, nil)
 		return response
 	}
 
@@ -79,7 +79,7 @@ func LoginWithUsernameAndPassword(
 				"user_agent", options.UserAgent,
 			)
 		}
-		hooks.RecordLoginAttempt("password", false, errRandom)
+		hooks.RecordLoginAttempt(types.LoginMethodPassword, false, errRandom)
 		return response
 	}
 
@@ -97,13 +97,13 @@ func LoginWithUsernameAndPassword(
 				"user_agent", options.UserAgent,
 			)
 		}
-		hooks.RecordLoginAttempt("password", false, errSession)
+		hooks.RecordLoginAttempt(types.LoginMethodPassword, false, errSession)
 		return response
 	}
 
 	response.SuccessMessage = types.MsgLoginSuccess
 	response.Token = token
-	hooks.RecordLoginAttempt("password", true, nil)
+	hooks.RecordLoginAttempt(types.LoginMethodPassword, true, nil)
 	hooks.RecordSessionCreated(userID)
 	return response
 }

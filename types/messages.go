@@ -38,6 +38,10 @@ const (
 	MsgFailedToGenerateCode  = "Failed to generate verification code. Please try again later"
 	MsgFailedToSendEmail     = "Failed to send email. Please try again later"
 	MsgLinkNotValidOrExpired = "Link not valid or expired"
+	MsgTooManyRequests       = "Too many requests. Please try again later."
+
+	// Email subjects
+	EmailSubjectRegistrationCode = "Registration Code"
 
 	// Success messages
 	MsgLoginSuccess          = "login success"

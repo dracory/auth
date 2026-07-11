@@ -32,12 +32,18 @@ type ObservabilityHooks interface {
 	RecordPasswordReset(success bool, err error)
 }
 
+// Login method identifiers used by RecordLoginAttempt.
+const (
+	LoginMethodPassword     = "password"
+	LoginMethodPasswordless = "passwordless"
+)
+
 // NoopObservabilityHooks is a no-op implementation of ObservabilityHooks.
 // It is the default when no hooks are configured.
 type NoopObservabilityHooks struct{}
 
-func (NoopObservabilityHooks) RecordLoginAttempt(string, bool, error)      {}
-func (NoopObservabilityHooks) RecordRegistrationAttempt(bool, error)        {}
-func (NoopObservabilityHooks) RecordRateLimitHit(string, string)            {}
-func (NoopObservabilityHooks) RecordSessionCreated(string)                  {}
-func (NoopObservabilityHooks) RecordPasswordReset(bool, error)              {}
+func (NoopObservabilityHooks) RecordLoginAttempt(string, bool, error) {}
+func (NoopObservabilityHooks) RecordRegistrationAttempt(bool, error)  {}
+func (NoopObservabilityHooks) RecordRateLimitHit(string, string)      {}
+func (NoopObservabilityHooks) RecordSessionCreated(string)            {}
+func (NoopObservabilityHooks) RecordPasswordReset(bool, error)        {}
