@@ -70,7 +70,7 @@ func ApiPasswordRestoreWithAuth(w http.ResponseWriter, r *http.Request, a types.
 		if logger := a.GetLogger(); logger != nil {
 			logger.Error("password restore requires AuthPasswordInterface")
 		}
-		http.Error(w, "Internal server error. Please try again later", http.StatusInternalServerError)
+		http.Error(w, types.MsgInternalServer, http.StatusInternalServerError)
 		return
 	}
 
@@ -114,7 +114,7 @@ func ApiPasswordRestoreWithAuth(w http.ResponseWriter, r *http.Request, a types.
 				slog.String("error", err.Error()),
 			)
 		}
-		http.Error(w, "Internal server error. Please try again later", http.StatusInternalServerError)
+		http.Error(w, types.MsgInternalServer, http.StatusInternalServerError)
 		return
 	}
 
@@ -130,7 +130,7 @@ func passwordRestore(ctx context.Context, r *http.Request, dependencies dependen
 	lastName := html.EscapeString(req.GetStringTrimmed(r, "last_name"))
 
 	if email == "" {
-		return "", ERROR_EMAIL_REQUIRED
+		return "", types.MsgEmailRequired
 	}
 
 	if msg := utils.ValidateEmailFormat(email); msg != "" {
@@ -138,11 +138,11 @@ func passwordRestore(ctx context.Context, r *http.Request, dependencies dependen
 	}
 
 	if firstName == "" {
-		return "", ERROR_FIRST_NAME_REQUIRED
+		return "", types.MsgFirstNameRequired
 	}
 
 	if lastName == "" {
-		return "", ERROR_LAST_NAME_REQUIRED
+		return "", types.MsgLastNameRequired
 	}
 
 	userID, err := dependencies.UserFindByUsername(ctx, email, firstName, lastName)
@@ -154,11 +154,11 @@ func passwordRestore(ctx context.Context, r *http.Request, dependencies dependen
 			slog.String("first_name", firstName),
 			slog.String("last_name", lastName),
 		)
-		return "", ERROR_INTERNAL_SERVER
+		return "", types.MsgInternalServer
 	}
 
 	if userID == "" {
-		return "", ERROR_USER_NOT_FOUND
+		return "", types.MsgUserNotFound
 	}
 
 	resetToken, err := utils.GeneratePasswordResetToken()
@@ -170,7 +170,7 @@ func passwordRestore(ctx context.Context, r *http.Request, dependencies dependen
 			slog.String("first_name", firstName),
 			slog.String("last_name", lastName),
 		)
-		return "", ERROR_INTERNAL_SERVER
+		return "", types.MsgInternalServer
 	}
 
 	expires := dependencies.ExpiresSeconds
@@ -187,7 +187,7 @@ func passwordRestore(ctx context.Context, r *http.Request, dependencies dependen
 			slog.String("first_name", firstName),
 			slog.String("last_name", lastName),
 		)
-		return "", ERROR_INTERNAL_SERVER
+		return "", types.MsgInternalServer
 	}
 
 	emailContent := dependencies.EmailTemplate(ctx, userID, resetToken)
@@ -200,8 +200,8 @@ func passwordRestore(ctx context.Context, r *http.Request, dependencies dependen
 			slog.String("first_name", firstName),
 			slog.String("last_name", lastName),
 		)
-		return "", ERROR_INTERNAL_SERVER
+		return "", types.MsgInternalServer
 	}
 
-	return "Password reset link was sent to your e-mail", ""
+	return types.MsgPasswordResetLinkSent, ""
 }

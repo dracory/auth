@@ -89,22 +89,22 @@ func ApiRegisterCodeVerify(w http.ResponseWriter, r *http.Request, deps Dependen
 			if perr.Err != nil {
 				api.Respond(w, r, api.Error(perr.Err.Error()))
 			} else {
-				api.Respond(w, r, api.Error("Password validation failed"))
+				api.Respond(w, r, api.Error(types.MsgPasswordValidationFailed))
 			}
 			return
 		case RegisterCodeVerifyErrorCodeRegister:
 			// Map to the same user-facing message as NewRegistrationError.
-			api.Respond(w, r, api.Error("Registration failed. Please try again later"))
+			api.Respond(w, r, api.Error(types.MsgRegistrationFailedGeneric))
 			return
 		default:
 			// Map to the same user-facing message pattern as NewInternalError.
-			api.Respond(w, r, api.Error("Internal server error. Please try again later"))
+			api.Respond(w, r, api.Error(types.MsgInternalServer))
 			return
 		}
 	}
 
 	if deps.AuthenticateViaUsername == nil {
-		api.Respond(w, r, api.Error("Failed to process request. Please try again later"))
+		api.Respond(w, r, api.Error(types.MsgFailedToProcess))
 		return
 	}
 
@@ -161,21 +161,21 @@ func RegisterCodeVerify(ctx context.Context, r *http.Request, deps Dependencies)
 	if verificationCode == "" {
 		return nil, &RegisterCodeVerifyError{
 			Code:    RegisterCodeVerifyErrorCodeValidation,
-			Message: "Verification code is required field",
+			Message: types.MsgVerificationCodeRequired,
 		}
 	}
 
 	if len(verificationCode) != authutils.LoginCodeLength(deps.DisableRateLimit) {
 		return nil, &RegisterCodeVerifyError{
 			Code:    RegisterCodeVerifyErrorCodeValidation,
-			Message: "Verification code is invalid length",
+			Message: types.MsgVerificationCodeInvalidLength,
 		}
 	}
 
 	if !str.ContainsOnly(verificationCode, authutils.LoginCodeGamma(deps.DisableRateLimit)) {
 		return nil, &RegisterCodeVerifyError{
 			Code:    RegisterCodeVerifyErrorCodeValidation,
-			Message: "Verification code contains invalid characters",
+			Message: types.MsgVerificationCodeInvalidCharacters,
 		}
 	}
 
@@ -190,8 +190,7 @@ func RegisterCodeVerify(ctx context.Context, r *http.Request, deps Dependencies)
 	if errCode != nil {
 		return nil, &RegisterCodeVerifyError{
 			Code:    RegisterCodeVerifyErrorCodeCodeExpired,
-			Message: "Verification code has expired",
-			Err:     errCode,
+			Message: types.MsgVerificationCodeExpired,
 		}
 	}
 
@@ -201,7 +200,7 @@ func RegisterCodeVerify(ctx context.Context, r *http.Request, deps Dependencies)
 	if errJSON := json.Unmarshal([]byte(registerJSON), &registerMap); errJSON != nil {
 		return nil, &RegisterCodeVerifyError{
 			Code:    RegisterCodeVerifyErrorCodeDeserialize,
-			Message: "Serialized format is malformed",
+			Message: types.MsgSerializedFormatMalformed,
 			Err:     errJSON,
 		}
 	}

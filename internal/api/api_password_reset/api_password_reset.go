@@ -70,19 +70,19 @@ func ApiPasswordReset(w http.ResponseWriter, r *http.Request, deps Dependencies)
 			if perr.Err != nil {
 				api.Respond(w, r, api.Error(perr.Err.Error()))
 			} else {
-				api.Respond(w, r, api.Success("Password has been reset successfully"))
+				api.Respond(w, r, api.Success(types.MsgPasswordResetSuccess))
 			}
 			return
 		case PasswordResetErrorCodePasswordChange:
 			// Map to the same user-facing message as NewPasswordResetError.
-			api.Respond(w, r, api.Error("Password reset failed. Please try again later"))
+			api.Respond(w, r, api.Error(types.MsgPasswordResetFailed))
 			return
 		case PasswordResetErrorCodeLogout:
 			// Map to the same user-facing message as NewLogoutError.
-			api.Respond(w, r, api.Error("Logout failed. Please try again later"))
+			api.Respond(w, r, api.Error(types.MsgLogoutFailed))
 			return
 		default:
-			api.Respond(w, r, api.Error("Internal server error. Please try again later"))
+			api.Respond(w, r, api.Error(types.MsgInternalServer))
 			return
 		}
 	}
@@ -133,21 +133,21 @@ func PasswordReset(ctx context.Context, r *http.Request, deps Dependencies) (*Pa
 	if token == "" {
 		return nil, &PasswordResetError{
 			Code:    PasswordResetErrorCodeValidation,
-			Message: "Token is required field",
+			Message: types.MsgTokenRequired,
 		}
 	}
 
 	if password == "" {
 		return nil, &PasswordResetError{
 			Code:    PasswordResetErrorCodeValidation,
-			Message: "Password is required field",
+			Message: types.MsgPasswordRequired,
 		}
 	}
 
 	if subtle.ConstantTimeCompare([]byte(password), []byte(passwordConfirm)) != 1 {
 		return nil, &PasswordResetError{
 			Code:    PasswordResetErrorCodeValidation,
-			Message: "Passwords do not match",
+			Message: types.MsgPasswordsDoNotMatch,
 		}
 	}
 
@@ -163,7 +163,7 @@ func PasswordReset(ctx context.Context, r *http.Request, deps Dependencies) (*Pa
 	if deps.TemporaryKeyGet == nil {
 		return nil, &PasswordResetError{
 			Code:    PasswordResetErrorCodeTokenLookup,
-			Message: "Link not valid or expired",
+			Message: types.MsgLinkNotValidOrExpired,
 		}
 	}
 
@@ -171,7 +171,7 @@ func PasswordReset(ctx context.Context, r *http.Request, deps Dependencies) (*Pa
 	if errToken != nil {
 		return nil, &PasswordResetError{
 			Code:    PasswordResetErrorCodeTokenLookup,
-			Message: "Link not valid or expired",
+			Message: types.MsgLinkNotValidOrExpired,
 			Err:     errToken,
 		}
 	}
@@ -179,7 +179,7 @@ func PasswordReset(ctx context.Context, r *http.Request, deps Dependencies) (*Pa
 	if userID == "" {
 		return nil, &PasswordResetError{
 			Code:    PasswordResetErrorCodeTokenInvalid,
-			Message: "Link not valid or expired",
+			Message: types.MsgLinkNotValidOrExpired,
 		}
 	}
 
@@ -200,7 +200,7 @@ func PasswordReset(ctx context.Context, r *http.Request, deps Dependencies) (*Pa
 	}
 
 	if deps.LogoutUser == nil {
-		return &PasswordResetResult{SuccessMessage: "login success", Token: token}, nil
+		return &PasswordResetResult{SuccessMessage: types.MsgLoginSuccess, Token: token}, nil
 	}
 
 	if errLogout := deps.LogoutUser(ctx, userID); errLogout != nil {
@@ -211,5 +211,5 @@ func PasswordReset(ctx context.Context, r *http.Request, deps Dependencies) (*Pa
 		}
 	}
 
-	return &PasswordResetResult{SuccessMessage: "login success", Token: token}, nil
+	return &PasswordResetResult{SuccessMessage: types.MsgLoginSuccess, Token: token}, nil
 }

@@ -28,22 +28,22 @@ func RegisterWithUsernameAndPassword(
 	var response RegisterWithUsernameAndPasswordResult
 
 	if firstName == "" {
-		response.ErrorMessage = "First name is required field"
+		response.ErrorMessage = types.MsgFirstNameRequired
 		return response
 	}
 
 	if lastName == "" {
-		response.ErrorMessage = "Last name is required field"
+		response.ErrorMessage = types.MsgLastNameRequired
 		return response
 	}
 
 	if email == "" {
-		response.ErrorMessage = "Email is required field"
+		response.ErrorMessage = types.MsgEmailRequired
 		return response
 	}
 
 	if password == "" {
-		response.ErrorMessage = "Password is required field"
+		response.ErrorMessage = types.MsgPasswordRequired
 		return response
 	}
 
@@ -59,17 +59,17 @@ func RegisterWithUsernameAndPassword(
 
 	registerFn := a.GetFuncUserRegister()
 	if registerFn == nil {
-		response.ErrorMessage = "registration failed. FuncUserRegister function not defined"
+		response.ErrorMessage = types.MsgRegistrationFailedFn
 		return response
 	}
 
 	if !a.IsVerificationEnabled() {
 		if err := registerFn(ctx, email, password, firstName, lastName, options); err != nil {
-			response.ErrorMessage = "registration failed."
+			response.ErrorMessage = types.MsgRegistrationFailed
 			return response
 		}
 
-		response.SuccessMessage = "registration success"
+		response.SuccessMessage = types.MsgRegistrationSuccess
 		return response
 	}
 
@@ -77,7 +77,7 @@ func RegisterWithUsernameAndPassword(
 
 	verificationCode, errRandom := authutils.GenerateVerificationCode(a.GetDisableRateLimit())
 	if errRandom != nil {
-		response.ErrorMessage = "Failed to generate verification code. Please try again later"
+		response.ErrorMessage = types.MsgFailedToGenerateCode
 		if logger != nil {
 			logger.Error("registration code generation failed",
 				"error", errRandom,
@@ -97,7 +97,7 @@ func RegisterWithUsernameAndPassword(
 		"password":   password,
 	})
 	if errJson != nil {
-		response.ErrorMessage = "Failed to process request. Please try again later"
+		response.ErrorMessage = types.MsgFailedToProcess
 		if logger != nil {
 			logger.Error("registration data serialization failed",
 				"error", errJson,
@@ -113,7 +113,7 @@ func RegisterWithUsernameAndPassword(
 	temporaryKeySet := a.GetFuncTemporaryKeySet()
 	errTempTokenSave := temporaryKeySet(verificationCode, string(jsonPayload), int(verificationExpiration.Seconds()))
 	if errTempTokenSave != nil {
-		response.ErrorMessage = "Failed to process request. Please try again later"
+		response.ErrorMessage = types.MsgFailedToProcess
 		if logger != nil {
 			logger.Error("registration code token store failed",
 				"error", errTempTokenSave,
@@ -128,20 +128,20 @@ func RegisterWithUsernameAndPassword(
 
 	emailTemplate := a.GetFuncEmailTemplateRegisterCode()
 	if emailTemplate == nil {
-		response.ErrorMessage = "registration failed. FuncEmailTemplateRegisterCode function not defined"
+		response.ErrorMessage = types.MsgRegistrationFailedEmailTpl
 		return response
 	}
 
 	emailSend := a.GetFuncEmailSend()
 	if emailSend == nil {
-		response.ErrorMessage = "registration failed. FuncEmailSend function not defined"
+		response.ErrorMessage = types.MsgRegistrationFailedEmailSend
 		return response
 	}
 
 	emailContent := emailTemplate(ctx, email, verificationCode, options)
 
 	if errEmailSent := emailSend(ctx, email, "Registration Code", emailContent); errEmailSent != nil {
-		response.ErrorMessage = "Failed to send email. Please try again later"
+		response.ErrorMessage = types.MsgFailedToSendEmail
 		if logger != nil {
 			logger.Error("registration email send failed",
 				"error", errEmailSent,
@@ -154,6 +154,6 @@ func RegisterWithUsernameAndPassword(
 		return response
 	}
 
-	response.SuccessMessage = "Registration code was sent successfully"
+	response.SuccessMessage = types.MsgRegistrationCodeSent
 	return response
 }

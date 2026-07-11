@@ -74,7 +74,7 @@ func ApiAuthenticateViaUsername(w http.ResponseWriter, r *http.Request, username
 		deps.SetAuthCookie(w, r, result.Token)
 	}
 
-	api.Respond(w, r, api.SuccessWithData("login success", map[string]any{
+	api.Respond(w, r, api.SuccessWithData(types.MsgLoginSuccess, map[string]any{
 		"token": result.Token,
 	}))
 }
@@ -134,7 +134,7 @@ func AuthenticateViaUsername(ctx context.Context, username, firstName, lastName 
 		if deps.PasswordlessUserFindByEmail == nil {
 			return nil, &AuthenticateError{
 				Code:    AuthenticateErrorCodeUserLookup,
-				Message: "Invalid credentials",
+				Message: types.MsgInvalidCredentials,
 			}
 		}
 		userID, errUser = deps.PasswordlessUserFindByEmail(ctx, username)
@@ -142,7 +142,7 @@ func AuthenticateViaUsername(ctx context.Context, username, firstName, lastName 
 		if deps.UserFindByUsername == nil {
 			return nil, &AuthenticateError{
 				Code:    AuthenticateErrorCodeUserLookup,
-				Message: "Invalid credentials",
+				Message: types.MsgInvalidCredentials,
 			}
 		}
 		userID, errUser = deps.UserFindByUsername(ctx, username, firstName, lastName)
@@ -151,7 +151,7 @@ func AuthenticateViaUsername(ctx context.Context, username, firstName, lastName 
 	if errUser != nil {
 		return nil, &AuthenticateError{
 			Code:    AuthenticateErrorCodeUserLookup,
-			Message: "Invalid credentials",
+			Message: types.MsgInvalidCredentials,
 			Err:     errUser,
 		}
 	}
@@ -159,7 +159,7 @@ func AuthenticateViaUsername(ctx context.Context, username, firstName, lastName 
 	if userID == "" {
 		return nil, &AuthenticateError{
 			Code:    AuthenticateErrorCodeUserLookup,
-			Message: "Invalid credentials",
+			Message: types.MsgInvalidCredentials,
 		}
 	}
 
@@ -167,7 +167,7 @@ func AuthenticateViaUsername(ctx context.Context, username, firstName, lastName 
 	if errRandomFromGamma != nil {
 		return nil, &AuthenticateError{
 			Code:    AuthenticateErrorCodeCodeGen,
-			Message: "Failed to generate verification code. Please try again later",
+			Message: types.MsgFailedToGenerateCode,
 			Err:     errRandomFromGamma,
 		}
 	}
@@ -175,14 +175,14 @@ func AuthenticateViaUsername(ctx context.Context, username, firstName, lastName 
 	if deps.UserStoreAuthToken == nil {
 		return nil, &AuthenticateError{
 			Code:    AuthenticateErrorCodeTokenStore,
-			Message: "Failed to process request. Please try again later",
+			Message: types.MsgFailedToProcess,
 		}
 	}
 
 	if errSession := deps.UserStoreAuthToken(ctx, token, userID); errSession != nil {
 		return nil, &AuthenticateError{
 			Code:    AuthenticateErrorCodeTokenStore,
-			Message: "Failed to process request. Please try again later",
+			Message: types.MsgFailedToProcess,
 			Err:     errSession,
 		}
 	}

@@ -24,12 +24,12 @@ func LoginWithUsernameAndPassword(
 	var response LoginWithUsernameAndPasswordResult
 
 	if email == "" {
-		response.ErrorMessage = "Email is required field"
+		response.ErrorMessage = types.MsgEmailRequired
 		return response
 	}
 
 	if password == "" {
-		response.ErrorMessage = "Password is required field"
+		response.ErrorMessage = types.MsgPasswordRequired
 		return response
 	}
 
@@ -45,7 +45,7 @@ func LoginWithUsernameAndPassword(
 	userID, err := loginFn(ctx, email, password, options)
 
 	if err != nil {
-		response.ErrorMessage = "Invalid credentials"
+		response.ErrorMessage = types.MsgInvalidCredentials
 		if logger != nil {
 			logger.Error("login with username and password failed",
 				"error", err,
@@ -58,7 +58,7 @@ func LoginWithUsernameAndPassword(
 	}
 
 	if userID == "" {
-		response.ErrorMessage = "Invalid credentials"
+		response.ErrorMessage = types.MsgInvalidCredentials
 		return response
 	}
 
@@ -66,7 +66,7 @@ func LoginWithUsernameAndPassword(
 	// duplicating the character set. We keep length at 32 for auth tokens.
 	token, errRandom := str.RandomFromGamma(32, authutils.LoginCodeGamma(false))
 	if errRandom != nil {
-		response.ErrorMessage = "Failed to generate verification code. Please try again later"
+		response.ErrorMessage = types.MsgFailedToGenerateCode
 		if logger != nil {
 			logger.Error("auth token generation failed",
 				"error", errRandom,
@@ -82,7 +82,7 @@ func LoginWithUsernameAndPassword(
 	errSession := storeFn(ctx, token, userID, options)
 
 	if errSession != nil {
-		response.ErrorMessage = "Failed to process request. Please try again later"
+		response.ErrorMessage = types.MsgFailedToProcess
 		if logger != nil {
 			logger.Error("auth token store failed",
 				"error", errSession,
@@ -96,7 +96,7 @@ func LoginWithUsernameAndPassword(
 		return response
 	}
 
-	response.SuccessMessage = "login success"
+	response.SuccessMessage = types.MsgLoginSuccess
 	response.Token = token
 	return response
 }

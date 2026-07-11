@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/dracory/auth/types"
 	"github.com/dracory/req"
 
 	"github.com/dracory/auth/utils"
@@ -50,7 +51,7 @@ func loginPasswordless(ctx context.Context, r *http.Request, deps LoginPasswordl
 	if email == "" {
 		return nil, &LoginPasswordlessError{
 			Code:    LoginPasswordlessErrorCodeValidation,
-			Message: "Email is required field",
+			Message: types.MsgEmailRequired,
 		}
 	}
 
@@ -108,6 +109,6 @@ func loginPasswordless(ctx context.Context, r *http.Request, deps LoginPasswordl
 	}
 
 	return &LoginPasswordlessResult{
-		SuccessMessage: "Login code was sent successfully",
+		SuccessMessage: types.MsgLoginCodeSent,
 	}, nil
 }

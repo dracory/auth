@@ -34,13 +34,13 @@ func ApiLogin(w http.ResponseWriter, r *http.Request, dependencies Dependencies)
 				api.Respond(w, r, api.Error(err.Message))
 				return
 			case LoginPasswordlessErrorCodeTokenStore:
-				api.Respond(w, r, api.Error("Failed to process request. Please try again later"))
+				api.Respond(w, r, api.Error(types.MsgFailedToProcess))
 				return
 			case LoginPasswordlessErrorCodeEmailSend:
-				api.Respond(w, r, api.Error("Failed to send email. Please try again later"))
+				api.Respond(w, r, api.Error(types.MsgFailedToSendEmail))
 				return
 			default:
-				api.Respond(w, r, api.Error("Internal server error. Please try again later"))
+				api.Respond(w, r, api.Error(types.MsgInternalServer))
 				return
 			}
 		}
@@ -50,7 +50,7 @@ func ApiLogin(w http.ResponseWriter, r *http.Request, dependencies Dependencies)
 	}
 
 	if dependencies.LoginWithUsernameAndPassword == nil {
-		api.Respond(w, r, api.Error("Internal server error. Please try again later"))
+		api.Respond(w, r, api.Error(types.MsgInternalServer))
 		return
 	}
 
@@ -84,7 +84,7 @@ func ApiLoginWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthShared
 		if logger := a.GetLogger(); logger != nil {
 			logger.Error("login requires AuthPasswordInterface")
 		}
-		http.Error(w, "Internal server error. Please try again later", http.StatusInternalServerError)
+		http.Error(w, types.MsgInternalServer, http.StatusInternalServerError)
 		return
 	}
 

@@ -2,7 +2,6 @@ package api_login_code_verify
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
 	"github.com/dracory/api"
@@ -72,13 +71,13 @@ func ApiLoginCodeVerify(w http.ResponseWriter, r *http.Request, deps Dependencie
 			api.Respond(w, r, api.Error(perr.Message))
 			return
 		default:
-			api.Respond(w, r, api.Error("Verification code has expired"))
+			api.Respond(w, r, api.Error(types.MsgVerificationCodeExpired))
 			return
 		}
 	}
 
 	if deps.AuthenticateViaUsername == nil {
-		api.Respond(w, r, api.Error("Failed to process request. Please try again later"))
+		api.Respond(w, r, api.Error(types.MsgFailedToProcess))
 		return
 	}
 
@@ -111,29 +110,28 @@ func LoginCodeVerify(ctx context.Context, r *http.Request, deps Dependencies) (*
 	if verificationCode == "" {
 		return nil, &LoginCodeVerifyError{
 			Code:    LoginCodeVerifyErrorCodeValidation,
-			Message: "Verification code is required field",
+			Message: types.MsgVerificationCodeRequired,
 		}
 	}
 
 	if len(verificationCode) != utils.LoginCodeLength(deps.DisableRateLimit) {
 		return nil, &LoginCodeVerifyError{
 			Code:    LoginCodeVerifyErrorCodeValidation,
-			Message: "Verification code is invalid length",
+			Message: types.MsgVerificationCodeInvalidLength,
 		}
 	}
 
 	if !str.ContainsOnly(verificationCode, utils.LoginCodeGamma(deps.DisableRateLimit)) {
 		return nil, &LoginCodeVerifyError{
 			Code:    LoginCodeVerifyErrorCodeValidation,
-			Message: "Verification code contains invalid characters",
+			Message: types.MsgVerificationCodeInvalidCharacters,
 		}
 	}
 
 	if deps.TemporaryKeyGet == nil {
 		return nil, &LoginCodeVerifyError{
 			Code:    LoginCodeVerifyErrorCodeCodeExpired,
-			Message: "Verification code has expired",
-			Err:     errors.New("temporary key store is not configured"),
+			Message: types.MsgVerificationCodeExpired,
 		}
 	}
 
@@ -141,8 +139,7 @@ func LoginCodeVerify(ctx context.Context, r *http.Request, deps Dependencies) (*
 	if errCode != nil {
 		return nil, &LoginCodeVerifyError{
 			Code:    LoginCodeVerifyErrorCodeCodeExpired,
-			Message: "Verification code has expired",
-			Err:     errCode,
+			Message: types.MsgVerificationCodeExpired,
 		}
 	}
 

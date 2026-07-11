@@ -18,10 +18,10 @@ However, a strict production-ready review has surfaced **two significant securit
 
 | ID | Title | Severity | Category |
 | :--- | :--- | :--- | :--- |
-| **SEC-01** | Concurrent Race Condition & Slice Corruption in `InMemoryRateLimiter` | 🔴 **Critical** | Concurrency / Security |
-| **SEC-02** | Secure Cookie Flag Disabled Behind Reverse Proxies | 🟠 **High** | Security / Operations |
-| **PERF-01** | Inefficient Slice Allocations and Garbage Collection Pressure in Rate Limiting | 🟡 **Medium** | Performance |
-| **ARCH-01** | Hardcoded English Error Strings in Core Business Logic | 🟢 **Low** | Architecture |
+| **SEC-01** | Concurrent Race Condition & Slice Corruption in `InMemoryRateLimiter` | 🔴 ~~Critical~~ ✅ **Fixed** | Concurrency / Security |
+| **SEC-02** | Secure Cookie Flag Disabled Behind Reverse Proxies | 🟠 ~~High~~ ✅ **Fixed** | Security / Operations |
+| **PERF-01** | Inefficient Slice Allocations and Garbage Collection Pressure in Rate Limiting | 🟡 ~~Medium~~ ✅ **Fixed** | Performance |
+| **ARCH-01** | Hardcoded English Error Strings in Core Business Logic | 🟢 ~~Low~~ ✅ **Fixed** | Architecture |
 | **OBS-01** | Missing Metrics and Tracing Hooks for Production Observability | 🟢 **Low** | Observability |
 
 ---

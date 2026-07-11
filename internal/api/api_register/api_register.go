@@ -28,13 +28,13 @@ func ApiRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 				return
 			case RegisterPasswordlessInitErrorCodeTokenStore,
 				RegisterPasswordlessInitErrorCodeSerialization:
-				api.Respond(w, r, api.Error("Failed to process request. Please try again later"))
+				api.Respond(w, r, api.Error(types.MsgFailedToProcess))
 				return
 			case RegisterPasswordlessInitErrorCodeEmailSend:
-				api.Respond(w, r, api.Error("Failed to send email. Please try again later"))
+				api.Respond(w, r, api.Error(types.MsgFailedToSendEmail))
 				return
 			default:
-				api.Respond(w, r, api.Error("Internal server error. Please try again later"))
+				api.Respond(w, r, api.Error(types.MsgInternalServer))
 				return
 			}
 		}
@@ -44,7 +44,7 @@ func ApiRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 	}
 
 	if deps.RegisterWithUsernameAndPassword == nil {
-		api.Respond(w, r, api.Error("Registration failed. Please try again later"))
+		api.Respond(w, r, api.Error(types.MsgRegistrationFailedGeneric))
 		return
 	}
 
@@ -74,7 +74,7 @@ func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSha
 		if logger := a.GetLogger(); logger != nil {
 			logger.Error("registration requires AuthPasswordInterface")
 		}
-		http.Error(w, "Internal server error. Please try again later", http.StatusInternalServerError)
+		http.Error(w, types.MsgInternalServer, http.StatusInternalServerError)
 		return
 	}
 
@@ -192,21 +192,21 @@ func RegisterPasswordlessInit(ctx context.Context, r *http.Request, deps Registe
 	if firstName == "" {
 		return nil, &RegisterPasswordlessInitError{
 			Code:    RegisterPasswordlessInitErrorCodeValidation,
-			Message: "First name is required field",
+			Message: types.MsgFirstNameRequired,
 		}
 	}
 
 	if lastName == "" {
 		return nil, &RegisterPasswordlessInitError{
 			Code:    RegisterPasswordlessInitErrorCodeValidation,
-			Message: "Last name is required field",
+			Message: types.MsgLastNameRequired,
 		}
 	}
 
 	if email == "" {
 		return nil, &RegisterPasswordlessInitError{
 			Code:    RegisterPasswordlessInitErrorCodeValidation,
-			Message: "Email is required field",
+			Message: types.MsgEmailRequired,
 		}
 	}
 
@@ -274,6 +274,6 @@ func RegisterPasswordlessInit(ctx context.Context, r *http.Request, deps Registe
 	}
 
 	return &RegisterPasswordlessInitResult{
-		SuccessMessage: "Registration code was sent successfully",
+		SuccessMessage: types.MsgRegistrationCodeSent,
 	}, nil
 }
