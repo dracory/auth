@@ -13,6 +13,7 @@ type RateLimitResult struct {
 
 // requestRecord tracks individual request timestamps for an IP
 type requestRecord struct {
+	mu          sync.Mutex
 	timestamps  []time.Time
 	lockedUntil time.Time
 }
@@ -57,6 +58,9 @@ func (r *InMemoryRateLimiter) Check(ip string, endpoint string) RateLimitResult 
 	})
 	record := recordInterface.(*requestRecord)
 
+	record.mu.Lock()
+	defer record.mu.Unlock()
+
 	// Check if currently locked out
 	if !record.lockedUntil.IsZero() && now.Before(record.lockedUntil) {
 		retryAfter := record.lockedUntil.Sub(now)
@@ -72,21 +76,20 @@ func (r *InMemoryRateLimiter) Check(ip string, endpoint string) RateLimitResult 
 		record.lockedUntil = time.Time{}
 	}
 
-	// Remove timestamps outside the window
+	// Remove timestamps outside the window (in-place, zero allocations)
 	cutoff := now.Add(-r.windowDuration)
-	validTimestamps := make([]time.Time, 0)
+	n := 0
 	for _, ts := range record.timestamps {
 		if ts.After(cutoff) {
-			validTimestamps = append(validTimestamps, ts)
+			record.timestamps[n] = ts
+			n++
 		}
 	}
-	record.timestamps = validTimestamps
+	record.timestamps = record.timestamps[:n]
 
 	// Check if limit exceeded
 	if len(record.timestamps) >= r.maxAttempts {
-		// Lock out the IP
 		record.lockedUntil = now.Add(r.lockoutDuration)
-		r.records.Store(key, record)
 		return RateLimitResult{
 			Allowed:    false,
 			RetryAfter: r.lockoutDuration,
@@ -95,7 +98,6 @@ func (r *InMemoryRateLimiter) Check(ip string, endpoint string) RateLimitResult 
 
 	// Add current timestamp and allow request
 	record.timestamps = append(record.timestamps, now)
-	r.records.Store(key, record)
 
 	return RateLimitResult{
 		Allowed:    true,
@@ -118,6 +120,8 @@ func (r *InMemoryRateLimiter) cleanupOldRecords() {
 			r.records.Range(func(key, value interface{}) bool {
 				record := value.(*requestRecord)
 
+				record.mu.Lock()
+
 				// If no recent activity and not locked, remove the record
 				if len(record.timestamps) == 0 ||
 					(len(record.timestamps) > 0 && record.timestamps[len(record.timestamps)-1].Before(cutoff)) {
@@ -125,6 +129,8 @@ func (r *InMemoryRateLimiter) cleanupOldRecords() {
 						r.records.Delete(key)
 					}
 				}
+
+				record.mu.Unlock()
 
 				return true // continue iteration
 			})
