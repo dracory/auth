@@ -35,8 +35,8 @@ func TestSetAuthCookie_UsesDefaultConfigWhenZero(t *testing.T) {
 		t.Fatalf("expected default Path '/' got %q", c.Path)
 	}
 
-	if c.Secure {
-		t.Fatalf("expected Secure to be false for HTTP request")
+	if !c.Secure {
+		t.Fatalf("expected Secure to be true by default (cfg.Secure=true), even for HTTP request")
 	}
 
 	if c.MaxAge <= 0 {
@@ -152,5 +152,68 @@ func TestRemoveAuthCookie_UsesCustomConfig(t *testing.T) {
 
 	if !c.Expires.Before(time.Now()) {
 		t.Fatalf("expected expired cookie, got %v", c.Expires)
+	}
+}
+
+// TestSetAuthCookie_SecureRespectedBehindReverseProxy is a regression test for SEC-02:
+// When cfg.Secure=true and the request is plain HTTP (as behind a reverse proxy),
+// the Secure flag must still be set on the cookie.
+func TestSetAuthCookie_SecureRespectedBehindReverseProxy(t *testing.T) {
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "http://example.com/", nil)
+
+	a := authImplementation{
+		cookieConfig: CookieConfig{
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+			MaxAge:   3600,
+			Path:     "/",
+		},
+	}
+
+	a.setAuthCookie(w, r, "token")
+
+	res := w.Result()
+	cookies := res.Cookies()
+	if len(cookies) == 0 {
+		t.Fatalf("expected a cookie to be set")
+	}
+
+	c := cookies[0]
+
+	if !c.Secure {
+		t.Fatalf("SEC-02 REGRESSION: expected Secure=true for plain HTTP request when cfg.Secure=true (reverse proxy scenario)")
+	}
+}
+
+// TestRemoveAuthCookie_SecureRespectedBehindReverseProxy is a regression test for SEC-02:
+// When cfg.Secure=true and the request is plain HTTP (as behind a reverse proxy),
+// the Secure flag must still be set on the removal cookie.
+func TestRemoveAuthCookie_SecureRespectedBehindReverseProxy(t *testing.T) {
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "http://example.com/", nil)
+
+	a := authImplementation{
+		cookieConfig: CookieConfig{
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+			Path:     "/",
+		},
+	}
+
+	a.removeAuthCookie(w, r)
+
+	res := w.Result()
+	cookies := res.Cookies()
+	if len(cookies) == 0 {
+		t.Fatalf("expected a cookie to be set")
+	}
+
+	c := cookies[0]
+
+	if !c.Secure {
+		t.Fatalf("SEC-02 REGRESSION: expected Secure=true for plain HTTP removal cookie when cfg.Secure=true (reverse proxy scenario)")
 	}
 }

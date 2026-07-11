@@ -9,7 +9,7 @@ import (
 	"github.com/dracory/auth/types"
 )
 
-func TestAuthCookieSet_HTTP_NotSecure(t *testing.T) {
+func TestAuthCookieSet_HTTP_SecureByDefault(t *testing.T) {
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "http://example.com/", nil)
 
@@ -41,8 +41,8 @@ func TestAuthCookieSet_HTTP_NotSecure(t *testing.T) {
 		t.Fatalf("expected cookie path %q, got %q", "/", c.Path)
 	}
 
-	if c.Secure {
-		t.Fatalf("expected Secure to be false for HTTP request")
+	if !c.Secure {
+		t.Fatalf("expected Secure to be true by default (cfg.Secure=true), even for HTTP request")
 	}
 
 	if !c.HttpOnly {
@@ -55,6 +55,38 @@ func TestAuthCookieSet_HTTP_NotSecure(t *testing.T) {
 
 	if !c.Expires.After(time.Now()) {
 		t.Fatalf("expected cookie expiration in the future, got Expires=%v", c.Expires)
+	}
+}
+
+// TestAuthCookieSet_SecureRespectedBehindReverseProxy is a regression test for SEC-02:
+// When cfg.Secure=true and the request is plain HTTP (as behind a reverse proxy),
+// the Secure flag must still be set on the cookie.
+func TestAuthCookieSet_SecureRespectedBehindReverseProxy(t *testing.T) {
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "http://example.com/", nil)
+
+	AuthCookieSet(w, r, "test-token")
+
+	res := w.Result()
+	cookies := res.Cookies()
+	if len(cookies) == 0 {
+		t.Fatalf("expected a cookie to be set")
+	}
+
+	var c *http.Cookie
+	for _, ck := range cookies {
+		if ck.Name == types.CookieName {
+			c = ck
+			break
+		}
+	}
+
+	if c == nil {
+		t.Fatalf("expected cookie %q to be set", types.CookieName)
+	}
+
+	if !c.Secure {
+		t.Fatalf("SEC-02 REGRESSION: expected Secure=true for plain HTTP request when cfg.Secure=true (reverse proxy scenario)")
 	}
 }
 
@@ -87,7 +119,7 @@ func TestAuthCookieSet_HTTPS_Secure(t *testing.T) {
 	}
 }
 
-func TestAuthCookieRemove_HTTP_NotSecure(t *testing.T) {
+func TestAuthCookieRemove_HTTP_SecureByDefault(t *testing.T) {
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "http://example.com/", nil)
 
@@ -119,8 +151,8 @@ func TestAuthCookieRemove_HTTP_NotSecure(t *testing.T) {
 		t.Fatalf("expected cookie path %q, got %q", "/", c.Path)
 	}
 
-	if c.Secure {
-		t.Fatalf("expected Secure to be false for HTTP request")
+	if !c.Secure {
+		t.Fatalf("expected Secure to be true by default (cfg.Secure=true), even for HTTP request")
 	}
 
 	if !c.HttpOnly {
@@ -133,6 +165,38 @@ func TestAuthCookieRemove_HTTP_NotSecure(t *testing.T) {
 
 	if !c.Expires.Before(time.Now()) {
 		t.Fatalf("expected cookie to be expired, got Expires=%v", c.Expires)
+	}
+}
+
+// TestAuthCookieRemove_SecureRespectedBehindReverseProxy is a regression test for SEC-02:
+// When cfg.Secure=true and the request is plain HTTP (as behind a reverse proxy),
+// the Secure flag must still be set on the removal cookie.
+func TestAuthCookieRemove_SecureRespectedBehindReverseProxy(t *testing.T) {
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "http://example.com/", nil)
+
+	AuthCookieRemove(w, r)
+
+	res := w.Result()
+	cookies := res.Cookies()
+	if len(cookies) == 0 {
+		t.Fatalf("expected a cookie to be set")
+	}
+
+	var c *http.Cookie
+	for _, ck := range cookies {
+		if ck.Name == types.CookieName {
+			c = ck
+			break
+		}
+	}
+
+	if c == nil {
+		t.Fatalf("expected cookie %q to be set", types.CookieName)
+	}
+
+	if !c.Secure {
+		t.Fatalf("SEC-02 REGRESSION: expected Secure=true for plain HTTP removal cookie when cfg.Secure=true (reverse proxy scenario)")
 	}
 }
 

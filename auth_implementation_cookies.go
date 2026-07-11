@@ -47,10 +47,7 @@ func setCookieWithConfig(w http.ResponseWriter, r *http.Request, token string, c
 		maxAge = 2 * 60 * 60
 	}
 
-	secure := false
-	if cfg.Secure && r.TLS != nil {
-		secure = true
-	}
+	secure := cfg.Secure
 
 	expires := time.Now().Add(time.Duration(maxAge) * time.Second)
 
@@ -80,10 +77,7 @@ func removeCookieWithConfig(w http.ResponseWriter, r *http.Request, cfg CookieCo
 		path = "/"
 	}
 
-	secure := false
-	if cfg.Secure && r.TLS != nil {
-		secure = true
-	}
+	secure := cfg.Secure
 
 	cookie := http.Cookie{
 		Name:     CookieName,
