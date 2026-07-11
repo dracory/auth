@@ -41,6 +41,7 @@ func LoginWithUsernameAndPassword(
 	loginFn := a.GetFuncUserLogin()
 	storeFn := a.GetFuncUserStoreAuthToken()
 	logger := a.GetLogger()
+	hooks := a.GetObservabilityHooks()
 
 	userID, err := loginFn(ctx, email, password, options)
 
@@ -54,11 +55,13 @@ func LoginWithUsernameAndPassword(
 				"user_agent", options.UserAgent,
 			)
 		}
+		hooks.RecordLoginAttempt("password", false, err)
 		return response
 	}
 
 	if userID == "" {
 		response.ErrorMessage = types.MsgInvalidCredentials
+		hooks.RecordLoginAttempt("password", false, nil)
 		return response
 	}
 
@@ -76,6 +79,7 @@ func LoginWithUsernameAndPassword(
 				"user_agent", options.UserAgent,
 			)
 		}
+		hooks.RecordLoginAttempt("password", false, errRandom)
 		return response
 	}
 
@@ -93,10 +97,13 @@ func LoginWithUsernameAndPassword(
 				"user_agent", options.UserAgent,
 			)
 		}
+		hooks.RecordLoginAttempt("password", false, errSession)
 		return response
 	}
 
 	response.SuccessMessage = types.MsgLoginSuccess
 	response.Token = token
+	hooks.RecordLoginAttempt("password", true, nil)
+	hooks.RecordSessionCreated(userID)
 	return response
 }

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/dracory/api"
+	"github.com/dracory/auth/types"
 	"github.com/dracory/auth/utils"
 )
 
@@ -18,6 +19,7 @@ func CheckRateLimit(
 	disableRateLimit bool,
 	customCheck func(ip string, endpoint string) (allowed bool, retryAfter time.Duration, err error),
 	limiter *utils.InMemoryRateLimiter,
+	hooks types.ObservabilityHooks,
 ) bool {
 	// If rate limiting is disabled, allow all requests
 	if disableRateLimit {
@@ -35,6 +37,9 @@ func CheckRateLimit(
 			return true
 		}
 		if !allowed {
+			if hooks != nil {
+				hooks.RecordRateLimitHit(endpoint, ip)
+			}
 			w.WriteHeader(http.StatusTooManyRequests)
 			w.Header().Set("Retry-After", fmt.Sprintf("%.0f", retryAfter.Seconds()))
 			api.Respond(w, r, api.Error("Too many requests. Please try again later."))
@@ -51,6 +56,9 @@ func CheckRateLimit(
 
 	result := limiter.Check(ip, endpoint)
 	if !result.Allowed {
+		if hooks != nil {
+			hooks.RecordRateLimitHit(endpoint, ip)
+		}
 		w.WriteHeader(http.StatusTooManyRequests)
 		w.Header().Set("Retry-After", fmt.Sprintf("%.0f", result.RetryAfter.Seconds()))
 		api.Respond(w, r, api.Error("Too many requests. Please try again later."))

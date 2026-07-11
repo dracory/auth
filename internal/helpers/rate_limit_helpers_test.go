@@ -13,7 +13,7 @@ func TestCheckRateLimit_DisabledAlwaysAllows(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/login", nil)
 	w := httptest.NewRecorder()
 
-	allowed := CheckRateLimit(w, req, "/login", true, nil, nil)
+	allowed := CheckRateLimit(w, req, "/login", true, nil, nil, nil)
 	if !allowed {
 		t.Fatalf("expected request to be allowed when rate limiting is disabled")
 	}
@@ -34,7 +34,7 @@ func TestCheckRateLimit_UsesCustomFunction(t *testing.T) {
 		return false, 5 * time.Second, nil
 	}
 
-	allowed := CheckRateLimit(w, req, "/login", false, custom, nil)
+	allowed := CheckRateLimit(w, req, "/login", false, custom, nil, nil)
 	if allowed {
 		t.Fatalf("expected request to be blocked by custom rate limiter")
 	}
@@ -54,7 +54,7 @@ func TestCheckRateLimit_DefaultLimiter_AllowsAndBlocks(t *testing.T) {
 	// First request should pass
 	req1 := httptest.NewRequest(http.MethodPost, endpoint, nil)
 	w1 := httptest.NewRecorder()
-	allowed1 := CheckRateLimit(w1, req1, endpoint, false, nil, limiter)
+	allowed1 := CheckRateLimit(w1, req1, endpoint, false, nil, limiter, nil)
 	if !allowed1 {
 		t.Fatalf("expected first request to be allowed")
 	}
@@ -62,7 +62,7 @@ func TestCheckRateLimit_DefaultLimiter_AllowsAndBlocks(t *testing.T) {
 	// Second request from same IP/endpoint should be blocked
 	req2 := httptest.NewRequest(http.MethodPost, endpoint, nil)
 	w2 := httptest.NewRecorder()
-	allowed2 := CheckRateLimit(w2, req2, endpoint, false, nil, limiter)
+	allowed2 := CheckRateLimit(w2, req2, endpoint, false, nil, limiter, nil)
 	if allowed2 {
 		t.Fatalf("expected second request to be rate limited")
 	}

@@ -57,6 +57,7 @@ func NewUsernameAndPasswordAuth(config types.ConfigUsernameAndPassword) (types.A
 	}
 
 	auth.logger = config.Logger
+	auth.observabilityHooks = config.ObservabilityHooks
 
 	// If no user defined layout is set, use default
 	if auth.funcLayout == nil {

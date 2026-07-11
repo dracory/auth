@@ -39,5 +39,7 @@ type ConfigPasswordless struct {
 	FuncEmailTemplateRegisterCode func(ctx context.Context, email string, registerLink string, options UserAuthOptions) string // optional
 	FuncEmailSend                 func(ctx context.Context, email string, emailSubject string, emailBody string) (err error)
 	FuncUserRegister              func(ctx context.Context, email string, firstName string, lastName string, options UserAuthOptions) (err error)
+	// Observability hooks for metrics and tracing (optional)
+	ObservabilityHooks ObservabilityHooks
 	// ===== END: passwordless options
 }

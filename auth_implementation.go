@@ -71,6 +71,8 @@ type authImplementation struct {
 	useCookies      bool
 	useLocalStorage bool
 	logger          *slog.Logger
+
+	observabilityHooks types.ObservabilityHooks
 }
 
 func (a authImplementation) GetEndpoint() string {
@@ -113,6 +115,17 @@ func (a authImplementation) GetLogger() *slog.Logger {
 
 func (a *authImplementation) SetLogger(logger *slog.Logger) {
 	a.logger = logger
+}
+
+func (a authImplementation) GetObservabilityHooks() types.ObservabilityHooks {
+	if a.observabilityHooks == nil {
+		return types.NoopObservabilityHooks{}
+	}
+	return a.observabilityHooks
+}
+
+func (a *authImplementation) SetObservabilityHooks(hooks types.ObservabilityHooks) {
+	a.observabilityHooks = hooks
 }
 
 // GetCurrentUserID returns the authenticated user ID stored in the request

@@ -288,6 +288,12 @@ func (a *authSharedTest) GetLogger() *slog.Logger {
 
 func (a *authSharedTest) SetLogger(logger *slog.Logger) { a.logger = logger }
 
+func (a *authSharedTest) GetObservabilityHooks() types.ObservabilityHooks {
+	return types.NoopObservabilityHooks{}
+}
+
+func (a *authSharedTest) SetObservabilityHooks(hooks types.ObservabilityHooks) {}
+
 func (a *authSharedTest) GetLayout() func(content string) string {
 	if a.layout != nil {
 		return a.layout

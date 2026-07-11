@@ -78,6 +78,7 @@ func NewPasswordlessAuth(config types.ConfigPasswordless) (types.AuthPasswordles
 	}
 
 	auth.logger = config.Logger
+	auth.observabilityHooks = config.ObservabilityHooks
 
 	return auth, nil
 }

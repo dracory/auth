@@ -44,5 +44,7 @@ type ConfigUsernameAndPassword struct {
 	FuncUserRegister                 func(ctx context.Context, username string, password string, first_name string, last_name string, options UserAuthOptions) (err error)
 	PasswordStrength                 *PasswordStrengthConfig
 	LabelUsername                    string
+	// Observability hooks for metrics and tracing (optional)
+	ObservabilityHooks ObservabilityHooks
 	// ===== END: username(email) and password options
 }

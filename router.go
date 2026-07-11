@@ -133,7 +133,7 @@ func (a authImplementation) buildAPIRoutes(csrfCfg middlewares.CSRFConfig) map[s
 		routes[cfg.path] = middlewares.WithRateLimit(
 			middlewares.RateLimitConfig{
 				Check: func(w http.ResponseWriter, r *http.Request, endpoint string) bool {
-					return helpers.CheckRateLimit(w, r, endpoint, a.disableRateLimit, a.funcCheckRateLimit, a.rateLimiter)
+					return helpers.CheckRateLimit(w, r, endpoint, a.disableRateLimit, a.funcCheckRateLimit, a.rateLimiter, a.GetObservabilityHooks())
 				},
 				Endpoint: cfg.endpoint,
 			},

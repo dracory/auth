@@ -60,20 +60,24 @@ func RegisterWithUsernameAndPassword(
 	registerFn := a.GetFuncUserRegister()
 	if registerFn == nil {
 		response.ErrorMessage = types.MsgRegistrationFailedFn
+		a.GetObservabilityHooks().RecordRegistrationAttempt(false, nil)
 		return response
 	}
 
 	if !a.IsVerificationEnabled() {
 		if err := registerFn(ctx, email, password, firstName, lastName, options); err != nil {
 			response.ErrorMessage = types.MsgRegistrationFailed
+			a.GetObservabilityHooks().RecordRegistrationAttempt(false, err)
 			return response
 		}
 
 		response.SuccessMessage = types.MsgRegistrationSuccess
+		a.GetObservabilityHooks().RecordRegistrationAttempt(true, nil)
 		return response
 	}
 
 	logger := a.GetLogger()
+	hooks := a.GetObservabilityHooks()
 
 	verificationCode, errRandom := authutils.GenerateVerificationCode(a.GetDisableRateLimit())
 	if errRandom != nil {
@@ -87,6 +91,7 @@ func RegisterWithUsernameAndPassword(
 				"user_agent", options.UserAgent,
 			)
 		}
+		hooks.RecordRegistrationAttempt(false, errRandom)
 		return response
 	}
 
@@ -107,6 +112,7 @@ func RegisterWithUsernameAndPassword(
 				"user_agent", options.UserAgent,
 			)
 		}
+		hooks.RecordRegistrationAttempt(false, errJson)
 		return response
 	}
 
@@ -123,18 +129,21 @@ func RegisterWithUsernameAndPassword(
 				"user_agent", options.UserAgent,
 			)
 		}
+		hooks.RecordRegistrationAttempt(false, errTempTokenSave)
 		return response
 	}
 
 	emailTemplate := a.GetFuncEmailTemplateRegisterCode()
 	if emailTemplate == nil {
 		response.ErrorMessage = types.MsgRegistrationFailedEmailTpl
+		hooks.RecordRegistrationAttempt(false, nil)
 		return response
 	}
 
 	emailSend := a.GetFuncEmailSend()
 	if emailSend == nil {
 		response.ErrorMessage = types.MsgRegistrationFailedEmailSend
+		hooks.RecordRegistrationAttempt(false, nil)
 		return response
 	}
 
@@ -151,9 +160,11 @@ func RegisterWithUsernameAndPassword(
 				"user_agent", options.UserAgent,
 			)
 		}
+		hooks.RecordRegistrationAttempt(false, errEmailSent)
 		return response
 	}
 
 	response.SuccessMessage = types.MsgRegistrationCodeSent
+	hooks.RecordRegistrationAttempt(true, nil)
 	return response
 }

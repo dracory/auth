@@ -115,6 +115,10 @@ type AuthSharedInterface interface {
 	SetAuthCookie(w http.ResponseWriter, r *http.Request, token string)
 	RemoveAuthCookie(w http.ResponseWriter, r *http.Request)
 
+	// Observability hooks for metrics and tracing (optional).
+	GetObservabilityHooks() ObservabilityHooks
+	SetObservabilityHooks(hooks ObservabilityHooks)
+
 	// Final authentication step helpers used by internal API flows.
 	AuthenticateViaUsername(w http.ResponseWriter, r *http.Request, email, firstName, lastName string)
 }
