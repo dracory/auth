@@ -36,7 +36,7 @@ The feature is **disabled by default** and requires the consumer to explicitly e
 - **Opt-in only**: Routes are not registered unless `EnableImpersonation` is `true`.
 - **Permission check required**: `FuncCanImpersonate` is mandatory when enabled. The library never decides who can impersonate.
 - **One-level only**: Nested impersonation is rejected by the chain guard.
-- **CSRF protected**: Both endpoints require a valid CSRF token when `EnableCSRFProtection` is enabled.
+- **CSRF protected**: Both endpoints are wrapped with CSRF middleware (same as other POST endpoints).
 - **Rate limited**: Both endpoints participate in the standard per-IP rate limiting.
 - **Session bound**: The admin's original token is stored under a temporary key with the same expiry as a normal session.
 - **Audit trail**: Optional callbacks and observability hooks capture start/stop events.
@@ -90,15 +90,18 @@ Starts an impersonation session for the supplied target user.
 
 **Behavior:**
 
-1. Resolves the current admin from the existing auth token.
-2. Validates `user_id` is present.
-3. Checks the chain guard (rejects if already impersonating).
-4. Calls `FuncCanImpersonate(adminUserID, targetUserID)`.
-5. Generates a new auth token for the target user.
-6. Stores the mapping `imp:<newToken> -> <adminToken>` in the temporary key store.
-7. Persists the new token via `FuncUserStoreAuthToken`.
-8. Sets the auth cookie to the new token (when `UseCookies` is true).
-9. Calls optional `FuncImpersonationStart` and observability hooks.
+1. Extracts the current auth token from the request (cookie or `Authorization` header).
+2. Resolves `adminUserID` from the auth token via `FuncUserFindByAuthToken`. Returns `401` if token is empty or user not found.
+3. Reads `user_id` from the request body/form. Returns `400` if missing.
+4. **Chain guard**: Checks if the current token already has an `imp:` mapping via `FuncTemporaryKeyGet`. Returns `400` if already impersonating.
+5. Calls `FuncCanImpersonate(adminUserID, targetUserID)`. Returns `403` if not allowed, `500` on error.
+6. Generates a new 32-character auth token.
+7. Stores the mapping `imp:<newToken> -> <adminToken>` via `FuncTemporaryKeySet` with 2-hour TTL.
+8. Persists the new token via `FuncUserStoreAuthToken`. On failure, cleans up the temp key and returns `500`.
+9. Sets the auth cookie to the new token (when `UseCookies` is true).
+10. Calls optional `FuncImpersonationStart` callback.
+11. Calls `RecordImpersonationStart` and `RecordSessionCreated` on observability hooks.
+12. Returns success JSON with the new token.
 
 **Success response:**
 
@@ -115,9 +118,9 @@ Starts an impersonation session for the supplied target user.
 **Error responses:**
 
 - `401 Unauthorized` — missing or invalid admin auth token.
-- `400 Bad Request` — missing `user_id` or already impersonating.
-- `403 Forbidden` — `FuncCanImpersonate` returned false.
-- `500 Internal Server Error` — storage or callback error.
+- `400 Bad Request` — missing `user_id` or already impersonating (chain guard).
+- `403 Forbidden` — `FuncCanImpersonate` returned `false`.
+- `500 Internal Server Error` — token generation, temp key storage, or `FuncUserStoreAuthToken` failure.
 - `403` / `429` — CSRF or rate-limit failures from the standard middleware wrappers.
 
 ### `POST /auth/api/impersonate/stop`
@@ -128,13 +131,16 @@ Exits the current impersonation session and restores the admin's original token.
 
 **Behavior:**
 
-1. Extracts the current auth token (the impersonation token).
-2. Looks up `imp:<currentToken>` to recover the original admin token.
-3. Resolves both the target user ID and the real admin user ID from their respective tokens.
-4. Restores the auth cookie to the original admin token (when `UseCookies` is true).
-5. Invalidates the impersonation token via `FuncUserLogout`.
-6. Deletes the temporary mapping.
-7. Calls optional `FuncImpersonationStop` and observability hooks.
+1. Extracts the current auth token from the request (cookie or `Authorization` header). Returns `400` if empty.
+2. Looks up `imp:<currentToken>` via `FuncTemporaryKeyGet` to recover the original admin token. Returns `400` if no mapping found (not currently impersonating), `500` on lookup error.
+3. Resolves `targetUserID` from the current impersonation token via `FuncUserFindByAuthToken`. Returns `500` on error or empty result.
+4. Resolves `adminUserID` from the original admin token via `FuncUserFindByAuthToken`. Returns `500` on error or empty result.
+5. Calls `FuncUserLogout` for the target user (if configured).
+6. Restores the auth cookie to the original admin token (when `UseCookies` is true).
+7. Deletes the temporary mapping by setting it to empty with 1-second expiry.
+8. Calls optional `FuncImpersonationStop` callback.
+9. Calls `RecordImpersonationStop` on observability hooks.
+10. Returns success JSON.
 
 **Success response:**
 
@@ -179,7 +185,7 @@ When the admin is already impersonating, their current auth token has an `imp:` 
 
 When `UseCookies` is `true`, the start handler overwrites the auth cookie with the new target token, and the stop handler restores the original admin cookie.
 
-When `UseLocalStorage` is `true`, the client is responsible for token management. The API response still includes `"token"` in the success payload, and the client must swap the stored token.
+When `UseLocalStorage` is `true` (i.e., `UseCookies` is `false`), the client is responsible for token management. The API response always includes `"token"` in the success payload, and the client must swap the stored token.
 
 ---
 
@@ -221,7 +227,7 @@ func IsImpersonating(r *http.Request) bool
 func GetImpersonatorUserID(r *http.Request) string
 ```
 
-These read from the request context, which is populated by `ImpersonationAwareMiddleware`.
+These read from the request context, which is populated by `ImpersonationAwareMiddleware`. The functions are safe to call even when the middleware is not installed — they return `false` and `""` respectively.
 
 ---
 
@@ -306,7 +312,7 @@ func main() {
 }
 
 func dashboardHandler(w http.ResponseWriter, r *http.Request) {
-    userID, _ := auth.GetCurrentUserID(r), nil
+    userID := auth.GetCurrentUserID(r)
     if auth.IsImpersonating(r) {
         adminID := auth.GetImpersonatorUserID(r)
         w.Write([]byte("Viewing as user " + userID + ". Impersonating admin: " + adminID))
@@ -346,3 +352,5 @@ go test -cover ./...
 - `docs/impersonation_plan.md` — design and implementation plan.
 - `types/auth_interfaces.go` — `AuthSharedInterface` additions.
 - `types/observability.go` — observability hooks.
+- `types/constants.go` — `ImpersonationKeyPrefix` and context key types.
+- `types/messages.go` — impersonation message constants.

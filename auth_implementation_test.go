@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/dracory/auth/internal/links"
+	"github.com/dracory/auth/types"
 )
 
 func TestGetCurrentUserID_EmptyContextReturnsEmptyString(t *testing.T) {
@@ -24,7 +25,7 @@ func TestGetCurrentUserID_ReturnsUserIDFromContext(t *testing.T) {
 	auth := &authImplementation{}
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	ctx := context.WithValue(req.Context(), AuthenticatedUserID{}, "12345")
+	ctx := context.WithValue(req.Context(), types.AuthenticatedUserID{}, "12345")
 	req = req.WithContext(ctx)
 
 	userID := auth.GetCurrentUserID(req)

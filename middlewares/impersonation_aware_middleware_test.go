@@ -21,7 +21,6 @@ func (m *mockAuthShared) IsRegistrationEnabled() bool                           
 func (m *mockAuthShared) IsPasswordless() bool                                       { return false }
 func (m *mockAuthShared) IsVerificationEnabled() bool                                { return false }
 func (m *mockAuthShared) WebAuthOrRedirectMiddleware(next http.Handler) http.Handler { return next }
-func (m *mockAuthShared) ApiAuthOrErrorMiddleware(next http.Handler) http.Handler    { return next }
 func (m *mockAuthShared) WebAppendUserIdIfExistsMiddleware(next http.Handler) http.Handler {
 	return next
 }

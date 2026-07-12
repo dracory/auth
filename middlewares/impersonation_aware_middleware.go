@@ -6,9 +6,8 @@ import (
 
 	"github.com/dracory/auth/types"
 	"github.com/dracory/auth/utils"
+	"github.com/dracory/req"
 )
-
-const impersonationKeyPrefix = "imp:"
 
 func ImpersonationAwareMiddleware(next http.Handler, a types.AuthSharedInterface) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -24,7 +23,7 @@ func ImpersonationAwareMiddleware(next http.Handler, a types.AuthSharedInterface
 			return
 		}
 
-		originalToken, err := tempKeyGet(impersonationKeyPrefix + authToken)
+		originalToken, err := tempKeyGet(types.ImpersonationKeyPrefix + authToken)
 		if err != nil || originalToken == "" {
 			next.ServeHTTP(w, r)
 			return
@@ -37,7 +36,7 @@ func ImpersonationAwareMiddleware(next http.Handler, a types.AuthSharedInterface
 		}
 
 		adminUserID, err := userFindByAuthToken(r.Context(), originalToken, types.UserAuthOptions{
-			UserIp:    r.RemoteAddr,
+			UserIp:    req.GetIP(r),
 			UserAgent: r.UserAgent(),
 		})
 		if err != nil || adminUserID == "" {

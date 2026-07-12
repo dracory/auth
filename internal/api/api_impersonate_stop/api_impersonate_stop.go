@@ -16,7 +16,7 @@ func ApiImpersonateStop(w http.ResponseWriter, r *http.Request, deps Dependencie
 		return
 	}
 
-	originalAdminToken, err := deps.TemporaryKeyGet(impersonationKeyPrefix + currentAuthToken)
+	originalAdminToken, err := deps.TemporaryKeyGet(types.ImpersonationKeyPrefix + currentAuthToken)
 	if err != nil {
 		api.Respond(w, r, api.Error(types.MsgImpersonationFailed))
 		return
@@ -32,28 +32,26 @@ func ApiImpersonateStop(w http.ResponseWriter, r *http.Request, deps Dependencie
 	}
 
 	targetUserID, err := deps.UserFindByAuthToken(r.Context(), currentAuthToken, options)
-	if err != nil {
+	if err != nil || targetUserID == "" {
 		api.Respond(w, r, api.Error(types.MsgImpersonationFailed))
 		return
 	}
 
 	adminUserID, err := deps.UserFindByAuthToken(r.Context(), originalAdminToken, options)
-	if err != nil {
+	if err != nil || adminUserID == "" {
 		api.Respond(w, r, api.Error(types.MsgImpersonationFailed))
 		return
+	}
+
+	if deps.UserLogout != nil {
+		_ = deps.UserLogout(r.Context(), targetUserID, options)
 	}
 
 	if deps.UseCookies && deps.SetAuthCookie != nil {
 		deps.SetAuthCookie(w, r, originalAdminToken)
 	}
 
-	if deps.UserLogout != nil && targetUserID != "" {
-		_ = deps.UserLogout(r.Context(), targetUserID, options)
-	}
-
-	if deps.TemporaryKeySet != nil {
-		_ = deps.TemporaryKeySet(impersonationKeyPrefix+currentAuthToken, "", 1)
-	}
+	_ = deps.TemporaryKeySet(types.ImpersonationKeyPrefix+currentAuthToken, "", 1)
 
 	if deps.ImpersonationStop != nil {
 		_ = deps.ImpersonationStop(r.Context(), adminUserID, targetUserID)

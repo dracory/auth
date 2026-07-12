@@ -33,16 +33,14 @@ func ApiImpersonateStart(w http.ResponseWriter, r *http.Request, deps Dependenci
 
 	targetUserID := req.GetStringTrimmed(r, "user_id")
 	if targetUserID == "" {
-		api.Respond(w, r, api.Error(types.MsgTokenRequired))
+		api.Respond(w, r, api.Error(types.MsgUserIDRequired))
 		return
 	}
 
-	if deps.TemporaryKeyGet != nil {
-		existing, _ := deps.TemporaryKeyGet(impersonationKeyPrefix + authToken)
-		if existing != "" {
-			api.Respond(w, r, api.Error(types.MsgAlreadyImpersonating))
-			return
-		}
+	existing, _ := deps.TemporaryKeyGet(types.ImpersonationKeyPrefix + authToken)
+	if existing != "" {
+		api.Respond(w, r, api.Error(types.MsgAlreadyImpersonating))
+		return
 	}
 
 	allowed, err := deps.CanImpersonate(r.Context(), adminUserID, targetUserID)
@@ -61,24 +59,21 @@ func ApiImpersonateStart(w http.ResponseWriter, r *http.Request, deps Dependenci
 		return
 	}
 
-	if deps.TemporaryKeySet != nil {
-		err = deps.TemporaryKeySet(
-			impersonationKeyPrefix+newToken,
-			authToken,
-			int(DefaultAuthTokenExpiration.Seconds()),
-		)
-		if err != nil {
-			api.Respond(w, r, api.Error(types.MsgImpersonationFailed))
-			return
-		}
+	err = deps.TemporaryKeySet(
+		types.ImpersonationKeyPrefix+newToken,
+		authToken,
+		int(DefaultAuthTokenExpiration.Seconds()),
+	)
+	if err != nil {
+		api.Respond(w, r, api.Error(types.MsgImpersonationFailed))
+		return
 	}
 
-	if deps.UserStoreAuthToken != nil {
-		err = deps.UserStoreAuthToken(r.Context(), newToken, targetUserID, options)
-		if err != nil {
-			api.Respond(w, r, api.Error(types.MsgImpersonationFailed))
-			return
-		}
+	err = deps.UserStoreAuthToken(r.Context(), newToken, targetUserID, options)
+	if err != nil {
+		_ = deps.TemporaryKeySet(types.ImpersonationKeyPrefix+newToken, "", 1)
+		api.Respond(w, r, api.Error(types.MsgImpersonationFailed))
+		return
 	}
 
 	if deps.UseCookies && deps.SetAuthCookie != nil {

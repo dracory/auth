@@ -15,13 +15,15 @@ type mockObservabilityHooks struct {
 	impersonationStops []struct{ admin, target string }
 }
 
-func (m *mockObservabilityHooks) RecordLoginAttempt(string, bool, error)               {}
-func (m *mockObservabilityHooks) RecordRegistrationAttempt(bool, error)                 {}
-func (m *mockObservabilityHooks) RecordRateLimitHit(string, string)                     {}
-func (m *mockObservabilityHooks) RecordSessionCreated(string)                           {}
-func (m *mockObservabilityHooks) RecordPasswordReset(bool, error)                       {}
-func (m *mockObservabilityHooks) RecordImpersonationStart(string, string)               {}
-func (m *mockObservabilityHooks) RecordImpersonationStop(admin, target string)          { m.impersonationStops = append(m.impersonationStops, struct{ admin, target string }{admin, target}) }
+func (m *mockObservabilityHooks) RecordLoginAttempt(string, bool, error)  {}
+func (m *mockObservabilityHooks) RecordRegistrationAttempt(bool, error)   {}
+func (m *mockObservabilityHooks) RecordRateLimitHit(string, string)       {}
+func (m *mockObservabilityHooks) RecordSessionCreated(string)             {}
+func (m *mockObservabilityHooks) RecordPasswordReset(bool, error)         {}
+func (m *mockObservabilityHooks) RecordImpersonationStart(string, string) {}
+func (m *mockObservabilityHooks) RecordImpersonationStop(admin, target string) {
+	m.impersonationStops = append(m.impersonationStops, struct{ admin, target string }{admin, target})
+}
 
 func makeStopRequestWithToken(t *testing.T, authToken string, useCookies bool) (*httptest.ResponseRecorder, *http.Request) {
 	req, err := http.NewRequest("POST", "/api/impersonate/stop", nil)
@@ -92,8 +94,10 @@ func TestApiImpersonateStopUserFindByAuthTokenFails(t *testing.T) {
 			}
 			return "", nil
 		},
-		TemporaryKeySet:     func(key string, value string, expires int) error { return nil },
-		UserFindByAuthToken: func(ctx context.Context, token string, opts types.UserAuthOptions) (string, error) { return "", errors.New("db error") },
+		TemporaryKeySet: func(key string, value string, expires int) error { return nil },
+		UserFindByAuthToken: func(ctx context.Context, token string, opts types.UserAuthOptions) (string, error) {
+			return "", errors.New("db error")
+		},
 	}
 
 	recorder, req := makeStopRequestWithToken(t, "impersonation-token", false)
@@ -102,6 +106,55 @@ func TestApiImpersonateStopUserFindByAuthTokenFails(t *testing.T) {
 	body := recorder.Body.String()
 	if !strings.Contains(body, `"status":"error"`) {
 		t.Fatalf("expected error status, got %q", body)
+	}
+}
+
+func TestApiImpersonateStopEmptyTargetUserID(t *testing.T) {
+	deps := Dependencies{
+		TemporaryKeyGet: func(key string) (string, error) {
+			if strings.HasPrefix(key, "imp:") {
+				return "original-admin-token", nil
+			}
+			return "", nil
+		},
+		TemporaryKeySet: func(key string, value string, expires int) error { return nil },
+		UserFindByAuthToken: func(ctx context.Context, token string, opts types.UserAuthOptions) (string, error) {
+			return "", nil
+		},
+	}
+
+	recorder, req := makeStopRequestWithToken(t, "impersonation-token", false)
+	ApiImpersonateStop(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, `"status":"error"`) {
+		t.Fatalf("expected error status when targetUserID is empty, got %q", body)
+	}
+}
+
+func TestApiImpersonateStopEmptyAdminUserID(t *testing.T) {
+	deps := Dependencies{
+		TemporaryKeyGet: func(key string) (string, error) {
+			if strings.HasPrefix(key, "imp:") {
+				return "original-admin-token", nil
+			}
+			return "", nil
+		},
+		TemporaryKeySet: func(key string, value string, expires int) error { return nil },
+		UserFindByAuthToken: func(ctx context.Context, token string, opts types.UserAuthOptions) (string, error) {
+			if token == "impersonation-token" {
+				return "target-456", nil
+			}
+			return "", nil
+		},
+	}
+
+	recorder, req := makeStopRequestWithToken(t, "impersonation-token", false)
+	ApiImpersonateStop(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, `"status":"error"`) {
+		t.Fatalf("expected error status when adminUserID is empty, got %q", body)
 	}
 }
 

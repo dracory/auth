@@ -81,8 +81,4 @@ const (
 
 	DefaultMaxLoginAttempts = 5
 	DefaultLockoutDuration  = 15 * time.Minute
-
-	// impersonationKeyPrefix is used as a prefix for temporary keys that store
-	// the original admin auth token during an impersonation session.
-	impersonationKeyPrefix = "imp:"
 )

@@ -17,13 +17,17 @@ type mockObservabilityHooks struct {
 	sessionsCreated     []string
 }
 
-func (m *mockObservabilityHooks) RecordLoginAttempt(string, bool, error)               {}
-func (m *mockObservabilityHooks) RecordRegistrationAttempt(bool, error)                 {}
-func (m *mockObservabilityHooks) RecordRateLimitHit(string, string)                     {}
-func (m *mockObservabilityHooks) RecordSessionCreated(userID string)                    { m.sessionsCreated = append(m.sessionsCreated, userID) }
-func (m *mockObservabilityHooks) RecordPasswordReset(bool, error)                       {}
-func (m *mockObservabilityHooks) RecordImpersonationStart(admin, target string)         { m.impersonationStarts = append(m.impersonationStarts, struct{ admin, target string }{admin, target}) }
-func (m *mockObservabilityHooks) RecordImpersonationStop(string, string)                {}
+func (m *mockObservabilityHooks) RecordLoginAttempt(string, bool, error) {}
+func (m *mockObservabilityHooks) RecordRegistrationAttempt(bool, error)  {}
+func (m *mockObservabilityHooks) RecordRateLimitHit(string, string)      {}
+func (m *mockObservabilityHooks) RecordSessionCreated(userID string) {
+	m.sessionsCreated = append(m.sessionsCreated, userID)
+}
+func (m *mockObservabilityHooks) RecordPasswordReset(bool, error) {}
+func (m *mockObservabilityHooks) RecordImpersonationStart(admin, target string) {
+	m.impersonationStarts = append(m.impersonationStarts, struct{ admin, target string }{admin, target})
+}
+func (m *mockObservabilityHooks) RecordImpersonationStop(string, string) {}
 
 func makePostRequestWithToken(t *testing.T, path, authToken string, values url.Values, useCookies bool) (*httptest.ResponseRecorder, *http.Request) {
 	body := strings.NewReader(values.Encode())
@@ -198,9 +202,11 @@ func TestApiImpersonateStartUserStoreAuthTokenFails(t *testing.T) {
 		UserFindByAuthToken: func(ctx context.Context, token string, opts types.UserAuthOptions) (string, error) {
 			return "admin-123", nil
 		},
-		UserStoreAuthToken: func(ctx context.Context, token, userID string, opts types.UserAuthOptions) error { return errors.New("db error") },
-		TemporaryKeyGet:    func(key string) (string, error) { return "", nil },
-		TemporaryKeySet:    func(key string, value string, expires int) error { return nil },
+		UserStoreAuthToken: func(ctx context.Context, token, userID string, opts types.UserAuthOptions) error {
+			return errors.New("db error")
+		},
+		TemporaryKeyGet: func(key string) (string, error) { return "", nil },
+		TemporaryKeySet: func(key string, value string, expires int) error { return nil },
 	}
 
 	values := url.Values{"user_id": {"target-456"}}
@@ -279,6 +285,75 @@ func TestApiImpersonateStartHappyPath(t *testing.T) {
 	}
 	if len(hooks.sessionsCreated) != 1 || hooks.sessionsCreated[0] != "target-456" {
 		t.Fatalf("expected 1 session created for target-456, got %+v", hooks.sessionsCreated)
+	}
+}
+
+func TestApiImpersonateStartMissingUserIDMessage(t *testing.T) {
+	deps := Dependencies{
+		CanImpersonate: func(ctx context.Context, admin, target string) (bool, error) { return true, nil },
+		UserFindByAuthToken: func(ctx context.Context, token string, opts types.UserAuthOptions) (string, error) {
+			return "admin-123", nil
+		},
+		UserStoreAuthToken: func(ctx context.Context, token, userID string, opts types.UserAuthOptions) error { return nil },
+		TemporaryKeyGet:    func(key string) (string, error) { return "", nil },
+		TemporaryKeySet:    func(key string, value string, expires int) error { return nil },
+	}
+
+	values := url.Values{}
+	recorder, req := makePostRequestWithToken(t, "/api/impersonate/start", "admin-token", values, false)
+	ApiImpersonateStart(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "user_id is required") {
+		t.Fatalf("expected user_id required message, got %q", body)
+	}
+}
+
+func TestApiImpersonateStartUserStoreAuthTokenFailCleansUpKey(t *testing.T) {
+	var cleanupKey string
+	var cleanupValue string
+	var cleanupExpires int
+	callCount := 0
+
+	deps := Dependencies{
+		CanImpersonate: func(ctx context.Context, admin, target string) (bool, error) { return true, nil },
+		UserFindByAuthToken: func(ctx context.Context, token string, opts types.UserAuthOptions) (string, error) {
+			return "admin-123", nil
+		},
+		UserStoreAuthToken: func(ctx context.Context, token, userID string, opts types.UserAuthOptions) error {
+			return errors.New("db error")
+		},
+		TemporaryKeyGet: func(key string) (string, error) { return "", nil },
+		TemporaryKeySet: func(key string, value string, expires int) error {
+			callCount++
+			if callCount == 2 {
+				cleanupKey = key
+				cleanupValue = value
+				cleanupExpires = expires
+			}
+			return nil
+		},
+	}
+
+	values := url.Values{"user_id": {"target-456"}}
+	recorder, req := makePostRequestWithToken(t, "/api/impersonate/start", "admin-token", values, false)
+	ApiImpersonateStart(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, `"status":"error"`) {
+		t.Fatalf("expected error status, got %q", body)
+	}
+	if callCount != 2 {
+		t.Fatalf("expected TemporaryKeySet to be called twice (store + cleanup), got %d", callCount)
+	}
+	if !strings.HasPrefix(cleanupKey, "imp:") {
+		t.Fatalf("expected cleanup key to have imp: prefix, got %q", cleanupKey)
+	}
+	if cleanupValue != "" {
+		t.Fatalf("expected cleanup value to be empty, got %q", cleanupValue)
+	}
+	if cleanupExpires != 1 {
+		t.Fatalf("expected cleanup expires to be 1, got %d", cleanupExpires)
 	}
 }
 

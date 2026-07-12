@@ -138,7 +138,7 @@ func (a *authImplementation) SetObservabilityHooks(hooks types.ObservabilityHook
 // GetCurrentUserID returns the authenticated user ID stored in the request
 // context, or an empty string if no user ID is attached.
 func (a authImplementation) GetCurrentUserID(r *http.Request) string {
-	authenticatedUserID := r.Context().Value(AuthenticatedUserID{})
+	authenticatedUserID := r.Context().Value(types.AuthenticatedUserID{})
 	if authenticatedUserID == nil {
 		return ""
 	}

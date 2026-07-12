@@ -10,6 +10,7 @@ const (
 	MsgFirstNameRequired                 = "First name is required field"
 	MsgLastNameRequired                  = "Last name is required field"
 	MsgTokenRequired                     = "Token is required field"
+	MsgUserIDRequired                    = "user_id is required field"
 	MsgVerificationCodeRequired          = "Verification code is required field"
 	MsgPasswordsDoNotMatch               = "Passwords do not match"
 	MsgEmailInvalid                      = "Email is invalid"
