@@ -14,12 +14,12 @@ import "strings"
 //
 // Example:
 //
-//	authHeader := r.Header.Get("Authorization")
-//	authTokenFromBearerToken := BearerTokenFromHeader(authHeader)
+//		authHeader := r.Header.Get("Authorization")
+//		authTokenFromBearerToken := BearerTokenFromHeader(authHeader)
 //
-//  or simplified
+//	 or simplified
 //
-//	authTokenFromBearerToken := BearerTokenFromHeader(r.Header.Get("Authorization"))
+//		authTokenFromBearerToken := BearerTokenFromHeader(r.Header.Get("Authorization"))
 func BearerTokenFromHeader(authHeader string) string {
 	if authHeader == "" {
 		return ""
