@@ -80,6 +80,11 @@ func NewPasswordlessAuth(config types.ConfigPasswordless) (types.AuthPasswordles
 	auth.logger = config.Logger
 	auth.observabilityHooks = config.ObservabilityHooks
 
+	auth.enableImpersonation = config.EnableImpersonation
+	auth.funcCanImpersonate = config.FuncCanImpersonate
+	auth.funcImpersonationStart = config.FuncImpersonationStart
+	auth.funcImpersonationStop = config.FuncImpersonationStop
+
 	return auth, nil
 }
 
@@ -133,6 +138,10 @@ func validatePasswordlessConfig(config types.ConfigPasswordless) error {
 
 	if !config.UseCookies && !config.UseLocalStorage {
 		return errors.New("auth: UseCookies and UseLocalStorage cannot be both false")
+	}
+
+	if config.EnableImpersonation && config.FuncCanImpersonate == nil {
+		return errors.New("auth: FuncCanImpersonate function is required when EnableImpersonation is true")
 	}
 
 	return nil

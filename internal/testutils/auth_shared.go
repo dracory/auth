@@ -265,6 +265,33 @@ func (a *authSharedTest) LinkApiRegister() string { return "" }
 
 func (a *authSharedTest) LinkApiRegisterCodeVerify() string { return "" }
 
+func (a *authSharedTest) LinkApiImpersonateStart() string { return "" }
+
+func (a *authSharedTest) LinkApiImpersonateStop() string { return "" }
+
+func (a *authSharedTest) IsImpersonationEnabled() bool { return false }
+
+func (a *authSharedTest) GetFuncCanImpersonate() func(ctx context.Context, adminUserID string, targetUserID string) (bool, error) {
+	return nil
+}
+
+func (a *authSharedTest) SetFuncCanImpersonate(fn func(ctx context.Context, adminUserID string, targetUserID string) (bool, error)) {
+}
+
+func (a *authSharedTest) GetFuncImpersonationStart() func(ctx context.Context, adminUserID string, targetUserID string) error {
+	return nil
+}
+
+func (a *authSharedTest) SetFuncImpersonationStart(fn func(ctx context.Context, adminUserID string, targetUserID string) error) {
+}
+
+func (a *authSharedTest) GetFuncImpersonationStop() func(ctx context.Context, adminUserID string, targetUserID string) error {
+	return nil
+}
+
+func (a *authSharedTest) SetFuncImpersonationStop(fn func(ctx context.Context, adminUserID string, targetUserID string) error) {
+}
+
 // AuthPasswordInterface additional URL helpers. For tests we can return
 // empty strings as they are not used by the core logic under test.
 func (a *authSharedTest) LinkPasswordRestore() string { return "" }

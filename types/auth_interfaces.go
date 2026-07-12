@@ -37,6 +37,8 @@ type AuthSharedInterface interface {
 	LinkApiLogout() string
 	LinkApiRegister() string
 	LinkApiRegisterCodeVerify() string
+	LinkApiImpersonateStart() string
+	LinkApiImpersonateStop() string
 
 	// ======================================================================
 	// Accessors (Setters and Getters)
@@ -121,6 +123,21 @@ type AuthSharedInterface interface {
 
 	// Final authentication step helpers used by internal API flows.
 	AuthenticateViaUsername(w http.ResponseWriter, r *http.Request, email, firstName, lastName string)
+
+	// ======================================================================
+	// Impersonation
+	// ======================================================================
+
+	IsImpersonationEnabled() bool
+
+	GetFuncCanImpersonate() func(ctx context.Context, adminUserID string, targetUserID string) (bool, error)
+	SetFuncCanImpersonate(fn func(ctx context.Context, adminUserID string, targetUserID string) (bool, error))
+
+	GetFuncImpersonationStart() func(ctx context.Context, adminUserID string, targetUserID string) error
+	SetFuncImpersonationStart(fn func(ctx context.Context, adminUserID string, targetUserID string) error)
+
+	GetFuncImpersonationStop() func(ctx context.Context, adminUserID string, targetUserID string) error
+	SetFuncImpersonationStop(fn func(ctx context.Context, adminUserID string, targetUserID string) error)
 }
 
 // AuthPasswordInterface represents username/password based authentication.

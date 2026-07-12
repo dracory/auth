@@ -19,6 +19,8 @@ func ApiRegister(endpoint string) string           { return Join(endpoint, "api/
 func ApiRegisterCodeVerify(endpoint string) string { return Join(endpoint, "api/register-code-verify") }
 func ApiPasswordRestore(endpoint string) string    { return Join(endpoint, "api/restore-password") }
 func ApiPasswordReset(endpoint string) string      { return Join(endpoint, "api/reset-password") }
+func ApiImpersonateStart(endpoint string) string   { return Join(endpoint, "api/impersonate/start") }
+func ApiImpersonateStop(endpoint string) string    { return Join(endpoint, "api/impersonate/stop") }
 
 func Login(endpoint string) string              { return Join(endpoint, "login") }
 func LoginCodeVerify(endpoint string) string    { return Join(endpoint, "login-code-verify") }

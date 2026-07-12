@@ -15,6 +15,8 @@ type mockObservabilityHooks struct {
 	RateLimitHits        []rateLimitHit
 	SessionsCreated      []string
 	PasswordResets       []passwordReset
+	ImpersonationStarts  []impersonationEvent
+	ImpersonationStops   []impersonationEvent
 }
 
 type loginAttempt struct {
@@ -36,6 +38,11 @@ type rateLimitHit struct {
 type passwordReset struct {
 	Success bool
 	Err     error
+}
+
+type impersonationEvent struct {
+	AdminUserID  string
+	TargetUserID string
 }
 
 func (m *mockObservabilityHooks) RecordLoginAttempt(method string, success bool, err error) {
@@ -68,6 +75,18 @@ func (m *mockObservabilityHooks) RecordPasswordReset(success bool, err error) {
 	m.PasswordResets = append(m.PasswordResets, passwordReset{success, err})
 }
 
+func (m *mockObservabilityHooks) RecordImpersonationStart(adminUserID string, targetUserID string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.ImpersonationStarts = append(m.ImpersonationStarts, impersonationEvent{adminUserID, targetUserID})
+}
+
+func (m *mockObservabilityHooks) RecordImpersonationStop(adminUserID string, targetUserID string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.ImpersonationStops = append(m.ImpersonationStops, impersonationEvent{adminUserID, targetUserID})
+}
+
 func TestNoopObservabilityHooks(t *testing.T) {
 	hooks := NoopObservabilityHooks{}
 
@@ -77,6 +96,8 @@ func TestNoopObservabilityHooks(t *testing.T) {
 	hooks.RecordRateLimitHit("/login", "127.0.0.1")
 	hooks.RecordSessionCreated("user-123")
 	hooks.RecordPasswordReset(true, nil)
+	hooks.RecordImpersonationStart("admin-1", "user-2")
+	hooks.RecordImpersonationStop("admin-1", "user-2")
 }
 
 func TestMockObservabilityHooks(t *testing.T) {

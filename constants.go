@@ -42,6 +42,12 @@ const (
 	// PathApiResetPassword contains the path to api reset password endpoint
 	PathApiResetPassword string = "api/reset-password"
 
+	// PathApiImpersonateStart contains the path to api impersonate start endpoint
+	PathApiImpersonateStart string = "api/impersonate/start"
+
+	// PathApiImpersonateStop contains the path to api impersonate stop endpoint
+	PathApiImpersonateStop string = "api/impersonate/stop"
+
 	// PathLogin contains the path to login page
 	PathLogin string = "login"
 
@@ -75,4 +81,8 @@ const (
 
 	DefaultMaxLoginAttempts = 5
 	DefaultLockoutDuration  = 15 * time.Minute
+
+	// impersonationKeyPrefix is used as a prefix for temporary keys that store
+	// the original admin auth token during an impersonation session.
+	impersonationKeyPrefix = "imp:"
 )

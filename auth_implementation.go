@@ -67,6 +67,13 @@ type authImplementation struct {
 	funcCSRFTokenValidate func(r *http.Request) bool
 	// ===== END: CSRF Protection
 
+	// ===== START: impersonation
+	enableImpersonation    bool
+	funcCanImpersonate     func(ctx context.Context, adminUserID string, targetUserID string) (bool, error)
+	funcImpersonationStart func(ctx context.Context, adminUserID string, targetUserID string) error
+	funcImpersonationStop  func(ctx context.Context, adminUserID string, targetUserID string) error
+	// ===== END: impersonation
+
 	// labelUsername   string
 	useCookies      bool
 	useLocalStorage bool
@@ -394,4 +401,44 @@ func (a *authImplementation) ApiAuthOrErrorMiddleware(next http.Handler) http.Ha
 
 func (a *authImplementation) WebAppendUserIdIfExistsMiddleware(next http.Handler) http.Handler {
 	return middlewares.WebAppendUserIdIfExistsMiddleware(next, a)
+}
+
+// ======================================================================
+// Impersonation
+// ======================================================================
+
+func (a authImplementation) IsImpersonationEnabled() bool {
+	return a.enableImpersonation
+}
+
+func (a authImplementation) GetFuncCanImpersonate() func(ctx context.Context, adminUserID string, targetUserID string) (bool, error) {
+	return a.funcCanImpersonate
+}
+
+func (a *authImplementation) SetFuncCanImpersonate(fn func(ctx context.Context, adminUserID string, targetUserID string) (bool, error)) {
+	a.funcCanImpersonate = fn
+}
+
+func (a authImplementation) GetFuncImpersonationStart() func(ctx context.Context, adminUserID string, targetUserID string) error {
+	return a.funcImpersonationStart
+}
+
+func (a *authImplementation) SetFuncImpersonationStart(fn func(ctx context.Context, adminUserID string, targetUserID string) error) {
+	a.funcImpersonationStart = fn
+}
+
+func (a authImplementation) GetFuncImpersonationStop() func(ctx context.Context, adminUserID string, targetUserID string) error {
+	return a.funcImpersonationStop
+}
+
+func (a *authImplementation) SetFuncImpersonationStop(fn func(ctx context.Context, adminUserID string, targetUserID string) error) {
+	a.funcImpersonationStop = fn
+}
+
+func (a authImplementation) LinkApiImpersonateStart() string {
+	return links.ApiImpersonateStart(a.endpoint)
+}
+
+func (a authImplementation) LinkApiImpersonateStop() string {
+	return links.ApiImpersonateStop(a.endpoint)
 }

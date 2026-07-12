@@ -102,6 +102,11 @@ func NewUsernameAndPasswordAuth(config types.ConfigUsernameAndPassword) (types.A
 	// Initialize CSRF protection
 	auth.enableCSRFProtection = config.EnableCSRFProtection
 	auth.csrfSecret = config.CSRFSecret
+
+	auth.enableImpersonation = config.EnableImpersonation
+	auth.funcCanImpersonate = config.FuncCanImpersonate
+	auth.funcImpersonationStart = config.FuncImpersonationStart
+	auth.funcImpersonationStop = config.FuncImpersonationStop
 	if auth.enableCSRFProtection {
 		if auth.csrfSecret == "" {
 			return nil, errors.New("auth: CSRFSecret is required when EnableCSRFProtection is true")
@@ -185,6 +190,10 @@ func validateUsernameAndPasswordConfig(config types.ConfigUsernameAndPassword) e
 
 	if !config.UseCookies && !config.UseLocalStorage {
 		return errors.New("auth: UseCookies and UseLocalStorage cannot be both false")
+	}
+
+	if config.EnableImpersonation && config.FuncCanImpersonate == nil {
+		return errors.New("auth: FuncCanImpersonate function is required when EnableImpersonation is true")
 	}
 
 	return nil

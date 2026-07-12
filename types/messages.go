@@ -50,4 +50,13 @@ const (
 	MsgLoginCodeSent         = "Login code was sent successfully"
 	MsgPasswordResetLinkSent = "Password reset link was sent to your e-mail"
 	MsgPasswordResetSuccess  = "Password has been reset successfully"
+
+	// Impersonation messages
+	MsgImpersonationStarted    = "impersonation started"
+	MsgImpersonationStopped    = "impersonation stopped"
+	MsgNotImpersonating        = "not currently impersonating"
+	MsgAlreadyImpersonating    = "already impersonating — stop first"
+	MsgImpersonationNotEnabled = "impersonation is not enabled"
+	MsgImpersonationForbidden  = "impersonation is not allowed"
+	MsgImpersonationFailed     = "impersonation failed. Please try again later"
 )

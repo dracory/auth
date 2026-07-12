@@ -30,6 +30,12 @@ type ConfigUsernameAndPassword struct {
 	CSRFSecret           string
 	Logger               *slog.Logger
 
+	// Impersonation
+	EnableImpersonation    bool
+	FuncCanImpersonate     func(ctx context.Context, adminUserID string, targetUserID string) (bool, error)
+	FuncImpersonationStart func(ctx context.Context, adminUserID string, targetUserID string) error // optional
+	FuncImpersonationStop  func(ctx context.Context, adminUserID string, targetUserID string) error // optional
+
 	// ===== END: shared by all implementations
 
 	// ===== START: username(email) and password options

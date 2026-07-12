@@ -39,6 +39,11 @@
   - `ApiAuthOrErrorMiddleware` - For API routes
   - `WebAppendUserIdIfExistsMiddleware` - Optional authentication
 
+- 🎭 **Impersonation**
+  - Opt-in administrator "login as" feature
+  - Secure token swap with one-level chain guard
+  - Audit hooks and observability integration
+
 - 🔧 **Implementation Agnostic**
   - Works with any database (SQL, NoSQL, in-memory)
   - Bring your own email service
@@ -367,6 +372,8 @@ Once configured, the following endpoints are automatically available:
 | POST | `/auth/api/register-code-verify` | Verify registration code |
 | POST | `/auth/api/restore-password` | Request password reset |
 | POST | `/auth/api/reset-password` | Complete password reset |
+| POST | `/auth/api/impersonate/start` | Begin impersonating a user (requires config) |
+| POST | `/auth/api/impersonate/stop` | Exit impersonation and return to admin session |
 
 ### Page Endpoints (HTML responses)
 
@@ -609,6 +616,15 @@ apiLogoutURL := auth.LinkApiLogout()
 // Enable/disable registration dynamically
 auth.RegistrationEnable()
 auth.RegistrationDisable()
+
+// Impersonation helpers
+if auth.IsImpersonationEnabled() {
+    // Check if current request is an impersonation session
+    isImpersonating := auth.IsImpersonating(r)
+    realAdminID := auth.GetImpersonatorUserID(r)
+    _ = isImpersonating
+    _ = realAdminID
+}
 ```
 
 ## ❓ Frequently Asked Questions

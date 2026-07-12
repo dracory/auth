@@ -66,6 +66,10 @@ func (a authImplementation) AuthHandler(w http.ResponseWriter, r *http.Request) 
 		path = PathPasswordRestore
 	} else if strings.HasSuffix(uri, PathPasswordReset) {
 		path = PathPasswordReset
+	} else if strings.HasSuffix(uri, PathApiImpersonateStart) {
+		path = PathApiImpersonateStart
+	} else if strings.HasSuffix(uri, PathApiImpersonateStop) {
+		path = PathApiImpersonateStop
 	}
 
 	ctx := context.WithValue(r.Context(), keyEndpoint, r.URL.Path)
@@ -122,6 +126,18 @@ func (a authImplementation) buildAPIRoutes(csrfCfg middlewares.CSRFConfig) map[s
 		{PathApiRegisterCodeVerify, "register_code_verify", a.apiRegisterCodeVerify, false},
 		{PathApiResetPassword, "password_reset", a.apiPasswordReset, true},
 		{PathApiRestorePassword, "password_restore", a.apiPasswordRestore, false},
+	}
+
+	if a.enableImpersonation {
+		apiRoutes = append(apiRoutes, []struct {
+			path     string
+			endpoint string
+			handler  func(http.ResponseWriter, *http.Request)
+			useCSRF  bool
+		}{
+			{PathApiImpersonateStart, "impersonate_start", a.apiImpersonateStart, true},
+			{PathApiImpersonateStop, "impersonate_stop", a.apiImpersonateStop, true},
+		}...)
 	}
 
 	for _, cfg := range apiRoutes {

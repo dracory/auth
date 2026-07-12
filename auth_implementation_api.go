@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/dracory/auth/internal/api/api_authenticate_via_username"
+	"github.com/dracory/auth/internal/api/api_impersonate_start"
+	"github.com/dracory/auth/internal/api/api_impersonate_stop"
 	"github.com/dracory/auth/internal/api/api_login"
 	"github.com/dracory/auth/internal/api/api_login_code_verify"
 	"github.com/dracory/auth/internal/api/api_logout"
@@ -43,4 +45,12 @@ func (a authImplementation) apiRegisterCodeVerify(w http.ResponseWriter, r *http
 
 func (a authImplementation) authenticateViaUsername(w http.ResponseWriter, r *http.Request, username string, firstName string, lastName string) {
 	api_authenticate_via_username.ApiAuthenticateViaUsernameWithAuth(w, r, username, firstName, lastName, &a)
+}
+
+func (a authImplementation) apiImpersonateStart(w http.ResponseWriter, r *http.Request) {
+	api_impersonate_start.ApiImpersonateStartWithAuth(w, r, &a)
+}
+
+func (a authImplementation) apiImpersonateStop(w http.ResponseWriter, r *http.Request) {
+	api_impersonate_stop.ApiImpersonateStopWithAuth(w, r, &a)
 }

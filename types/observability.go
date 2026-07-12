@@ -30,6 +30,14 @@ type ObservabilityHooks interface {
 	// RecordPasswordReset is called after a password reset attempt.
 	// err is nil on success.
 	RecordPasswordReset(success bool, err error)
+
+	// RecordImpersonationStart is called when an admin begins impersonating
+	// another user.
+	RecordImpersonationStart(adminUserID string, targetUserID string)
+
+	// RecordImpersonationStop is called when an admin stops impersonating
+	// another user.
+	RecordImpersonationStop(adminUserID string, targetUserID string)
 }
 
 // Login method identifiers used by RecordLoginAttempt.
@@ -42,8 +50,10 @@ const (
 // It is the default when no hooks are configured.
 type NoopObservabilityHooks struct{}
 
-func (NoopObservabilityHooks) RecordLoginAttempt(string, bool, error) {}
-func (NoopObservabilityHooks) RecordRegistrationAttempt(bool, error)  {}
-func (NoopObservabilityHooks) RecordRateLimitHit(string, string)      {}
-func (NoopObservabilityHooks) RecordSessionCreated(string)            {}
-func (NoopObservabilityHooks) RecordPasswordReset(bool, error)        {}
+func (NoopObservabilityHooks) RecordLoginAttempt(string, bool, error)  {}
+func (NoopObservabilityHooks) RecordRegistrationAttempt(bool, error)   {}
+func (NoopObservabilityHooks) RecordRateLimitHit(string, string)       {}
+func (NoopObservabilityHooks) RecordSessionCreated(string)             {}
+func (NoopObservabilityHooks) RecordPasswordReset(bool, error)         {}
+func (NoopObservabilityHooks) RecordImpersonationStart(string, string) {}
+func (NoopObservabilityHooks) RecordImpersonationStop(string, string)  {}
