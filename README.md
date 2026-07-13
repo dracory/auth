@@ -464,6 +464,73 @@ func customPageLayout(content string) string {
 FuncLayout: customPageLayout,
 ```
 
+### Cookie Configuration
+
+When using cookies, the library defaults to secure settings:
+
+- `HttpOnly: true`
+- `Secure: true`
+- `SameSite: Lax`
+- `Path: "/"`
+- `MaxAge: 7200` (2 hours)
+
+These defaults work for production deployments behind HTTPS or a reverse proxy that terminates TLS. For local development over plain HTTP, you can override `Secure` without losing the other defaults:
+
+```go
+// Production (or any HTTPS/reverse-proxy deployment)
+auth.AuthCookieSet(w, r, token)
+auth.AuthCookieRemove(w, r)
+
+// Local development over HTTP
+auth.AuthCookieSet(w, r, token, types.WithSecure(false))
+auth.AuthCookieRemove(w, r, types.WithSecure(false))
+```
+
+You can also override any other cookie attribute with individual options:
+
+```go
+auth.AuthCookieSet(w, r, token,
+    types.WithSecure(false),
+    types.WithHttpOnly(true),
+    types.WithSameSite(http.SameSiteLaxMode),
+    types.WithMaxAge(3600),
+    types.WithPath("/"),
+    types.WithDomain("example.com"),
+)
+```
+
+If you already have a complete `CookieConfig`, use `WithCookieConfig` to replace the defaults entirely:
+
+```go
+cfg := types.CookieConfig{
+    HttpOnly: true,
+    Secure:   false,
+    SameSite: http.SameSiteLaxMode,
+    MaxAge:   2 * 60 * 60,
+    Path:     "/",
+}
+
+auth.AuthCookieSet(w, r, token, types.WithCookieConfig(cfg))
+auth.AuthCookieRemove(w, r, types.WithCookieConfig(cfg))
+```
+
+The same `CookieConfig` can also be configured once when creating the auth instance. Note that `CookieConfig` is a **complete replacement** of the default config, so set all fields you care about:
+
+```go
+authInstance, err := auth.NewPasswordlessAuth(types.ConfigPasswordless{
+    Endpoint:     "/auth",
+    UseCookies:   true,
+    CookieConfig: &types.CookieConfig{
+        HttpOnly: true,
+        Secure:   false, // for local dev; use true in production
+        SameSite: http.SameSiteLaxMode,
+        MaxAge:   2 * 60 * 60,
+        Path:     "/",
+    },
+    // ... required callbacks
+})
+```
+
 ## 🔐 Token Storage Options
 
 ### Cookies (Recommended for web apps)

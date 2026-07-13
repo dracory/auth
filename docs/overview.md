@@ -255,6 +255,42 @@ type ConfigUsernameAndPassword struct {
 }
 ```
 
+### Cookie Configuration
+
+Both constructors accept an optional `CookieConfig` pointer to control the session cookie attributes. If omitted, the library uses secure defaults:
+
+- `HttpOnly: true`
+- `Secure: true`
+- `SameSite: Lax`
+- `Path: "/"`
+- `MaxAge: 7200` (2 hours)
+
+For local development over plain HTTP, use `CookieConfig` to override `Secure`. Note that `CookieConfig` is a complete replacement of the default config, so set all fields you care about:
+
+```go
+authInstance, err := auth.NewPasswordlessAuth(types.ConfigPasswordless{
+    Endpoint:     "/auth",
+    UseCookies:   true,
+    CookieConfig: &types.CookieConfig{
+        HttpOnly: true,
+        Secure:   false,
+        SameSite: http.SameSiteLaxMode,
+        MaxAge:   2 * 60 * 60,
+        Path:     "/",
+    },
+    // ... required callbacks
+})
+```
+
+For standalone cookie helpers, use the functional options API when you only want to override one or two attributes on top of the defaults:
+
+```go
+auth.AuthCookieSet(w, r, token, types.WithSecure(false))
+auth.AuthCookieRemove(w, r, types.WithSecure(false))
+```
+
+`WithSecure(false)` only changes `Secure`; the other defaults (`HttpOnly`, `SameSite`, `Path`, `MaxAge`) are preserved. The `WithCookieConfig` option replaces the entire config if you already have a complete `CookieConfig`.
+
 ### 3. **Authentication Flows**
 
 #### Passwordless Flow
