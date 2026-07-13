@@ -3,12 +3,15 @@ package auth
 import (
 	"context"
 	"errors"
+	"net/http"
 	"time"
 
 	"github.com/dracory/auth/internal/emails"
 	"github.com/dracory/auth/internal/helpers"
 	"github.com/dracory/auth/types"
 	"github.com/dracory/auth/utils"
+	"github.com/dracory/csrf"
+	"github.com/dracory/req"
 )
 
 func NewPasswordlessAuth(config types.ConfigPasswordless) (types.AuthPasswordlessInterface, error) {
@@ -84,6 +87,35 @@ func NewPasswordlessAuth(config types.ConfigPasswordless) (types.AuthPasswordles
 	auth.funcCanImpersonate = config.FuncCanImpersonate
 	auth.funcImpersonationStart = config.FuncImpersonationStart
 	auth.funcImpersonationStop = config.FuncImpersonationStop
+
+	// Initialize CSRF protection
+	auth.enableCSRFProtection = config.EnableCSRFProtection
+	auth.csrfSecret = config.CSRFSecret
+	if auth.enableCSRFProtection {
+		if auth.csrfSecret == "" {
+			return nil, errors.New("auth: CSRFSecret is required when EnableCSRFProtection is true")
+		}
+		auth.funcCSRFTokenGenerate = func(r *http.Request) string {
+			return csrf.TokenGenerate(auth.csrfSecret, &csrf.Options{
+				Request:       r,
+				BindIP:        true,
+				BindUserAgent: true,
+				BindPath:      true,
+			})
+		}
+		auth.funcCSRFTokenValidate = func(r *http.Request) bool {
+			token := req.GetStringTrimmed(r, "csrf_token")
+			if token == "" {
+				token = r.Header.Get("X-CSRF-Token")
+			}
+			return csrf.TokenValidate(token, auth.csrfSecret, &csrf.Options{
+				Request:       r,
+				BindIP:        true,
+				BindUserAgent: true,
+				BindPath:      true,
+			})
+		}
+	}
 
 	return auth, nil
 }

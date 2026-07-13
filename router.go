@@ -23,6 +23,13 @@ func (a authImplementation) Router() *http.ServeMux {
 	return mux
 }
 
+// uriHasPathSuffix reports whether uri ends with pathSuffix at a path
+// boundary, i.e. uri is exactly pathSuffix or ends with "/"+pathSuffix.
+// This avoids false positives such as "/mylogin" matching the "login" path.
+func uriHasPathSuffix(uri string, pathSuffix string) bool {
+	return uri == pathSuffix || strings.HasSuffix(uri, "/"+pathSuffix)
+}
+
 // Router routes the requests
 func (a authImplementation) AuthHandler(w http.ResponseWriter, r *http.Request) {
 	path := req.GetStringOr(r, "path", "home")
@@ -38,37 +45,37 @@ func (a authImplementation) AuthHandler(w http.ResponseWriter, r *http.Request) 
 		uri = str.LeftFrom(uri, "?")
 	}
 
-	if strings.HasSuffix(uri, PathApiLogin) {
+	if uriHasPathSuffix(uri, PathApiLogin) {
 		path = PathApiLogin
-	} else if strings.HasSuffix(uri, PathApiLoginCodeVerify) {
+	} else if uriHasPathSuffix(uri, PathApiLoginCodeVerify) {
 		path = PathApiLoginCodeVerify
-	} else if strings.HasSuffix(uri, PathApiLogout) {
+	} else if uriHasPathSuffix(uri, PathApiLogout) {
 		path = PathApiLogout
-	} else if strings.HasSuffix(uri, PathApiResetPassword) {
+	} else if uriHasPathSuffix(uri, PathApiResetPassword) {
 		path = PathApiResetPassword
-	} else if strings.HasSuffix(uri, PathApiRestorePassword) {
+	} else if uriHasPathSuffix(uri, PathApiRestorePassword) {
 		path = PathApiRestorePassword
-	} else if strings.HasSuffix(uri, PathApiRegister) {
+	} else if uriHasPathSuffix(uri, PathApiRegister) {
 		path = PathApiRegister
-	} else if strings.HasSuffix(uri, PathApiRegisterCodeVerify) {
+	} else if uriHasPathSuffix(uri, PathApiRegisterCodeVerify) {
 		path = PathApiRegisterCodeVerify
-	} else if strings.HasSuffix(uri, PathLogin) {
+	} else if uriHasPathSuffix(uri, PathLogin) {
 		path = PathLogin
-	} else if strings.HasSuffix(uri, PathLoginCodeVerify) {
+	} else if uriHasPathSuffix(uri, PathLoginCodeVerify) {
 		path = PathLoginCodeVerify
-	} else if strings.HasSuffix(uri, PathLogout) {
+	} else if uriHasPathSuffix(uri, PathLogout) {
 		path = PathLogout
-	} else if strings.HasSuffix(uri, PathRegister) {
+	} else if uriHasPathSuffix(uri, PathRegister) {
 		path = PathRegister
-	} else if strings.HasSuffix(uri, PathRegisterCodeVerify) {
+	} else if uriHasPathSuffix(uri, PathRegisterCodeVerify) {
 		path = PathRegisterCodeVerify
-	} else if strings.HasSuffix(uri, PathPasswordRestore) {
+	} else if uriHasPathSuffix(uri, PathPasswordRestore) {
 		path = PathPasswordRestore
-	} else if strings.HasSuffix(uri, PathPasswordReset) {
+	} else if uriHasPathSuffix(uri, PathPasswordReset) {
 		path = PathPasswordReset
-	} else if strings.HasSuffix(uri, PathApiImpersonateStart) {
+	} else if uriHasPathSuffix(uri, PathApiImpersonateStart) {
 		path = PathApiImpersonateStart
-	} else if strings.HasSuffix(uri, PathApiImpersonateStop) {
+	} else if uriHasPathSuffix(uri, PathApiImpersonateStop) {
 		path = PathApiImpersonateStop
 	}
 

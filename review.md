@@ -122,3 +122,15 @@ Add config support for customizing cookie names (currently hardcoded as `types.C
 ## 8. Verdict
 
 The `dracory/auth` repository represents a **high-caliber, exceptionally structured, and secure Go library**. With outstanding test coverage, synchronized concurrency primitives, zero-allocation rate limiter checks, structured logging, and extensible observability hooks, this project is fully prepared for enterprise-grade production workloads.
+
+---
+
+## 9. Verification & Remediation Status
+
+The following items were independently re-verified. Confirmed defects have been fixed and covered with regression tests.
+
+- [x] **Suffix-routing false positive (bug, fixed)** — `AuthHandler` in `router.go` used raw `strings.HasSuffix(uri, path)` matching against bare path constants (e.g. `PathLogin = "login"`), so any URI ending in that string (e.g. `/some/prefix/mylogin`) was incorrectly routed. Confirmed via test (`GET /some/prefix/mylogin` returned `200` with the login page). **Fixed** by adding a path-boundary-aware `uriHasPathSuffix` helper in `router.go`. Regression test: `TestRouter_SuffixDoesNotFalselyMatchLoginPath` in `router_test.go`.
+- [x] **Silent CSRF no-op for passwordless auth (bug, fixed)** — `types.ConfigPasswordless` exposed `EnableCSRFProtection`/`CSRFSecret` fields, but `NewPasswordlessAuth` never read them or wired `funcCSRFTokenGenerate`/`funcCSRFTokenValidate`, so CSRF protection silently did nothing even when explicitly enabled. **Fixed** by mirroring the CSRF wiring from `NewUsernameAndPasswordAuth` in `new_passwordless_auth.go`. Regression tests: `TestNewPasswordlessAuth_CSRFSecretRequiredWhenEnabled`, `TestNewPasswordlessAuth_CSRFEnabledWithSecretSucceeds` in `new_passwordless_auth_test.go`.
+- [ ] **Test coverage claim inaccurate (documentation only)** — This review claimed "~90% across 34 test files." Actual measured coverage is 81.3% for the root package (with several `internal/api/*` packages in the 30–60% range), across 51 `*_test.go` files. Not a code defect; flagged for awareness only, not remediated in code.
+- [ ] **Internal errors not consistently logged (not yet fixed)** — e.g. `api_password_reset.go` returns a user-safe `Message` on failure but never logs the underlying `Err` via `slog`. Same pattern likely exists in sibling `internal/api/*` handlers. Not yet addressed.
+- [ ] **Hardcoded cookie name (not yet fixed)** — `types.CookieName = "authtoken"` is a package-level constant, preventing multiple auth instances from using independent cookie namespaces on the same origin. Listed as a future recommendation in Section 7; not yet implemented.

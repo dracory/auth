@@ -32,6 +32,25 @@ func TestRouter_UnknownPathRedirectsToLogin(t *testing.T) {
 	}
 }
 
+func TestRouter_SuffixDoesNotFalselyMatchLoginPath(t *testing.T) {
+	config := testutils.NewUsernameAndPasswordConfigForTest()
+	authShared, err := NewUsernameAndPasswordAuth(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// "/some/prefix/mylogin" ends with "login" but is NOT the login path.
+	// It must NOT be routed to the login page.
+	req := httptest.NewRequest(http.MethodGet, "/some/prefix/mylogin", nil)
+	recorder := httptest.NewRecorder()
+
+	authShared.Router().ServeHTTP(recorder, req)
+
+	if status := recorder.Code; status != http.StatusTemporaryRedirect {
+		t.Fatalf("expected status %d (not found redirect), got %d", http.StatusTemporaryRedirect, status)
+	}
+}
+
 func TestRouter_LoginPathServesLoginPage(t *testing.T) {
 	config := testutils.NewUsernameAndPasswordConfigForTest()
 	authShared, err := NewUsernameAndPasswordAuth(config)
