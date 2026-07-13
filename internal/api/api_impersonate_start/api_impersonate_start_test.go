@@ -1,8 +1,10 @@
 package api_impersonate_start
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -383,5 +385,121 @@ func TestApiImpersonateStartWithCookies(t *testing.T) {
 	body := recorder.Body.String()
 	if !strings.Contains(body, `"status":"success"`) {
 		t.Fatalf("expected success status, got %q", body)
+	}
+}
+
+func TestApiImpersonateStart_LogsUserLookupError(t *testing.T) {
+	var logBuf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&logBuf, nil))
+
+	deps := Dependencies{
+		CanImpersonate: func(ctx context.Context, admin, target string) (bool, error) { return true, nil },
+		UserFindByAuthToken: func(ctx context.Context, token string, opts types.UserAuthOptions) (string, error) {
+			return "", errors.New("db connection lost")
+		},
+		UserStoreAuthToken: func(ctx context.Context, token, userID string, opts types.UserAuthOptions) error { return nil },
+		TemporaryKeyGet:    func(key string) (string, error) { return "", nil },
+		TemporaryKeySet:    func(key string, value string, expires int) error { return nil },
+		Logger:             logger,
+	}
+
+	values := url.Values{"user_id": {"target-456"}}
+	recorder, req := makePostRequestWithToken(t, "/api/impersonate/start", "admin-token", values, false)
+	ApiImpersonateStart(recorder, req, deps)
+
+	logOutput := logBuf.String()
+	if !strings.Contains(logOutput, "db connection lost") {
+		t.Fatalf("expected log to contain 'db connection lost', got: %q", logOutput)
+	}
+	if !strings.Contains(logOutput, "user lookup failed") {
+		t.Fatalf("expected log to contain 'user lookup failed', got: %q", logOutput)
+	}
+}
+
+func TestApiImpersonateStart_LogsCanImpersonateError(t *testing.T) {
+	var logBuf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&logBuf, nil))
+
+	deps := Dependencies{
+		CanImpersonate: func(ctx context.Context, admin, target string) (bool, error) {
+			return false, errors.New("rpc timeout")
+		},
+		UserFindByAuthToken: func(ctx context.Context, token string, opts types.UserAuthOptions) (string, error) {
+			return "admin-123", nil
+		},
+		UserStoreAuthToken: func(ctx context.Context, token, userID string, opts types.UserAuthOptions) error { return nil },
+		TemporaryKeyGet:    func(key string) (string, error) { return "", nil },
+		TemporaryKeySet:    func(key string, value string, expires int) error { return nil },
+		Logger:             logger,
+	}
+
+	values := url.Values{"user_id": {"target-456"}}
+	recorder, req := makePostRequestWithToken(t, "/api/impersonate/start", "admin-token", values, false)
+	ApiImpersonateStart(recorder, req, deps)
+
+	logOutput := logBuf.String()
+	if !strings.Contains(logOutput, "rpc timeout") {
+		t.Fatalf("expected log to contain 'rpc timeout', got: %q", logOutput)
+	}
+	if !strings.Contains(logOutput, "can-impersonate check failed") {
+		t.Fatalf("expected log to contain 'can-impersonate check failed', got: %q", logOutput)
+	}
+}
+
+func TestApiImpersonateStart_LogsTemporaryKeyStoreError(t *testing.T) {
+	var logBuf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&logBuf, nil))
+
+	deps := Dependencies{
+		CanImpersonate: func(ctx context.Context, admin, target string) (bool, error) { return true, nil },
+		UserFindByAuthToken: func(ctx context.Context, token string, opts types.UserAuthOptions) (string, error) {
+			return "admin-123", nil
+		},
+		UserStoreAuthToken: func(ctx context.Context, token, userID string, opts types.UserAuthOptions) error { return nil },
+		TemporaryKeyGet:    func(key string) (string, error) { return "", nil },
+		TemporaryKeySet:    func(key string, value string, expires int) error { return errors.New("redis down") },
+		Logger:             logger,
+	}
+
+	values := url.Values{"user_id": {"target-456"}}
+	recorder, req := makePostRequestWithToken(t, "/api/impersonate/start", "admin-token", values, false)
+	ApiImpersonateStart(recorder, req, deps)
+
+	logOutput := logBuf.String()
+	if !strings.Contains(logOutput, "redis down") {
+		t.Fatalf("expected log to contain 'redis down', got: %q", logOutput)
+	}
+	if !strings.Contains(logOutput, "temporary key store failed") {
+		t.Fatalf("expected log to contain 'temporary key store failed', got: %q", logOutput)
+	}
+}
+
+func TestApiImpersonateStart_LogsUserStoreAuthTokenError(t *testing.T) {
+	var logBuf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&logBuf, nil))
+
+	deps := Dependencies{
+		CanImpersonate: func(ctx context.Context, admin, target string) (bool, error) { return true, nil },
+		UserFindByAuthToken: func(ctx context.Context, token string, opts types.UserAuthOptions) (string, error) {
+			return "admin-123", nil
+		},
+		UserStoreAuthToken: func(ctx context.Context, token, userID string, opts types.UserAuthOptions) error {
+			return errors.New("db write failed")
+		},
+		TemporaryKeyGet: func(key string) (string, error) { return "", nil },
+		TemporaryKeySet: func(key string, value string, expires int) error { return nil },
+		Logger:          logger,
+	}
+
+	values := url.Values{"user_id": {"target-456"}}
+	recorder, req := makePostRequestWithToken(t, "/api/impersonate/start", "admin-token", values, false)
+	ApiImpersonateStart(recorder, req, deps)
+
+	logOutput := logBuf.String()
+	if !strings.Contains(logOutput, "db write failed") {
+		t.Fatalf("expected log to contain 'db write failed', got: %q", logOutput)
+	}
+	if !strings.Contains(logOutput, "auth token store failed") {
+		t.Fatalf("expected log to contain 'auth token store failed', got: %q", logOutput)
 	}
 }

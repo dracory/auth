@@ -1,8 +1,10 @@
 package api_impersonate_stop
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -235,5 +237,91 @@ func TestApiImpersonateStopHappyPath(t *testing.T) {
 	}
 	if len(hooks.impersonationStops) != 1 || hooks.impersonationStops[0].admin != "admin-123" || hooks.impersonationStops[0].target != "target-456" {
 		t.Fatalf("expected 1 stop hook with admin-123/target-456, got %+v", hooks.impersonationStops)
+	}
+}
+
+func TestApiImpersonateStop_LogsTemporaryKeyLookupError(t *testing.T) {
+	var logBuf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&logBuf, nil))
+
+	deps := Dependencies{
+		TemporaryKeyGet:     func(key string) (string, error) { return "", errors.New("redis down") },
+		TemporaryKeySet:     func(key string, value string, expires int) error { return nil },
+		UserFindByAuthToken: func(ctx context.Context, token string, opts types.UserAuthOptions) (string, error) { return "", nil },
+		Logger:              logger,
+	}
+
+	recorder, req := makeStopRequestWithToken(t, "some-token", false)
+	ApiImpersonateStop(recorder, req, deps)
+
+	logOutput := logBuf.String()
+	if !strings.Contains(logOutput, "redis down") {
+		t.Fatalf("expected log to contain 'redis down', got: %q", logOutput)
+	}
+	if !strings.Contains(logOutput, "temporary key lookup failed") {
+		t.Fatalf("expected log to contain 'temporary key lookup failed', got: %q", logOutput)
+	}
+}
+
+func TestApiImpersonateStop_LogsTargetUserLookupError(t *testing.T) {
+	var logBuf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&logBuf, nil))
+
+	deps := Dependencies{
+		TemporaryKeyGet: func(key string) (string, error) {
+			if strings.HasPrefix(key, "imp:") {
+				return "original-admin-token", nil
+			}
+			return "", nil
+		},
+		TemporaryKeySet: func(key string, value string, expires int) error { return nil },
+		UserFindByAuthToken: func(ctx context.Context, token string, opts types.UserAuthOptions) (string, error) {
+			return "", errors.New("db connection lost")
+		},
+		Logger: logger,
+	}
+
+	recorder, req := makeStopRequestWithToken(t, "impersonation-token", false)
+	ApiImpersonateStop(recorder, req, deps)
+
+	logOutput := logBuf.String()
+	if !strings.Contains(logOutput, "db connection lost") {
+		t.Fatalf("expected log to contain 'db connection lost', got: %q", logOutput)
+	}
+	if !strings.Contains(logOutput, "target user lookup failed") {
+		t.Fatalf("expected log to contain 'target user lookup failed', got: %q", logOutput)
+	}
+}
+
+func TestApiImpersonateStop_LogsAdminUserLookupError(t *testing.T) {
+	var logBuf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&logBuf, nil))
+
+	deps := Dependencies{
+		TemporaryKeyGet: func(key string) (string, error) {
+			if strings.HasPrefix(key, "imp:") {
+				return "original-admin-token", nil
+			}
+			return "", nil
+		},
+		TemporaryKeySet: func(key string, value string, expires int) error { return nil },
+		UserFindByAuthToken: func(ctx context.Context, token string, opts types.UserAuthOptions) (string, error) {
+			if token == "impersonation-token" {
+				return "target-456", nil
+			}
+			return "", errors.New("admin db error")
+		},
+		Logger: logger,
+	}
+
+	recorder, req := makeStopRequestWithToken(t, "impersonation-token", false)
+	ApiImpersonateStop(recorder, req, deps)
+
+	logOutput := logBuf.String()
+	if !strings.Contains(logOutput, "admin db error") {
+		t.Fatalf("expected log to contain 'admin db error', got: %q", logOutput)
+	}
+	if !strings.Contains(logOutput, "admin user lookup failed") {
+		t.Fatalf("expected log to contain 'admin user lookup failed', got: %q", logOutput)
 	}
 }
