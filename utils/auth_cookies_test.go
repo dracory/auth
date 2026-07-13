@@ -229,6 +229,159 @@ func TestAuthCookieRemove_HTTPS_Secure(t *testing.T) {
 	}
 }
 
+func TestAuthCookieSet_SecureFalse(t *testing.T) {
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "http://example.com/", nil)
+
+	AuthCookieSet(w, r, "test-token", types.WithSecure(false))
+
+	res := w.Result()
+	cookies := res.Cookies()
+	if len(cookies) == 0 {
+		t.Fatalf("expected a cookie to be set")
+	}
+
+	var c *http.Cookie
+	for _, ck := range cookies {
+		if ck.Name == types.CookieName {
+			c = ck
+			break
+		}
+	}
+
+	if c == nil {
+		t.Fatalf("expected cookie %q to be set", types.CookieName)
+	}
+
+	if c.Secure {
+		t.Fatalf("expected Secure to be false when cfg.Secure=false")
+	}
+
+	if c.Value != "test-token" {
+		t.Fatalf("expected cookie value %q, got %q", "test-token", c.Value)
+	}
+}
+
+func TestAuthCookieSet_SecureTrue(t *testing.T) {
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "http://example.com/", nil)
+
+	AuthCookieSet(w, r, "test-token", types.WithSecure(true))
+
+	res := w.Result()
+	cookies := res.Cookies()
+	if len(cookies) == 0 {
+		t.Fatalf("expected a cookie to be set")
+	}
+
+	var c *http.Cookie
+	for _, ck := range cookies {
+		if ck.Name == types.CookieName {
+			c = ck
+			break
+		}
+	}
+
+	if c == nil {
+		t.Fatalf("expected cookie %q to be set", types.CookieName)
+	}
+
+	if !c.Secure {
+		t.Fatalf("expected Secure to be true when cfg.Secure=true")
+	}
+}
+
+func TestAuthCookieRemove_SecureFalse(t *testing.T) {
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "http://example.com/", nil)
+
+	AuthCookieRemove(w, r, types.WithSecure(false))
+
+	res := w.Result()
+	cookies := res.Cookies()
+	if len(cookies) == 0 {
+		t.Fatalf("expected a cookie to be set")
+	}
+
+	var c *http.Cookie
+	for _, ck := range cookies {
+		if ck.Name == types.CookieName {
+			c = ck
+			break
+		}
+	}
+
+	if c == nil {
+		t.Fatalf("expected cookie %q to be set", types.CookieName)
+	}
+
+	if c.Secure {
+		t.Fatalf("expected Secure to be false when cfg.Secure=false")
+	}
+
+	if c.Value != "none" {
+		t.Fatalf("expected cookie value %q, got %q", "none", c.Value)
+	}
+}
+
+func TestAuthCookieSet_WithCookieConfig(t *testing.T) {
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "http://example.com/", nil)
+
+	cfg := types.CookieConfig{
+		HttpOnly: false,
+		Secure:   false,
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   600,
+		Path:     "/custom",
+		Domain:   "example.com",
+	}
+
+	AuthCookieSet(w, r, "test-token", types.WithCookieConfig(cfg))
+
+	res := w.Result()
+	cookies := res.Cookies()
+	if len(cookies) == 0 {
+		t.Fatalf("expected a cookie to be set")
+	}
+
+	var c *http.Cookie
+	for _, ck := range cookies {
+		if ck.Name == types.CookieName {
+			c = ck
+			break
+		}
+	}
+
+	if c == nil {
+		t.Fatalf("expected cookie %q to be set", types.CookieName)
+	}
+
+	if c.HttpOnly {
+		t.Fatalf("expected HttpOnly=false when WithCookieConfig overrides")
+	}
+
+	if c.Secure {
+		t.Fatalf("expected Secure=false when WithCookieConfig overrides")
+	}
+
+	if c.SameSite != http.SameSiteStrictMode {
+		t.Fatalf("expected SameSite Strict, got %v", c.SameSite)
+	}
+
+	if c.Path != "/custom" {
+		t.Fatalf("expected Path '/custom', got %q", c.Path)
+	}
+
+	if c.Domain != "example.com" {
+		t.Fatalf("expected Domain 'example.com', got %q", c.Domain)
+	}
+
+	if c.MaxAge != 600 {
+		t.Fatalf("expected MaxAge 600, got %d", c.MaxAge)
+	}
+}
+
 func TestAuthCookieGetReturnsValueWhenPresent(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.AddCookie(&http.Cookie{Name: types.CookieName, Value: "test-token"})
