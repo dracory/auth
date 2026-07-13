@@ -1,6 +1,9 @@
 package api_register
 
-import "context"
+import (
+	"context"
+	"log/slog"
+)
 
 // Dependencies defines the dependencies required for handling the registration
 // API endpoint. It combines both passwordless and username+password flows
@@ -17,4 +20,7 @@ type Dependencies struct {
 	// validation and business rules, and returns a user-facing success or
 	// error message.
 	RegisterWithUsernameAndPassword func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (successMessage, errorMessage string)
+
+	// Logger is used to log internal errors. If nil, slog.Default() is used.
+	Logger *slog.Logger
 }

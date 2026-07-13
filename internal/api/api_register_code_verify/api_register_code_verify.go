@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/dracory/api"
@@ -30,6 +31,9 @@ type Dependencies struct {
 	// AuthenticateViaUsername is called on successful registration to
 	// authenticate the user and produce the final HTTP response.
 	AuthenticateViaUsername func(w http.ResponseWriter, r *http.Request, email, firstName, lastName string)
+
+	// Logger is used to log internal errors. If nil, slog.Default() is used.
+	Logger *slog.Logger
 }
 
 // RegisterCodeVerifyErrorCode categorizes error sources in the registration
@@ -76,8 +80,19 @@ type RegisterCodeVerifyResult struct {
 // request/response handling to the core RegisterCodeVerify business logic
 // using the provided dependencies.
 func ApiRegisterCodeVerify(w http.ResponseWriter, r *http.Request, deps Dependencies) {
+	logger := deps.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	result, perr := RegisterCodeVerify(r.Context(), r, deps)
 	if perr != nil {
+		if perr.Err != nil {
+			logger.Error("register code verify failed",
+				slog.String("error", perr.Err.Error()),
+				slog.String("code", string(perr.Code)),
+			)
+		}
 		switch perr.Code {
 		case RegisterCodeVerifyErrorCodeValidation,
 			RegisterCodeVerifyErrorCodeCodeExpired,
@@ -124,6 +139,7 @@ func ApiRegisterCodeVerifyWithAuth(w http.ResponseWriter, r *http.Request, a typ
 		TemporaryKeyGet:  a.GetFuncTemporaryKeyGet(),
 		PasswordStrength: a.GetPasswordStrength(),
 		Passwordless:     a.IsPasswordless(),
+		Logger:           a.GetLogger(),
 	}
 
 	if fn := a.GetPasswordlessUserRegister(); fn != nil {

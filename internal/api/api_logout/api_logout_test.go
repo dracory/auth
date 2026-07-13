@@ -1,8 +1,10 @@
 package api_logout
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -254,5 +256,33 @@ func TestApiLogoutEmptyUserIDSuccess(t *testing.T) {
 	body := recorder.Body.String()
 	if !strings.Contains(body, "\"status\":\"success\"") {
 		t.Fatalf("expected success for empty userID, got %q", body)
+	}
+}
+
+func TestApiLogout_LogsInternalErrors(t *testing.T) {
+	var logBuf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&logBuf, nil))
+
+	deps := Dependencies{
+		AuthTokenRetrieve: func(r *http.Request, useCookies bool) string {
+			return "valid-token"
+		},
+		UserFromToken: func(ctx context.Context, token string) (string, error) {
+			return "user-123", nil
+		},
+		LogoutUser: func(ctx context.Context, userID string) error {
+			return errors.New("db connection lost")
+		},
+		Logger: logger,
+	}
+	recorder, req := makePostRequest(t, "/api/logout")
+	ApiLogout(recorder, req, deps)
+
+	logOutput := logBuf.String()
+	if !strings.Contains(logOutput, "db connection lost") {
+		t.Fatalf("expected log to contain underlying error 'db connection lost', got: %q", logOutput)
+	}
+	if !strings.Contains(logOutput, "logout failed") {
+		t.Fatalf("expected log to contain 'logout failed', got: %q", logOutput)
 	}
 }

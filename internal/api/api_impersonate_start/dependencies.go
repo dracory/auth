@@ -2,6 +2,7 @@ package api_impersonate_start
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 
 	"github.com/dracory/auth/types"
@@ -17,4 +18,7 @@ type Dependencies struct {
 	SetAuthCookie       func(w http.ResponseWriter, r *http.Request, token string)
 	ObservabilityHooks  types.ObservabilityHooks
 	ImpersonationStart  func(ctx context.Context, adminUserID string, targetUserID string) error
+
+	// Logger is used to log internal errors. If nil, slog.Default() is used.
+	Logger *slog.Logger
 }

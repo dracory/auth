@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/subtle"
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/dracory/api"
@@ -57,8 +58,20 @@ type PasswordResetResult struct {
 // handling to the core PasswordReset business logic using the provided
 // dependencies.
 func ApiPasswordReset(w http.ResponseWriter, r *http.Request, deps Dependencies) {
+	logger := deps.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	result, perr := PasswordReset(r.Context(), r, deps)
 	if perr != nil {
+		if perr.Err != nil {
+			logger.Error("password reset failed",
+				slog.String("error", perr.Err.Error()),
+				slog.String("code", string(perr.Code)),
+				slog.String("user_id", perr.UserID),
+			)
+		}
 		switch perr.Code {
 		case PasswordResetErrorCodeValidation,
 			PasswordResetErrorCodeTokenLookup,
@@ -100,6 +113,7 @@ func ApiPasswordResetWithAuth(w http.ResponseWriter, r *http.Request, a types.Au
 	deps := Dependencies{
 		PasswordStrength: a.GetPasswordStrength(),
 		TemporaryKeyGet:  a.GetFuncTemporaryKeyGet(),
+		Logger:           a.GetLogger(),
 	}
 
 	if fn := a.GetFuncUserPasswordChange(); fn != nil {

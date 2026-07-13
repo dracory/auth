@@ -2,6 +2,7 @@ package api_logout
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 )
 
@@ -27,4 +28,7 @@ type Dependencies struct {
 	// RemoveAuthCookie removes the authentication cookie after a successful
 	// logout when UseCookies is true.
 	RemoveAuthCookie func(w http.ResponseWriter, r *http.Request)
+
+	// Logger is used to log internal errors. If nil, slog.Default() is used.
+	Logger *slog.Logger
 }

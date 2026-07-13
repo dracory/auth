@@ -1,8 +1,10 @@
 package api_password_reset
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -321,5 +323,38 @@ func TestApiPasswordResetSuccessWithoutLogoutUser(t *testing.T) {
 	body := recorder.Body.String()
 	if !strings.Contains(body, "\"status\":\"success\"") {
 		t.Fatalf("expected success, got %q", body)
+	}
+}
+
+func TestApiPasswordReset_LogsInternalErrors(t *testing.T) {
+	var logBuf bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&logBuf, nil))
+
+	deps := Dependencies{
+		PasswordStrength: nil,
+		TemporaryKeyGet: func(key string) (string, error) {
+			return "user-123", nil
+		},
+		UserPasswordChange: func(ctx context.Context, userID, password string) error {
+			return errors.New("db connection lost")
+		},
+		LogoutUser: nil,
+		Logger:     logger,
+	}
+
+	values := url.Values{
+		"token":            {"valid-token"},
+		"password":         {"password123"},
+		"password_confirm": {"password123"},
+	}
+	recorder, req := makePostRequest(t, "/api/password-reset", values)
+	ApiPasswordReset(recorder, req, deps)
+
+	logOutput := logBuf.String()
+	if !strings.Contains(logOutput, "db connection lost") {
+		t.Fatalf("expected log to contain underlying error 'db connection lost', got: %q", logOutput)
+	}
+	if !strings.Contains(logOutput, "password reset failed") {
+		t.Fatalf("expected log to contain 'password reset failed', got: %q", logOutput)
 	}
 }

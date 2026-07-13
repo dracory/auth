@@ -2,6 +2,7 @@ package api_password_reset
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/dracory/auth/types"
 )
@@ -15,4 +16,7 @@ type Dependencies struct {
 
 	UserPasswordChange func(ctx context.Context, userID, password string) error
 	LogoutUser         func(ctx context.Context, userID string) error
+
+	// Logger is used to log internal errors. If nil, slog.Default() is used.
+	Logger *slog.Logger
 }

@@ -1,6 +1,7 @@
 package api_impersonate_start
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/dracory/api"
@@ -14,6 +15,11 @@ const tokenGamma = "BCDFGHJKLMNPQRSTVXYZ"
 const tokenLength = 32
 
 func ApiImpersonateStart(w http.ResponseWriter, r *http.Request, deps Dependencies) {
+	logger := deps.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	authToken := utils.AuthTokenRetrieve(r, deps.UseCookies)
 	if authToken == "" {
 		api.Respond(w, r, api.Unauthenticated(types.MsgTokenRequired))
@@ -26,7 +32,14 @@ func ApiImpersonateStart(w http.ResponseWriter, r *http.Request, deps Dependenci
 	}
 
 	adminUserID, err := deps.UserFindByAuthToken(r.Context(), authToken, options)
-	if err != nil || adminUserID == "" {
+	if err != nil {
+		logger.Error("impersonation start: user lookup failed",
+			slog.String("error", err.Error()),
+		)
+		api.Respond(w, r, api.Unauthenticated(types.MsgInvalidCredentials))
+		return
+	}
+	if adminUserID == "" {
 		api.Respond(w, r, api.Unauthenticated(types.MsgInvalidCredentials))
 		return
 	}
@@ -45,6 +58,11 @@ func ApiImpersonateStart(w http.ResponseWriter, r *http.Request, deps Dependenci
 
 	allowed, err := deps.CanImpersonate(r.Context(), adminUserID, targetUserID)
 	if err != nil {
+		logger.Error("impersonation start: can-impersonate check failed",
+			slog.String("error", err.Error()),
+			slog.String("admin_user_id", adminUserID),
+			slog.String("target_user_id", targetUserID),
+		)
 		api.Respond(w, r, api.Error(types.MsgImpersonationFailed))
 		return
 	}
@@ -55,6 +73,9 @@ func ApiImpersonateStart(w http.ResponseWriter, r *http.Request, deps Dependenci
 
 	newToken, err := str.RandomFromGamma(tokenLength, tokenGamma)
 	if err != nil {
+		logger.Error("impersonation start: token generation failed",
+			slog.String("error", err.Error()),
+		)
 		api.Respond(w, r, api.Error(types.MsgFailedToGenerateCode))
 		return
 	}
@@ -65,12 +86,19 @@ func ApiImpersonateStart(w http.ResponseWriter, r *http.Request, deps Dependenci
 		int(DefaultAuthTokenExpiration.Seconds()),
 	)
 	if err != nil {
+		logger.Error("impersonation start: temporary key store failed",
+			slog.String("error", err.Error()),
+		)
 		api.Respond(w, r, api.Error(types.MsgImpersonationFailed))
 		return
 	}
 
 	err = deps.UserStoreAuthToken(r.Context(), newToken, targetUserID, options)
 	if err != nil {
+		logger.Error("impersonation start: auth token store failed",
+			slog.String("error", err.Error()),
+			slog.String("target_user_id", targetUserID),
+		)
 		_ = deps.TemporaryKeySet(types.ImpersonationKeyPrefix+newToken, "", 1)
 		api.Respond(w, r, api.Error(types.MsgImpersonationFailed))
 		return
@@ -104,6 +132,7 @@ func ApiImpersonateStartWithAuth(w http.ResponseWriter, r *http.Request, a types
 		UseCookies:          a.GetUseCookies(),
 		ObservabilityHooks:  a.GetObservabilityHooks(),
 		ImpersonationStart:  a.GetFuncImpersonationStart(),
+		Logger:              a.GetLogger(),
 		SetAuthCookie: func(w http.ResponseWriter, r *http.Request, token string) {
 			a.SetAuthCookie(w, r, token)
 		},

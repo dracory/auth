@@ -2,6 +2,7 @@ package api_login
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 
 	"github.com/dracory/api"
@@ -26,9 +27,20 @@ type LoginPasswordlessDeps struct {
 // ApiLogin is the HTTP-level handler that combines passwordless and
 // username+password login flows behind a shared interface.
 func ApiLogin(w http.ResponseWriter, r *http.Request, dependencies Dependencies) {
+	logger := dependencies.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	if dependencies.Passwordless {
 		result, err := loginPasswordless(r.Context(), r, dependencies.PasswordlessDependencies)
 		if err != nil {
+			if err.Err != nil {
+				logger.Error("passwordless login failed",
+					slog.String("error", err.Err.Error()),
+					slog.String("code", string(err.Code)),
+				)
+			}
 			switch err.Code {
 			case LoginPasswordlessErrorCodeValidation:
 				api.Respond(w, r, api.Error(err.Message))
@@ -90,6 +102,7 @@ func ApiLoginWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthShared
 
 	deps := Dependencies{
 		Passwordless: a.IsPasswordless(),
+		Logger:       a.GetLogger(),
 		PasswordlessDependencies: LoginPasswordlessDeps{
 			DisableRateLimit: a.GetDisableRateLimit(),
 			TemporaryKeySet:  a.GetFuncTemporaryKeySet(),

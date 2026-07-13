@@ -2,6 +2,7 @@ package api_login_code_verify
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 
 	"github.com/dracory/api"
@@ -22,6 +23,9 @@ type Dependencies struct {
 	// to perform authentication (token generation, cookies, etc.) and send
 	// the final HTTP response.
 	AuthenticateViaUsername func(w http.ResponseWriter, r *http.Request, email string)
+
+	// Logger is used to log internal errors. If nil, slog.Default() is used.
+	Logger *slog.Logger
 }
 
 // LoginCodeVerifyErrorCode categorizes error sources.
@@ -63,8 +67,19 @@ type LoginCodeVerifyResult struct {
 // handling to the core LoginCodeVerify business logic using the provided
 // dependencies.
 func ApiLoginCodeVerify(w http.ResponseWriter, r *http.Request, deps Dependencies) {
+	logger := deps.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	result, perr := LoginCodeVerify(r.Context(), r, deps)
 	if perr != nil {
+		if perr.Err != nil {
+			logger.Error("login code verify failed",
+				slog.String("error", perr.Err.Error()),
+				slog.String("code", string(perr.Code)),
+			)
+		}
 		switch perr.Code {
 		case LoginCodeVerifyErrorCodeValidation,
 			LoginCodeVerifyErrorCodeCodeExpired:
@@ -92,6 +107,7 @@ func ApiLoginCodeVerifyWithAuth(w http.ResponseWriter, r *http.Request, a types.
 	deps := Dependencies{
 		DisableRateLimit: a.GetDisableRateLimit(),
 		TemporaryKeyGet:  a.GetFuncTemporaryKeyGet(),
+		Logger:           a.GetLogger(),
 	}
 
 	deps.AuthenticateViaUsername = func(w http.ResponseWriter, r *http.Request, email string) {

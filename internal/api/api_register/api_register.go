@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"html"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -19,9 +20,20 @@ import (
 // either the passwordless or username+password flow based on the provided
 // dependencies.
 func ApiRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
+	logger := deps.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	if deps.Passwordless {
 		result, err := RegisterPasswordlessInit(r.Context(), r, deps.RegisterPasswordlessInitDependencies)
 		if err != nil {
+			if err.Err != nil {
+				logger.Error("passwordless registration failed",
+					slog.String("error", err.Err.Error()),
+					slog.String("code", string(err.Code)),
+				)
+			}
 			switch err.Code {
 			case RegisterPasswordlessInitErrorCodeValidation:
 				api.Respond(w, r, api.Error(err.Message))
@@ -80,6 +92,7 @@ func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSha
 
 	deps := Dependencies{}
 	deps.Passwordless = a.IsPasswordless()
+	deps.Logger = a.GetLogger()
 
 	// Configure passwordless branch dependencies if enabled.
 	if deps.Passwordless {

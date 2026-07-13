@@ -2,6 +2,7 @@ package api_login
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 )
 
@@ -31,4 +32,7 @@ type Dependencies struct {
 	// SetAuthCookie writes the auth cookie. It is only used when UseCookies is
 	// true and must be non-nil in that case.
 	SetAuthCookie func(w http.ResponseWriter, r *http.Request, token string)
+
+	// Logger is used to log internal errors. If nil, slog.Default() is used.
+	Logger *slog.Logger
 }

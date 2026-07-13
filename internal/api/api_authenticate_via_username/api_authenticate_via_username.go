@@ -2,6 +2,7 @@ package api_authenticate_via_username
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 
 	"github.com/dracory/api"
@@ -22,6 +23,9 @@ type Dependencies struct {
 
 	UseCookies    bool
 	SetAuthCookie func(w http.ResponseWriter, r *http.Request, token string)
+
+	// Logger is used to log internal errors. If nil, slog.Default() is used.
+	Logger *slog.Logger
 }
 
 // AuthenticateErrorCode categorizes error sources in the authentication flow.
@@ -63,8 +67,19 @@ type AuthenticateResult struct {
 // request/response handling to the core AuthenticateViaUsername business
 // logic using the provided dependencies.
 func ApiAuthenticateViaUsername(w http.ResponseWriter, r *http.Request, username, firstName, lastName string, deps Dependencies) {
+	logger := deps.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	result, aerr := AuthenticateViaUsername(r.Context(), username, firstName, lastName, deps)
 	if aerr != nil {
+		if aerr.Err != nil {
+			logger.Error("authentication failed",
+				slog.String("error", aerr.Err.Error()),
+				slog.String("code", string(aerr.Code)),
+			)
+		}
 		// All errors map directly to their user-facing messages.
 		api.Respond(w, r, api.Error(aerr.Message))
 		return
@@ -87,6 +102,7 @@ func ApiAuthenticateViaUsernameWithAuth(w http.ResponseWriter, r *http.Request, 
 	deps := Dependencies{
 		Passwordless: a.IsPasswordless(),
 		UseCookies:   a.GetUseCookies(),
+		Logger:       a.GetLogger(),
 	}
 
 	if fn := a.GetPasswordlessUserFindByEmail(); fn != nil {

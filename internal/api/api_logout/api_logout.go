@@ -2,6 +2,7 @@ package api_logout
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 
 	"github.com/dracory/api"
@@ -39,7 +40,13 @@ func (e *LogoutError) Error() string {
 // ApiLogout is the HTTP-level helper that wires request/response handling
 // to the core ApiLogout business logic using the provided dependencies.
 func ApiLogout(w http.ResponseWriter, r *http.Request, deps Dependencies) {
+	logger := deps.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	if deps.AuthTokenRetrieve == nil {
+		logger.Error("logout failed: AuthTokenRetrieve is not configured")
 		api.Respond(w, r, api.Error("Internal server error. Please try again later"))
 		return
 	}
@@ -47,6 +54,13 @@ func ApiLogout(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 	token := deps.AuthTokenRetrieve(r, deps.UseCookies)
 	logoutErr := logout(r.Context(), token, deps)
 	if logoutErr != nil {
+		if logoutErr.Err != nil {
+			logger.Error("logout failed",
+				slog.String("error", logoutErr.Err.Error()),
+				slog.String("code", string(logoutErr.Code)),
+				slog.String("user_id", logoutErr.UserID),
+			)
+		}
 		switch logoutErr.Code {
 		case LogoutErrorCodeTokenLookup,
 			LogoutErrorCodeUserLogout:
@@ -78,6 +92,7 @@ func ApiLogoutWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthShare
 		RemoveAuthCookie: func(w http.ResponseWriter, r *http.Request) {
 			a.RemoveAuthCookie(w, r)
 		},
+		Logger: a.GetLogger(),
 	}
 
 	if fn := a.GetFuncUserFindByAuthToken(); fn != nil {

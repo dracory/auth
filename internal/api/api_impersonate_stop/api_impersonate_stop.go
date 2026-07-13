@@ -1,6 +1,7 @@
 package api_impersonate_stop
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/dracory/api"
@@ -10,6 +11,11 @@ import (
 )
 
 func ApiImpersonateStop(w http.ResponseWriter, r *http.Request, deps Dependencies) {
+	logger := deps.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	currentAuthToken := utils.AuthTokenRetrieve(r, deps.UseCookies)
 	if currentAuthToken == "" {
 		api.Respond(w, r, api.Error(types.MsgNotImpersonating))
@@ -18,6 +24,9 @@ func ApiImpersonateStop(w http.ResponseWriter, r *http.Request, deps Dependencie
 
 	originalAdminToken, err := deps.TemporaryKeyGet(types.ImpersonationKeyPrefix + currentAuthToken)
 	if err != nil {
+		logger.Error("impersonation stop: temporary key lookup failed",
+			slog.String("error", err.Error()),
+		)
 		api.Respond(w, r, api.Error(types.MsgImpersonationFailed))
 		return
 	}
@@ -32,13 +41,27 @@ func ApiImpersonateStop(w http.ResponseWriter, r *http.Request, deps Dependencie
 	}
 
 	targetUserID, err := deps.UserFindByAuthToken(r.Context(), currentAuthToken, options)
-	if err != nil || targetUserID == "" {
+	if err != nil {
+		logger.Error("impersonation stop: target user lookup failed",
+			slog.String("error", err.Error()),
+		)
+		api.Respond(w, r, api.Error(types.MsgImpersonationFailed))
+		return
+	}
+	if targetUserID == "" {
 		api.Respond(w, r, api.Error(types.MsgImpersonationFailed))
 		return
 	}
 
 	adminUserID, err := deps.UserFindByAuthToken(r.Context(), originalAdminToken, options)
-	if err != nil || adminUserID == "" {
+	if err != nil {
+		logger.Error("impersonation stop: admin user lookup failed",
+			slog.String("error", err.Error()),
+		)
+		api.Respond(w, r, api.Error(types.MsgImpersonationFailed))
+		return
+	}
+	if adminUserID == "" {
 		api.Respond(w, r, api.Error(types.MsgImpersonationFailed))
 		return
 	}
@@ -73,6 +96,7 @@ func ApiImpersonateStopWithAuth(w http.ResponseWriter, r *http.Request, a types.
 		UseCookies:          a.GetUseCookies(),
 		ObservabilityHooks:  a.GetObservabilityHooks(),
 		ImpersonationStop:   a.GetFuncImpersonationStop(),
+		Logger:              a.GetLogger(),
 		SetAuthCookie: func(w http.ResponseWriter, r *http.Request, token string) {
 			a.SetAuthCookie(w, r, token)
 		},
