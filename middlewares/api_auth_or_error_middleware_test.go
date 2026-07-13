@@ -14,6 +14,7 @@ import (
 
 type mockAuthSharedForAPI struct {
 	useCookies          bool
+	cookieName          string
 	userFindByAuthToken func(ctx context.Context, token string, options types.UserAuthOptions) (string, error)
 }
 
@@ -51,6 +52,13 @@ func (m *mockAuthSharedForAPI) GetFuncTemporaryKeySet() func(string, string, int
 func (m *mockAuthSharedForAPI) SetFuncTemporaryKeySet(func(string, string, int) error)  {}
 func (m *mockAuthSharedForAPI) GetUseCookies() bool                                     { return m.useCookies }
 func (m *mockAuthSharedForAPI) SetUseCookies(bool)                                      {}
+func (m *mockAuthSharedForAPI) GetCookieName() string {
+	if m.cookieName != "" {
+		return m.cookieName
+	}
+	return "authtoken"
+}
+func (m *mockAuthSharedForAPI) SetCookieName(string) {}
 func (m *mockAuthSharedForAPI) GetFuncUserFindByAuthToken() func(context.Context, string, types.UserAuthOptions) (string, error) {
 	return m.userFindByAuthToken
 }
@@ -254,6 +262,42 @@ func TestApiAuthOrErrorMiddleware_Success(t *testing.T) {
 	}
 	if ctxUserID != "user-123" {
 		t.Fatalf("expected context user ID 'user-123', got %q", ctxUserID)
+	}
+}
+
+func TestApiAuthOrErrorMiddleware_CustomCookieName(t *testing.T) {
+	mock := &mockAuthSharedForAPI{
+		useCookies: true,
+		cookieName: "custom-auth",
+		userFindByAuthToken: func(ctx context.Context, token string, opts types.UserAuthOptions) (string, error) {
+			if token == "custom-token" {
+				return "user-789", nil
+			}
+			return "", nil
+		},
+	}
+
+	called := false
+	var ctxUserID string
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		val := r.Context().Value(types.AuthenticatedUserID{})
+		if val != nil {
+			ctxUserID = val.(string)
+		}
+	})
+
+	handler := ApiAuthOrErrorMiddleware(next, mock)
+	req, _ := http.NewRequest("GET", "/protected", nil)
+	req.AddCookie(&http.Cookie{Name: "custom-auth", Value: "custom-token"})
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if !called {
+		t.Fatal("expected next handler to be called")
+	}
+	if ctxUserID != "user-789" {
+		t.Fatalf("expected context user ID 'user-789', got %q", ctxUserID)
 	}
 }
 

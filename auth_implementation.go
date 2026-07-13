@@ -59,6 +59,7 @@ type authImplementation struct {
 	// ===== END: rate limiting
 
 	cookieConfig CookieConfig
+	cookieName   string
 
 	// ===== START: CSRF Protection
 	enableCSRFProtection  bool
@@ -155,6 +156,17 @@ func (a authImplementation) GetFuncUserFindByAuthToken() func(ctx context.Contex
 
 func (a *authImplementation) SetUseCookies(useCookies bool) {
 	a.useCookies = useCookies
+}
+
+func (a authImplementation) GetCookieName() string {
+	if a.cookieName != "" {
+		return a.cookieName
+	}
+	return types.CookieName
+}
+
+func (a *authImplementation) SetCookieName(name string) {
+	a.cookieName = name
 }
 
 func (a *authImplementation) SetFuncUserFindByAuthToken(fn func(ctx context.Context, token string, options types.UserAuthOptions) (string, error)) {

@@ -20,7 +20,7 @@ func ApiImpersonateStart(w http.ResponseWriter, r *http.Request, deps Dependenci
 		logger = slog.Default()
 	}
 
-	authToken := utils.AuthTokenRetrieve(r, deps.UseCookies)
+	authToken := utils.AuthTokenRetrieveWithName(r, deps.UseCookies, deps.CookieName)
 	if authToken == "" {
 		api.Respond(w, r, api.Unauthenticated(types.MsgTokenRequired))
 		return
@@ -130,6 +130,7 @@ func ApiImpersonateStartWithAuth(w http.ResponseWriter, r *http.Request, a types
 		TemporaryKeyGet:     a.GetFuncTemporaryKeyGet(),
 		TemporaryKeySet:     a.GetFuncTemporaryKeySet(),
 		UseCookies:          a.GetUseCookies(),
+		CookieName:          a.GetCookieName(),
 		ObservabilityHooks:  a.GetObservabilityHooks(),
 		ImpersonationStart:  a.GetFuncImpersonationStart(),
 		Logger:              a.GetLogger(),

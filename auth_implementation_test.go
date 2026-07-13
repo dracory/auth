@@ -476,3 +476,89 @@ func TestIsRegistrationEnabled(t *testing.T) {
 		t.Fatal("expected registration enabled true")
 	}
 }
+
+func TestGetCookieName_Default(t *testing.T) {
+	a := &authImplementation{}
+	if got := a.GetCookieName(); got != CookieName {
+		t.Fatalf("expected default cookie name %q, got %q", CookieName, got)
+	}
+}
+
+func TestGetCookieName_Custom(t *testing.T) {
+	a := &authImplementation{cookieName: "custom-auth"}
+	if got := a.GetCookieName(); got != "custom-auth" {
+		t.Fatalf("expected cookie name %q, got %q", "custom-auth", got)
+	}
+}
+
+func TestSetCookieName(t *testing.T) {
+	a := &authImplementation{}
+	a.SetCookieName("custom-auth")
+	if got := a.GetCookieName(); got != "custom-auth" {
+		t.Fatalf("expected cookie name %q, got %q", "custom-auth", got)
+	}
+}
+
+func TestSetAuthCookie_UsesCookieName(t *testing.T) {
+	a := &authImplementation{
+		cookieName: "custom-auth",
+		cookieConfig: CookieConfig{
+			HttpOnly: types.CookieHttpOnly,
+			Secure:   types.CookieInsecure,
+			SameSite: http.SameSiteLaxMode,
+			MaxAge:   7200,
+			Path:     "/",
+		},
+	}
+
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "http://example.com/", nil)
+
+	a.SetAuthCookie(w, r, "test-token")
+
+	res := w.Result()
+	cookies := res.Cookies()
+	if len(cookies) == 0 {
+		t.Fatalf("expected a cookie to be set")
+	}
+
+	if cookies[0].Name != "custom-auth" {
+		t.Fatalf("expected cookie name %q, got %q", "custom-auth", cookies[0].Name)
+	}
+
+	if cookies[0].Value != "test-token" {
+		t.Fatalf("expected cookie value %q, got %q", "test-token", cookies[0].Value)
+	}
+}
+
+func TestRemoveAuthCookie_UsesCookieName(t *testing.T) {
+	a := &authImplementation{
+		cookieName: "custom-auth",
+		cookieConfig: CookieConfig{
+			HttpOnly: types.CookieHttpOnly,
+			Secure:   types.CookieInsecure,
+			SameSite: http.SameSiteLaxMode,
+			MaxAge:   7200,
+			Path:     "/",
+		},
+	}
+
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "http://example.com/", nil)
+
+	a.RemoveAuthCookie(w, r)
+
+	res := w.Result()
+	cookies := res.Cookies()
+	if len(cookies) == 0 {
+		t.Fatalf("expected a cookie to be set")
+	}
+
+	if cookies[0].Name != "custom-auth" {
+		t.Fatalf("expected cookie name %q, got %q", "custom-auth", cookies[0].Name)
+	}
+
+	if cookies[0].Value != "none" {
+		t.Fatalf("expected cookie value %q, got %q", "none", cookies[0].Value)
+	}
+}

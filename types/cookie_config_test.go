@@ -8,24 +8,24 @@ import (
 func TestWithSecure(t *testing.T) {
 	cfg := &CookieConfig{}
 	WithSecure(true)(cfg)
-	if !cfg.Secure {
-		t.Fatal("expected Secure to be true")
+	if cfg.Secure != CookieSecure {
+		t.Fatalf("expected Secure %q, got %q", CookieSecure, cfg.Secure)
 	}
 	WithSecure(false)(cfg)
-	if cfg.Secure {
-		t.Fatal("expected Secure to be false")
+	if cfg.Secure != CookieInsecure {
+		t.Fatalf("expected Secure %q, got %q", CookieInsecure, cfg.Secure)
 	}
 }
 
 func TestWithHttpOnly(t *testing.T) {
 	cfg := &CookieConfig{}
 	WithHttpOnly(true)(cfg)
-	if !cfg.HttpOnly {
-		t.Fatal("expected HttpOnly to be true")
+	if cfg.HttpOnly != CookieHttpOnly {
+		t.Fatalf("expected HttpOnly %q, got %q", CookieHttpOnly, cfg.HttpOnly)
 	}
 	WithHttpOnly(false)(cfg)
-	if cfg.HttpOnly {
-		t.Fatal("expected HttpOnly to be false")
+	if cfg.HttpOnly != CookieHttpWritable {
+		t.Fatalf("expected HttpOnly %q, got %q", CookieHttpWritable, cfg.HttpOnly)
 	}
 }
 
@@ -68,8 +68,8 @@ func TestWithPath(t *testing.T) {
 func TestWithCookieConfig(t *testing.T) {
 	cfg := &CookieConfig{}
 	replacement := CookieConfig{
-		HttpOnly: true,
-		Secure:   true,
+		HttpOnly: CookieHttpOnly,
+		Secure:   CookieSecure,
 		SameSite: http.SameSiteStrictMode,
 		MaxAge:   7200,
 		Domain:   "test.com",
@@ -93,5 +93,39 @@ func TestWithCookieConfig(t *testing.T) {
 	}
 	if cfg.Path != replacement.Path {
 		t.Fatal("expected Path to match replacement")
+	}
+}
+
+func TestResolveSecure(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		{CookieUnset, true},
+		{CookieSecure, true},
+		{CookieInsecure, false},
+		{"", true},
+	}
+	for _, tc := range tests {
+		if got := ResolveSecure(tc.input); got != tc.expected {
+			t.Fatalf("ResolveSecure(%q) = %v, want %v", tc.input, got, tc.expected)
+		}
+	}
+}
+
+func TestResolveHttpOnly(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		{CookieUnset, true},
+		{CookieHttpOnly, true},
+		{CookieHttpWritable, false},
+		{"", true},
+	}
+	for _, tc := range tests {
+		if got := ResolveHttpOnly(tc.input); got != tc.expected {
+			t.Fatalf("ResolveHttpOnly(%q) = %v, want %v", tc.input, got, tc.expected)
+		}
 	}
 }

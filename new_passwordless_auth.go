@@ -26,10 +26,32 @@ func NewPasswordlessAuth(config types.ConfigPasswordless) (types.AuthPasswordles
 	auth.urlRedirectOnSuccess = config.UrlRedirectOnSuccess
 	auth.useCookies = config.UseCookies
 	auth.useLocalStorage = config.UseLocalStorage
+	auth.cookieConfig = defaultCookieConfig()
 	if config.CookieConfig != nil {
-		auth.cookieConfig = *config.CookieConfig
-	} else {
-		auth.cookieConfig = defaultCookieConfig()
+		if config.CookieConfig.Name != "" {
+			auth.cookieConfig.Name = config.CookieConfig.Name
+		}
+		if config.CookieConfig.HttpOnly != "" {
+			auth.cookieConfig.HttpOnly = config.CookieConfig.HttpOnly
+		}
+		if config.CookieConfig.Secure != "" {
+			auth.cookieConfig.Secure = config.CookieConfig.Secure
+		}
+		if config.CookieConfig.SameSite != 0 {
+			auth.cookieConfig.SameSite = config.CookieConfig.SameSite
+		}
+		if config.CookieConfig.MaxAge > 0 {
+			auth.cookieConfig.MaxAge = config.CookieConfig.MaxAge
+		}
+		if config.CookieConfig.Domain != "" {
+			auth.cookieConfig.Domain = config.CookieConfig.Domain
+		}
+		if config.CookieConfig.Path != "" {
+			auth.cookieConfig.Path = config.CookieConfig.Path
+		}
+	}
+	if auth.cookieConfig.Name != "" {
+		auth.cookieName = auth.cookieConfig.Name
 	}
 	auth.funcLayout = config.FuncLayout
 	if auth.funcLayout == nil {

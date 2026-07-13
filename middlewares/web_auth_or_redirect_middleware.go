@@ -20,7 +20,7 @@ import (
 func WebAuthOrRedirectMiddleware(next http.Handler, a types.AuthSharedInterface) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		authToken := utils.AuthTokenRetrieve(r, a.GetUseCookies())
+		authToken := utils.AuthTokenRetrieveWithName(r, a.GetUseCookies(), a.GetCookieName())
 
 		if authToken == "" {
 			http.Redirect(w, r, a.LinkLogin(), http.StatusTemporaryRedirect)

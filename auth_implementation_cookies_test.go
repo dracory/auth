@@ -5,6 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/dracory/auth/types"
 )
 
 func TestSetAuthCookie_UsesDefaultConfigWhenZero(t *testing.T) {
@@ -54,8 +56,8 @@ func TestSetAuthCookie_UsesCustomConfig(t *testing.T) {
 
 	a := authImplementation{
 		cookieConfig: CookieConfig{
-			HttpOnly: false,
-			Secure:   true,
+			HttpOnly: types.CookieHttpWritable,
+			Secure:   types.CookieSecure,
 			SameSite: http.SameSiteStrictMode,
 			MaxAge:   600,
 			Domain:   "example.com",
@@ -108,8 +110,8 @@ func TestRemoveAuthCookie_UsesCustomConfig(t *testing.T) {
 
 	a := authImplementation{
 		cookieConfig: CookieConfig{
-			HttpOnly: true,
-			Secure:   true,
+			HttpOnly: types.CookieHttpOnly,
+			Secure:   types.CookieSecure,
 			SameSite: http.SameSiteStrictMode,
 			Domain:   "example.com",
 			Path:     "/auth",
@@ -164,8 +166,8 @@ func TestSetAuthCookie_SecureRespectedBehindReverseProxy(t *testing.T) {
 
 	a := authImplementation{
 		cookieConfig: CookieConfig{
-			HttpOnly: true,
-			Secure:   true,
+			HttpOnly: types.CookieHttpOnly,
+			Secure:   types.CookieSecure,
 			SameSite: http.SameSiteLaxMode,
 			MaxAge:   3600,
 			Path:     "/",
@@ -196,8 +198,8 @@ func TestRemoveAuthCookie_SecureRespectedBehindReverseProxy(t *testing.T) {
 
 	a := authImplementation{
 		cookieConfig: CookieConfig{
-			HttpOnly: true,
-			Secure:   true,
+			HttpOnly: types.CookieHttpOnly,
+			Secure:   types.CookieSecure,
 			SameSite: http.SameSiteLaxMode,
 			Path:     "/",
 		},

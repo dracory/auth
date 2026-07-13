@@ -87,7 +87,7 @@ func ApiLogoutWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthShare
 	deps := Dependencies{
 		UseCookies: a.GetUseCookies(),
 		AuthTokenRetrieve: func(r *http.Request, useCookies bool) string {
-			return utils.AuthTokenRetrieve(r, useCookies)
+			return utils.AuthTokenRetrieveWithName(r, useCookies, a.GetCookieName())
 		},
 		RemoveAuthCookie: func(w http.ResponseWriter, r *http.Request) {
 			a.RemoveAuthCookie(w, r)

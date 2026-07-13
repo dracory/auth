@@ -62,6 +62,9 @@ type AuthSharedInterface interface {
 	GetUseCookies() bool
 	SetUseCookies(useCookies bool)
 
+	GetCookieName() string
+	SetCookieName(name string)
+
 	GetFuncUserFindByAuthToken() func(ctx context.Context, token string, options UserAuthOptions) (userID string, err error)
 	SetFuncUserFindByAuthToken(fn func(ctx context.Context, token string, options UserAuthOptions) (userID string, err error))
 

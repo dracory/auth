@@ -51,8 +51,10 @@ func (m *mockAuthShared) GetFuncTemporaryKeySet() func(key string, value string,
 }
 func (m *mockAuthShared) SetFuncTemporaryKeySet(func(key string, value string, expiresSeconds int) error) {
 }
-func (m *mockAuthShared) GetUseCookies() bool { return m.useCookies }
-func (m *mockAuthShared) SetUseCookies(bool)  {}
+func (m *mockAuthShared) GetUseCookies() bool   { return m.useCookies }
+func (m *mockAuthShared) SetUseCookies(bool)    {}
+func (m *mockAuthShared) GetCookieName() string { return "authtoken" }
+func (m *mockAuthShared) SetCookieName(string)  {}
 func (m *mockAuthShared) GetFuncUserFindByAuthToken() func(ctx context.Context, token string, options types.UserAuthOptions) (string, error) {
 	return m.userFindByAuthToken
 }

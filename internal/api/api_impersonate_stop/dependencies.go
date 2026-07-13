@@ -14,6 +14,7 @@ type Dependencies struct {
 	TemporaryKeyGet     func(key string) (string, error)
 	TemporaryKeySet     func(key string, value string, expiresSeconds int) error
 	UseCookies          bool
+	CookieName          string
 	SetAuthCookie       func(w http.ResponseWriter, r *http.Request, token string)
 	ObservabilityHooks  types.ObservabilityHooks
 	ImpersonationStop   func(ctx context.Context, adminUserID string, targetUserID string) error

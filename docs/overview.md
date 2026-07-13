@@ -259,21 +259,21 @@ type ConfigUsernameAndPassword struct {
 
 Both constructors accept an optional `CookieConfig` pointer to control the session cookie attributes. If omitted, the library uses secure defaults:
 
-- `HttpOnly: true`
-- `Secure: true`
+- `HttpOnly: types.CookieHttpOnly` (true)
+- `Secure: types.CookieSecure` (true)
 - `SameSite: Lax`
 - `Path: "/"`
 - `MaxAge: 7200` (2 hours)
 
-For local development over plain HTTP, use `CookieConfig` to override `Secure`. Note that `CookieConfig` is a complete replacement of the default config, so set all fields you care about:
+For local development over plain HTTP, use `CookieConfig` to override `Secure`. Unset string fields (`""`) fall back to secure defaults, so you only need to set what you want to override:
 
 ```go
 authInstance, err := auth.NewPasswordlessAuth(types.ConfigPasswordless{
     Endpoint:     "/auth",
     UseCookies:   true,
     CookieConfig: &types.CookieConfig{
-        HttpOnly: true,
-        Secure:   false,
+        HttpOnly: types.CookieHttpOnly,
+        Secure:   types.CookieInsecure,
         SameSite: http.SameSiteLaxMode,
         MaxAge:   2 * 60 * 60,
         Path:     "/",

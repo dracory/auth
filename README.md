@@ -468,8 +468,8 @@ FuncLayout: customPageLayout,
 
 When using cookies, the library defaults to secure settings:
 
-- `HttpOnly: true`
-- `Secure: true`
+- `HttpOnly: types.CookieHttpOnly` (true)
+- `Secure: types.CookieSecure` (true)
 - `SameSite: Lax`
 - `Path: "/"`
 - `MaxAge: 7200` (2 hours)
@@ -503,8 +503,8 @@ If you already have a complete `CookieConfig`, use `WithCookieConfig` to replace
 
 ```go
 cfg := types.CookieConfig{
-    HttpOnly: true,
-    Secure:   false,
+    HttpOnly: types.CookieHttpOnly,
+    Secure:   types.CookieInsecure, // for local dev; use types.CookieSecure in production
     SameSite: http.SameSiteLaxMode,
     MaxAge:   2 * 60 * 60,
     Path:     "/",
@@ -514,15 +514,15 @@ auth.AuthCookieSet(w, r, token, types.WithCookieConfig(cfg))
 auth.AuthCookieRemove(w, r, types.WithCookieConfig(cfg))
 ```
 
-The same `CookieConfig` can also be configured once when creating the auth instance. Note that `CookieConfig` is a **complete replacement** of the default config, so set all fields you care about:
+The same `CookieConfig` can also be configured once when creating the auth instance. Unset string fields (`""`) fall back to secure defaults, so you only need to set what you want to override:
 
 ```go
 authInstance, err := auth.NewPasswordlessAuth(types.ConfigPasswordless{
     Endpoint:     "/auth",
     UseCookies:   true,
     CookieConfig: &types.CookieConfig{
-        HttpOnly: true,
-        Secure:   false, // for local dev; use true in production
+        HttpOnly: types.CookieHttpOnly,
+        Secure:   types.CookieInsecure, // for local dev; use types.CookieSecure in production
         SameSite: http.SameSiteLaxMode,
         MaxAge:   2 * 60 * 60,
         Path:     "/",

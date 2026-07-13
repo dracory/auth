@@ -71,3 +71,23 @@ func TestAuthTokenRetrieve_ReturnsEmptyWhenNoSources(t *testing.T) {
 		t.Fatalf("expected empty token, got %q", token)
 	}
 }
+
+func TestAuthTokenRetrieveWithName_CustomCookieName(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "http://example.com/", nil)
+	req.AddCookie(&http.Cookie{Name: "custom-auth", Value: "custom-cookie-token"})
+
+	token := AuthTokenRetrieveWithName(req, true, "custom-auth")
+	if token != "custom-cookie-token" {
+		t.Fatalf("expected token %q, got %q", "custom-cookie-token", token)
+	}
+}
+
+func TestAuthTokenRetrieveWithName_FallsBackToDefault(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "http://example.com/", nil)
+	req.AddCookie(&http.Cookie{Name: types.CookieName, Value: "default-cookie-token"})
+
+	token := AuthTokenRetrieveWithName(req, true, "")
+	if token != "default-cookie-token" {
+		t.Fatalf("expected token %q, got %q", "default-cookie-token", token)
+	}
+}

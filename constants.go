@@ -16,10 +16,10 @@ type AuthenticatedUserID struct{}
 
 type CookieConfig = authtypes.CookieConfig
 
+var CookieName = "authtoken"
+
 const (
 	keyEndpoint = contextKey("endpoint")
-
-	CookieName = "authtoken"
 
 	// PathApiLogin contains the path to api login endpoint
 	PathApiLogin string = "api/login"

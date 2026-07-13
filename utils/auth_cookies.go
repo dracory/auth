@@ -24,7 +24,14 @@ func AuthCookieRemove(w http.ResponseWriter, r *http.Request, opts ...types.Cook
 }
 
 func AuthCookieGet(r *http.Request) string {
-	cookie, err := r.Cookie(types.CookieName)
+	return AuthCookieGetWithName(r, types.CookieName)
+}
+
+func AuthCookieGetWithName(r *http.Request, cookieName string) string {
+	if cookieName == "" {
+		cookieName = types.CookieName
+	}
+	cookie, err := r.Cookie(cookieName)
 
 	if err != nil {
 

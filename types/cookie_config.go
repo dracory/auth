@@ -3,26 +3,55 @@ package types
 import "net/http"
 
 type CookieConfig struct {
-	HttpOnly bool
-	Secure   bool
+	Name     string
+	HttpOnly string
+	Secure   string
 	SameSite http.SameSite
 	MaxAge   int
 	Domain   string
 	Path     string
 }
 
+const (
+	CookieUnset        = ""
+	CookieSecure       = "secure"
+	CookieInsecure     = "insecure"
+	CookieHttpOnly     = "httponly"
+	CookieHttpWritable = "httpwritable"
+)
+
+func ResolveSecure(s string) bool {
+	return s != CookieInsecure
+}
+
+func ResolveHttpOnly(s string) bool {
+	return s != CookieHttpWritable
+}
+
 // CookieOption customizes a CookieConfig by mutating it.
 // Options are applied on top of the default config.
 type CookieOption func(*CookieConfig)
 
-// WithSecure sets the Secure flag.
+// WithSecure sets the Secure flag. Pass true for CookieSecure, false for CookieInsecure.
 func WithSecure(secure bool) CookieOption {
-	return func(c *CookieConfig) { c.Secure = secure }
+	return func(c *CookieConfig) {
+		if secure {
+			c.Secure = CookieSecure
+		} else {
+			c.Secure = CookieInsecure
+		}
+	}
 }
 
-// WithHttpOnly sets the HttpOnly flag.
+// WithHttpOnly sets the HttpOnly flag. Pass true for CookieHttpOnly, false for CookieHttpWritable.
 func WithHttpOnly(httpOnly bool) CookieOption {
-	return func(c *CookieConfig) { c.HttpOnly = httpOnly }
+	return func(c *CookieConfig) {
+		if httpOnly {
+			c.HttpOnly = CookieHttpOnly
+		} else {
+			c.HttpOnly = CookieHttpWritable
+		}
+	}
 }
 
 // WithSameSite sets the SameSite attribute.
@@ -49,4 +78,9 @@ func WithPath(path string) CookieOption {
 // Use this when you already have a complete CookieConfig.
 func WithCookieConfig(cfg CookieConfig) CookieOption {
 	return func(c *CookieConfig) { *c = cfg }
+}
+
+// WithCookieName sets the cookie name.
+func WithCookieName(name string) CookieOption {
+	return func(c *CookieConfig) { c.Name = name }
 }

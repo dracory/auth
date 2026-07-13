@@ -16,7 +16,7 @@ func ApiImpersonateStop(w http.ResponseWriter, r *http.Request, deps Dependencie
 		logger = slog.Default()
 	}
 
-	currentAuthToken := utils.AuthTokenRetrieve(r, deps.UseCookies)
+	currentAuthToken := utils.AuthTokenRetrieveWithName(r, deps.UseCookies, deps.CookieName)
 	if currentAuthToken == "" {
 		api.Respond(w, r, api.Error(types.MsgNotImpersonating))
 		return
@@ -94,6 +94,7 @@ func ApiImpersonateStopWithAuth(w http.ResponseWriter, r *http.Request, a types.
 		TemporaryKeyGet:     a.GetFuncTemporaryKeyGet(),
 		TemporaryKeySet:     a.GetFuncTemporaryKeySet(),
 		UseCookies:          a.GetUseCookies(),
+		CookieName:          a.GetCookieName(),
 		ObservabilityHooks:  a.GetObservabilityHooks(),
 		ImpersonationStop:   a.GetFuncImpersonationStop(),
 		Logger:              a.GetLogger(),

@@ -70,6 +70,10 @@ func (a *authSharedTest) GetUseCookies() bool { return a.useCookies }
 
 func (a *authSharedTest) SetUseCookies(useCookies bool) { a.useCookies = useCookies }
 
+func (a *authSharedTest) GetCookieName() string { return "authtoken" }
+
+func (a *authSharedTest) SetCookieName(name string) {}
+
 func (a *authSharedTest) GetFuncTemporaryKeyGet() func(key string) (string, error) {
 	return a.temporaryKeyGet
 }

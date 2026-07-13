@@ -6,16 +6,22 @@ import (
 	"github.com/dracory/req"
 )
 
-// authTokenRetrieve retrieves the auth token from the request
+// AuthTokenRetrieve retrieves the auth token from the request using the default cookie name.
 // Several attempts are made:
 //  1. From cookie
 //  2. Authorization header (aka Bearer token)
 //  3. Request param "api_key"
 //  4. Request param "token"
 func AuthTokenRetrieve(r *http.Request, useCookies bool) string {
+	return AuthTokenRetrieveWithName(r, useCookies, "")
+}
+
+// AuthTokenRetrieveWithName retrieves the auth token from the request using the provided cookie name.
+// If cookieName is empty, the default types.CookieName is used.
+func AuthTokenRetrieveWithName(r *http.Request, useCookies bool, cookieName string) string {
 	// 1. Token from cookie
 	if useCookies {
-		return AuthCookieGet(r)
+		return AuthCookieGetWithName(r, cookieName)
 	}
 
 	// 2. Bearer token

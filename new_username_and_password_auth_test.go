@@ -272,6 +272,87 @@ func TestNewUsernameAndPasswordAuth_UseCookiesAndLocalStorageCannotBeBothTruee(t
 	}
 }
 
+func TestNewUsernameAndPasswordAuth_CookieConfigName(t *testing.T) {
+	auth, err := NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
+		Endpoint:             "/auth",
+		UrlRedirectOnSuccess: "/user",
+		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
+		FuncTemporaryKeySet:  func(key, value string, expiresSeconds int) (err error) { return nil },
+		FuncUserFindByAuthToken: func(ctx context.Context, sessionID string, options types.UserAuthOptions) (userID string, err error) {
+			return "", nil
+		},
+		FuncUserFindByUsername: func(ctx context.Context, username, firstName, lastName string, options types.UserAuthOptions) (userID string, err error) {
+			return "", nil
+		},
+		FuncUserLogin: func(ctx context.Context, username, password string, options types.UserAuthOptions) (userID string, err error) {
+			return "", nil
+		},
+		FuncUserLogout:         func(ctx context.Context, userID string, options types.UserAuthOptions) (err error) { return nil },
+		FuncUserStoreAuthToken: func(ctx context.Context, sessionID, userID string, options types.UserAuthOptions) error { return nil },
+		FuncEmailSend:          func(ctx context.Context, email, emailSubject, emailBody string) (err error) { return nil },
+		UseCookies:             true,
+		CookieConfig: &types.CookieConfig{
+			Name: "custom-auth",
+		},
+	})
+	if err != nil {
+		t.Fatal("Error SHOULD BE NULL, but found ", "'"+err.Error()+"'")
+	}
+	if auth.GetCookieName() != "custom-auth" {
+		t.Fatalf("expected cookie name %q, got %q", "custom-auth", auth.GetCookieName())
+	}
+
+	concrete, ok := auth.(*authImplementation)
+	if !ok {
+		t.Fatal("expected *authImplementation concrete type")
+	}
+	if !types.ResolveHttpOnly(concrete.cookieConfig.HttpOnly) {
+		t.Fatal("expected HttpOnly to be true when only CookieConfig.Name is set")
+	}
+	if !types.ResolveSecure(concrete.cookieConfig.Secure) {
+		t.Fatal("expected Secure to be true when only CookieConfig.Name is set")
+	}
+}
+
+func TestNewUsernameAndPasswordAuth_CookieConfigInsecure(t *testing.T) {
+	auth, err := NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
+		Endpoint:             "/auth",
+		UrlRedirectOnSuccess: "/user",
+		FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
+		FuncTemporaryKeySet:  func(key, value string, expiresSeconds int) (err error) { return nil },
+		FuncUserFindByAuthToken: func(ctx context.Context, sessionID string, options types.UserAuthOptions) (userID string, err error) {
+			return "", nil
+		},
+		FuncUserFindByUsername: func(ctx context.Context, username, firstName, lastName string, options types.UserAuthOptions) (userID string, err error) {
+			return "", nil
+		},
+		FuncUserLogin: func(ctx context.Context, username, password string, options types.UserAuthOptions) (userID string, err error) {
+			return "", nil
+		},
+		FuncUserLogout:         func(ctx context.Context, userID string, options types.UserAuthOptions) (err error) { return nil },
+		FuncUserStoreAuthToken: func(ctx context.Context, sessionID, userID string, options types.UserAuthOptions) error { return nil },
+		FuncEmailSend:          func(ctx context.Context, email, emailSubject, emailBody string) (err error) { return nil },
+		UseCookies:             true,
+		CookieConfig: &types.CookieConfig{
+			Name:   "custom-auth",
+			Secure: types.CookieInsecure,
+		},
+	})
+	if err != nil {
+		t.Fatal("Error SHOULD BE NULL, but found ", "'"+err.Error()+"'")
+	}
+	concrete, ok := auth.(*authImplementation)
+	if !ok {
+		t.Fatal("expected *authImplementation concrete type")
+	}
+	if types.ResolveSecure(concrete.cookieConfig.Secure) {
+		t.Fatal("expected Secure to be false when CookieConfig.Secure is CookieInsecure")
+	}
+	if !types.ResolveHttpOnly(concrete.cookieConfig.HttpOnly) {
+		t.Fatal("expected HttpOnly to remain true when only Secure is overridden")
+	}
+}
+
 func TestNewUsernameAndPasswordAuth_CSRFSecretRequiredWhenEnabled(t *testing.T) {
 	_, err := NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
 		Endpoint:             "/auth",
