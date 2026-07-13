@@ -209,3 +209,62 @@ func TestApiLoginCodeVerifySuccess(t *testing.T) {
 		t.Fatalf("expected token in response, got %q", body)
 	}
 }
+
+func TestLoginCodeVerifyError_Error(t *testing.T) {
+	var e *LoginCodeVerifyError
+	if e.Error() != "" {
+		t.Fatalf("expected empty string for nil receiver, got %q", e.Error())
+	}
+
+	e = &LoginCodeVerifyError{Message: "custom message"}
+	if e.Error() != "custom message" {
+		t.Fatalf("expected 'custom message', got %q", e.Error())
+	}
+
+	e = &LoginCodeVerifyError{Err: errors.New("inner error")}
+	if e.Error() != "inner error" {
+		t.Fatalf("expected 'inner error', got %q", e.Error())
+	}
+
+	e = &LoginCodeVerifyError{Code: "some_code"}
+	if e.Error() != "some_code" {
+		t.Fatalf("expected 'some_code', got %q", e.Error())
+	}
+}
+
+func TestApiLoginCodeVerifyNilTemporaryKeyGet(t *testing.T) {
+	deps := Dependencies{
+		TemporaryKeyGet: nil,
+	}
+
+	values := url.Values{
+		"verification_code": {"BCDFGHJK"},
+	}
+	recorder, req := makePostRequest(t, "/api/login-code-verify", values)
+	ApiLoginCodeVerify(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "Verification code has expired") {
+		t.Fatalf("expected expired message, got %q", body)
+	}
+}
+
+func TestApiLoginCodeVerifyNilAuthenticateViaUsername(t *testing.T) {
+	deps := Dependencies{
+		TemporaryKeyGet: func(key string) (string, error) {
+			return "user@example.com", nil
+		},
+		AuthenticateViaUsername: nil,
+	}
+
+	values := url.Values{
+		"verification_code": {"BCDFGHJK"},
+	}
+	recorder, req := makePostRequest(t, "/api/login-code-verify", values)
+	ApiLoginCodeVerify(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "Failed to process request") {
+		t.Fatalf("expected failed to process, got %q", body)
+	}
+}

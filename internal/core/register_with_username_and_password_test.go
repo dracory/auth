@@ -2,6 +2,7 @@ package core_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -103,4 +104,155 @@ func TestCoreRegisterWithUsernameAndPassword_VerificationEnabled_Success(t *test
 // used by the internal testutils helper. This relies on the concrete type used there.
 func SetVerificationForTest(a types.AuthSharedInterface, verification bool) {
 	testutils.SetVerificationForTest(a, verification)
+}
+
+func TestCoreRegisterWithUsernameAndPassword_ValidationErrors(t *testing.T) {
+	a := newPasswordAuthForRegisterTest(t)
+
+	resp := core.RegisterWithUsernameAndPassword(context.Background(), "", "pass", "", "", types.UserAuthOptions{}, a, time.Hour)
+	if resp.ErrorMessage != "First name is required field" {
+		t.Fatalf("expected first name required, got %q", resp.ErrorMessage)
+	}
+
+	resp = core.RegisterWithUsernameAndPassword(context.Background(), "", "pass", "John", "", types.UserAuthOptions{}, a, time.Hour)
+	if resp.ErrorMessage != "Last name is required field" {
+		t.Fatalf("expected last name required, got %q", resp.ErrorMessage)
+	}
+
+	resp = core.RegisterWithUsernameAndPassword(context.Background(), "", "pass", "John", "Doe", types.UserAuthOptions{}, a, time.Hour)
+	if resp.ErrorMessage != "Email is required field" {
+		t.Fatalf("expected email required, got %q", resp.ErrorMessage)
+	}
+
+	resp = core.RegisterWithUsernameAndPassword(context.Background(), "test@test.com", "", "John", "Doe", types.UserAuthOptions{}, a, time.Hour)
+	if resp.ErrorMessage != "Password is required field" {
+		t.Fatalf("expected password required, got %q", resp.ErrorMessage)
+	}
+}
+
+func TestCoreRegisterWithUsernameAndPassword_PasswordStrengthError(t *testing.T) {
+	a := newPasswordAuthForRegisterTest(t)
+	a.SetPasswordStrength(&types.PasswordStrengthConfig{MinLength: 20})
+
+	resp := core.RegisterWithUsernameAndPassword(context.Background(), "test@test.com", "short", "John", "Doe", types.UserAuthOptions{}, a, time.Hour)
+	if resp.ErrorMessage == "" {
+		t.Fatalf("expected password strength error, got empty")
+	}
+}
+
+func TestCoreRegisterWithUsernameAndPassword_InvalidEmail(t *testing.T) {
+	a := newPasswordAuthForRegisterTest(t)
+	a.SetPasswordStrength(&types.PasswordStrengthConfig{MinLength: 4})
+
+	resp := core.RegisterWithUsernameAndPassword(context.Background(), "invalid-email", "pass", "John", "Doe", types.UserAuthOptions{}, a, time.Hour)
+	if resp.ErrorMessage == "" {
+		t.Fatalf("expected invalid email error, got empty")
+	}
+}
+
+func TestCoreRegisterWithUsernameAndPassword_NilRegisterFn(t *testing.T) {
+	a := newPasswordAuthForRegisterTest(t)
+	a.SetPasswordStrength(&types.PasswordStrengthConfig{MinLength: 4})
+	a.SetFuncUserRegister(nil)
+
+	resp := core.RegisterWithUsernameAndPassword(context.Background(), "test@test.com", "pass", "John", "Doe", types.UserAuthOptions{}, a, time.Hour)
+	if resp.ErrorMessage == "" {
+		t.Fatalf("expected error for nil register fn, got empty")
+	}
+}
+
+func TestCoreRegisterWithUsernameAndPassword_RegisterError(t *testing.T) {
+	a := newPasswordAuthForRegisterTest(t)
+	a.SetPasswordStrength(&types.PasswordStrengthConfig{MinLength: 4})
+	a.SetFuncUserRegister(func(ctx context.Context, email, password, firstName, lastName string, options types.UserAuthOptions) error {
+		return errors.New("db error")
+	})
+
+	resp := core.RegisterWithUsernameAndPassword(context.Background(), "test@test.com", "pass", "John", "Doe", types.UserAuthOptions{}, a, time.Hour)
+	if resp.ErrorMessage == "" {
+		t.Fatalf("expected register error, got empty")
+	}
+}
+
+func TestCoreRegisterWithUsernameAndPassword_VerificationTempKeySetError(t *testing.T) {
+	a := newPasswordAuthForRegisterTest(t)
+	a.SetPasswordStrength(&types.PasswordStrengthConfig{MinLength: 4})
+	SetVerificationForTest(a, true)
+
+	a.SetFuncUserRegister(func(ctx context.Context, email, password, firstName, lastName string, options types.UserAuthOptions) error {
+		return nil
+	})
+	a.SetFuncTemporaryKeySet(func(key string, value string, expiresSeconds int) error {
+		return errors.New("db error")
+	})
+
+	resp := core.RegisterWithUsernameAndPassword(context.Background(), "test@test.com", "pass", "John", "Doe", types.UserAuthOptions{}, a, time.Hour)
+	if resp.ErrorMessage != "Failed to process request. Please try again later" {
+		t.Fatalf("expected failed to process, got %q", resp.ErrorMessage)
+	}
+}
+
+func TestCoreRegisterWithUsernameAndPassword_VerificationNilEmailTemplate(t *testing.T) {
+	a := newPasswordAuthForRegisterTest(t)
+	a.SetPasswordStrength(&types.PasswordStrengthConfig{MinLength: 4})
+	SetVerificationForTest(a, true)
+
+	a.SetFuncUserRegister(func(ctx context.Context, email, password, firstName, lastName string, options types.UserAuthOptions) error {
+		return nil
+	})
+	a.SetFuncTemporaryKeySet(func(key string, value string, expiresSeconds int) error {
+		return nil
+	})
+	a.SetFuncEmailTemplateRegisterCode(nil)
+
+	resp := core.RegisterWithUsernameAndPassword(context.Background(), "test@test.com", "pass", "John", "Doe", types.UserAuthOptions{}, a, time.Hour)
+	if resp.ErrorMessage == "" {
+		t.Fatalf("expected error for nil email template, got empty")
+	}
+}
+
+func TestCoreRegisterWithUsernameAndPassword_VerificationNilEmailSend(t *testing.T) {
+	a := newPasswordAuthForRegisterTest(t)
+	a.SetPasswordStrength(&types.PasswordStrengthConfig{MinLength: 4})
+	SetVerificationForTest(a, true)
+
+	a.SetFuncUserRegister(func(ctx context.Context, email, password, firstName, lastName string, options types.UserAuthOptions) error {
+		return nil
+	})
+	a.SetFuncTemporaryKeySet(func(key string, value string, expiresSeconds int) error {
+		return nil
+	})
+	a.SetFuncEmailTemplateRegisterCode(func(ctx context.Context, email string, code string, options types.UserAuthOptions) string {
+		return "body"
+	})
+	a.SetFuncEmailSend(nil)
+
+	resp := core.RegisterWithUsernameAndPassword(context.Background(), "test@test.com", "pass", "John", "Doe", types.UserAuthOptions{}, a, time.Hour)
+	if resp.ErrorMessage == "" {
+		t.Fatalf("expected error for nil email send, got empty")
+	}
+}
+
+func TestCoreRegisterWithUsernameAndPassword_VerificationEmailSendError(t *testing.T) {
+	a := newPasswordAuthForRegisterTest(t)
+	a.SetPasswordStrength(&types.PasswordStrengthConfig{MinLength: 4})
+	SetVerificationForTest(a, true)
+
+	a.SetFuncUserRegister(func(ctx context.Context, email, password, firstName, lastName string, options types.UserAuthOptions) error {
+		return nil
+	})
+	a.SetFuncTemporaryKeySet(func(key string, value string, expiresSeconds int) error {
+		return nil
+	})
+	a.SetFuncEmailTemplateRegisterCode(func(ctx context.Context, email string, code string, options types.UserAuthOptions) string {
+		return "body"
+	})
+	a.SetFuncEmailSend(func(ctx context.Context, userID string, subject string, body string) error {
+		return errors.New("smtp error")
+	})
+
+	resp := core.RegisterWithUsernameAndPassword(context.Background(), "test@test.com", "pass", "John", "Doe", types.UserAuthOptions{}, a, time.Hour)
+	if resp.ErrorMessage != "Failed to send email. Please try again later" {
+		t.Fatalf("expected failed to send email, got %q", resp.ErrorMessage)
+	}
 }

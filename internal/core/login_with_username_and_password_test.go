@@ -2,6 +2,7 @@ package core_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/dracory/auth/internal/core"
@@ -70,5 +71,48 @@ func TestCoreLoginWithUsernameAndPassword_Success(t *testing.T) {
 	}
 	if storedUserID != "user123" {
 		t.Fatalf("expected stored userID 'user123', got %q", storedUserID)
+	}
+}
+
+func TestCoreLoginWithUsernameAndPassword_LoginError(t *testing.T) {
+	a := newPasswordAuthForLoginTest(t)
+
+	a.SetFuncUserLogin(func(ctx context.Context, email, password string, options types.UserAuthOptions) (string, error) {
+		return "", errors.New("invalid credentials")
+	})
+
+	resp := core.LoginWithUsernameAndPassword(context.Background(), a, "test@test.com", "password", types.UserAuthOptions{})
+	if resp.ErrorMessage != "Invalid credentials" {
+		t.Fatalf("expected 'Invalid credentials', got %q", resp.ErrorMessage)
+	}
+}
+
+func TestCoreLoginWithUsernameAndPassword_EmptyUserID(t *testing.T) {
+	a := newPasswordAuthForLoginTest(t)
+
+	a.SetFuncUserLogin(func(ctx context.Context, email, password string, options types.UserAuthOptions) (string, error) {
+		return "", nil
+	})
+
+	resp := core.LoginWithUsernameAndPassword(context.Background(), a, "test@test.com", "password", types.UserAuthOptions{})
+	if resp.ErrorMessage != "Invalid credentials" {
+		t.Fatalf("expected 'Invalid credentials', got %q", resp.ErrorMessage)
+	}
+}
+
+func TestCoreLoginWithUsernameAndPassword_TokenStoreError(t *testing.T) {
+	a := newPasswordAuthForLoginTest(t)
+
+	a.SetFuncUserLogin(func(ctx context.Context, email, password string, options types.UserAuthOptions) (string, error) {
+		return "user123", nil
+	})
+
+	a.SetFuncUserStoreAuthToken(func(ctx context.Context, token, userID string, options types.UserAuthOptions) error {
+		return errors.New("db error")
+	})
+
+	resp := core.LoginWithUsernameAndPassword(context.Background(), a, "test@test.com", "password", types.UserAuthOptions{})
+	if resp.ErrorMessage != "Failed to process request. Please try again later" {
+		t.Fatalf("expected token store error, got %q", resp.ErrorMessage)
 	}
 }

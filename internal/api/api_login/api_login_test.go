@@ -314,3 +314,161 @@ func TestApiLoginPasswordlessSuccess(t *testing.T) {
 		t.Fatalf("expected success message, got %q", body)
 	}
 }
+
+func TestLoginPasswordlessError_Error(t *testing.T) {
+	var e *LoginPasswordlessError
+	if e.Error() != "" {
+		t.Fatalf("expected empty string for nil receiver, got %q", e.Error())
+	}
+
+	e = &LoginPasswordlessError{Message: "custom message"}
+	if e.Error() != "custom message" {
+		t.Fatalf("expected 'custom message', got %q", e.Error())
+	}
+
+	e = &LoginPasswordlessError{Err: errors.New("inner error")}
+	if e.Error() != "inner error" {
+		t.Fatalf("expected 'inner error', got %q", e.Error())
+	}
+
+	e = &LoginPasswordlessError{Code: "some_code"}
+	if e.Error() != "some_code" {
+		t.Fatalf("expected 'some_code', got %q", e.Error())
+	}
+}
+
+func TestApiLoginNilLoginWithUsernameAndPassword(t *testing.T) {
+	deps := Dependencies{
+		Passwordless:                 false,
+		LoginWithUsernameAndPassword: nil,
+	}
+
+	values := url.Values{
+		"email":    {"test@test.com"},
+		"password": {"1234"},
+	}
+	recorder, req := makePostRequest(t, "/api/login", values)
+	ApiLogin(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "Internal server error") {
+		t.Fatalf("expected internal server error, got %q", body)
+	}
+}
+
+func TestApiLoginSuccessWithCookies(t *testing.T) {
+	cookieSet := false
+	deps := Dependencies{
+		Passwordless: false,
+		UseCookies:   true,
+		LoginWithUsernameAndPassword: func(ctx context.Context, email, password, ip, userAgent string) (string, string, string) {
+			return "login success", "token-123", ""
+		},
+		SetAuthCookie: func(w http.ResponseWriter, r *http.Request, token string) {
+			cookieSet = true
+			if token != "token-123" {
+				t.Fatalf("expected token 'token-123', got %q", token)
+			}
+		},
+	}
+
+	values := url.Values{
+		"email":    {"test@test.com"},
+		"password": {"1234"},
+	}
+	recorder, req := makePostRequest(t, "/api/login", values)
+	ApiLogin(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, `"status":"success"`) {
+		t.Fatalf("expected success, got %q", body)
+	}
+	if !cookieSet {
+		t.Fatal("expected SetAuthCookie to be called")
+	}
+}
+
+func TestApiLoginPasswordlessNilEmailTemplateAndSend(t *testing.T) {
+	deps := Dependencies{
+		Passwordless: true,
+		PasswordlessDependencies: LoginPasswordlessDeps{
+			DisableRateLimit: false,
+			TemporaryKeySet: func(key string, value string, expiresSeconds int) error {
+				return nil
+			},
+			ExpiresSeconds: 3600,
+			EmailTemplate:  nil,
+			EmailSend:      nil,
+		},
+	}
+
+	values := url.Values{
+		"email": {"test@test.com"},
+	}
+	recorder, req := makePostRequest(t, "/api/login", values)
+	ApiLogin(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "Failed to send email") {
+		t.Fatalf("expected failed to send email, got %q", body)
+	}
+}
+
+func TestApiLoginPasswordlessNilTemporaryKeySet(t *testing.T) {
+	deps := Dependencies{
+		Passwordless: true,
+		PasswordlessDependencies: LoginPasswordlessDeps{
+			DisableRateLimit: false,
+			TemporaryKeySet:  nil,
+			ExpiresSeconds:   3600,
+			EmailTemplate: func(ctx context.Context, email string, code string) string {
+				return ""
+			},
+			EmailSend: func(ctx context.Context, email string, subject string, body string) error {
+				return nil
+			},
+		},
+	}
+
+	values := url.Values{
+		"email": {"test@test.com"},
+	}
+	recorder, req := makePostRequest(t, "/api/login", values)
+	ApiLogin(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "Failed to process request") {
+		t.Fatalf("expected failed to process request, got %q", body)
+	}
+}
+
+func TestApiLoginPasswordlessDefaultExpiration(t *testing.T) {
+	keySetExpires := 0
+	deps := Dependencies{
+		Passwordless: true,
+		PasswordlessDependencies: LoginPasswordlessDeps{
+			DisableRateLimit: false,
+			TemporaryKeySet: func(key string, value string, expiresSeconds int) error {
+				keySetExpires = expiresSeconds
+				return nil
+			},
+			ExpiresSeconds: 0,
+			EmailTemplate: func(ctx context.Context, email string, code string) string {
+				return ""
+			},
+			EmailSend: func(ctx context.Context, email string, subject string, body string) error {
+				return nil
+			},
+		},
+	}
+
+	values := url.Values{
+		"email": {"test@test.com"},
+	}
+	recorder, req := makePostRequest(t, "/api/login", values)
+	ApiLogin(recorder, req, deps)
+
+	if keySetExpires != 3600 {
+		t.Fatalf("expected default expiration 3600, got %d", keySetExpires)
+	}
+}

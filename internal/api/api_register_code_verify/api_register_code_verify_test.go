@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+
+	types "github.com/dracory/auth/types"
 )
 
 func makePostRequest(t *testing.T, path string, values url.Values) (*httptest.ResponseRecorder, *http.Request) {
@@ -276,5 +278,183 @@ func TestApiRegisterCodeVerifySuccess(t *testing.T) {
 	}
 	if !strings.Contains(body, "\"token\":\"") {
 		t.Fatalf("expected token in response, got %q", body)
+	}
+}
+
+func TestRegisterCodeVerifyError_Error(t *testing.T) {
+	var e *RegisterCodeVerifyError
+	if e.Error() != "" {
+		t.Fatalf("expected empty string for nil receiver, got %q", e.Error())
+	}
+
+	e = &RegisterCodeVerifyError{Message: "custom message"}
+	if e.Error() != "custom message" {
+		t.Fatalf("expected 'custom message', got %q", e.Error())
+	}
+
+	e = &RegisterCodeVerifyError{Err: errors.New("inner error")}
+	if e.Error() != "inner error" {
+		t.Fatalf("expected 'inner error', got %q", e.Error())
+	}
+
+	e = &RegisterCodeVerifyError{Code: "some_code"}
+	if e.Error() != "some_code" {
+		t.Fatalf("expected 'some_code', got %q", e.Error())
+	}
+}
+
+func TestApiRegisterCodeVerifyNilTemporaryKeyGet(t *testing.T) {
+	deps := Dependencies{
+		TemporaryKeyGet: nil,
+	}
+
+	values := url.Values{
+		"verification_code": {"BCDFGHJK"},
+	}
+	recorder, req := makePostRequest(t, "/api/register-code-verify", values)
+	ApiRegisterCodeVerify(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "\"status\":\"error\"") {
+		t.Fatalf("expected error status, got %q", body)
+	}
+}
+
+func TestApiRegisterCodeVerifyNilAuthenticateViaUsername(t *testing.T) {
+	jsonPayload := `{"email":"test@test.com","first_name":"John","last_name":"Doe"}`
+
+	deps := Dependencies{
+		TemporaryKeyGet: func(key string) (string, error) {
+			return jsonPayload, nil
+		},
+		Passwordless: true,
+		PasswordlessUserRegister: func(ctx context.Context, email, firstName, lastName string) error {
+			return nil
+		},
+		AuthenticateViaUsername: nil,
+	}
+
+	values := url.Values{
+		"verification_code": {"BCDFGHJK"},
+	}
+	recorder, req := makePostRequest(t, "/api/register-code-verify", values)
+	ApiRegisterCodeVerify(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "Failed to process request") {
+		t.Fatalf("expected failed to process, got %q", body)
+	}
+}
+
+func TestApiRegisterCodeVerifyPasswordlessNilUserRegister(t *testing.T) {
+	jsonPayload := `{"email":"test@test.com","first_name":"John","last_name":"Doe"}`
+
+	deps := Dependencies{
+		TemporaryKeyGet: func(key string) (string, error) {
+			return jsonPayload, nil
+		},
+		Passwordless:             true,
+		PasswordlessUserRegister: nil,
+	}
+
+	values := url.Values{
+		"verification_code": {"BCDFGHJK"},
+	}
+	recorder, req := makePostRequest(t, "/api/register-code-verify", values)
+	ApiRegisterCodeVerify(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "Registration failed") {
+		t.Fatalf("expected registration failed, got %q", body)
+	}
+}
+
+func TestApiRegisterCodeVerifyUsernamePasswordNilUserRegister(t *testing.T) {
+	jsonPayload := `{"email":"test@test.com","first_name":"John","last_name":"Doe","password":"1234"}`
+
+	deps := Dependencies{
+		TemporaryKeyGet: func(key string) (string, error) {
+			return jsonPayload, nil
+		},
+		Passwordless: false,
+		UserRegister: nil,
+	}
+
+	values := url.Values{
+		"verification_code": {"BCDFGHJK"},
+	}
+	recorder, req := makePostRequest(t, "/api/register-code-verify", values)
+	ApiRegisterCodeVerify(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "Registration failed") {
+		t.Fatalf("expected registration failed, got %q", body)
+	}
+}
+
+func TestApiRegisterCodeVerifyUsernamePasswordStrengthError(t *testing.T) {
+	jsonPayload := `{"email":"test@test.com","first_name":"John","last_name":"Doe","password":"short"}`
+
+	deps := Dependencies{
+		TemporaryKeyGet: func(key string) (string, error) {
+			return jsonPayload, nil
+		},
+		Passwordless: false,
+		PasswordStrength: &types.PasswordStrengthConfig{
+			MinLength:        12,
+			RequireUppercase: true,
+			RequireLowercase: true,
+			RequireDigit:     true,
+			RequireSpecial:   true,
+		},
+		UserRegister: func(ctx context.Context, email, password, firstName, lastName string) error {
+			return nil
+		},
+	}
+
+	values := url.Values{
+		"verification_code": {"BCDFGHJK"},
+	}
+	recorder, req := makePostRequest(t, "/api/register-code-verify", values)
+	ApiRegisterCodeVerify(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "\"status\":\"error\"") {
+		t.Fatalf("expected error status, got %q", body)
+	}
+}
+
+func TestApiRegisterCodeVerifyUsernamePasswordSuccess(t *testing.T) {
+	jsonPayload := `{"email":"test@test.com","first_name":"John","last_name":"Doe","password":"StrongPass1!"}`
+
+	called := false
+	deps := Dependencies{
+		TemporaryKeyGet: func(key string) (string, error) {
+			return jsonPayload, nil
+		},
+		Passwordless: false,
+		UserRegister: func(ctx context.Context, email, password, firstName, lastName string) error {
+			return nil
+		},
+		AuthenticateViaUsername: func(w http.ResponseWriter, r *http.Request, email, firstName, lastName string) {
+			called = true
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"status":"success","message":"login success","token":"token-456"}`))
+		},
+	}
+
+	values := url.Values{
+		"verification_code": {"BCDFGHJK"},
+	}
+	recorder, req := makePostRequest(t, "/api/register-code-verify", values)
+	ApiRegisterCodeVerify(recorder, req, deps)
+
+	if !called {
+		t.Fatal("AuthenticateViaUsername should be called")
+	}
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "\"status\":\"success\"") {
+		t.Fatalf("expected success, got %q", body)
 	}
 }

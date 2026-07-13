@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/dracory/auth/types"
 )
 
 func makePostRequest(t *testing.T, path string, values url.Values) (*httptest.ResponseRecorder, *http.Request) {
@@ -179,5 +181,145 @@ func TestApiPasswordResetSuccess(t *testing.T) {
 
 	if !logoutCalled {
 		t.Fatalf("LogoutUser should be called on successful password reset")
+	}
+}
+
+func TestPasswordResetError_Error(t *testing.T) {
+	var e *PasswordResetError
+	if e.Error() != "" {
+		t.Fatalf("expected empty string for nil receiver, got %q", e.Error())
+	}
+
+	e = &PasswordResetError{Code: PasswordResetErrorCodeValidation}
+	if e.Error() != "validation" {
+		t.Fatalf("expected 'validation', got %q", e.Error())
+	}
+
+	e = &PasswordResetError{Message: "custom message"}
+	if e.Error() != "custom message" {
+		t.Fatalf("expected 'custom message', got %q", e.Error())
+	}
+
+	e = &PasswordResetError{Err: errors.New("inner error")}
+	if e.Error() != "inner error" {
+		t.Fatalf("expected 'inner error', got %q", e.Error())
+	}
+}
+
+func TestApiPasswordResetPasswordStrengthError(t *testing.T) {
+	deps := Dependencies{
+		PasswordStrength: &types.PasswordStrengthConfig{
+			MinLength:        12,
+			RequireUppercase: true,
+			RequireLowercase: true,
+			RequireDigit:     true,
+			RequireSpecial:   true,
+		},
+		TemporaryKeyGet: func(key string) (string, error) {
+			return "user123", nil
+		},
+		UserPasswordChange: func(ctx context.Context, userID, password string) error {
+			return nil
+		},
+	}
+
+	values := url.Values{
+		"token":            {"valid-token"},
+		"password":         {"short"},
+		"password_confirm": {"short"},
+	}
+	recorder, req := makePostRequest(t, "/api/password-reset", values)
+	ApiPasswordReset(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "\"status\":\"error\"") {
+		t.Fatalf("expected error status, got %q", body)
+	}
+}
+
+func TestApiPasswordResetTemporaryKeyGetNil(t *testing.T) {
+	deps := Dependencies{
+		TemporaryKeyGet: nil,
+	}
+
+	values := url.Values{
+		"token":            {"valid-token"},
+		"password":         {"password123"},
+		"password_confirm": {"password123"},
+	}
+	recorder, req := makePostRequest(t, "/api/password-reset", values)
+	ApiPasswordReset(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "Link not valid or expired") {
+		t.Fatalf("expected link not valid, got %q", body)
+	}
+}
+
+func TestApiPasswordResetTemporaryKeyGetError(t *testing.T) {
+	deps := Dependencies{
+		TemporaryKeyGet: func(key string) (string, error) {
+			return "", errors.New("db error")
+		},
+	}
+
+	values := url.Values{
+		"token":            {"valid-token"},
+		"password":         {"password123"},
+		"password_confirm": {"password123"},
+	}
+	recorder, req := makePostRequest(t, "/api/password-reset", values)
+	ApiPasswordReset(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "Link not valid or expired") {
+		t.Fatalf("expected link not valid, got %q", body)
+	}
+}
+
+func TestApiPasswordResetUserPasswordChangeNil(t *testing.T) {
+	deps := Dependencies{
+		TemporaryKeyGet: func(key string) (string, error) {
+			return "user123", nil
+		},
+		UserPasswordChange: nil,
+	}
+
+	values := url.Values{
+		"token":            {"valid-token"},
+		"password":         {"password123"},
+		"password_confirm": {"password123"},
+	}
+	recorder, req := makePostRequest(t, "/api/password-reset", values)
+	ApiPasswordReset(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "Password reset failed") {
+		t.Fatalf("expected password reset failed, got %q", body)
+	}
+}
+
+func TestApiPasswordResetSuccessWithoutLogoutUser(t *testing.T) {
+	deps := Dependencies{
+		TemporaryKeyGet: func(key string) (string, error) {
+			return "user123", nil
+		},
+		UserPasswordChange: func(ctx context.Context, userID, password string) error {
+			return nil
+		},
+		LogoutUser: nil,
+	}
+
+	values := url.Values{
+		"token":            {"valid-token"},
+		"password":         {"password123"},
+		"password_confirm": {"password123"},
+	}
+	recorder, req := makePostRequest(t, "/api/password-reset", values)
+	ApiPasswordReset(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "\"status\":\"success\"") {
+		t.Fatalf("expected success, got %q", body)
 	}
 }
