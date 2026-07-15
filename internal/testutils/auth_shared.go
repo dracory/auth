@@ -41,10 +41,10 @@ type authSharedTest struct {
 	funcUserFindByUsername                func(ctx context.Context, username, firstName, lastName string, options types.UserAuthOptions) (string, error)
 	funcUserStoreAuthToken                func(ctx context.Context, token, userID string, options types.UserAuthOptions) error
 	emailTemplatePasswordRestore          func(ctx context.Context, userID string, passwordRestoreLink string, options types.UserAuthOptions) string
-	emailTemplateRegisterCode             func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string
+	emailTemplateRegisterCode             func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string
 	emailSend                             func(ctx context.Context, userID, emailSubject, emailBody string) error
-	passwordlessEmailTemplateLoginCode    func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string
-	passwordlessEmailTemplateRegisterCode func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string
+	passwordlessEmailTemplateLoginCode    func(ctx context.Context, email string, loginLink string, options types.UserAuthOptions) string
+	passwordlessEmailTemplateRegisterCode func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string
 	passwordlessEmailSend                 func(ctx context.Context, email string, emailSubject, emailBody string) error
 }
 
@@ -131,19 +131,19 @@ func (a *authSharedTest) SetPasswordlessUserRegister(fn func(ctx context.Context
 	a.passwordlessUserRegister = fn
 }
 
-func (a *authSharedTest) GetPasswordlessFuncEmailTemplateLoginCode() func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string {
+func (a *authSharedTest) GetPasswordlessFuncEmailTemplateLoginCode() func(ctx context.Context, email string, loginLink string, options types.UserAuthOptions) string {
 	return a.passwordlessEmailTemplateLoginCode
 }
 
-func (a *authSharedTest) SetPasswordlessFuncEmailTemplateLoginCode(fn func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string) {
+func (a *authSharedTest) SetPasswordlessFuncEmailTemplateLoginCode(fn func(ctx context.Context, email string, loginLink string, options types.UserAuthOptions) string) {
 	a.passwordlessEmailTemplateLoginCode = fn
 }
 
-func (a *authSharedTest) GetPasswordlessFuncEmailTemplateRegisterCode() func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string {
+func (a *authSharedTest) GetPasswordlessFuncEmailTemplateRegisterCode() func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string {
 	return a.passwordlessEmailTemplateRegisterCode
 }
 
-func (a *authSharedTest) SetPasswordlessFuncEmailTemplateRegisterCode(fn func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string) {
+func (a *authSharedTest) SetPasswordlessFuncEmailTemplateRegisterCode(fn func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string) {
 	a.passwordlessEmailTemplateRegisterCode = fn
 }
 
@@ -205,11 +205,11 @@ func (a *authSharedTest) SetFuncEmailTemplatePasswordRestore(fn func(ctx context
 	a.emailTemplatePasswordRestore = fn
 }
 
-func (a *authSharedTest) GetFuncEmailTemplateRegisterCode() func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string {
+func (a *authSharedTest) GetFuncEmailTemplateRegisterCode() func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string {
 	return a.emailTemplateRegisterCode
 }
 
-func (a *authSharedTest) SetFuncEmailTemplateRegisterCode(fn func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string) {
+func (a *authSharedTest) SetFuncEmailTemplateRegisterCode(fn func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string) {
 	a.emailTemplateRegisterCode = fn
 }
 

@@ -63,7 +63,7 @@ func NewPasswordlessAuth(config types.ConfigPasswordless) (types.AuthPasswordles
 	auth.funcUserFindByAuthToken = config.FuncUserFindByAuthToken
 	auth.funcUserStoreAuthToken = config.FuncUserStoreAuthToken
 	auth.passwordlessFuncEmailTemplateLoginCode = config.FuncEmailTemplateLoginCode
-	// auth.passwordlessFuncEmailTemplateRegisterCode = config.FuncEmailTemplateRegisterCode
+	auth.passwordlessFuncEmailTemplateRegisterCode = config.FuncEmailTemplateRegisterCode
 	auth.passwordlessFuncEmailSend = config.FuncEmailSend
 	auth.passwordlessFuncUserFindByEmail = config.FuncUserFindByEmail
 	auth.passwordlessFuncUserRegister = config.FuncUserRegister

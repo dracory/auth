@@ -153,20 +153,22 @@ func passwordlessEmailSend(_ context.Context, to, subject, body string) error {
 
 func main() {
 	authInstance, err := auth.NewPasswordlessAuth(types.ConfigPasswordless{
-		Endpoint:             "/auth",
-		UrlRedirectOnSuccess: "/dashboard",
-		UseCookies:           true,
+		ConfigShared: types.ConfigShared{
+			Endpoint:             "/auth",
+			UrlRedirectOnSuccess: "/dashboard",
+			UseCookies:           true,
+			EnableRegistration:   true,
 
-		FuncUserFindByAuthToken: passwordlessStore.findByAuthToken,
-		FuncUserFindByEmail:     passwordlessStore.findUserByEmail,
-		FuncUserLogout:          passwordlessStore.logout,
-		FuncUserStoreAuthToken:  passwordlessStore.storeAuthToken,
-		FuncEmailSend:           passwordlessEmailSend,
-		FuncTemporaryKeyGet:     passwordlessStore.tempKeyGet,
-		FuncTemporaryKeySet:     passwordlessStore.tempKeySet,
+			FuncUserFindByAuthToken: passwordlessStore.findByAuthToken,
+			FuncUserLogout:          passwordlessStore.logout,
+			FuncUserStoreAuthToken:  passwordlessStore.storeAuthToken,
+			FuncTemporaryKeyGet:     passwordlessStore.tempKeyGet,
+			FuncTemporaryKeySet:     passwordlessStore.tempKeySet,
+		},
 
-		EnableRegistration: true,
-		FuncUserRegister:   passwordlessStore.registerUser,
+		FuncUserFindByEmail: passwordlessStore.findUserByEmail,
+		FuncEmailSend:       passwordlessEmailSend,
+		FuncUserRegister:    passwordlessStore.registerUser,
 	})
 	if err != nil {
 		fmt.Println(err)

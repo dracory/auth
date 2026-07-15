@@ -1,5 +1,7 @@
 # Proposal: Extract Reusable Config Structs
 
+> **Status: COMPLETED** — All items implemented and tests passing (90.5% coverage).
+
 ## Summary
 
 Currently `ConfigPasswordless` and `ConfigUsernameAndPassword` duplicate ~30 shared fields. Before adding any new auth mode (e.g. AuthKnight), we extract these into small reusable structs that can be embedded via Go struct embedding.

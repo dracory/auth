@@ -193,20 +193,22 @@ func exampleEmailSend(_ context.Context, email, subject, body string) error {
 
 func main() {
 	authInstance, err := auth.NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
-		Endpoint:             "/auth",
-		UrlRedirectOnSuccess: "/dashboard",
-		UseCookies:           true,
+		ConfigShared: types.ConfigShared{
+			Endpoint:             "/auth",
+			UrlRedirectOnSuccess: "/dashboard",
+			UseCookies:           true,
+			EnableRegistration:   true,
 
-		FuncTemporaryKeyGet:     passwordStore.tempKeyGet,
-		FuncTemporaryKeySet:     passwordStore.tempKeySet,
-		FuncUserStoreAuthToken:  passwordStore.storeAuthToken,
-		FuncUserFindByAuthToken: passwordStore.findByAuthToken,
-		FuncUserFindByUsername:  passwordStore.userFindByUsername,
-		FuncUserLogin:           passwordStore.userLogin,
-		FuncUserLogout:          passwordStore.logout,
-		FuncEmailSend:           exampleEmailSend,
+			FuncTemporaryKeyGet:     passwordStore.tempKeyGet,
+			FuncTemporaryKeySet:     passwordStore.tempKeySet,
+			FuncUserStoreAuthToken:  passwordStore.storeAuthToken,
+			FuncUserFindByAuthToken: passwordStore.findByAuthToken,
+			FuncUserLogout:          passwordStore.logout,
+		},
 
-		EnableRegistration:     true,
+		FuncUserFindByUsername: passwordStore.userFindByUsername,
+		FuncUserLogin:          passwordStore.userLogin,
+		FuncEmailSend:          exampleEmailSend,
 		FuncUserRegister:       passwordStore.userRegister,
 		FuncUserPasswordChange: passwordStore.userPasswordChange,
 	})

@@ -34,20 +34,20 @@ type authImplementation struct {
 	// ===== START: username(email) and password options
 	enableVerification               bool
 	funcEmailTemplatePasswordRestore func(ctx context.Context, userID string, passwordRestoreLink string, options types.UserAuthOptions) string // optional
-	funcEmailTemplateRegisterCode    func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string  // optional
+	funcEmailTemplateRegisterCode    func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string         // optional
 	funcEmailSend                    func(ctx context.Context, userID string, emailSubject string, emailBody string) (err error)
 	funcUserLogin                    func(ctx context.Context, username string, password string, options types.UserAuthOptions) (userID string, err error)
 	funcUserPasswordChange           func(ctx context.Context, username string, newPassword string, options types.UserAuthOptions) (err error)
-	funcUserRegister                 func(ctx context.Context, username string, password string, first_name string, last_name string, options types.UserAuthOptions) (err error)
-	funcUserFindByUsername           func(ctx context.Context, username string, first_name string, last_name string, options types.UserAuthOptions) (userID string, err error)
+	funcUserRegister                 func(ctx context.Context, username string, password string, firstName string, lastName string, options types.UserAuthOptions) (err error)
+	funcUserFindByUsername           func(ctx context.Context, username string, firstName string, lastName string, options types.UserAuthOptions) (userID string, err error)
 	passwordStrength                 *types.PasswordStrengthConfig
 	// ===== END: username(email) and password options
 
 	// ===== START: passwordless options
 	passwordless                              bool
 	passwordlessFuncUserFindByEmail           func(ctx context.Context, email string, options types.UserAuthOptions) (userID string, err error)
-	passwordlessFuncEmailTemplateLoginCode    func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string // optional
-	passwordlessFuncEmailTemplateRegisterCode func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string // optional
+	passwordlessFuncEmailTemplateLoginCode    func(ctx context.Context, email string, loginLink string, options types.UserAuthOptions) string    // optional
+	passwordlessFuncEmailTemplateRegisterCode func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string // optional
 	passwordlessFuncEmailSend                 func(ctx context.Context, email string, emailSubject string, emailBody string) (err error)
 	passwordlessFuncUserRegister              func(ctx context.Context, email string, firstName string, lastName string, options types.UserAuthOptions) (err error)
 	// ===== END: passwordless options
@@ -237,19 +237,19 @@ func (a *authImplementation) SetPasswordlessUserFindByEmail(fn func(ctx context.
 	a.passwordlessFuncUserFindByEmail = fn
 }
 
-func (a authImplementation) GetPasswordlessFuncEmailTemplateLoginCode() func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string {
+func (a authImplementation) GetPasswordlessFuncEmailTemplateLoginCode() func(ctx context.Context, email string, loginLink string, options types.UserAuthOptions) string {
 	return a.passwordlessFuncEmailTemplateLoginCode
 }
 
-func (a *authImplementation) SetPasswordlessFuncEmailTemplateLoginCode(fn func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string) {
+func (a *authImplementation) SetPasswordlessFuncEmailTemplateLoginCode(fn func(ctx context.Context, email string, loginLink string, options types.UserAuthOptions) string) {
 	a.passwordlessFuncEmailTemplateLoginCode = fn
 }
 
-func (a authImplementation) GetPasswordlessFuncEmailTemplateRegisterCode() func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string {
+func (a authImplementation) GetPasswordlessFuncEmailTemplateRegisterCode() func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string {
 	return a.passwordlessFuncEmailTemplateRegisterCode
 }
 
-func (a *authImplementation) SetPasswordlessFuncEmailTemplateRegisterCode(fn func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string) {
+func (a *authImplementation) SetPasswordlessFuncEmailTemplateRegisterCode(fn func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string) {
 	a.passwordlessFuncEmailTemplateRegisterCode = fn
 }
 
@@ -277,11 +277,11 @@ func (a *authImplementation) SetFuncEmailTemplatePasswordRestore(fn func(ctx con
 	a.funcEmailTemplatePasswordRestore = fn
 }
 
-func (a authImplementation) GetFuncEmailTemplateRegisterCode() func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string {
+func (a authImplementation) GetFuncEmailTemplateRegisterCode() func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string {
 	return a.funcEmailTemplateRegisterCode
 }
 
-func (a *authImplementation) SetFuncEmailTemplateRegisterCode(fn func(ctx context.Context, email string, passwordRestoreLink string, options types.UserAuthOptions) string) {
+func (a *authImplementation) SetFuncEmailTemplateRegisterCode(fn func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string) {
 	a.funcEmailTemplateRegisterCode = fn
 }
 

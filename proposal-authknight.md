@@ -38,7 +38,7 @@ This proposal moves all of that into the library.
 
 ## Proposed Design
 
-> **Prerequisite**: This proposal depends on `proposal_config.md` being completed first (extraction of `ConfigShared`, `ConfigRateLimiting`, `ConfigCSRF`, `ConfigImpersonation` reusable structs).
+> **Prerequisite completed**: `proposal_config.md` — `ConfigShared`, `ConfigRateLimiting`, `ConfigCSRF`, `ConfigImpersonation` structs extracted and tests passing (90.5% coverage).
 
 ### 1. New Config Type: `ConfigAuthKnight`
 

@@ -99,17 +99,17 @@ type AuthSharedInterface interface {
 	GetFuncEmailTemplatePasswordRestore() func(ctx context.Context, userID string, passwordRestoreLink string, options UserAuthOptions) string
 	SetFuncEmailTemplatePasswordRestore(fn func(ctx context.Context, userID string, passwordRestoreLink string, options UserAuthOptions) string)
 
-	GetFuncEmailTemplateRegisterCode() func(ctx context.Context, email string, passwordRestoreLink string, options UserAuthOptions) string
-	SetFuncEmailTemplateRegisterCode(fn func(ctx context.Context, email string, passwordRestoreLink string, options UserAuthOptions) string)
+	GetFuncEmailTemplateRegisterCode() func(ctx context.Context, email string, registerLink string, options UserAuthOptions) string
+	SetFuncEmailTemplateRegisterCode(fn func(ctx context.Context, email string, registerLink string, options UserAuthOptions) string)
 
 	GetFuncEmailSend() func(ctx context.Context, userID, emailSubject, emailBody string) error
 	SetFuncEmailSend(fn func(ctx context.Context, userID, emailSubject, emailBody string) error)
 
-	GetPasswordlessFuncEmailTemplateLoginCode() func(ctx context.Context, email string, passwordRestoreLink string, options UserAuthOptions) string
-	SetPasswordlessFuncEmailTemplateLoginCode(fn func(ctx context.Context, email string, passwordRestoreLink string, options UserAuthOptions) string)
+	GetPasswordlessFuncEmailTemplateLoginCode() func(ctx context.Context, email string, loginLink string, options UserAuthOptions) string
+	SetPasswordlessFuncEmailTemplateLoginCode(fn func(ctx context.Context, email string, loginLink string, options UserAuthOptions) string)
 
-	GetPasswordlessFuncEmailTemplateRegisterCode() func(ctx context.Context, email string, passwordRestoreLink string, options UserAuthOptions) string
-	SetPasswordlessFuncEmailTemplateRegisterCode(fn func(ctx context.Context, email string, passwordRestoreLink string, options UserAuthOptions) string)
+	GetPasswordlessFuncEmailTemplateRegisterCode() func(ctx context.Context, email string, registerLink string, options UserAuthOptions) string
+	SetPasswordlessFuncEmailTemplateRegisterCode(fn func(ctx context.Context, email string, registerLink string, options UserAuthOptions) string)
 
 	GetPasswordlessFuncEmailSend() func(ctx context.Context, email string, emailSubject, emailBody string) error
 	SetPasswordlessFuncEmailSend(fn func(ctx context.Context, email string, emailSubject, emailBody string) error)

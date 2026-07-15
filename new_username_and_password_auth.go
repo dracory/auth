@@ -56,6 +56,7 @@ func NewUsernameAndPasswordAuth(config types.ConfigUsernameAndPassword) (types.A
 	}
 	auth.funcEmailSend = config.FuncEmailSend
 	auth.funcEmailTemplatePasswordRestore = config.FuncEmailTemplatePasswordRestore
+	auth.funcEmailTemplateRegisterCode = config.FuncEmailTemplateRegisterCode
 	auth.funcLayout = config.FuncLayout
 	auth.funcTemporaryKeyGet = config.FuncTemporaryKeyGet
 	auth.funcTemporaryKeySet = config.FuncTemporaryKeySet
