@@ -12,6 +12,10 @@ import (
 // the provided dependencies and writes the result to the ResponseWriter.
 
 func PageRegisterCodeVerify(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) {
+	if shared.RedirectAuthKnightIfActive(w, r, a) {
+		return
+	}
+
 	content := RegisterCodeVerifyContent(links.Register(a.GetEndpoint()))
 	scripts := RegisterCodeVerifyScripts(
 		links.ApiRegisterCodeVerify(a.GetEndpoint()),

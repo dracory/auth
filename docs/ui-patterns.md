@@ -63,7 +63,19 @@ Pages are constructed using a "Shell" pattern defined in `internal/ui/shared/web
 
 ## Design Improvements
 
-The following improvements are recommended to enhance consistency, maintainability, and user experience.
+### AuthKnight Register Page
+
+The AuthKnight register page (`/auth/register?ak_key=xxx`) uses a distinct pattern for the email field:
+
+- **Static text display**: The verified email is rendered as a `<div class="form-control-plaintext text-muted">` element, not an `<input>`. This prevents browser extensions (e.g., LastPass) from modifying the email value.
+- **Hidden input**: A `<input type="hidden" name="email">` carries the verified email for form submission.
+- **Server-side retrieval**: The email is always retrieved from the temporary key store via `ak_key`, never trusted from the form submission.
+
+### AuthKnight Redirect Guard
+
+All page handlers that are irrelevant in AuthKnight mode (login, register without `ak_key`, password-restore, password-reset, login-code-verify, register-code-verify) use a shared helper `shared.RedirectAuthKnightIfActive()` to redirect to AuthKnight's hosted login. This eliminates duplicated guard blocks across handlers.
+
+### The following improvements are recommended to enhance consistency, maintainability, and user experience.
 
 ### 1. Unify Typography
 **Current State**: `layout.go` imports "Nunito", while `shared/webpage.go` sets `font-family: Ubuntu, sans-serif` on `html,body` and then overrides `body` with `Nunito`.

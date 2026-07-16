@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -41,9 +42,13 @@ func (a authImplementation) AuthHandler(w http.ResponseWriter, r *http.Request) 
 
 	uri = strings.TrimSuffix(uri, "/") // Remove trailing slash
 
+	originalURI := uri
+
 	if strings.Contains(uri, "?") {
 		uri = str.LeftFrom(uri, "?")
 	}
+
+	fmt.Printf("[AUTHHANDLER] originalURI='%s' uri='%s' path='%s'\n", originalURI, uri, path)
 
 	if uriHasPathSuffix(uri, PathApiLogin) {
 		path = PathApiLogin
@@ -77,11 +82,15 @@ func (a authImplementation) AuthHandler(w http.ResponseWriter, r *http.Request) 
 		path = PathApiImpersonateStart
 	} else if uriHasPathSuffix(uri, PathApiImpersonateStop) {
 		path = PathApiImpersonateStop
+	} else if uriHasPathSuffix(uri, PathApiAuthKnightCallback) {
+		path = PathApiAuthKnightCallback
 	}
 
 	ctx := context.WithValue(r.Context(), keyEndpoint, r.URL.Path)
 
 	routeFunc := a.getRoute(path)
+
+	fmt.Printf("[AUTHHANDLER] resolved path='%s' routeFunc!=nil=%v\n", path, routeFunc != nil)
 
 	routeFunc(w, r.WithContext(ctx))
 }
@@ -127,12 +136,12 @@ func (a authImplementation) buildAPIRoutes(csrfCfg middlewares.CSRFConfig) map[s
 		handler  func(http.ResponseWriter, *http.Request)
 		useCSRF  bool
 	}{
-		{PathApiLogin, "login", a.apiLogin, true},
-		{PathApiLoginCodeVerify, "login_code_verify", a.apiLoginCodeVerify, false},
-		{PathApiRegister, "register", a.apiRegister, true},
-		{PathApiRegisterCodeVerify, "register_code_verify", a.apiRegisterCodeVerify, false},
-		{PathApiResetPassword, "password_reset", a.apiPasswordReset, true},
-		{PathApiRestorePassword, "password_restore", a.apiPasswordRestore, false},
+		{PathApiLogin, EndpointLogin, a.apiLogin, true},
+		{PathApiLoginCodeVerify, EndpointLoginCodeVerify, a.apiLoginCodeVerify, false},
+		{PathApiRegister, EndpointRegister, a.apiRegister, true},
+		{PathApiRegisterCodeVerify, EndpointRegisterCodeVerify, a.apiRegisterCodeVerify, false},
+		{PathApiResetPassword, EndpointPasswordReset, a.apiPasswordReset, true},
+		{PathApiRestorePassword, EndpointPasswordRestore, a.apiPasswordRestore, false},
 	}
 
 	if a.enableImpersonation {
@@ -142,8 +151,19 @@ func (a authImplementation) buildAPIRoutes(csrfCfg middlewares.CSRFConfig) map[s
 			handler  func(http.ResponseWriter, *http.Request)
 			useCSRF  bool
 		}{
-			{PathApiImpersonateStart, "impersonate_start", a.apiImpersonateStart, true},
-			{PathApiImpersonateStop, "impersonate_stop", a.apiImpersonateStop, true},
+			{PathApiImpersonateStart, EndpointImpersonateStart, a.apiImpersonateStart, true},
+			{PathApiImpersonateStop, EndpointImpersonateStop, a.apiImpersonateStop, true},
+		}...)
+	}
+
+	if a.authKnight {
+		apiRoutes = append(apiRoutes, []struct {
+			path     string
+			endpoint string
+			handler  func(http.ResponseWriter, *http.Request)
+			useCSRF  bool
+		}{
+			{PathApiAuthKnightCallback, EndpointAuthKnightCallback, a.apiAuthKnightCallback, false},
 		}...)
 	}
 

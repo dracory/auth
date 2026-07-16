@@ -12,6 +12,10 @@ import (
 // provided dependencies and writes the result to the ResponseWriter.
 
 func PageLoginCodeVerify(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) {
+	if shared.RedirectAuthKnightIfActive(w, r, a) {
+		return
+	}
+
 	content := LoginCodeVerifyContent(links.Login(a.GetEndpoint()))
 	scripts := LoginCodeVerifyScripts(
 		links.ApiLoginCodeVerify(a.GetEndpoint()),

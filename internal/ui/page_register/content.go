@@ -265,3 +265,134 @@ func RegisterUsernameAndPasswordScripts(urlApiRegister, urlOnSuccess string) str
 		});
 	`
 }
+
+// RegisterAuthKnightContent builds the HTML for the AuthKnight registration page.
+// The email field is read-only (pre-populated from the verified AuthKnight email).
+// akKey is the temporary key that maps to the verified email in the temp key store.
+func RegisterAuthKnightContent(urlLogin string, verifiedEmail string, akKey string) string {
+	alertSuccess := hb.NewDiv().Class("alert alert-success").Style("display:none")
+	alertDanger := hb.NewDiv().Class("alert alert-danger").Style("display:none")
+	alertGroup := hb.NewDiv().Class("alert-group").AddChild(alertSuccess).AddChild(alertDanger)
+
+	header := hb.NewHeading5().Text("Register").Style("margin:0px;")
+
+	firstNameLabel := hb.NewLabel().Text("First Name")
+	firstNameInput := hb.NewInput().Class("form-control").Name("first_name").Placeholder("Enter first name")
+	firstNameFormGroup := hb.NewDiv().Class("form-group mt-3").AddChild(firstNameLabel).AddChild(firstNameInput)
+
+	lastNameLabel := hb.NewLabel().Text("Last Name")
+	lastNameInput := hb.NewInput().Class("form-control").Name("last_name").Placeholder("Enter last name")
+	lastNameFormGroup := hb.NewDiv().Class("form-group mt-3").AddChild(lastNameLabel).AddChild(lastNameInput)
+
+	emailLabel := hb.NewLabel().Text("E-mail Address (verified)")
+	emailDisplay := hb.NewDiv().Class("form-control-plaintext text-muted").Style("font-size:1rem;padding:0.5rem 0;").Text(verifiedEmail)
+	emailHidden := hb.NewInput().Type("hidden").Name("email").Value(verifiedEmail)
+	emailFormGroup := hb.NewDiv().Class("form-group mt-3").AddChild(emailLabel).AddChild(emailDisplay).AddChild(emailHidden)
+
+	akKeyInput := hb.NewInput().Type("hidden").Name("ak_key").Value(akKey)
+
+	buttonRegister := hb.NewButton().Class("btn btn-lg btn-success btn-block w-100").Children([]hb.TagInterface{
+		hb.NewI().Class("bi bi-person-circle").Style("margin-right:8px;margin-top:-2px;"),
+		hb.NewSpan().Text("Register"),
+	}).OnClick("registerFormValidate()")
+
+	buttonRegisterFormGroup := hb.NewDiv().Class("form-group mt-3 mb-3").AddChild(buttonRegister)
+
+	buttonLogin := hb.NewHyperlink().Class("btn btn-info text-white float-start").Children([]hb.TagInterface{
+		hb.NewI().Class("bi bi-send").Style("margin-right:8px;margin-top:-2px;"),
+		hb.NewSpan().Text("Login"),
+	}).Href(urlLogin)
+
+	cardHeader := hb.NewDiv().Class("card-header").AddChild(header)
+	cardBody := hb.NewDiv().Class("card-body").AddChildren([]hb.TagInterface{
+		alertGroup,
+		firstNameFormGroup,
+		lastNameFormGroup,
+		emailFormGroup,
+		akKeyInput,
+		buttonRegisterFormGroup,
+	})
+	cardFooter := hb.NewDiv().Class("card-footer").AddChild(buttonLogin)
+	card := hb.NewDiv().Class("card card-default").Style("margin:0 auto;max-width: 360px;")
+	card.AddChild(cardHeader).AddChild(cardBody).AddChild(cardFooter)
+
+	container := hb.NewDiv().Class("container").AddChild(card)
+
+	return container.ToHTML()
+}
+
+// RegisterAuthKnightScripts builds the JS for the AuthKnight registration page.
+func RegisterAuthKnightScripts(urlApiRegister, urlOnSuccess string) string {
+	return `
+		var urlApiRegister = "` + urlApiRegister + `";
+		console.log(urlApiRegister);
+		var urlOnSuccess = "` + urlOnSuccess + `";
+		/**
+		 * Raises an error message
+		 * @param  {String} error
+		 * @returns  {Boolean}
+		 */
+		function registerFormRaiseError(error) {
+			$('div.alert-success').html('').hide();
+			$('div.alert-danger').html(error).show();
+			setTimeout(function () {
+				$('div.alert-danger').html('').hide();
+			}, 10000);
+			return false;
+		}
+
+		function registerFormRaiseSuccess(success) {
+			$('div.alert-danger').html('').hide();
+			$('div.alert-success').html(success).show();
+			setTimeout(function () {
+				$('div.alert-success').html('').hide();
+			}, 10000);
+			return false;
+		}
+
+		/**
+		 * Validate Register Form (AuthKnight mode)
+		 * @returns  {Boolean}
+		 */
+		function registerFormValidate() {
+			var first_name = $.trim($('input[name=first_name]').val());
+			var last_name = $.trim($('input[name=last_name]').val());
+			var email = $.trim($('input[name=email]').val());
+			var ak_key = $.trim($('input[name=ak_key]').val());
+
+			if (first_name === '') {
+				return registerFormRaiseError('First name is required');
+			}
+
+			if (last_name === '') {
+				return registerFormRaiseError('Last name is required');
+			}
+
+			$('.buttonLogin .imgLoading').show();
+
+			var data = {"first_name": first_name, "last_name": last_name, "email": email, "ak_key": ak_key};
+
+			$.post(urlApiRegister, data).then(function (response) {
+				$('.buttonLogin .imgLoading').hide();
+
+				if (response.status !== "success") {
+					return registerFormRaiseError(response.message);
+				}
+
+				registerFormRaiseSuccess('Success');
+				$('div.alert-danger').html('').hide();
+				setTimeout(function () {
+					window.location.href=urlOnSuccess;
+				}, 100);
+				return;
+			}).fail(function (error) {
+				console.log(error);
+				$('.buttonLogin .imgLoading').hide();
+				return registerFormRaiseError('There was an error. Try again later!');
+			});
+		}
+		$(function () {
+			$("input[name=first_name").focus();
+		});
+	`
+}

@@ -71,3 +71,37 @@ func TestPageLogin_Passwordless(t *testing.T) {
 		}
 	}
 }
+
+func TestPageLogin_AuthKnight(t *testing.T) {
+	a := testutils.NewAuthSharedForTest()
+	testutils.SetPasswordlessForTest(a, false)
+	testutils.SetVerificationForTest(a, false)
+	testutils.SetAuthKnightForTest(a, true)
+
+	req, err := http.NewRequest("GET", "/login", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Host = "localhost:8084"
+
+	recorder := httptest.NewRecorder()
+	PageLogin(recorder, req, a)
+
+	if status := recorder.Code; status != http.StatusTemporaryRedirect {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusTemporaryRedirect)
+	}
+
+	location := recorder.Header().Get("Location")
+	if !strings.Contains(location, "authknight.com/app/login") {
+		t.Errorf("expected redirect to authknight.com, got: %s", location)
+	}
+	if !strings.Contains(location, "back_url=") {
+		t.Errorf("expected back_url parameter in redirect, got: %s", location)
+	}
+	if !strings.Contains(location, "next_url=") {
+		t.Errorf("expected next_url parameter in redirect, got: %s", location)
+	}
+	if !strings.Contains(location, "authknight/callback") {
+		t.Errorf("expected next_url to contain callback path, got: %s", location)
+	}
+}

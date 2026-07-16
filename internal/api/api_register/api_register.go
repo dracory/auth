@@ -14,6 +14,7 @@ import (
 	"github.com/dracory/auth/types"
 	authutils "github.com/dracory/auth/utils"
 	"github.com/dracory/req"
+	"github.com/dracory/str"
 )
 
 // ApiRegister is the HTTP-level helper that routes registration requests to
@@ -23,6 +24,92 @@ func ApiRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 	logger := deps.Logger
 	if logger == nil {
 		logger = slog.Default()
+	}
+
+	if deps.AuthKnight {
+		akDeps := deps.AuthKnightRegisterDependencies
+		akKey := req.GetStringTrimmed(r, "ak_key")
+		if akKey == "" {
+			api.Respond(w, r, api.Error(types.MsgAuthKnightOnceRequired))
+			return
+		}
+
+		if akDeps.TemporaryKeyGet == nil {
+			api.Respond(w, r, api.Error(types.MsgAuthKnightRegistrationFailed))
+			return
+		}
+
+		email, errKey := akDeps.TemporaryKeyGet(akKey)
+		if errKey != nil || email == "" {
+			api.Respond(w, r, api.Error(types.MsgLinkNotValidOrExpired))
+			return
+		}
+
+		firstName := html.EscapeString(req.GetStringTrimmed(r, "first_name"))
+		lastName := html.EscapeString(req.GetStringTrimmed(r, "last_name"))
+
+		if firstName == "" {
+			api.Respond(w, r, api.Error(types.MsgFirstNameRequired))
+			return
+		}
+		if lastName == "" {
+			api.Respond(w, r, api.Error(types.MsgLastNameRequired))
+			return
+		}
+
+		if akDeps.UserRegister == nil {
+			api.Respond(w, r, api.Error(types.MsgAuthKnightRegistrationFailed))
+			return
+		}
+
+		options := types.UserAuthOptions{
+			UserIp:    req.GetIP(r),
+			UserAgent: r.UserAgent(),
+		}
+
+		userID, errReg := akDeps.UserRegister(r.Context(), email, firstName, lastName, options)
+		if errReg != nil {
+			logger.Error("authknight registration failed",
+				slog.String("error", errReg.Error()),
+			)
+			api.Respond(w, r, api.Error(types.MsgAuthKnightRegistrationFailed))
+			return
+		}
+		if userID == "" {
+			api.Respond(w, r, api.Error(types.MsgAuthKnightRegistrationFailed))
+			return
+		}
+
+		token, errToken := str.RandomFromGamma(32, "BCDFGHJKLMNPQRSTVXYZ")
+		if errToken != nil {
+			logger.Error("authknight registration: token generation failed",
+				slog.String("error", errToken.Error()),
+			)
+			api.Respond(w, r, api.Error(types.MsgFailedToGenerateCode))
+			return
+		}
+
+		if akDeps.UserStoreAuthToken == nil {
+			api.Respond(w, r, api.Error(types.MsgFailedToProcess))
+			return
+		}
+
+		if errStore := akDeps.UserStoreAuthToken(r.Context(), token, userID, options); errStore != nil {
+			logger.Error("authknight registration: auth token store failed",
+				slog.String("error", errStore.Error()),
+			)
+			api.Respond(w, r, api.Error(types.MsgFailedToProcess))
+			return
+		}
+
+		if akDeps.UseCookies && akDeps.SetAuthCookie != nil {
+			akDeps.SetAuthCookie(w, r, token)
+		}
+
+		api.Respond(w, r, api.SuccessWithData(types.MsgRegistrationSuccess, map[string]any{
+			"token": token,
+		}))
+		return
 	}
 
 	if deps.Passwordless {
@@ -81,6 +168,43 @@ func ApiRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 // wiring Dependencies. It constructs the Dependencies struct using the
 // interface accessors and preserves the existing behaviour.
 func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) {
+	deps := Dependencies{}
+	deps.Passwordless = a.IsPasswordless()
+	deps.Logger = a.GetLogger()
+
+	// Check if this is an AuthKnight instance
+	type authKnightChecker interface {
+		IsAuthKnight() bool
+	}
+	if checker, ok := a.(authKnightChecker); ok && checker.IsAuthKnight() {
+		deps.AuthKnight = true
+		deps.AuthKnightRegisterDependencies = AuthKnightRegisterDependencies{
+			TemporaryKeyGet: a.GetFuncTemporaryKeyGet(),
+			UseCookies:      a.GetUseCookies(),
+			SetAuthCookie: func(w http.ResponseWriter, r *http.Request, token string) {
+				a.SetAuthCookie(w, r, token)
+			},
+		}
+
+		type authKnightAccessor interface {
+			GetAuthKnightUserRegister() func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) (string, error)
+		}
+		if accessor, ok := a.(authKnightAccessor); ok {
+			deps.AuthKnightRegisterDependencies.UserRegister = accessor.GetAuthKnightUserRegister()
+		}
+
+		deps.AuthKnightRegisterDependencies.UserStoreAuthToken = func(ctx context.Context, token, userID string, options types.UserAuthOptions) error {
+			fn := a.GetFuncUserStoreAuthToken()
+			if fn == nil {
+				return errors.New("user store auth token is not configured")
+			}
+			return fn(ctx, token, userID, options)
+		}
+
+		ApiRegister(w, r, deps)
+		return
+	}
+
 	passwordAuth, ok := a.(types.AuthPasswordInterface)
 	if !ok {
 		if logger := a.GetLogger(); logger != nil {
@@ -90,7 +214,6 @@ func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSha
 		return
 	}
 
-	deps := Dependencies{}
 	deps.Passwordless = a.IsPasswordless()
 	deps.Logger = a.GetLogger()
 

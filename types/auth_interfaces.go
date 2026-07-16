@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"time"
 )
 
 // AuthSharedInterface defines the common behavior shared by all auth modes.
@@ -163,4 +164,31 @@ type AuthPasswordlessInterface interface {
 	// Passwordless-only URL helpers.
 	LinkLoginCodeVerify() string
 	LinkApiLoginCodeVerify() string
+}
+
+// AuthAuthKnightInterface represents AuthKnight-based authentication.
+// It extends the shared interface with AuthKnight-specific helpers.
+type AuthAuthKnightInterface interface {
+	AuthSharedInterface
+
+	// LinkAuthKnightLogin returns the AuthKnight-hosted login URL
+	// with back_url and next_url parameters set.
+	LinkAuthKnightLogin(backURL, nextURL string) string
+
+	// LinkAuthKnightRedirect builds the full AuthKnight login URL from the request,
+	// deriving back_url (cancel) and next_url (callback) from the request scheme+host.
+	LinkAuthKnightRedirect(r *http.Request) string
+
+	// LinkAuthKnightCallback returns the callback URL on this server
+	// that AuthKnight will redirect to after successful authentication.
+	LinkAuthKnightCallback() string
+
+	// IsAuthKnight returns true when the instance is configured for AuthKnight mode.
+	IsAuthKnight() bool
+
+	// AuthKnight-specific accessors
+	GetAuthKnightUserFindByEmail() func(ctx context.Context, email string, options UserAuthOptions) (string, error)
+	GetAuthKnightUserRegister() func(ctx context.Context, email, firstName, lastName string, options UserAuthOptions) (string, error)
+	GetAuthKnightRedirectURL() func(ctx context.Context, userID string) string
+	GetAuthKnightHTTPTimeout() time.Duration
 }

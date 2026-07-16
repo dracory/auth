@@ -1,6 +1,6 @@
 # Rate Limiting in dracory/auth
 
-**Last Updated:** 2025-11-28
+**Last Updated:** 2026-07-16
 
 ---
 
@@ -24,6 +24,7 @@ Rate limiting is applied per **IP address** and **logical endpoint** for all aut
 - Registration
 - Verification-code endpoints
 - Password restore / reset endpoints
+- AuthKnight callback endpoint
 
 When the limit is exceeded, the library returns:
 
@@ -54,7 +55,7 @@ This means:
 
 ## Configuration Options
 
-Rate limiting is configured via shared fields on both `ConfigPasswordless` and `ConfigUsernameAndPassword`.
+Rate limiting is configured via shared fields on `ConfigPasswordless`, `ConfigUsernameAndPassword`, and `ConfigAuthKnight`.
 
 ```go
 // Shared rate limiting options (for both configs)
@@ -89,6 +90,23 @@ authInstance, err := auth.NewUsernameAndPasswordAuth(auth.ConfigUsernameAndPassw
     // Rate limiting (defaults shown explicitly)
     MaxLoginAttempts: 5,
     LockoutDuration:  15 * time.Minute,
+})
+```
+
+#### AuthKnight Flow
+
+```go
+authInstance, err := auth.NewAuthKnightAuth(types.ConfigAuthKnight{
+    ConfigShared: types.ConfigShared{
+        Endpoint:             "/auth",
+        UrlRedirectOnSuccess: "/dashboard",
+
+        // Rate limiting (defaults shown explicitly)
+        MaxLoginAttempts: 5,
+        LockoutDuration:  15 * time.Minute,
+    },
+    FuncUserFindByEmail: userFindByEmail,
+    FuncUserRegister:    userRegister,
 })
 ```
 
@@ -153,4 +171,4 @@ However:
 
 - [README.md](../README.md) – high-level overview and quick start
 - [overview.md](./overview.md) – architecture and package overview
-- [critical_review.md](./critical_review.md) – security and production-readiness analysis
+- [authknight.md](./authknight.md) – AuthKnight integration guide

@@ -32,6 +32,8 @@ Root package (public API only):
 ├── new_passwordless_auth_test.go
 ├── new_username_and_password_auth.go # Constructor
 ├── new_username_and_password_auth_test.go
+├── new_authknight_auth.go            # Constructor
+├── new_authknight_auth_test.go
 ├── auth_implementation.go             # Main type
 ├── auth_implementation_test.go
 ├── auth_implementation_api.go         # Delegation to internal/api
@@ -150,6 +152,7 @@ auth_implementation_cookies.go → auth_cookies.go
 **Public API (should stay in root):**
 - ✅ `new_passwordless_auth.go` - Constructor
 - ✅ `new_username_and_password_auth.go` - Constructor
+- ✅ `new_authknight_auth.go` - Constructor
 - ✅ `auth_implementation.go` - Main type
 - ✅ `auth_implementation_api.go` - API delegation
 - ✅ `auth_implementation_pages.go` - Pages delegation
@@ -188,7 +191,8 @@ Add `doc.go` files to key packages:
 /*
 Package auth provides batteries-included authentication for Go applications.
 
-It supports two authentication flows:
+It supports three authentication flows:
+  - AuthKnight passwordless authentication via hosted login
   - Passwordless authentication via email verification codes
   - Traditional username/password authentication
 

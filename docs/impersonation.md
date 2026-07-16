@@ -45,7 +45,7 @@ The feature is **disabled by default** and requires the consumer to explicitly e
 
 ## Configuration
 
-Add the following fields to either `types.ConfigUsernameAndPassword` or `types.ConfigPasswordless`:
+Add the following fields to `types.ConfigPasswordless`, `types.ConfigUsernameAndPassword`, or `types.ConfigAuthKnight`:
 
 ```go
 EnableImpersonation: true,

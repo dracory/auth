@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/dracory/auth/types"
 )
 
 func makePostRequest(t *testing.T, path string, values url.Values) (*httptest.ResponseRecorder, *http.Request) {
@@ -501,5 +503,245 @@ func TestApiRegisterPasswordlessDefaultExpiration(t *testing.T) {
 
 	if keySetExpires != 3600 {
 		t.Fatalf("expected default expiration 3600, got %d", keySetExpires)
+	}
+}
+
+// AuthKnight registration tests
+
+func TestApiRegisterAuthKnight_Success(t *testing.T) {
+	var registeredEmail, registeredFirstName, registeredLastName string
+	var storedToken, storedUserID string
+	var cookieSet bool
+
+	deps := Dependencies{
+		AuthKnight: true,
+		AuthKnightRegisterDependencies: AuthKnightRegisterDependencies{
+			TemporaryKeyGet: func(key string) (string, error) {
+				if key == "test-ak-key" {
+					return "newuser@example.com", nil
+				}
+				return "", errors.New("key not found")
+			},
+			UserRegister: func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) (string, error) {
+				registeredEmail = email
+				registeredFirstName = firstName
+				registeredLastName = lastName
+				return "user-new-1", nil
+			},
+			UserStoreAuthToken: func(ctx context.Context, token, userID string, options types.UserAuthOptions) error {
+				storedToken = token
+				storedUserID = userID
+				return nil
+			},
+			UseCookies: true,
+			SetAuthCookie: func(w http.ResponseWriter, r *http.Request, token string) {
+				cookieSet = true
+			},
+		},
+	}
+
+	values := url.Values{
+		"ak_key":     {"test-ak-key"},
+		"first_name": {"Jane"},
+		"last_name":  {"Smith"},
+	}
+	recorder, req := makePostRequest(t, "/api/register", values)
+	ApiRegister(recorder, req, deps)
+
+	if registeredEmail != "newuser@example.com" {
+		t.Fatalf("expected registered email 'newuser@example.com', got '%s'", registeredEmail)
+	}
+	if registeredFirstName != "Jane" {
+		t.Fatalf("expected registered firstName 'Jane', got '%s'", registeredFirstName)
+	}
+	if registeredLastName != "Smith" {
+		t.Fatalf("expected registered lastName 'Smith', got '%s'", registeredLastName)
+	}
+	if storedUserID != "user-new-1" {
+		t.Fatalf("expected stored userID 'user-new-1', got '%s'", storedUserID)
+	}
+	if storedToken == "" {
+		t.Fatal("expected non-empty stored token")
+	}
+	if !cookieSet {
+		t.Fatal("expected cookie to be set")
+	}
+}
+
+func TestApiRegisterAuthKnight_MissingAkKey(t *testing.T) {
+	deps := Dependencies{
+		AuthKnight: true,
+		AuthKnightRegisterDependencies: AuthKnightRegisterDependencies{
+			TemporaryKeyGet: func(key string) (string, error) { return "", nil },
+			UserRegister: func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) (string, error) {
+				t.Fatal("should not call UserRegister")
+				return "", nil
+			},
+			UserStoreAuthToken: func(ctx context.Context, token, userID string, options types.UserAuthOptions) error {
+				return nil
+			},
+		},
+	}
+
+	values := url.Values{
+		"first_name": {"Jane"},
+		"last_name":  {"Smith"},
+	}
+	recorder, req := makePostRequest(t, "/api/register", values)
+	ApiRegister(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "Once token is required") {
+		t.Fatalf("expected error about missing once token, got: %s", body)
+	}
+}
+
+func TestApiRegisterAuthKnight_InvalidAkKey(t *testing.T) {
+	deps := Dependencies{
+		AuthKnight: true,
+		AuthKnightRegisterDependencies: AuthKnightRegisterDependencies{
+			TemporaryKeyGet: func(key string) (string, error) {
+				return "", errors.New("key not found")
+			},
+			UserRegister: func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) (string, error) {
+				t.Fatal("should not call UserRegister")
+				return "", nil
+			},
+			UserStoreAuthToken: func(ctx context.Context, token, userID string, options types.UserAuthOptions) error {
+				return nil
+			},
+		},
+	}
+
+	values := url.Values{
+		"ak_key":     {"invalid-key"},
+		"first_name": {"Jane"},
+		"last_name":  {"Smith"},
+	}
+	recorder, req := makePostRequest(t, "/api/register", values)
+	ApiRegister(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "Link not valid or expired") {
+		t.Fatalf("expected error about expired link, got: %s", body)
+	}
+}
+
+func TestApiRegisterAuthKnight_MissingFirstName(t *testing.T) {
+	deps := Dependencies{
+		AuthKnight: true,
+		AuthKnightRegisterDependencies: AuthKnightRegisterDependencies{
+			TemporaryKeyGet: func(key string) (string, error) {
+				return "test@example.com", nil
+			},
+			UserRegister: func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) (string, error) {
+				t.Fatal("should not call UserRegister")
+				return "", nil
+			},
+			UserStoreAuthToken: func(ctx context.Context, token, userID string, options types.UserAuthOptions) error {
+				return nil
+			},
+		},
+	}
+
+	values := url.Values{
+		"ak_key":    {"test-key"},
+		"last_name": {"Smith"},
+	}
+	recorder, req := makePostRequest(t, "/api/register", values)
+	ApiRegister(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "First name is required") {
+		t.Fatalf("expected error about missing first name, got: %s", body)
+	}
+}
+
+func TestApiRegisterAuthKnight_MissingLastName(t *testing.T) {
+	deps := Dependencies{
+		AuthKnight: true,
+		AuthKnightRegisterDependencies: AuthKnightRegisterDependencies{
+			TemporaryKeyGet: func(key string) (string, error) {
+				return "test@example.com", nil
+			},
+			UserRegister: func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) (string, error) {
+				t.Fatal("should not call UserRegister")
+				return "", nil
+			},
+			UserStoreAuthToken: func(ctx context.Context, token, userID string, options types.UserAuthOptions) error {
+				return nil
+			},
+		},
+	}
+
+	values := url.Values{
+		"ak_key":     {"test-key"},
+		"first_name": {"Jane"},
+	}
+	recorder, req := makePostRequest(t, "/api/register", values)
+	ApiRegister(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "Last name is required") {
+		t.Fatalf("expected error about missing last name, got: %s", body)
+	}
+}
+
+func TestApiRegisterAuthKnight_UserRegisterError(t *testing.T) {
+	deps := Dependencies{
+		AuthKnight: true,
+		AuthKnightRegisterDependencies: AuthKnightRegisterDependencies{
+			TemporaryKeyGet: func(key string) (string, error) {
+				return "test@example.com", nil
+			},
+			UserRegister: func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) (string, error) {
+				return "", errors.New("database error")
+			},
+			UserStoreAuthToken: func(ctx context.Context, token, userID string, options types.UserAuthOptions) error {
+				return nil
+			},
+		},
+	}
+
+	values := url.Values{
+		"ak_key":     {"test-key"},
+		"first_name": {"Jane"},
+		"last_name":  {"Smith"},
+	}
+	recorder, req := makePostRequest(t, "/api/register", values)
+	ApiRegister(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "Registration failed") {
+		t.Fatalf("expected registration failed error, got: %s", body)
+	}
+}
+
+func TestApiRegisterAuthKnight_NilTemporaryKeyGet(t *testing.T) {
+	deps := Dependencies{
+		AuthKnight: true,
+		AuthKnightRegisterDependencies: AuthKnightRegisterDependencies{
+			TemporaryKeyGet: nil,
+			UserRegister: func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) (string, error) {
+				t.Fatal("should not call UserRegister")
+				return "", nil
+			},
+			UserStoreAuthToken: func(ctx context.Context, token, userID string, options types.UserAuthOptions) error {
+				return nil
+			},
+		},
+	}
+
+	values := url.Values{
+		"ak_key":     {"test-key"},
+		"first_name": {"Jane"},
+		"last_name":  {"Smith"},
+	}
+	recorder, req := makePostRequest(t, "/api/register", values)
+	ApiRegister(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "Registration failed") {
+		t.Fatalf("expected registration failed error, got: %s", body)
 	}
 }

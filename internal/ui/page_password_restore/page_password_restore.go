@@ -11,6 +11,10 @@ import (
 // PagePasswordRestore renders the password restore page using the provided
 // dependencies and writes the result to the ResponseWriter.
 func PagePasswordRestore(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) {
+	if shared.RedirectAuthKnightIfActive(w, r, a) {
+		return
+	}
+
 	content := PasswordRestoreContent(
 		a.IsRegistrationEnabled(),
 		links.Login(a.GetEndpoint()),

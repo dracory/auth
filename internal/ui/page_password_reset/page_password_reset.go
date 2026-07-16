@@ -12,6 +12,10 @@ import (
 // PagePasswordReset renders the password reset page using the provided
 // auth instance and computes the user-facing message internally.
 func PagePasswordReset(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) {
+	if shared.RedirectAuthKnightIfActive(w, r, a) {
+		return
+	}
+
 	urlPasswordRestore := links.PasswordRestore(a.GetEndpoint())
 	urlLogin := links.Login(a.GetEndpoint())
 	urlRegister := links.Register(a.GetEndpoint())

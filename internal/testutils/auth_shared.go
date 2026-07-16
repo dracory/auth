@@ -24,6 +24,7 @@ type authSharedTest struct {
 	registration                          bool
 	passwordless                          bool
 	verification                          bool
+	authKnight                            bool
 	temporaryKeyGet                       func(key string) (string, error)
 	temporaryKeySet                       func(key string, value string, expiresSeconds int) error
 	funcUserFindByAuthToken               func(ctx context.Context, token string, options types.UserAuthOptions) (string, error)
@@ -53,6 +54,27 @@ func (a *authSharedTest) Router() *http.ServeMux { return http.NewServeMux() }
 func (a *authSharedTest) IsRegistrationEnabled() bool { return a.registration }
 
 func (a *authSharedTest) IsPasswordless() bool { return a.passwordless }
+
+func (a *authSharedTest) IsAuthKnight() bool { return a.authKnight }
+
+func (a *authSharedTest) LinkAuthKnightCallback() string {
+	return a.endpoint + "/api/authknight/callback"
+}
+
+func (a *authSharedTest) LinkAuthKnightLogin(backURL, nextURL string) string {
+	return "https://authknight.com/app/login?back_url=" + backURL + "&next_url=" + nextURL
+}
+
+func (a *authSharedTest) LinkAuthKnightRedirect(r *http.Request) string {
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	baseURL := scheme + "://" + r.Host
+	cancelURL := baseURL + a.endpoint
+	callbackURL := baseURL + a.LinkAuthKnightCallback()
+	return a.LinkAuthKnightLogin(cancelURL, callbackURL)
+}
 
 func (a *authSharedTest) IsVerificationEnabled() bool { return a.verification }
 
@@ -373,5 +395,19 @@ func SetLoginURLForTest(a types.AuthSharedInterface, url string) {
 func SetUseCookiesForTest(a types.AuthSharedInterface, useCookies bool) {
 	if v, ok := a.(*authSharedTest); ok {
 		v.useCookies = useCookies
+	}
+}
+
+// SetAuthKnightForTest allows tests to configure the AuthKnight flag.
+func SetAuthKnightForTest(a types.AuthSharedInterface, authKnight bool) {
+	if v, ok := a.(*authSharedTest); ok {
+		v.authKnight = authKnight
+	}
+}
+
+// SetTemporaryKeyGetForTest allows tests to configure the TemporaryKeyGet function.
+func SetTemporaryKeyGetForTest(a types.AuthSharedInterface, fn func(key string) (string, error)) {
+	if v, ok := a.(*authSharedTest); ok {
+		v.temporaryKeyGet = fn
 	}
 }

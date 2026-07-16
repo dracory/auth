@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/dracory/auth/types"
 	"github.com/dracory/hb"
 	"github.com/dracory/uncdn"
 )
@@ -90,4 +91,21 @@ func PageRender(
 			opts.Logger.Error(opts.LogMessage, "error", err)
 		}
 	}
+}
+
+type authKnightChecker interface {
+	IsAuthKnight() bool
+	LinkAuthKnightRedirect(r *http.Request) string
+}
+
+// RedirectAuthKnightIfActive checks if the auth instance is in AuthKnight mode
+// and redirects to AuthKnight's hosted login if so. Returns true if a redirect
+// was performed, false otherwise.
+func RedirectAuthKnightIfActive(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) bool {
+	checker, ok := a.(authKnightChecker)
+	if !ok || !checker.IsAuthKnight() {
+		return false
+	}
+	http.Redirect(w, r, checker.LinkAuthKnightRedirect(r), http.StatusTemporaryRedirect)
+	return true
 }

@@ -10,8 +10,9 @@
 
 ## ✨ Features
 
-- 🔐 **Two Authentication Flows**
-  - **Passwordless** - Email-based verification codes (recommended for security)
+- 🔐 **Three Authentication Flows**
+  - **AuthKnight** - Passwordless authentication via AuthKnight hosted login (recommended for security)
+  - **Passwordless** - Email-based verification codes
   - **Username/Password** - Traditional authentication with password storage
   
 - 🛡️ **Production-Grade Security**
@@ -78,10 +79,33 @@ For detailed information about the package organization, see [docs/project-struc
 
 <table>
 <tr>
-<th>Passwordless (Recommended)</th>
+<th>AuthKnight (Recommended)</th>
+<th>Passwordless</th>
 <th>Username/Password</th>
 </tr>
 <tr>
+<td>
+
+```go
+import (
+  "github.com/dracory/auth"
+  "github.com/dracory/auth/types"
+)
+
+auth, err := auth.NewAuthKnightAuth(
+  types.ConfigAuthKnight{
+    ConfigShared: types.ConfigShared{
+      Endpoint: "/auth",
+      UrlRedirectOnSuccess: "/dashboard",
+      UseCookies: true,
+      // ... implement callbacks
+    },
+    // ... AuthKnight-specific callbacks
+  },
+)
+```
+
+</td>
 <td>
 
 ```go
@@ -357,6 +381,30 @@ authInstance, err := auth.NewUsernameAndPasswordAuth(types.ConfigUsernameAndPass
 })
 ```
 
+### AuthKnight Flow
+
+AuthKnight provides passwordless authentication via a hosted login page. The user authenticates on AuthKnight's site, and upon success is redirected back to your application with a verified email.
+
+```go
+authInstance, err := auth.NewAuthKnightAuth(types.ConfigAuthKnight{
+    ConfigShared: types.ConfigShared{
+        Endpoint:                "/auth",
+        UrlRedirectOnSuccess:    "/dashboard",
+        UseCookies:              true,
+        EnableRegistration:      true,
+        FuncUserFindByAuthToken: userFindByAuthToken,
+        FuncUserLogout:          userLogout,
+        FuncUserStoreAuthToken:  userStoreAuthToken,
+        FuncTemporaryKeyGet:     tempKeyGet,
+        FuncTemporaryKeySet:     tempKeySet,
+    },
+    FuncUserFindByEmail: userFindByEmail,
+    FuncUserRegister:    userRegister,
+})
+```
+
+For full configuration details, URL helpers, page behavior, and security notes, see [docs/authknight.md](docs/authknight.md).
+
 ## 🔌 Available Endpoints
 
 Once configured, the following endpoints are automatically available:
@@ -374,6 +422,7 @@ Once configured, the following endpoints are automatically available:
 | POST | `/auth/api/reset-password` | Complete password reset |
 | POST | `/auth/api/impersonate/start` | Begin impersonating a user (requires config) |
 | POST | `/auth/api/impersonate/stop` | Exit impersonation and return to admin session |
+| GET | `/auth/api/authknight/callback` | AuthKnight redirect endpoint (receives `once` token) |
 
 ### Page Endpoints (HTML responses)
 
@@ -692,6 +741,11 @@ if auth.IsImpersonationEnabled() {
     _ = isImpersonating
     _ = realAdminID
 }
+
+// AuthKnight helpers (only available with NewAuthKnightAuth)
+// loginURL := auth.LinkAuthKnightRedirect(r)    // full login URL from request
+// loginURL := auth.LinkAuthKnightLogin(back, next) // manual back_url + next_url
+// callbackPath := auth.LinkAuthKnightCallback()   // callback path relative to endpoint
 ```
 
 ## ❓ Frequently Asked Questions
@@ -751,6 +805,13 @@ go test -cover ./...
 ## 📝 Working Examples
 
 The [examples](./examples) directory contains complete working applications:
+
+### [AuthKnight Example](./examples/authknight)
+- Passwordless authentication via AuthKnight hosted login
+- New user registration with verified email
+- In-memory storage for quick testing
+- Run with: `cd examples/authknight && go run main.go`
+- Available at: `http://localhost:8084`
 
 ### [Passwordless Example](./examples/passwordless)
 - Email-based authentication with verification codes

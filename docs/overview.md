@@ -1,6 +1,6 @@
 # Package Overview: dracory/auth
 
-**Last Updated:** 2025-11-28
+**Last Updated:** 2026-07-16
 
 ---
 
@@ -10,9 +10,10 @@
 
 ## Core Philosophy
 
-1. **Two Authentication Strategies**
+1. **Three Authentication Strategies**
+   - **AuthKnight Flow** - Passwordless authentication via AuthKnight hosted login (recommended for security)
+   - **Passwordless Flow** - Email-based verification codes (no password storage)
    - **Username/Password Flow** - Traditional authentication with password storage
-   - **Passwordless Flow** - Email-based verification codes (more secure, no password storage)
 
 2. **Complete Solution**
    - Pre-built HTML pages for login, registration, password reset
@@ -41,6 +42,7 @@ graph TB
     subgraph "Entry Points"
         A[NewPasswordlessAuth]
         B[NewUsernameAndPasswordAuth]
+        AK[NewAuthKnightAuth]
     end
     
     subgraph "Core Auth Struct"
@@ -60,6 +62,7 @@ graph TB
     subgraph "Flows"
         G[Passwordless Flow]
         H[Username/Password Flow]
+        AKF[AuthKnight Flow]
     end
     
     subgraph "User Implementation"
@@ -70,18 +73,22 @@ graph TB
     
     A --> C
     B --> C
+    AK --> C
     C --> T
     C --> U
     C --> IA
     C --> IU
     C --> G
     C --> H
+    C --> AKF
     G --> I
     G --> J
     G --> K
     H --> I
     H --> J
     H --> K
+    AKF --> I
+    AKF --> K
     
     style C fill:#4CAF50
     style T fill:#FF9800
@@ -103,13 +110,14 @@ The library is organized into focused packages for maintainability:
 
 All configuration structs, interfaces, and type definitions:
 
-- **[auth_interfaces.go](file:///d:/PROJECTs/_modules_dracory/auth/types/auth_interfaces.go)** - Core interfaces (`AuthSharedInterface`, etc.)
+- **[auth_interfaces.go](file:///d:/PROJECTs/_modules_dracory/auth/types/auth_interfaces.go)** - Core interfaces (`AuthSharedInterface`, `AuthAuthKnightInterface`, etc.)
 - **[config_passwordless.go](file:///d:/PROJECTs/_modules_dracory/auth/types/config_passwordless.go)** - `ConfigPasswordless` struct
 - **[config_username_and_password.go](file:///d:/PROJECTs/_modules_dracory/auth/types/config_username_and_password.go)** - `ConfigUsernameAndPassword` struct
+- **[config_authknight.go](file:///d:/PROJECTs/_modules_dracory/auth/types/config_authknight.go)** - `ConfigAuthKnight` struct
 - **[user_auth_options.go](file:///d:/PROJECTs/_modules_dracory/auth/types/user_auth_options.go)** - `UserAuthOptions` type
 - **[password.go](file:///d:/PROJECTs/_modules_dracory/auth/types/password.go)** - Password-related types
 - **[cookie_config.go](file:///d:/PROJECTs/_modules_dracory/auth/types/cookie_config.go)** - Cookie configuration
-- **[constants.go](file:///d:/PROJECTs/_modules_dracory/auth/types/constants.go)** - Type-level constants
+- **[constants.go](file:///d:/PROJECTs/_modules_dracory/auth/types/constants.go)** - Path and endpoint constants
 
 **Usage:** Import as `"github.com/dracory/auth/types"`
 
@@ -141,6 +149,7 @@ Each API endpoint has its own subdirectory with handler, dependencies, and tests
 - **[api_password_restore/](file:///d:/PROJECTs/_modules_dracory/auth/internal/api/api_password_restore)** - Password reset request
 - **[api_password_reset/](file:///d:/PROJECTs/_modules_dracory/auth/internal/api/api_password_reset)** - Password reset completion
 - **[api_authenticate_via_username/](file:///d:/PROJECTs/_modules_dracory/auth/internal/api/api_authenticate_via_username)** - Username authentication helper
+- **[api_authknight_callback/](file:///d:/PROJECTs/_modules_dracory/auth/internal/api/api_authknight_callback)** - AuthKnight callback endpoint
 
 Each subdirectory typically contains:
 - Main handler file (e.g., `api_login.go`)

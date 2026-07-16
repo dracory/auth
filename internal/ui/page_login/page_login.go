@@ -12,6 +12,10 @@ import (
 // the result to the ResponseWriter.
 
 func PageLogin(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) {
+	if shared.RedirectAuthKnightIfActive(w, r, a) {
+		return
+	}
+
 	content := ""
 	scripts := ""
 	if a.IsPasswordless() {

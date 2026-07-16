@@ -34,6 +34,22 @@ func TestApiImpersonateStopTrailingSlash(t *testing.T) {
 	}
 }
 
+func TestApiAuthKnightCallback(t *testing.T) {
+	got := ApiAuthKnightCallback("http://localhost/auth")
+	expected := "http://localhost/auth/api/authknight/callback"
+	if got != expected {
+		t.Fatalf("expected %q, got %q", expected, got)
+	}
+}
+
+func TestApiAuthKnightCallbackTrailingSlash(t *testing.T) {
+	got := ApiAuthKnightCallback("http://localhost/auth/")
+	expected := "http://localhost/auth/api/authknight/callback"
+	if got != expected {
+		t.Fatalf("expected %q, got %q", expected, got)
+	}
+}
+
 func TestJoin(t *testing.T) {
 	tests := []struct {
 		name     string

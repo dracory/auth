@@ -60,4 +60,11 @@ const (
 	MsgImpersonationNotEnabled = "impersonation is not enabled"
 	MsgImpersonationForbidden  = "impersonation is not allowed"
 	MsgImpersonationFailed     = "impersonation failed. Please try again later"
+
+	// AuthKnight messages
+	MsgAuthKnightOnceRequired       = "Once token is required"
+	MsgAuthKnightVerificationFailed = "AuthKnight verification failed"
+	MsgAuthKnightAPIError           = "AuthKnight API error. Please try again later"
+	MsgAuthKnightTempKeyStoreFailed = "Failed to store verification data. Please try again later"
+	MsgAuthKnightRegistrationFailed = "Registration failed. Please try again later"
 )

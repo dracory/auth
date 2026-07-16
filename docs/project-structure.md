@@ -30,7 +30,8 @@ dracory/auth/
 │       └── ...
 ├── examples/           # Working example applications
 │   ├── passwordless/
-│   └── usernamepassword/
+│   ├── usernamepassword/
+│   └── authknight/
 └── *.go               # Public API (constructors, middleware, main Auth type)
 ```
 
@@ -47,7 +48,7 @@ All configuration structs, interfaces, and type definitions. This is part of the
 - **[user_auth_options.go](file:///d:/PROJECTs/_modules_dracory/auth/types/user_auth_options.go)** - `UserAuthOptions` type
 - **[password.go](file:///d:/PROJECTs/_modules_dracory/auth/types/password.go)** - Password-related types
 - **[cookie_config.go](file:///d:/PROJECTs/_modules_dracory/auth/types/cookie_config.go)** - Cookie configuration
-- **[constants.go](file:///d:/PROJECTs/_modules_dracory/auth/types/constants.go)** - Type-level constants
+- **[constants.go](file:///d:/PROJECTs/_modules_dracory/auth/types/constants.go)** - Path and endpoint constants
 
 **Usage:** Import as `"github.com/dracory/auth/types"`
 
@@ -90,6 +91,7 @@ Each API endpoint has its own subdirectory with handler, dependencies, and tests
 - **[api_password_restore/](file:///d:/PROJECTs/_modules_dracory/auth/internal/api/api_password_restore)** - Password reset request
 - **[api_password_reset/](file:///d:/PROJECTs/_modules_dracory/auth/internal/api/api_password_reset)** - Password reset completion
 - **[api_authenticate_via_username/](file:///d:/PROJECTs/_modules_dracory/auth/internal/api/api_authenticate_via_username)** - Username authentication helper
+- **[api_authknight_callback/](file:///d:/PROJECTs/_modules_dracory/auth/internal/api/api_authknight_callback)** - AuthKnight callback endpoint
 
 **Typical structure of each subdirectory:**
 - Main handler file (e.g., `api_login.go`)
@@ -119,9 +121,16 @@ Each UI page has its own subdirectory with handler, content generation, and test
 
 ### `examples/` - Working Example Applications
 
-Complete, runnable example applications demonstrating both authentication flows.
+Complete, runnable example applications demonstrating all authentication flows.
 
 **Examples:**
+- **[authknight/](file:///d:/PROJECTs/_modules_dracory/auth/examples/authknight)** - AuthKnight authentication example
+  - In-memory storage
+  - Passwordless auth via AuthKnight hosted login
+  - New user registration with verified email
+  - Protected dashboard route
+  - Available at `http://localhost:8084`
+
 - **[passwordless/](file:///d:/PROJECTs/_modules_dracory/auth/examples/passwordless)** - Passwordless authentication example
   - In-memory storage
   - Email sending via localhost:1025
@@ -142,7 +151,7 @@ Complete, runnable example applications demonstrating both authentication flows.
 The root package provides the public API that users interact with:
 
 **Key Components:**
-- **Constructors:** `NewPasswordlessAuth()`, `NewUsernameAndPasswordAuth()`
+- **Constructors:** `NewPasswordlessAuth()`, `NewUsernameAndPasswordAuth()`, `NewAuthKnightAuth()`
 - **Middleware:** `WebAuthOrRedirectMiddleware()`, `ApiAuthOrErrorMiddleware()`, `WebAppendUserIdIfExistsMiddleware()`
 - **Main type:** `authImplementation` (implements `AuthSharedInterface` from `types/`)
 - **Delegation:** Thin wrappers that delegate to `internal/api/` and `internal/ui/` packages

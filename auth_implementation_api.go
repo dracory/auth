@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/dracory/auth/internal/api/api_authenticate_via_username"
+	"github.com/dracory/auth/internal/api/api_authknight_callback"
 	"github.com/dracory/auth/internal/api/api_impersonate_start"
 	"github.com/dracory/auth/internal/api/api_impersonate_stop"
 	"github.com/dracory/auth/internal/api/api_login"
@@ -53,4 +54,8 @@ func (a authImplementation) apiImpersonateStart(w http.ResponseWriter, r *http.R
 
 func (a authImplementation) apiImpersonateStop(w http.ResponseWriter, r *http.Request) {
 	api_impersonate_stop.ApiImpersonateStopWithAuth(w, r, &a)
+}
+
+func (a authImplementation) apiAuthKnightCallback(w http.ResponseWriter, r *http.Request) {
+	api_authknight_callback.ApiAuthKnightCallbackWithAuth(w, r, &a)
 }

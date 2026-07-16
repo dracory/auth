@@ -12,6 +12,32 @@ import (
 // writes the result to the ResponseWriter.
 
 func PageRegister(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) {
+	// With ak_key: render AuthKnight register form (check first before AuthKnight redirect guard)
+	if r.URL.Query().Get("ak_key") != "" {
+		akKey := r.URL.Query().Get("ak_key")
+		email := getAuthKnightEmail(a, r)
+		if email != "" {
+			content := RegisterAuthKnightContent(links.Login(a.GetEndpoint()), email, akKey)
+			scripts := RegisterAuthKnightScripts(
+				links.ApiRegister(a.GetEndpoint()),
+				a.LinkRedirectOnSuccess(),
+			)
+			shared.PageRender(w, shared.PageOptions{
+				Title:      "Register",
+				Layout:     a.GetLayout(),
+				Content:    content,
+				Scripts:    scripts,
+				Logger:     a.GetLogger(),
+				LogMessage: "failed to write register page response",
+			})
+			return
+		}
+	}
+
+	if shared.RedirectAuthKnightIfActive(w, r, a) {
+		return
+	}
+
 	content := ""
 	scripts := ""
 
@@ -44,4 +70,24 @@ func PageRegister(w http.ResponseWriter, r *http.Request, a types.AuthSharedInte
 		Logger:     a.GetLogger(),
 		LogMessage: "failed to write register page response",
 	})
+}
+
+// getAuthKnightEmail retrieves the verified email from the temporary key store
+// using the ak_key query parameter.
+func getAuthKnightEmail(a types.AuthSharedInterface, r *http.Request) string {
+	akKey := r.URL.Query().Get("ak_key")
+	if akKey == "" {
+		return ""
+	}
+
+	fn := a.GetFuncTemporaryKeyGet()
+	if fn == nil {
+		return ""
+	}
+
+	email, err := fn(akKey)
+	if err != nil {
+		return ""
+	}
+	return email
 }

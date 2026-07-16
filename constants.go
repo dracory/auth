@@ -21,53 +21,37 @@ var CookieName = "authtoken"
 const (
 	keyEndpoint = contextKey("endpoint")
 
-	// PathApiLogin contains the path to api login endpoint
-	PathApiLogin string = "api/login"
+	// Path constants re-exported from types for backward compatibility
+	PathApiLogin              = authtypes.PathApiLogin
+	PathApiLoginCodeVerify    = authtypes.PathApiLoginCodeVerify
+	PathApiLogout             = authtypes.PathApiLogout
+	PathApiRegister           = authtypes.PathApiRegister
+	PathApiRegisterCodeVerify = authtypes.PathApiRegisterCodeVerify
+	PathApiRestorePassword    = authtypes.PathApiRestorePassword
+	PathApiResetPassword      = authtypes.PathApiResetPassword
+	PathApiImpersonateStart   = authtypes.PathApiImpersonateStart
+	PathApiImpersonateStop    = authtypes.PathApiImpersonateStop
+	PathApiAuthKnightCallback = authtypes.PathApiAuthKnightCallback
 
-	// PathApiLoginCodeVerify contains the path to api login code verification endpoint
-	PathApiLoginCodeVerify string = "api/login-code-verify"
+	AuthKnightBaseURL = authtypes.AuthKnightBaseURL
 
-	// PathApiLogout contains the path to api logout endpoint
-	PathApiLogout string = "api/logout"
+	PathLogin              = authtypes.PathLogin
+	PathLoginCodeVerify    = authtypes.PathLoginCodeVerify
+	PathLogout             = authtypes.PathLogout
+	PathRegister           = authtypes.PathRegister
+	PathRegisterCodeVerify = authtypes.PathRegisterCodeVerify
+	PathPasswordRestore    = authtypes.PathPasswordRestore
+	PathPasswordReset      = authtypes.PathPasswordReset
 
-	// PathApiRegister contains the path to api register endpoint
-	PathApiRegister string = "api/register"
-
-	// PathApiRegisterCodeVerify contains the path to api register code verification endpoint
-	PathApiRegisterCodeVerify string = "api/register-code-verify"
-
-	// PathApiRestorePassword contains the path to api restore password endpoint
-	PathApiRestorePassword string = "api/restore-password"
-
-	// PathApiResetPassword contains the path to api reset password endpoint
-	PathApiResetPassword string = "api/reset-password"
-
-	// PathApiImpersonateStart contains the path to api impersonate start endpoint
-	PathApiImpersonateStart string = "api/impersonate/start"
-
-	// PathApiImpersonateStop contains the path to api impersonate stop endpoint
-	PathApiImpersonateStop string = "api/impersonate/stop"
-
-	// PathLogin contains the path to login page
-	PathLogin string = "login"
-
-	// PathLoginCodeVerify contains the path to login code verification page
-	PathLoginCodeVerify string = "login-code-verify"
-
-	// PathLogout contains the path to logout page
-	PathLogout string = "logout"
-
-	// PathRegister contains the path to logout page
-	PathRegister string = "register"
-
-	// PathRegisterCodeVerify contains the path to registration code verification page
-	PathRegisterCodeVerify string = "register-code-verify"
-
-	// PathRestore contains the path to password restore page
-	PathPasswordRestore string = "password-restore"
-
-	// PathReset contains the path to password reset page
-	PathPasswordReset string = "password-reset"
+	EndpointLogin              = authtypes.EndpointLogin
+	EndpointLoginCodeVerify    = authtypes.EndpointLoginCodeVerify
+	EndpointRegister           = authtypes.EndpointRegister
+	EndpointRegisterCodeVerify = authtypes.EndpointRegisterCodeVerify
+	EndpointPasswordReset      = authtypes.EndpointPasswordReset
+	EndpointPasswordRestore    = authtypes.EndpointPasswordRestore
+	EndpointImpersonateStart   = authtypes.EndpointImpersonateStart
+	EndpointImpersonateStop    = authtypes.EndpointImpersonateStop
+	EndpointAuthKnightCallback = authtypes.EndpointAuthKnightCallback
 
 	// LoginCodeLength specified the length of the login code
 	LoginCodeLength int = 8
