@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -328,8 +329,13 @@ func TestLinkAuthKnightRedirect_HTTPScheme(t *testing.T) {
 	req.Host = "localhost:8084"
 	loginURL := a.LinkAuthKnightRedirect(req)
 
-	if !strings.HasPrefix(loginURL, "http://localhost:8084") {
-		t.Fatalf("expected http:// scheme, got %s", loginURL)
+	parsed, err := url.Parse(loginURL)
+	if err != nil {
+		t.Fatalf("failed to parse login URL: %v", err)
+	}
+	backURL := parsed.Query().Get("back_url")
+	if !strings.HasPrefix(backURL, "http://localhost:8084") {
+		t.Fatalf("expected back_url with http:// scheme, got %s", backURL)
 	}
 }
 
@@ -345,7 +351,12 @@ func TestLinkAuthKnightRedirect_ForwardedProto(t *testing.T) {
 	req.Header.Set("X-Forwarded-Proto", "https")
 	loginURL := a.LinkAuthKnightRedirect(req)
 
-	if !strings.HasPrefix(loginURL, "https://example.com") {
-		t.Fatalf("expected https:// scheme from X-Forwarded-Proto, got %s", loginURL)
+	parsed, err := url.Parse(loginURL)
+	if err != nil {
+		t.Fatalf("failed to parse login URL: %v", err)
+	}
+	backURL := parsed.Query().Get("back_url")
+	if !strings.HasPrefix(backURL, "https://example.com") {
+		t.Fatalf("expected back_url with https:// scheme from X-Forwarded-Proto, got %s", backURL)
 	}
 }

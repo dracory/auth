@@ -15,6 +15,7 @@ func NewUsernameAndPasswordConfigForTest() types.ConfigUsernameAndPassword {
 			Endpoint:             endpoint,
 			UrlRedirectOnSuccess: "http://localhost/dashboard",
 			UseCookies:           true,
+			EnableRegistration:   true,
 			FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
 			FuncTemporaryKeySet:  func(key string, value string, expiresSeconds int) (err error) { return nil },
 			FuncUserFindByAuthToken: func(ctx context.Context, token string, options types.UserAuthOptions) (userID string, err error) {
@@ -34,6 +35,9 @@ func NewUsernameAndPasswordConfigForTest() types.ConfigUsernameAndPassword {
 		FuncEmailSend: func(ctx context.Context, userID string, emailSubject string, emailBody string) (err error) {
 			return nil
 		},
+		FuncUserRegister: func(ctx context.Context, username string, password string, firstName string, lastName string, options types.UserAuthOptions) error {
+			return nil
+		},
 		PasswordStrength: &types.PasswordStrengthConfig{},
 	}
 }
@@ -47,6 +51,7 @@ func NewPasswordlessConfigForTest() types.ConfigPasswordless {
 			Endpoint:             endpoint,
 			UrlRedirectOnSuccess: "http://localhost/dashboard",
 			UseCookies:           true,
+			EnableRegistration:   true,
 			FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
 			FuncTemporaryKeySet:  func(key string, value string, expiresSeconds int) (err error) { return nil },
 			FuncUserFindByAuthToken: func(ctx context.Context, token string, options types.UserAuthOptions) (userID string, err error) {
@@ -61,6 +66,9 @@ func NewPasswordlessConfigForTest() types.ConfigPasswordless {
 			return "111", nil
 		},
 		FuncEmailSend: func(ctx context.Context, email string, emailSubject string, emailBody string) (err error) { return nil },
+		FuncUserRegister: func(ctx context.Context, email string, firstName string, lastName string, options types.UserAuthOptions) error {
+			return nil
+		},
 	}
 }
 
@@ -73,6 +81,7 @@ func NewAuthKnightConfigForTest() types.ConfigAuthKnight {
 			Endpoint:             endpoint,
 			UrlRedirectOnSuccess: "http://localhost/dashboard",
 			UseCookies:           true,
+			EnableRegistration:   true,
 			FuncTemporaryKeyGet:  func(key string) (value string, err error) { return "", nil },
 			FuncTemporaryKeySet:  func(key string, value string, expiresSeconds int) (err error) { return nil },
 			FuncUserFindByAuthToken: func(ctx context.Context, token string, options types.UserAuthOptions) (userID string, err error) {
