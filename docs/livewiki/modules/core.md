@@ -1,7 +1,11 @@
 ---
-Created: 2025-12-06
-Last Updated: 2025-12-06
-Version: 1.0.0
+path: modules/core.md
+page-type: module
+summary: Core module documentation for the root auth package, constructors, and the authImplementation struct.
+tags: [module, core, auth, constructors, router, authImplementation]
+created: 2025-12-06
+updated: 2026-07-16
+version: 2.0.0
 ---
 
 # Core Module
@@ -14,28 +18,58 @@ The core module provides the main entry points for the library and orchestrates 
 
 ### 1. Factories / Constructors
 
-*   `NewPasswordlessAuth(config types.ConfigPasswordless) (*Auth, error)`
-*   `NewUsernameAndPasswordAuth(config types.ConfigUsernameAndPassword) (*Auth, error)`
+*   `NewPasswordlessAuth(config types.ConfigPasswordless) (AuthPasswordlessInterface, error)`
+*   `NewUsernameAndPasswordAuth(config types.ConfigUsernameAndPassword) (AuthPasswordInterface, error)`
+*   `NewAuthKnightAuth(config types.ConfigAuthKnight) (AuthAuthKnightInterface, error)`
 
-These functions validate your configuration and return an initialized `*Auth` struct.
+These functions validate your configuration and return an initialized auth instance.
 
-### 2. The `Auth` Struct
+### 2. The `authImplementation` Struct
 
-Detailed in `auth_implementation.go`. This struct holds:
+Defined in `auth_implementation.go`. This struct holds:
 *   The Router (`*http.ServeMux`)
-*   The Configuration
-*   References to internal API and Page handlers
+*   Configuration (endpoint, URLs, flags)
+*   All callback functions (user lookup, token storage, email, etc.)
+*   Rate limiter instance
+*   CSRF settings
+*   Impersonation settings
+*   AuthKnight settings
+*   Observability hooks
+*   Logger (`*slog.Logger`)
 
 ### 3. Router
 
-`router.go` sets up the mapping between HTTP paths and handlers.
-*   `/api/*` -> Forwarded to `internal/api` handlers.
-*   `/*` (e.g., `/login`, `/register`) -> Forwarded to `internal/ui` handlers.
+`router.go` — `AuthHandler` routes by URI suffix matching using `uriHasPathSuffix()` for path-boundary-safe matching. Routes are built dynamically in `buildAPIRoutes()` based on enabled features.
+
+### 4. Public API Shortcuts
+
+`public_api.go` provides backward-compatible functions:
+*   `AuthCookieSet(w, r, token, opts...)`
+*   `AuthCookieGet(r) string`
+*   `AuthCookieRemove(w, r, opts...)`
+*   `AuthTokenRetrieve(r, useCookies) string`
+
+### 5. Impersonation Helpers
+
+`impersonation_helpers.go`:
+*   `IsImpersonating(r *http.Request) bool`
+*   `GetImpersonatorUserID(r *http.Request) string`
 
 ## Usage
 
-You primarily interact with this module by calling one of the factories and then mounting the `Router()`:
-
 ```go
-auth.Router().ServeHTTP(w, r)
+authInstance, err := auth.NewPasswordlessAuth(config)
+mux := http.NewServeMux()
+mux.HandleFunc("/auth/", authInstance.Router().ServeHTTP)
 ```
+
+## See Also
+
+- [API Internals](api.md)
+- [UI Internals](ui.md)
+- [Types Module](types.md)
+- [Configuration](../configuration.md)
+
+## Changelog
+- **v2.0.0** (2026-07-16): Added AuthKnight constructor, public API shortcuts, impersonation helpers, updated return types to interfaces
+- **v1.0.0** (2025-12-04): Initial creation

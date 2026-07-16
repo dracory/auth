@@ -12,6 +12,10 @@
   - [API Internals](modules/api.md)
   - [UI Internals](modules/ui.md)
   - [Middlewares](modules/middlewares.md)
+  - [Types](modules/types.md)
+  - [Utils](modules/utils.md)
+  - [AuthKnight](modules/authknight.md)
+  - [Impersonation](modules/impersonation.md)
 - **Operational**
   - [Configuration](configuration.md)
   - [Development](development.md)

@@ -837,6 +837,8 @@ Both examples demonstrate:
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
+WIKI: https://html-preview.github.io/?url=https://github.com/dracory/auth/blob/main/docs/livewiki/index.html
+
 ## 📄 License
 
 See [LICENSE](LICENSE) file for details.

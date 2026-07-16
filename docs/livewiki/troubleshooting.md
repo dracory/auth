@@ -1,7 +1,11 @@
 ---
-Created: 2025-12-06
-Last Updated: 2025-12-06
-Version: 1.0.0
+path: troubleshooting.md
+page-type: reference
+summary: Common issues and solutions for Dracory Auth, including CSRF, impersonation, AuthKnight, and rate limiting.
+tags: [troubleshooting, debugging, csrf, impersonation, authknight, rate-limit]
+created: 2025-12-06
+updated: 2026-07-16
+version: 2.0.0
 ---
 
 # Troubleshooting
@@ -9,24 +13,38 @@ Version: 1.0.0
 ## Common Issues
 
 ### 1. "no such table: users"
-**Cause**: Your `FuncUserFindByEmail` or similar callback is trying to query a table that doesn't exist in your database.
-**Fix**: Ensure your database schema is set up before running the auth flows.
+**Cause**: Your `FuncUserFindByEmail` or similar callback is querying a non-existent table.
+**Fix**: Ensure your database schema is set up before running auth flows.
 
 ### 2. Emails not arriving
-**Cause**: The `FuncEmailSend` callback is failing or your SMTP provider is blocking requests.
-**Fix**: Add logging inside your `FuncEmailSend` implementation to verify it's being called. Check your spam folder.
+**Cause**: `FuncEmailSend` callback is failing or SMTP provider is blocking.
+**Fix**: Add logging inside `FuncEmailSend`. Check spam folder.
 
 ### 3. "CSRF Token Invalid"
-**Cause**: You might be testing APIs with Postman without handling cookies properly, or mixing HTTP/HTTPS on localhost.
-**Fix**: Ensure cookies are enabled in your client. If running locally, you might need to relax `Secure` cookie settings if not using HTTPS (though the library tries to handle this).
+**Cause**: Testing APIs without cookies, or mixing HTTP/HTTPS.
+**Fix**: Ensure cookies are enabled. CSRF binds to IP, User-Agent, and Path.
+
+### 4. Impersonation not working
+**Cause**: `EnableImpersonation` not set, or `FuncCanImpersonate` returns false.
+**Fix**: Verify `ConfigImpersonation` fields. Ensure admin is authenticated before calling `/api/impersonate/start`.
+
+### 5. AuthKnight callback fails
+**Cause**: `once` token expired/invalid, or AuthKnight API unreachable.
+**Fix**: Check `HTTPTimeout` (default 10s). Verify connectivity to `authknight.com`.
+
+### 6. Rate limit exceeded (429)
+**Cause**: Too many attempts from same IP/endpoint.
+**Fix**: Increase `MaxLoginAttempts` or `LockoutDuration` in config. Use `DisableRateLimit` for testing.
 
 ## Debugging
 
-Enable structured logging by passing a `Logger` to the config:
+Enable structured logging:
 
 ```go
 logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 config.Logger = logger
 ```
 
-This will print detailed auth flow logs to the console.
+## Changelog
+- **v2.0.0** (2026-07-16): Added impersonation, AuthKnight, rate limit troubleshooting
+- **v1.0.0** (2025-12-04): Initial creation
