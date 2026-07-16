@@ -52,7 +52,7 @@ func TestApiAuthKnightCallback_ExistingUser(t *testing.T) {
 	defer server.Close()
 
 	deps := Dependencies{
-		BaseURL:   server.URL,
+		BaseURL:     server.URL,
 		HTTPTimeout: 5 * time.Second,
 		UserFindByEmail: func(ctx context.Context, email string, options types.UserAuthOptions) (string, error) {
 			if email != "user@example.com" {
@@ -115,7 +115,7 @@ func TestApiAuthKnightCallback_NewUser(t *testing.T) {
 	defer server.Close()
 
 	deps := Dependencies{
-		BaseURL:   server.URL,
+		BaseURL:     server.URL,
 		HTTPTimeout: 5 * time.Second,
 		UserFindByEmail: func(ctx context.Context, email string, options types.UserAuthOptions) (string, error) {
 			return "", fmt.Errorf("user not found")
@@ -163,7 +163,7 @@ func TestApiAuthKnightCallback_NewUser(t *testing.T) {
 
 func TestApiAuthKnightCallback_MissingOnceParameter(t *testing.T) {
 	deps := Dependencies{
-		BaseURL:   "http://localhost",
+		BaseURL:     "http://localhost",
 		HTTPTimeout: 5 * time.Second,
 		UserFindByEmail: func(ctx context.Context, email string, options types.UserAuthOptions) (string, error) {
 			return "", nil
@@ -171,8 +171,8 @@ func TestApiAuthKnightCallback_MissingOnceParameter(t *testing.T) {
 		UserStoreAuthToken: func(ctx context.Context, token, userID string, options types.UserAuthOptions) error {
 			return nil
 		},
-		TemporaryKeySet: func(key, value string, expiresSeconds int) error { return nil },
-		TemporaryKeyGet: func(key string) (string, error) { return "", nil },
+		TemporaryKeySet:      func(key, value string, expiresSeconds int) error { return nil },
+		TemporaryKeyGet:      func(key string) (string, error) { return "", nil },
 		UrlRedirectOnSuccess: "/dashboard",
 		RegisterURL:          "/register",
 		UseCookies:           true,
@@ -199,7 +199,7 @@ func TestApiAuthKnightCallback_AuthKnightAPIError(t *testing.T) {
 	defer server.Close()
 
 	deps := Dependencies{
-		BaseURL:   server.URL,
+		BaseURL:     server.URL,
 		HTTPTimeout: 5 * time.Second,
 		UserFindByEmail: func(ctx context.Context, email string, options types.UserAuthOptions) (string, error) {
 			t.Fatal("should not call UserFindByEmail on API error")
@@ -208,8 +208,8 @@ func TestApiAuthKnightCallback_AuthKnightAPIError(t *testing.T) {
 		UserStoreAuthToken: func(ctx context.Context, token, userID string, options types.UserAuthOptions) error {
 			return nil
 		},
-		TemporaryKeySet: func(key, value string, expiresSeconds int) error { return nil },
-		TemporaryKeyGet: func(key string) (string, error) { return "", nil },
+		TemporaryKeySet:      func(key, value string, expiresSeconds int) error { return nil },
+		TemporaryKeyGet:      func(key string) (string, error) { return "", nil },
 		UrlRedirectOnSuccess: "/dashboard",
 		RegisterURL:          "/register",
 		UseCookies:           true,
@@ -233,7 +233,7 @@ func TestApiAuthKnightCallback_AuthKnightAPIError(t *testing.T) {
 
 func TestApiAuthKnightCallback_AuthKnightAPIUnreachable(t *testing.T) {
 	deps := Dependencies{
-		BaseURL:   "http://127.0.0.1:1", // unreachable
+		BaseURL:     "http://127.0.0.1:1", // unreachable
 		HTTPTimeout: 1 * time.Second,
 		UserFindByEmail: func(ctx context.Context, email string, options types.UserAuthOptions) (string, error) {
 			t.Fatal("should not call UserFindByEmail on unreachable API")
@@ -242,8 +242,8 @@ func TestApiAuthKnightCallback_AuthKnightAPIUnreachable(t *testing.T) {
 		UserStoreAuthToken: func(ctx context.Context, token, userID string, options types.UserAuthOptions) error {
 			return nil
 		},
-		TemporaryKeySet: func(key, value string, expiresSeconds int) error { return nil },
-		TemporaryKeyGet: func(key string) (string, error) { return "", nil },
+		TemporaryKeySet:      func(key, value string, expiresSeconds int) error { return nil },
+		TemporaryKeyGet:      func(key string) (string, error) { return "", nil },
 		UrlRedirectOnSuccess: "/dashboard",
 		RegisterURL:          "/register",
 		UseCookies:           true,
@@ -270,7 +270,7 @@ func TestApiAuthKnightCallback_CustomRedirectURL(t *testing.T) {
 	defer server.Close()
 
 	deps := Dependencies{
-		BaseURL:   server.URL,
+		BaseURL:     server.URL,
 		HTTPTimeout: 5 * time.Second,
 		UserFindByEmail: func(ctx context.Context, email string, options types.UserAuthOptions) (string, error) {
 			return "user-456", nil
@@ -309,7 +309,7 @@ func TestApiAuthKnightCallback_NewUserRegisterURLWithExistingQuery(t *testing.T)
 	defer server.Close()
 
 	deps := Dependencies{
-		BaseURL:   server.URL,
+		BaseURL:     server.URL,
 		HTTPTimeout: 5 * time.Second,
 		UserFindByEmail: func(ctx context.Context, email string, options types.UserAuthOptions) (string, error) {
 			return "", fmt.Errorf("not found")
@@ -317,8 +317,8 @@ func TestApiAuthKnightCallback_NewUserRegisterURLWithExistingQuery(t *testing.T)
 		UserStoreAuthToken: func(ctx context.Context, token, userID string, options types.UserAuthOptions) error {
 			return nil
 		},
-		TemporaryKeySet: func(key, value string, expiresSeconds int) error { return nil },
-		TemporaryKeyGet: func(key string) (string, error) { return "", nil },
+		TemporaryKeySet:      func(key, value string, expiresSeconds int) error { return nil },
+		TemporaryKeyGet:      func(key string) (string, error) { return "", nil },
 		UrlRedirectOnSuccess: "/dashboard",
 		RegisterURL:          "/register?foo=bar",
 		UseCookies:           true,
@@ -376,6 +376,19 @@ func TestVerifyOnceToken_Unreachable(t *testing.T) {
 	}
 }
 
+func TestVerifyOnceToken_NonOKStatusCode(t *testing.T) {
+	server := mockAuthKnightServer("", "error", http.StatusInternalServerError)
+	defer server.Close()
+
+	_, err := verifyOnceToken(context.Background(), server.URL, "test-token", 5*time.Second)
+	if err == nil {
+		t.Fatal("expected error for non-200 status code")
+	}
+	if !strings.Contains(err.Error(), "status 500") {
+		t.Fatalf("expected error mentioning status 500, got: %v", err)
+	}
+}
+
 func TestApiAuthKnightCallback_ConcurrentRequests(t *testing.T) {
 	server := mockAuthKnightServer("user@example.com", "success", http.StatusOK)
 	defer server.Close()
@@ -384,7 +397,7 @@ func TestApiAuthKnightCallback_ConcurrentRequests(t *testing.T) {
 	tokenCount := 0
 
 	deps := Dependencies{
-		BaseURL:   server.URL,
+		BaseURL:     server.URL,
 		HTTPTimeout: 5 * time.Second,
 		UserFindByEmail: func(ctx context.Context, email string, options types.UserAuthOptions) (string, error) {
 			return "user-123", nil
@@ -395,8 +408,8 @@ func TestApiAuthKnightCallback_ConcurrentRequests(t *testing.T) {
 			mu.Unlock()
 			return nil
 		},
-		TemporaryKeySet: func(key, value string, expiresSeconds int) error { return nil },
-		TemporaryKeyGet: func(key string) (string, error) { return "", nil },
+		TemporaryKeySet:      func(key, value string, expiresSeconds int) error { return nil },
+		TemporaryKeyGet:      func(key string) (string, error) { return "", nil },
 		UrlRedirectOnSuccess: "/dashboard",
 		RegisterURL:          "/register",
 		UseCookies:           true,

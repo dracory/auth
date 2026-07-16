@@ -2,6 +2,9 @@ package auth
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -311,5 +314,38 @@ func TestNewAuthKnightAuth_TestUtilsConfig(t *testing.T) {
 
 	if !a.IsAuthKnight() {
 		t.Fatal("expected IsAuthKnight to be true")
+	}
+}
+
+func TestLinkAuthKnightRedirect_HTTPScheme(t *testing.T) {
+	config := newValidAuthKnightConfig()
+	a, err := NewAuthKnightAuth(config)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/auth/login", nil)
+	req.Host = "localhost:8084"
+	loginURL := a.LinkAuthKnightRedirect(req)
+
+	if !strings.HasPrefix(loginURL, "http://localhost:8084") {
+		t.Fatalf("expected http:// scheme, got %s", loginURL)
+	}
+}
+
+func TestLinkAuthKnightRedirect_ForwardedProto(t *testing.T) {
+	config := newValidAuthKnightConfig()
+	a, err := NewAuthKnightAuth(config)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/auth/login", nil)
+	req.Host = "example.com"
+	req.Header.Set("X-Forwarded-Proto", "https")
+	loginURL := a.LinkAuthKnightRedirect(req)
+
+	if !strings.HasPrefix(loginURL, "https://example.com") {
+		t.Fatalf("expected https:// scheme from X-Forwarded-Proto, got %s", loginURL)
 	}
 }

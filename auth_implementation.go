@@ -659,6 +659,9 @@ func (a authImplementation) LinkAuthKnightRedirect(r *http.Request) string {
 	if r.TLS != nil {
 		scheme = "https"
 	}
+	if xfp := r.Header.Get("X-Forwarded-Proto"); xfp != "" {
+		scheme = xfp
+	}
 	baseURL := scheme + "://" + r.Host
 	cancelURL := baseURL + a.endpoint
 	callbackURL := baseURL + a.LinkAuthKnightCallback()

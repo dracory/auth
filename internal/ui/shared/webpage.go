@@ -84,8 +84,8 @@ func PageRender(
 ) {
 	html := buildPage(opts)
 
-	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write([]byte(html)); err != nil {
 		if opts.Logger != nil {
 			opts.Logger.Error(opts.LogMessage, "error", err)

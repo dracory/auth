@@ -74,3 +74,31 @@ func TestRouter_LoginPathServesLoginPage(t *testing.T) {
 		t.Fatalf("expected login page HTML to contain %q, got %s", "<span>Log in</span>", body)
 	}
 }
+
+func TestRouter_RegisterAPIRouteNotRegisteredWhenDisabled(t *testing.T) {
+	config := testutils.NewUsernameAndPasswordConfigForTest()
+	config.EnableRegistration = false
+	authShared, err := NewUsernameAndPasswordAuth(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	registerAPIURL := authShared.LinkApiRegister()
+	req := httptest.NewRequest(http.MethodPost, registerAPIURL, strings.NewReader(""))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	recorder := httptest.NewRecorder()
+
+	authShared.Router().ServeHTTP(recorder, req)
+
+	// When registration is disabled, the API route should not be registered.
+	// The router falls back to notFoundHandler which redirects to login.
+	if status := recorder.Code; status != http.StatusTemporaryRedirect {
+		t.Fatalf("expected status %d (not found redirect), got %d", http.StatusTemporaryRedirect, status)
+	}
+
+	location := recorder.Header().Get("Location")
+	expectedLocation := authShared.LinkLogin()
+	if location != expectedLocation {
+		t.Fatalf("expected redirect to %q, got %q", expectedLocation, location)
+	}
+}

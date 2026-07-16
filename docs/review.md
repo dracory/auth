@@ -6,7 +6,7 @@
 
 ## High Severity
 
-### 1. `PageRender` sets `WriteHeader` before `Content-Type` header
+### 1. ✅ `PageRender` sets `WriteHeader` before `Content-Type` header
 
 **File:** `internal/ui/shared/webpage.go:87-88`
 
@@ -21,17 +21,17 @@ w.Header().Set("Content-Type", "text/html")
 
 ---
 
-### 2. AuthKnight register API bypasses `EnableRegistration` check
+### 2. ✅ AuthKnight register API bypasses `EnableRegistration` check
 
 **File:** `internal/api/api_register/api_register.go:29-113`
 
 The AuthKnight branch in `ApiRegister` never checks if registration is enabled. The page route is gated by `enableRegistration` in `router.go:118-121`, but the API route is always registered in `buildAPIRoutes`. A user can POST directly to `/auth/api/register` with an `ak_key` and register even when `EnableRegistration: false`.
 
-**Fix:** Add a registration-enabled check at the top of the AuthKnight branch.
+**Fix:** Gate `PathApiRegister` and `PathApiRegisterCodeVerify` API routes behind `enableRegistration` in `buildAPIRoutes` (same pattern as page routes).
 
 ---
 
-### 3. Temporary key not deleted after AuthKnight registration
+### 3. ✅ Temporary key not deleted after AuthKnight registration
 
 **File:** `internal/api/api_register/api_register.go:42`
 
@@ -41,7 +41,7 @@ The `ak_key` is read from the temp key store but never deleted. The same key can
 
 ---
 
-### 4. `LinkAuthKnightRedirect` ignores `X-Forwarded-Proto`
+### 4. ✅ `LinkAuthKnightRedirect` ignores `X-Forwarded-Proto`
 
 **File:** `auth_implementation.go:657-664`
 
@@ -76,7 +76,7 @@ if xfp := r.Header.Get("X-Forwarded-Proto"); xfp != "" {
 
 ---
 
-### 6. `verifyOnceToken` doesn't check HTTP status code
+### 6. ✅ `verifyOnceToken` doesn't check HTTP status code
 
 **File:** `internal/api/api_authknight_callback/api_authknight_callback.go:231-245`
 
@@ -92,7 +92,7 @@ if resp.StatusCode != http.StatusOK {
 
 ---
 
-### 7. AuthKnight base URL not configurable per instance
+### 7. ✅ ~~AuthKnight base URL not configurable per instance~~ (not an issue — URL is intentionally hardcoded)
 
 **File:** `internal/api/api_authknight_callback/api_authknight_callback.go:183`
 
@@ -102,7 +102,7 @@ if resp.StatusCode != http.StatusOK {
 
 ---
 
-### 8. Auth token returned in JSON body even when cookies are used
+### 8. ✅ ~~Auth token returned in JSON body even when cookies are used~~ (not an issue — consistent with existing flows)
 
 **File:** `internal/api/api_register/api_register.go:109-111`
 
@@ -120,7 +120,7 @@ When `UseCookies: true`, the token is already set as an HttpOnly cookie. Also re
 
 ## Low Severity
 
-### 9. Fragile type assertions in `ApiRegisterWithAuth`
+### 9. ✅ Fragile type assertions in `ApiRegisterWithAuth`
 
 **File:** `internal/api/api_register/api_register.go:176-194`
 
@@ -138,7 +138,7 @@ if akAuth, ok := a.(types.AuthAuthKnightInterface); ok && akAuth.IsAuthKnight() 
 
 ---
 
-### 10. Redundant query extraction in `page_register.go`
+### 10. ✅ Redundant query extraction in `page_register.go`
 
 **File:** `internal/ui/page_register/page_register.go:16-18`
 
@@ -146,7 +146,7 @@ if akAuth, ok := a.(types.AuthAuthKnightInterface); ok && akAuth.IsAuthKnight() 
 
 ---
 
-### 11. `LinkAuthKnightLogin` uses hardcoded `AuthKnightBaseURL` constant
+### 11. ✅ ~~`LinkAuthKnightLogin` uses hardcoded `AuthKnightBaseURL` constant~~ (not an issue — URL is intentionally hardcoded)
 
 **File:** `auth_implementation.go:651`
 
@@ -154,7 +154,7 @@ Same issue as #7. The login URL builder uses the package-level constant, not con
 
 ---
 
-### 12. AuthKnight logout flow untested
+### 12. ✅ ~~AuthKnight logout flow untested~~ (not an issue — logout is handled by this library, not AuthKnight-specific)
 
 **File:** `new_authknight_auth.go:171-173`
 
@@ -166,18 +166,18 @@ Same issue as #7. The login URL builder uses the package-level constant, not con
 
 | # | Severity | Issue |
 |---|----------|-------|
-| 1 | **High** | `PageRender` sets `WriteHeader` before `Content-Type` — header lost |
-| 2 | **High** | AuthKnight register API bypasses `EnableRegistration` check |
-| 3 | **High** | Temp key (`ak_key`) not deleted after registration — replayable |
-| 4 | **High** | `LinkAuthKnightRedirect` ignores `X-Forwarded-Proto` — breaks behind proxies |
+| 1 | **High** ✅ | `PageRender` sets `WriteHeader` before `Content-Type` — header lost |
+| 2 | **High** ✅ | AuthKnight register API bypasses `EnableRegistration` check |
+| 3 | **High** ✅ | Temp key (`ak_key`) not deleted after registration — replayable |
+| 4 | **High** ✅ | `LinkAuthKnightRedirect` ignores `X-Forwarded-Proto` — breaks behind proxies |
 | 5 | **Medium** | ~35 `fmt.Println` debug statements leaking sensitive data in production |
-| 6 | **Medium** | `verifyOnceToken` doesn't check HTTP status code before JSON parse |
-| 7 | **Medium** | AuthKnight base URL not configurable per instance |
-| 8 | **Medium** | Auth token returned in JSON body even when HttpOnly cookies are used |
-| 9 | **Low** | Fragile inline type assertions instead of `types.AuthAuthKnightInterface` |
-| 10 | **Low** | Redundant `ak_key` query extraction |
-| 11 | **Low** | `LinkAuthKnightLogin` uses hardcoded base URL constant |
-| 12 | **Low** | AuthKnight logout flow untested |
+| 6 | **Medium** ✅ | `verifyOnceToken` doesn't check HTTP status code before JSON parse |
+| 7 | **Medium** ✅ | ~~AuthKnight base URL not configurable per instance~~ (intentionally hardcoded) |
+| 8 | **Medium** ✅ | ~~Auth token returned in JSON body even when HttpOnly cookies are used~~ (consistent with existing flows) |
+| 9 | **Low** ✅ | Fragile inline type assertions instead of `types.AuthAuthKnightInterface` |
+| 10 | **Low** ✅ | Redundant `ak_key` query extraction |
+| 11 | **Low** ✅ | ~~`LinkAuthKnightLogin` uses hardcoded base URL constant~~ (intentionally hardcoded) |
+| 12 | **Low** ✅ | ~~AuthKnight logout flow untested~~ (logout is library-owned, not AuthKnight-specific) |
 
 ---
 

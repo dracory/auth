@@ -40,6 +40,10 @@ type AuthKnightRegisterDependencies struct {
 	// TemporaryKeyGet retrieves the verified email by the ak_key.
 	TemporaryKeyGet func(key string) (string, error)
 
+	// TemporaryKeySet stores a temporary key-value pair with expiration.
+	// Used to clear the ak_key after successful registration.
+	TemporaryKeySet func(key string, value string, expiresSeconds int) error
+
 	// UserRegister creates a new user with email, first name, and last name.
 	// The email is already verified by AuthKnight.
 	UserRegister func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) (userID string, err error)

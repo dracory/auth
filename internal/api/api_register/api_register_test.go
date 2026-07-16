@@ -512,6 +512,8 @@ func TestApiRegisterAuthKnight_Success(t *testing.T) {
 	var registeredEmail, registeredFirstName, registeredLastName string
 	var storedToken, storedUserID string
 	var cookieSet bool
+	var clearedKey string
+	var clearedValue string
 
 	deps := Dependencies{
 		AuthKnight: true,
@@ -521,6 +523,11 @@ func TestApiRegisterAuthKnight_Success(t *testing.T) {
 					return "newuser@example.com", nil
 				}
 				return "", errors.New("key not found")
+			},
+			TemporaryKeySet: func(key string, value string, expiresSeconds int) error {
+				clearedKey = key
+				clearedValue = value
+				return nil
 			},
 			UserRegister: func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) (string, error) {
 				registeredEmail = email
@@ -565,6 +572,66 @@ func TestApiRegisterAuthKnight_Success(t *testing.T) {
 	}
 	if !cookieSet {
 		t.Fatal("expected cookie to be set")
+	}
+	if clearedKey != "test-ak-key" {
+		t.Fatalf("expected ak_key to be cleared, got key='%s'", clearedKey)
+	}
+	if clearedValue != "" {
+		t.Fatalf("expected ak_key value to be cleared to empty, got '%s'", clearedValue)
+	}
+}
+
+func TestApiRegisterAuthKnight_AkKeyConsumedAfterRegistration(t *testing.T) {
+	keyStore := make(map[string]string)
+	keyStore["test-ak-key"] = "newuser@example.com"
+
+	deps := Dependencies{
+		AuthKnight: true,
+		AuthKnightRegisterDependencies: AuthKnightRegisterDependencies{
+			TemporaryKeyGet: func(key string) (string, error) {
+				v, ok := keyStore[key]
+				if !ok {
+					return "", errors.New("key not found")
+				}
+				return v, nil
+			},
+			TemporaryKeySet: func(key string, value string, expiresSeconds int) error {
+				if value == "" {
+					delete(keyStore, key)
+				} else {
+					keyStore[key] = value
+				}
+				return nil
+			},
+			UserRegister: func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) (string, error) {
+				return "user-new-1", nil
+			},
+			UserStoreAuthToken: func(ctx context.Context, token, userID string, options types.UserAuthOptions) error {
+				return nil
+			},
+		},
+	}
+
+	values := url.Values{
+		"ak_key":     {"test-ak-key"},
+		"first_name": {"Jane"},
+		"last_name":  {"Smith"},
+	}
+	recorder, req := makePostRequest(t, "/api/register", values)
+	ApiRegister(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "registration success") {
+		t.Fatalf("expected registration success, got: %s", body)
+	}
+
+	// Second attempt with the same ak_key should fail
+	recorder2, req2 := makePostRequest(t, "/api/register", values)
+	ApiRegister(recorder2, req2, deps)
+
+	body2 := recorder2.Body.String()
+	if !strings.Contains(body2, "Link not valid or expired") {
+		t.Fatalf("expected expired link error on second use of ak_key, got: %s", body2)
 	}
 }
 

@@ -106,6 +106,11 @@ func ApiRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 			akDeps.SetAuthCookie(w, r, token)
 		}
 
+		// Consume the ak_key so it cannot be reused
+		if akDeps.TemporaryKeySet != nil {
+			_ = akDeps.TemporaryKeySet(akKey, "", 0)
+		}
+
 		api.Respond(w, r, api.SuccessWithData(types.MsgRegistrationSuccess, map[string]any{
 			"token": token,
 		}))
@@ -173,25 +178,18 @@ func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSha
 	deps.Logger = a.GetLogger()
 
 	// Check if this is an AuthKnight instance
-	type authKnightChecker interface {
-		IsAuthKnight() bool
-	}
-	if checker, ok := a.(authKnightChecker); ok && checker.IsAuthKnight() {
+	if akAuth, ok := a.(types.AuthAuthKnightInterface); ok && akAuth.IsAuthKnight() {
 		deps.AuthKnight = true
 		deps.AuthKnightRegisterDependencies = AuthKnightRegisterDependencies{
 			TemporaryKeyGet: a.GetFuncTemporaryKeyGet(),
+			TemporaryKeySet: a.GetFuncTemporaryKeySet(),
 			UseCookies:      a.GetUseCookies(),
 			SetAuthCookie: func(w http.ResponseWriter, r *http.Request, token string) {
 				a.SetAuthCookie(w, r, token)
 			},
 		}
 
-		type authKnightAccessor interface {
-			GetAuthKnightUserRegister() func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) (string, error)
-		}
-		if accessor, ok := a.(authKnightAccessor); ok {
-			deps.AuthKnightRegisterDependencies.UserRegister = accessor.GetAuthKnightUserRegister()
-		}
+		deps.AuthKnightRegisterDependencies.UserRegister = akAuth.GetAuthKnightUserRegister()
 
 		deps.AuthKnightRegisterDependencies.UserStoreAuthToken = func(ctx context.Context, token, userID string, options types.UserAuthOptions) error {
 			fn := a.GetFuncUserStoreAuthToken()

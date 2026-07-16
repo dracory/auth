@@ -230,6 +230,10 @@ func verifyOnceToken(ctx context.Context, baseURL, onceToken string, timeout tim
 
 	fmt.Printf("  [verifyOnceToken] response status code: %d\n", resp.StatusCode)
 
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("authknight API returned status %d", resp.StatusCode)
+	}
+
 	body, errRead := io.ReadAll(resp.Body)
 	if errRead != nil {
 		fmt.Printf("  [verifyOnceToken] ERROR reading body: %v\n", errRead)

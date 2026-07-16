@@ -13,9 +13,9 @@ import (
 
 func PageRegister(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) {
 	// With ak_key: render AuthKnight register form (check first before AuthKnight redirect guard)
-	if r.URL.Query().Get("ak_key") != "" {
-		akKey := r.URL.Query().Get("ak_key")
-		email := getAuthKnightEmail(a, r)
+	akKey := r.URL.Query().Get("ak_key")
+	if akKey != "" {
+		email := getAuthKnightEmail(a, akKey)
 		if email != "" {
 			content := RegisterAuthKnightContent(links.Login(a.GetEndpoint()), email, akKey)
 			scripts := RegisterAuthKnightScripts(
@@ -73,9 +73,8 @@ func PageRegister(w http.ResponseWriter, r *http.Request, a types.AuthSharedInte
 }
 
 // getAuthKnightEmail retrieves the verified email from the temporary key store
-// using the ak_key query parameter.
-func getAuthKnightEmail(a types.AuthSharedInterface, r *http.Request) string {
-	akKey := r.URL.Query().Get("ak_key")
+// using the provided ak_key.
+func getAuthKnightEmail(a types.AuthSharedInterface, akKey string) string {
 	if akKey == "" {
 		return ""
 	}

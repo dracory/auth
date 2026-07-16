@@ -138,10 +138,20 @@ func (a authImplementation) buildAPIRoutes(csrfCfg middlewares.CSRFConfig) map[s
 	}{
 		{PathApiLogin, EndpointLogin, a.apiLogin, true},
 		{PathApiLoginCodeVerify, EndpointLoginCodeVerify, a.apiLoginCodeVerify, false},
-		{PathApiRegister, EndpointRegister, a.apiRegister, true},
-		{PathApiRegisterCodeVerify, EndpointRegisterCodeVerify, a.apiRegisterCodeVerify, false},
 		{PathApiResetPassword, EndpointPasswordReset, a.apiPasswordReset, true},
 		{PathApiRestorePassword, EndpointPasswordRestore, a.apiPasswordRestore, false},
+	}
+
+	if a.enableRegistration {
+		apiRoutes = append(apiRoutes, []struct {
+			path     string
+			endpoint string
+			handler  func(http.ResponseWriter, *http.Request)
+			useCSRF  bool
+		}{
+			{PathApiRegister, EndpointRegister, a.apiRegister, true},
+			{PathApiRegisterCodeVerify, EndpointRegisterCodeVerify, a.apiRegisterCodeVerify, false},
+		}...)
 	}
 
 	if a.enableImpersonation {
