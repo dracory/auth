@@ -90,18 +90,16 @@ func removeCookieWithConfig(w http.ResponseWriter, r *http.Request, cfg CookieCo
 		path = "/"
 	}
 
-	secure := types.ResolveSecure(cfg.Secure)
-
 	name := cfg.Name
 	if name == "" {
 		name = CookieName
 	}
 
-	cookie := http.Cookie{
+	httpOnly := types.ResolveHttpOnly(cfg.HttpOnly)
+	baseCookie := http.Cookie{
 		Name:     name,
 		Value:    "none",
-		HttpOnly: types.ResolveHttpOnly(cfg.HttpOnly),
-		Secure:   secure,
+		HttpOnly: httpOnly,
 		SameSite: sameSite,
 		Path:     path,
 		Domain:   cfg.Domain,
@@ -109,5 +107,12 @@ func removeCookieWithConfig(w http.ResponseWriter, r *http.Request, cfg CookieCo
 		MaxAge:   -1,
 	}
 
-	http.SetCookie(w, &cookie)
+	// Emit both Secure and Insecure removal cookies. A removal cookie only
+	// overwrites a cookie whose Secure attribute matches the original, so this
+	// ensures the auth token is cleared regardless of how it was set.
+	for _, secure := range []bool{types.ResolveSecure(cfg.Secure), !types.ResolveSecure(cfg.Secure)} {
+		cookie := baseCookie
+		cookie.Secure = secure
+		http.SetCookie(w, &cookie)
+	}
 }

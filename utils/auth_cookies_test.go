@@ -462,3 +462,49 @@ func TestAuthCookieRemove_WithCookieName(t *testing.T) {
 		t.Fatalf("expected cookie value %q, got %q", "none", cookies[0].Value)
 	}
 }
+
+// TestAuthCookieRemove_EmitsBothSecureAndInsecureRemovalCookies verifies that
+// AuthCookieRemove emits two removal cookies: one Secure and one Insecure.
+// Browsers only replace a stored cookie when the incoming Set-Cookie has the
+// same Secure attribute, so both are required to guarantee the token is cleared.
+func TestAuthCookieRemove_EmitsBothSecureAndInsecureRemovalCookies(t *testing.T) {
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "http://example.com/", nil)
+
+	AuthCookieRemove(w, r)
+
+	res := w.Result()
+	cookies := res.Cookies()
+
+	if len(cookies) != 2 {
+		t.Fatalf("expected 2 removal cookies, got %d", len(cookies))
+	}
+
+	var hasSecure, hasInsecure bool
+	for _, c := range cookies {
+		if c.Name != types.CookieName {
+			t.Fatalf("expected cookie name %q, got %q", types.CookieName, c.Name)
+		}
+		if c.Value != "none" {
+			t.Fatalf("expected cookie value %q, got %q", "none", c.Value)
+		}
+		if !c.Expires.Before(time.Now()) {
+			t.Fatalf("expected expired cookie, got Expires=%v", c.Expires)
+		}
+		if c.MaxAge != -1 {
+			t.Fatalf("expected MaxAge %d, got %d", -1, c.MaxAge)
+		}
+		if c.Secure {
+			hasSecure = true
+		} else {
+			hasInsecure = true
+		}
+	}
+
+	if !hasSecure {
+		t.Fatalf("expected one Secure removal cookie")
+	}
+	if !hasInsecure {
+		t.Fatalf("expected one Insecure removal cookie")
+	}
+}
