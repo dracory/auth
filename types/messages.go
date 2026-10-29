@@ -15,6 +15,7 @@ const (
 	MsgNonceRequired                     = "Nonce is required field"
 	MsgNonceInvalid                      = "Nonce is invalid format"
 	MsgTooManyAttempts                   = "Too many attempts, please request a new code"
+	MsgTooManySends                      = "Too many codes requested, please try again later"
 	MsgPasswordsDoNotMatch               = "Passwords do not match"
 	MsgEmailInvalid                      = "Email is invalid"
 	MsgVerificationCodeInvalidLength     = "Verification code is invalid length"

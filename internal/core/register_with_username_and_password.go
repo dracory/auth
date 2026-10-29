@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/dracory/auth/internal/rules"
 	"github.com/dracory/auth/types"
 	authutils "github.com/dracory/auth/utils"
 )
@@ -81,6 +82,14 @@ func RegisterWithUsernameAndPassword(
 
 	logger := a.GetLogger()
 	hooks := a.GetObservabilityHooks()
+
+	// Per-email send throttle — prevents the endpoint being used for email
+	// bombing; enforced before code generation.
+	if check := rules.NewEmailSendThrottleRule(a.GetFuncTemporaryKeyGet(), email); check.Fails() {
+		response.ErrorMessage = check.FailMessageFirst()
+		hooks.RecordRegistrationAttempt(false, nil)
+		return response
+	}
 
 	verificationCode, errRandom := authutils.GenerateVerificationCode(a.GetDisableRateLimit())
 	if errRandom != nil {
@@ -193,6 +202,12 @@ func RegisterWithUsernameAndPassword(
 
 	response.SuccessMessage = types.MsgRegistrationCodeSent
 	response.Nonce = nonce
+
+	// Consume send quota only after the email was handed off successfully.
+	if get := a.GetFuncTemporaryKeyGet(); get != nil {
+		_ = authutils.RecordEmailSend(get, temporaryKeySet, email, int(verificationExpiration.Seconds()))
+	}
+
 	hooks.RecordRegistrationAttempt(true, nil)
 	return response
 }

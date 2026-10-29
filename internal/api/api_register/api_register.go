@@ -11,6 +11,7 @@ import (
 
 	"github.com/dracory/api"
 	"github.com/dracory/auth/internal/core"
+	"github.com/dracory/auth/internal/rules"
 	"github.com/dracory/auth/types"
 	authutils "github.com/dracory/auth/utils"
 	"github.com/dracory/req"
@@ -127,7 +128,8 @@ func ApiRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 				)
 			}
 			switch err.Code {
-			case RegisterPasswordlessInitErrorCodeValidation:
+			case RegisterPasswordlessInitErrorCodeValidation,
+				RegisterPasswordlessInitErrorCodeTooManySends:
 				api.Respond(w, r, api.Error(err.Message))
 				return
 			case RegisterPasswordlessInitErrorCodeTokenStore,
@@ -223,6 +225,7 @@ func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSha
 	if deps.Passwordless {
 		deps.RegisterPasswordlessInitDependencies = RegisterPasswordlessInitDependencies{
 			DisableRateLimit: a.GetDisableRateLimit(),
+			TemporaryKeyGet:  a.GetFuncTemporaryKeyGet(),
 			TemporaryKeySet:  a.GetFuncTemporaryKeySet(),
 			ExpiresSeconds:   0, // let RegisterPasswordlessInit apply default
 			EmailTemplate: func(ctx context.Context, email string, verificationCode string) string {
@@ -272,6 +275,7 @@ func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSha
 type RegisterPasswordlessInitDependencies struct {
 	DisableRateLimit bool
 
+	TemporaryKeyGet func(key string) (string, error)
 	TemporaryKeySet func(key string, value string, expiresSeconds int) error
 	ExpiresSeconds  int
 
@@ -290,6 +294,7 @@ const (
 	RegisterPasswordlessInitErrorCodeTokenStore     RegisterPasswordlessInitErrorCode = "token_store"
 	RegisterPasswordlessInitErrorCodeEmailSend      RegisterPasswordlessInitErrorCode = "email_send"
 	RegisterPasswordlessInitErrorCodeInternal       RegisterPasswordlessInitErrorCode = "internal"
+	RegisterPasswordlessInitErrorCodeTooManySends   RegisterPasswordlessInitErrorCode = "too_many_sends"
 )
 
 // RegisterPasswordlessInitError is a structured error for the registration init flow.
@@ -356,6 +361,15 @@ func RegisterPasswordlessInit(ctx context.Context, r *http.Request, deps Registe
 		return nil, &RegisterPasswordlessInitError{
 			Code:    RegisterPasswordlessInitErrorCodeValidation,
 			Message: msg,
+		}
+	}
+
+	// Per-email send throttle — prevents the endpoint being used for email
+	// bombing; enforced before code generation.
+	if check := rules.NewEmailSendThrottleRule(deps.TemporaryKeyGet, email); check.Fails() {
+		return nil, &RegisterPasswordlessInitError{
+			Code:    RegisterPasswordlessInitErrorCodeTooManySends,
+			Message: check.FailMessageFirst(),
 		}
 	}
 
@@ -432,6 +446,11 @@ func RegisterPasswordlessInit(ctx context.Context, r *http.Request, deps Registe
 			Code: RegisterPasswordlessInitErrorCodeEmailSend,
 			Err:  errEmail,
 		}
+	}
+
+	// Consume send quota only after the email was handed off successfully.
+	if deps.TemporaryKeyGet != nil {
+		_ = authutils.RecordEmailSend(deps.TemporaryKeyGet, deps.TemporaryKeySet, email, expires)
 	}
 
 	return &RegisterPasswordlessInitResult{

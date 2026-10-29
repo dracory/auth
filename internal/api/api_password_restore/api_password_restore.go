@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/dracory/api"
+	"github.com/dracory/auth/internal/rules"
 	"github.com/dracory/auth/types"
 	"github.com/dracory/auth/utils"
 	"github.com/dracory/req"
@@ -108,6 +109,7 @@ func ApiPasswordRestoreWithAuth(w http.ResponseWriter, r *http.Request, a types.
 		},
 		a.GetLogger(),
 	)
+	deps.TemporaryKeyGet = a.GetFuncTemporaryKeyGet()
 	if err != nil {
 		if logger := a.GetLogger(); logger != nil {
 			logger.Error("password restore dependencies misconfigured",
@@ -173,6 +175,12 @@ func passwordRestore(ctx context.Context, r *http.Request, dependencies dependen
 		return "", types.MsgInternalServer
 	}
 
+	// Per-email send throttle — prevents the endpoint being used for email
+	// bombing; enforced before the reset token is stored.
+	if check := rules.NewEmailSendThrottleRule(dependencies.TemporaryKeyGet, email); check.Fails() {
+		return "", check.FailMessageFirst()
+	}
+
 	expires := dependencies.ExpiresSeconds
 	if expires <= 0 {
 		// default: one hour
@@ -201,6 +209,11 @@ func passwordRestore(ctx context.Context, r *http.Request, dependencies dependen
 			slog.String("last_name", lastName),
 		)
 		return "", types.MsgInternalServer
+	}
+
+	// Consume send quota only after the email was handed off successfully.
+	if dependencies.TemporaryKeyGet != nil {
+		_ = utils.RecordEmailSend(dependencies.TemporaryKeyGet, dependencies.TemporaryKeySet, email, expires)
 	}
 
 	return types.MsgPasswordResetLinkSent, ""

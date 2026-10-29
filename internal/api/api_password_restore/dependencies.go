@@ -11,6 +11,7 @@ import (
 type dependencies struct {
 	UserFindByUsername func(ctx context.Context, email, firstName, lastName string) (userID string, err error)
 
+	TemporaryKeyGet func(key string) (string, error)
 	TemporaryKeySet func(key string, value string, expiresSeconds int) error
 	ExpiresSeconds  int
 

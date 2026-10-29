@@ -16,6 +16,7 @@ import (
 type LoginPasswordlessDeps struct {
 	DisableRateLimit bool
 
+	TemporaryKeyGet func(key string) (string, error)
 	TemporaryKeySet func(key string, value string, expiresSeconds int) error
 
 	ExpiresSeconds int
@@ -107,6 +108,7 @@ func ApiLoginWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthShared
 		Logger:       a.GetLogger(),
 		PasswordlessDependencies: LoginPasswordlessDeps{
 			DisableRateLimit: a.GetDisableRateLimit(),
+			TemporaryKeyGet:  a.GetFuncTemporaryKeyGet(),
 			TemporaryKeySet:  a.GetFuncTemporaryKeySet(),
 			ExpiresSeconds:   0, // let business logic apply default
 			EmailTemplate: func(ctx context.Context, email string, verificationCode string) string {
