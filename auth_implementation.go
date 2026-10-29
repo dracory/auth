@@ -27,6 +27,10 @@ type authImplementation struct {
 	funcLayout              func(content string) string
 	themeCSS                string
 	customCSS               string
+	brandName               string
+	brandTagline            string
+	brandLogoURL            string
+	loginAlternatives       []types.LoginAlternative
 	funcTemporaryKeyGet     func(key string) (value string, err error)
 	funcTemporaryKeySet     func(key string, value string, expiresSeconds int) (err error)
 	funcTemporaryKeyDelete  func(key string) (err error)
@@ -133,6 +137,35 @@ func (a authImplementation) GetCustomCSS() string { return a.customCSS }
 
 // SetCustomCSS sets the optional inline CSS overrides.
 func (a *authImplementation) SetCustomCSS(css string) { a.customCSS = css }
+
+// GetBrandName returns the optional brand name rendered above built-in
+// login cards. Accessed through an optional interface.
+func (a authImplementation) GetBrandName() string { return a.brandName }
+
+// SetBrandName sets the optional brand name.
+func (a *authImplementation) SetBrandName(v string) { a.brandName = v }
+
+// GetBrandTagline returns the optional tagline under the brand name.
+func (a authImplementation) GetBrandTagline() string { return a.brandTagline }
+
+// SetBrandTagline sets the optional brand tagline.
+func (a *authImplementation) SetBrandTagline(v string) { a.brandTagline = v }
+
+// GetBrandLogoURL returns the optional logo image URL.
+func (a authImplementation) GetBrandLogoURL() string { return a.brandLogoURL }
+
+// SetBrandLogoURL sets the optional logo image URL.
+func (a *authImplementation) SetBrandLogoURL(v string) { a.brandLogoURL = v }
+
+// GetLoginAlternatives returns cross-links to sibling login methods.
+func (a authImplementation) GetLoginAlternatives() []types.LoginAlternative {
+	return a.loginAlternatives
+}
+
+// SetLoginAlternatives sets cross-links to sibling login methods.
+func (a *authImplementation) SetLoginAlternatives(v []types.LoginAlternative) {
+	a.loginAlternatives = v
+}
 
 func (a authImplementation) IsRegistrationEnabled() bool {
 	return a.enableRegistration

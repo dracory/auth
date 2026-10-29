@@ -59,6 +59,10 @@ func NewAuthKnightAuth(config types.ConfigAuthKnight) (types.AuthAuthKnightInter
 	a.funcLayout = config.FuncLayout
 	a.themeCSS = config.ThemeCSS
 	a.customCSS = config.CustomCSS
+	a.brandName = config.BrandName
+	a.brandTagline = config.BrandTagline
+	a.brandLogoURL = config.BrandLogoURL
+	a.loginAlternatives = config.LoginAlternatives
 	if a.funcLayout == nil {
 		a.funcLayout = helpers.Layout
 	}

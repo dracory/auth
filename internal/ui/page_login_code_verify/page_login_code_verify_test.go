@@ -28,7 +28,7 @@ func TestPageLoginCodeVerify(t *testing.T) {
 
 	expected := []string{
 		"Login Code Verification",
-		"We sent you a login code to your email. Please check your mailbox",
+		"login code to your email. Please check your mailbox",
 		"var urlApiLoginCodeVerify = \"http://localhost/auth/api/login-code-verify\";",
 		"var urlOnSuccess = \"http://localhost/dashboard\";",
 	}

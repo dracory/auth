@@ -60,6 +60,10 @@ func NewUsernameAndPasswordAuth(config types.ConfigUsernameAndPassword) (types.A
 	auth.funcLayout = config.FuncLayout
 	auth.themeCSS = config.ThemeCSS
 	auth.customCSS = config.CustomCSS
+	auth.brandName = config.BrandName
+	auth.brandTagline = config.BrandTagline
+	auth.brandLogoURL = config.BrandLogoURL
+	auth.loginAlternatives = config.LoginAlternatives
 	auth.funcTemporaryKeyGet = config.FuncTemporaryKeyGet
 	auth.funcTemporaryKeySet = config.FuncTemporaryKeySet
 	auth.funcUserLogin = config.FuncUserLogin

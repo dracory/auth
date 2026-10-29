@@ -14,11 +14,15 @@ import (
 	"github.com/dracory/auth/internal/api/api_magic_link_send"
 	"github.com/dracory/auth/internal/api/api_password_reset"
 	"github.com/dracory/auth/internal/api/api_password_restore"
+	"github.com/dracory/auth/internal/api/api_register"
+	"github.com/dracory/auth/internal/api/api_register_code_verify"
 	"github.com/dracory/auth/internal/ui/page_login"
 	"github.com/dracory/auth/internal/ui/page_login_code_verify"
 	"github.com/dracory/auth/internal/ui/page_magic_link"
 	"github.com/dracory/auth/internal/ui/page_password_reset"
 	"github.com/dracory/auth/internal/ui/page_password_restore"
+	"github.com/dracory/auth/internal/ui/page_register"
+	"github.com/dracory/auth/internal/ui/page_register_code_verify"
 	"github.com/dracory/auth/types"
 	"github.com/dracory/auth/utils"
 )
@@ -119,7 +123,60 @@ func NewMultiMethodAuth(endpoint string, methods []types.Method) (*MultiMethodAu
 			}
 		}
 	}
+
+	// Register routes live outside any single method — the "Register" link
+	// on built-in pages points at <endpoint>/register regardless of which
+	// method renders. Prefer the password method's impl (its register form
+	// collects a password); otherwise use the first impl with registration
+	// enabled. No impl reporting registration → no dead routes mounted.
+	if reg := registrationImpl(methods); reg != nil {
+		for pattern, h := range map[string]http.HandlerFunc{
+			"GET /register": func(w http.ResponseWriter, r *http.Request) { page_register.PageRegister(w, r, reg) },
+			"GET /register-code-verify": func(w http.ResponseWriter, r *http.Request) {
+				page_register_code_verify.PageRegisterCodeVerify(w, r, reg)
+			},
+			"POST /api/register": func(w http.ResponseWriter, r *http.Request) { api_register.ApiRegisterWithAuth(w, r, reg) },
+			"POST /api/register-code-verify": func(w http.ResponseWriter, r *http.Request) {
+				api_register_code_verify.ApiRegisterCodeVerifyWithAuth(w, r, reg)
+			},
+		} {
+			if err := mount(pattern, h); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	return mma, nil
+}
+
+// methodAuth is implemented by the package's built-in methods to expose
+// the auth impl they were constructed with (used to pick the register impl).
+type methodAuth interface {
+	authImpl() types.AuthSharedInterface
+}
+
+// registrationImpl returns the impl that should serve register routes:
+// the password method's when present, else the first impl with
+// registration enabled.
+func registrationImpl(methods []types.Method) types.AuthSharedInterface {
+	var fallback types.AuthSharedInterface
+	for _, m := range methods {
+		acc, ok := m.(methodAuth)
+		if !ok {
+			continue
+		}
+		a := acc.authImpl()
+		if a == nil || !a.IsRegistrationEnabled() {
+			continue
+		}
+		if m.Name() == "password" {
+			return a
+		}
+		if fallback == nil {
+			fallback = a
+		}
+	}
+	return fallback
 }
 
 // Handler returns the composed http.Handler (the underlying ServeMux).
@@ -159,13 +216,17 @@ func NewOTPMethodWithPage(a types.AuthSharedInterface, page http.HandlerFunc) ty
 	return &otpMethod{a: a, page: page}
 }
 
-func (m *otpMethod) Name() string             { return "otp" }
-func (m *otpMethod) AlternativeLabel() string { return "Email me a code" }
+func (m *otpMethod) Name() string                        { return "otp" }
+func (m *otpMethod) authImpl() types.AuthSharedInterface { return m.a }
+func (m *otpMethod) AlternativeLabel() string            { return "Email me a code" }
 func (m *otpMethod) PageHandler() http.HandlerFunc {
 	if m.page != nil {
 		return m.page
 	}
-	return func(w http.ResponseWriter, r *http.Request) { page_login.PageLogin(w, r, m.a) }
+	// The page posts to its own mount path — the mux mounts the ajax
+	// handler at the same path for POST, so /auth/login works for the
+	// primary method and /auth/login-otp for the secondary.
+	return func(w http.ResponseWriter, r *http.Request) { page_login.PageLoginWithAPI(w, r, m.a, r.URL.Path) }
 }
 func (m *otpMethod) AjaxHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) { api_login.ApiLoginWithAuth(w, r, m.a) }
@@ -205,8 +266,9 @@ func NewMagicLinkMethod(
 	return &magicLinkMethod{page: page, sendDeps: sendDeps, callbackDeps: callbackDeps}
 }
 
-func (m *magicLinkMethod) Name() string             { return "magiclink" }
-func (m *magicLinkMethod) AlternativeLabel() string { return "Email me a link" }
+func (m *magicLinkMethod) Name() string                        { return "magiclink" }
+func (m *magicLinkMethod) authImpl() types.AuthSharedInterface { return m.a }
+func (m *magicLinkMethod) AlternativeLabel() string            { return "Email me a link" }
 func (m *magicLinkMethod) PageHandler() http.HandlerFunc {
 	if m.page != nil {
 		return m.page
@@ -281,13 +343,14 @@ func NewPasswordMethod(a types.AuthSharedInterface, page http.HandlerFunc) types
 	return &passwordMethod{a: a, page: page}
 }
 
-func (m *passwordMethod) Name() string             { return "password" }
-func (m *passwordMethod) AlternativeLabel() string { return "Use a password" }
+func (m *passwordMethod) Name() string                        { return "password" }
+func (m *passwordMethod) authImpl() types.AuthSharedInterface { return m.a }
+func (m *passwordMethod) AlternativeLabel() string            { return "Use a password" }
 func (m *passwordMethod) PageHandler() http.HandlerFunc {
 	if m.page != nil {
 		return m.page
 	}
-	return func(w http.ResponseWriter, r *http.Request) { page_login.PageLogin(w, r, m.a) }
+	return func(w http.ResponseWriter, r *http.Request) { page_login.PageLoginWithAPI(w, r, m.a, r.URL.Path) }
 }
 func (m *passwordMethod) AjaxHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) { api_login.ApiLoginWithAuth(w, r, m.a) }
@@ -299,10 +362,10 @@ func (m *passwordMethod) ExtraRoutes() map[string]http.HandlerFunc {
 	return map[string]http.HandlerFunc{
 		"GET /password-restore": func(w http.ResponseWriter, r *http.Request) { page_password_restore.PagePasswordRestore(w, r, m.a) },
 		"GET /password-reset":   func(w http.ResponseWriter, r *http.Request) { page_password_reset.PagePasswordReset(w, r, m.a) },
-		"POST /api/password-restore": func(w http.ResponseWriter, r *http.Request) {
+		"POST /api/restore-password": func(w http.ResponseWriter, r *http.Request) {
 			api_password_restore.ApiPasswordRestoreWithAuth(w, r, m.a)
 		},
-		"POST /api/password-reset": func(w http.ResponseWriter, r *http.Request) { api_password_reset.ApiPasswordResetWithAuth(w, r, m.a) },
+		"POST /api/reset-password": func(w http.ResponseWriter, r *http.Request) { api_password_reset.ApiPasswordResetWithAuth(w, r, m.a) },
 	}
 }
 
@@ -316,10 +379,13 @@ func NewAuthKnightMethod(a types.AuthAuthKnightInterface) types.Method {
 	return &authKnightMethod{a: a}
 }
 
-func (m *authKnightMethod) Name() string             { return "authknight" }
-func (m *authKnightMethod) AlternativeLabel() string { return "Continue with AuthKnight" }
+func (m *authKnightMethod) Name() string                        { return "authknight" }
+func (m *authKnightMethod) authImpl() types.AuthSharedInterface { return m.a }
+func (m *authKnightMethod) AlternativeLabel() string            { return "Continue with AuthKnight" }
 func (m *authKnightMethod) PageHandler() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) { page_login.PageLogin(w, r, m.a) }
+	// Unreachable in practice — PageLogin redirects to AuthKnight's hosted
+	// flow before rendering — but kept consistent with sibling methods.
+	return func(w http.ResponseWriter, r *http.Request) { page_login.PageLoginWithAPI(w, r, m.a, r.URL.Path) }
 }
 func (m *authKnightMethod) AjaxHandler() http.HandlerFunc { return nil } // none — external flow
 func (m *authKnightMethod) CallbackRoute() (string, http.HandlerFunc, bool) {

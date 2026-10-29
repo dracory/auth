@@ -1,6 +1,10 @@
 package page_login_code_verify
 
-import "github.com/dracory/hb"
+import (
+	"fmt"
+
+	"github.com/dracory/hb"
+)
 
 // LoginCodeVerifyContent builds the HTML for the login code verification page.
 func LoginCodeVerifyContent(urlBack string) string {
@@ -10,10 +14,31 @@ func LoginCodeVerifyContent(urlBack string) string {
 	alertGroup := hb.NewDiv().Class("alert-group").AddChild(alertSuccess).AddChild(alertDanger)
 
 	header := hb.NewHeading5().Text("Login Code Verification").Style("margin:0px;")
-	infoParagraph := hb.NewParagraph().Class("text-info").Text("We sent you a login code to your email. Please check your mailbox")
-	verificationCodeLabel := hb.NewLabel().Text("Verification code")
-	verificationCodeInput := hb.NewInput().Class("form-control").Name("verification_code").Placeholder("Enter verification code")
-	verificationCodeFormGroup := hb.NewDiv().Class("form-group mt-3").Child(verificationCodeLabel).AddChild(verificationCodeInput)
+	infoParagraph := hb.NewParagraph().Class("text-info").Text("We sent you a 6-digit login code to your email. Please check your mailbox")
+	verificationCodeLabel := hb.NewLabel().Text("Verification code").Style("display:block;text-align:center;font-weight:700;letter-spacing:.06em")
+
+	// Segmented 6-digit input — one box per digit, synced into a hidden
+	// field so the verify JS keeps posting `verification_code` unchanged.
+	verificationCodeInput := hb.NewInput().
+		Name("verification_code").
+		Type("hidden")
+	digitStyle := "width:48px;height:56px;text-align:center;font-size:1.5rem;font-weight:700;"
+	digitInputs := hb.NewDiv().
+		Class("otp-inputs").
+		Style("display:flex;justify-content:center;gap:10px;margin:14px 0 4px")
+	for i := 0; i < 6; i++ {
+		digitInputs.Child(hb.NewInput().
+			Class("otp-digit form-control").
+			Attr("maxlength", "1").
+			Attr("inputmode", "numeric").
+			Attr("autocomplete", "one-time-code").
+			Attr("data-index", fmt.Sprint(i)).
+			Style(digitStyle))
+	}
+	verificationCodeFormGroup := hb.NewDiv().Class("form-group mt-3").
+		Child(verificationCodeLabel).
+		Child(digitInputs).
+		Child(verificationCodeInput)
 	buttonLogin := hb.NewButton().Class("ButtonLogin btn btn-lg btn-success btn-block w-100 text-white").Children([]hb.TagInterface{
 		hb.NewI().Class("bi bi-send").Style("margin-right:8px;margin-top:-2px;"),
 		hb.NewSpan().Text("Login"),
@@ -120,7 +145,44 @@ func LoginCodeVerifyScripts(urlApiLoginCodeVerify, urlOnSuccess string) string {
 			});
 		}
 		$(function () {
-			$("#email").focus();
+			var $digits = $('.otp-digit');
+			var $hidden = $('input[name=verification_code]');
+
+			function syncDigits() {
+				var code = '';
+				$digits.each(function () { code += $(this).val(); });
+				$hidden.val(code);
+				return code;
+			}
+
+			$digits.on('input', function () {
+				var v = $(this).val().replace(/[^0-9]/g, '');
+				$(this).val(v.slice(-1));
+				syncDigits();
+				if (v && this.nextElementSibling) {
+					$(this).nextAll('.otp-digit').first().focus();
+				}
+				if (syncDigits().length === $digits.length) {
+					loginFormValidate();
+				}
+			});
+			$digits.on('keydown', function (e) {
+				if (e.key === 'Backspace' && !$(this).val()) {
+					$(this).prevAll('.otp-digit').first().focus();
+				}
+			});
+			$digits.on('paste', function (e) {
+				e.preventDefault();
+				var pasted = (e.originalEvent.clipboardData || window.clipboardData)
+					.getData('text').replace(/[^0-9]/g, '').slice(0, $digits.length);
+				$digits.each(function (i) { $(this).val(pasted[i] || ''); });
+				syncDigits();
+				$digits.eq(Math.min(pasted.length, $digits.length - 1)).focus();
+				if (pasted.length === $digits.length) {
+					loginFormValidate();
+				}
+			});
+			$digits.first().focus();
 		});
 	`
 }
