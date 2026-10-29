@@ -10,7 +10,7 @@
 
 ## 📖 Documentation
 
-**[Read the full documentation](https://html-preview.github.io/?url=https://github.com/dracory/auth/blob/main/docs/index.html)** — guides, feature docs, and peer comparisons (also browsable in [`docs/`](docs/index.html)).
+**[Read the full documentation](https://dracory.github.io/auth/)** — guides, feature docs, and peer comparisons (also browsable in [`docs/`](docs/index.html)).
 
 ## ✨ Features
 
@@ -861,7 +861,7 @@ Both examples demonstrate:
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-WIKI: https://html-preview.github.io/?url=https://github.com/dracory/auth/blob/main/docs/livewiki/index.html
+WIKI: https://dracory.github.io/auth/
 
 ## 📄 License
 
