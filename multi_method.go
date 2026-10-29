@@ -16,6 +16,7 @@ import (
 	"github.com/dracory/auth/internal/api/api_password_restore"
 	"github.com/dracory/auth/internal/ui/page_login"
 	"github.com/dracory/auth/internal/ui/page_login_code_verify"
+	"github.com/dracory/auth/internal/ui/page_magic_link"
 	"github.com/dracory/auth/internal/ui/page_password_reset"
 	"github.com/dracory/auth/internal/ui/page_password_restore"
 	"github.com/dracory/auth/types"
@@ -183,6 +184,7 @@ func (m *otpMethod) ExtraRoutes() map[string]http.HandlerFunc {
 
 // api_magic_link_send plus the independently mountable callback.
 type magicLinkMethod struct {
+	a            types.AuthSharedInterface // nil for the deps-only constructor
 	page         http.HandlerFunc
 	sendDeps     api_magic_link_send.Dependencies
 	callbackDeps api_magic_link_callback.Dependencies
@@ -203,9 +205,17 @@ func NewMagicLinkMethod(
 	return &magicLinkMethod{page: page, sendDeps: sendDeps, callbackDeps: callbackDeps}
 }
 
-func (m *magicLinkMethod) Name() string                  { return "magiclink" }
-func (m *magicLinkMethod) AlternativeLabel() string      { return "Email me a link" }
-func (m *magicLinkMethod) PageHandler() http.HandlerFunc { return m.page }
+func (m *magicLinkMethod) Name() string             { return "magiclink" }
+func (m *magicLinkMethod) AlternativeLabel() string { return "Email me a link" }
+func (m *magicLinkMethod) PageHandler() http.HandlerFunc {
+	if m.page != nil {
+		return m.page
+	}
+	if m.a != nil {
+		return func(w http.ResponseWriter, r *http.Request) { page_magic_link.PageMagicLink(w, r, m.a) }
+	}
+	return nil
+}
 func (m *magicLinkMethod) AjaxHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) { api_magic_link_send.ApiMagicLinkSend(w, r, m.sendDeps) }
 }
@@ -220,16 +230,13 @@ func (m *magicLinkMethod) CallbackRoute() (string, http.HandlerFunc, bool) {
 // which takes internal dep types that external apps cannot construct.
 // linkCallback builds the callback URL for a token (e.g.
 // "/auth/magiclink-callback?token=" + token).
-// page must not be nil — there is no package default page for this method.
+// page may be nil — the package's generic magic-link page is used then.
 func NewMagicLinkMethodFromAuth(
 	a types.AuthSharedInterface,
 	page http.HandlerFunc,
 	linkCallback func(token string) string,
 	opts ...func(*api_magic_link_send.Dependencies, *api_magic_link_callback.Dependencies),
 ) types.Method {
-	if page == nil {
-		panic("NewMagicLinkMethodFromAuth: page handler must not be nil")
-	}
 	sendDeps := api_magic_link_send.Dependencies{
 		TemporaryKeyGet:       a.GetFuncTemporaryKeyGet(),
 		TemporaryKeySet:       a.GetFuncTemporaryKeySet(),
@@ -258,7 +265,7 @@ func NewMagicLinkMethodFromAuth(
 			opt(&sendDeps, &callbackDeps)
 		}
 	}
-	return &magicLinkMethod{page: page, sendDeps: sendDeps, callbackDeps: callbackDeps}
+	return &magicLinkMethod{a: a, page: page, sendDeps: sendDeps, callbackDeps: callbackDeps}
 }
 
 // passwordMethod wraps the username/password login plus recovery routes.

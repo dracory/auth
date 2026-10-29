@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dracory/auth/internal/core"
 	"github.com/dracory/auth/types"
 	"github.com/dracory/req"
 	"github.com/dracory/str"
@@ -179,6 +180,21 @@ func ApiAuthKnightCallback(w http.ResponseWriter, r *http.Request, deps Dependen
 // ApiAuthKnightCallbackWithAuth is a convenience wrapper that allows callers to pass
 // a types.AuthAuthKnightInterface instead of manually wiring Dependencies.
 func ApiAuthKnightCallbackWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthAuthKnightInterface) {
+	// Post-auth pipeline preferred — same convention as
+	// authenticateViaUsername: when ANY PostAuthHook is configured the
+	// shared pipeline (allowlist → find-or-create → session → cookie →
+	// redirect) replaces the legacy token-store path, so the session
+	// implementation owns token creation instead of a random string.
+	if hk, ok := any(a).(interface{ GetPostAuthHooks() types.PostAuthHooks }); ok {
+		hooks := hk.GetPostAuthHooks()
+		if hooks.EmailAllowed != nil || hooks.UserFindByEmailOrCreate != nil ||
+			hooks.UserIsActive != nil || hooks.SessionCreate != nil ||
+			hooks.SetAuthCookie != nil || hooks.RedirectURL != nil ||
+			hooks.RegisterRules != nil {
+			apiAuthKnightCallbackPostAuth(w, r, a, hooks)
+			return
+		}
+	}
 	deps := Dependencies{
 		BaseURL:              AuthKnightDefaultBaseURL,
 		HTTPTimeout:          a.GetAuthKnightHTTPTimeout(),
@@ -200,6 +216,56 @@ func ApiAuthKnightCallbackWithAuth(w http.ResponseWriter, r *http.Request, a typ
 
 	fmt.Println("[CALLBACK_WITH_AUTH] deps wired, calling ApiAuthKnightCallback")
 	ApiAuthKnightCallback(w, r, deps)
+}
+
+// apiAuthKnightCallbackPostAuth runs the AuthKnight callback through the
+// shared post-auth pipeline: verify the once token with AuthKnight, then
+// let PostAuth handle allowlist, find-or-create, session, cookie, and
+// redirect. New users are auto-created by the pipeline and land on the
+// register-completion redirect its hooks produce.
+func apiAuthKnightCallbackPostAuth(w http.ResponseWriter, r *http.Request, a types.AuthAuthKnightInterface, hooks types.PostAuthHooks) {
+	logger := a.GetLogger()
+	if logger == nil {
+		logger = slog.Default()
+	}
+
+	fallback := a.LinkRedirectOnSuccess()
+	onceToken := req.GetStringTrimmed(r, "once")
+	if onceToken == "" {
+		logger.Error("authknight callback: missing once parameter")
+		http.Redirect(w, r, fallback, http.StatusTemporaryRedirect)
+		return
+	}
+
+	timeout := a.GetAuthKnightHTTPTimeout()
+	if timeout <= 0 {
+		timeout = DefaultHTTPTimeout
+	}
+
+	email, err := verifyOnceToken(r.Context(), AuthKnightDefaultBaseURL, onceToken, timeout)
+	if err != nil || email == "" {
+		logger.Error("authknight callback: token verification failed")
+		http.Redirect(w, r, fallback, http.StatusTemporaryRedirect)
+		return
+	}
+
+	result, err := core.PostAuth(r.Context(), w, r, email, "", core.PostAuthDeps{
+		Hooks:   hooks,
+		Options: types.UserAuthOptions{UserIp: req.GetIP(r), UserAgent: r.UserAgent()},
+		Logger:  logger,
+	})
+	if err != nil {
+		logger.Error("authknight callback: post-auth failed",
+			slog.String("error", err.Error()))
+		http.Redirect(w, r, fallback, http.StatusTemporaryRedirect)
+		return
+	}
+
+	redirect := result.Redirect
+	if redirect == "" {
+		redirect = fallback
+	}
+	http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
 }
 
 // verifyOnceToken calls AuthKnight's /api/who endpoint to verify the once token
