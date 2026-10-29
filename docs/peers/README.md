@@ -13,6 +13,11 @@ matrix, and guidance on when each option is the better fit.
 | Keycloak | Self-hosted IAM server | [keycloak.md](keycloak.md) |
 | Ory Kratos | Open-source API-first identity service | [ory-kratos.md](ory-kratos.md) |
 | Better Auth | TypeScript embedded library | [better-auth.md](better-auth.md) |
+| Hanko | Open-source passkey-first auth | [hanko.md](hanko.md) |
+| Authelia | Self-hosted SSO portal / proxy auth | [authelia.md](authelia.md) |
+| Authentik | Self-hosted identity provider | [authentik.md](authentik.md) |
+| ZITADEL | Go-based identity platform | [zitadel.md](zitadel.md) |
+| WorkOS | Managed enterprise identity | [workos.md](workos.md) |
 
 ## Summary Positioning
 
