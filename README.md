@@ -8,12 +8,18 @@
 
 **Batteries-included authentication library for Go** with ready-to-use UI pages, API endpoints, and middleware. You bring your own database and email service—we handle the rest.
 
+## 📖 Documentation
+
+**[Read the full documentation](https://html-preview.github.io/?url=https://github.com/dracory/auth/blob/main/docs/index.html)** — guides, feature docs, and peer comparisons (also browsable in [`docs/`](docs/index.html)).
+
 ## ✨ Features
 
-- 🔐 **Three Authentication Flows**
-  - **AuthKnight** - Passwordless authentication via AuthKnight hosted login (recommended for security)
-  - **Passwordless** - Email-based verification codes
+- 🔐 **Four Composable Login Methods**
+  - **Email OTP** - Passwordless verification codes
+  - **Magic Link** - Single-use emailed sign-in links
   - **Username/Password** - Traditional authentication with password storage
+  - **AuthKnight** - Delegated hosted login (external service verifies the user)
+  - **Multi-method mux** - combine methods via `NewMultiMethodAuth`; custom methods via `types.Method`
   
 - 🛡️ **Production-Grade Security**
   - **Structured error handling** with error codes (no internal details leaked)
