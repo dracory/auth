@@ -59,7 +59,7 @@
   - 90.2% test coverage
   - 34 comprehensive test files
   - Battle-tested security practices
-  - Comprehensive critical review (see [docs/critical_review.md](docs/critical_review.md))
+ 
 
 ## 📦 Installation
 
@@ -71,7 +71,7 @@ go get github.com/dracory/auth
 
 The library is organized into focused packages: `types/` for configuration, `utils/` for utilities, `internal/` for implementation, and `examples/` for working applications.
 
-For detailed information about the package organization, see [docs/project-structure.md](docs/project-structure.md).
+For detailed information about the package organization, see [docs/project-structure.html](docs/project-structure.html).
 
 ## 🚀 Quick Start
 
@@ -403,7 +403,7 @@ authInstance, err := auth.NewAuthKnightAuth(types.ConfigAuthKnight{
 })
 ```
 
-For full configuration details, URL helpers, page behavior, and security notes, see [docs/authknight.md](docs/authknight.md).
+For full configuration details, URL helpers, page behavior, and security notes, see [docs/authknight.html](docs/authknight.html).
 
 ## 🔌 Available Endpoints
 
@@ -780,7 +780,7 @@ A: **Yes!** The library has:
 - Session invalidation on password reset
 - Secure cookie defaults and input validation
 - Structured logging for audit trails
-- See [docs/critical_review.md](docs/critical_review.md) for detailed security assessment
+
 
 **Q: How do I handle password reset?**  
 A: The library includes built-in password reset flow. Users enter their email, receive a reset link, and set a new password.
