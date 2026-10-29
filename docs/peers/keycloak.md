@@ -19,7 +19,7 @@ the open-source identity and access management server (Red Hat / CNCF).
 | Feature | dracory/auth | Keycloak |
 |---|---|---|
 | Email/password | ✅ | ✅ |
-| Passwordless | ✅ Email codes | ✅ WebAuthn/magic link (config) |
+| Passwordless | ✅ Email codes + magic links | ✅ WebAuthn/magic link (config) |
 | Social / identity brokering | ❌ | ✅ Brokering to Google, GitHub, AD, etc. |
 | Enterprise SSO (SAML, OIDC, LDAP/Kerberos) | ❌ | ✅ User federation, mappers |
 | MFA / WebAuthn | ❌ | ✅ OTP, WebAuthn, conditional flows |

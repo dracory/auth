@@ -19,7 +19,7 @@ the open-source, API-first identity server written in Go.
 | Feature | dracory/auth | Ory Kratos |
 |---|---|---|
 | Email/password | ✅ | ✅ |
-| Passwordless (code/link) | ✅ Codes | ✅ Magic link / code strategy |
+| Passwordless (code/link) | ✅ Codes + magic links | ✅ Magic link / code strategy |
 | Passkeys / WebAuthn | ❌ | ✅ |
 | Social / OIDC sign-in | ❌ (only via AuthKnight) | ✅ Generic OIDC + providers |
 | MFA / TOTP / lookup codes | ❌ | ✅ |

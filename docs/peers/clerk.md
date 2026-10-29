@@ -19,7 +19,7 @@ managed auth service known for polished drop-in UI components.
 | Feature | dracory/auth | Clerk |
 |---|---|---|
 | Email/password | ✅ | ✅ |
-| Passwordless (OTP, magic link) | ✅ Email codes | ✅ Email/SMS OTP, magic links |
+| Passwordless (OTP, magic link) | ✅ Email codes + magic links | ✅ Email/SMS OTP, magic links |
 | Social / OAuth providers | ❌ (only via AuthKnight) | ✅ Many providers |
 | Enterprise SSO (SAML, OIDC) | ❌ | ✅ (paid) |
 | MFA / TOTP | ❌ | ✅ |

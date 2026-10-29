@@ -19,7 +19,7 @@ Comparison of `github.com/dracory/auth` with
 | Feature | dracory/auth | Firebase Auth |
 |---|---|---|
 | Email/password | ✅ | ✅ |
-| Passwordless (email link) | ✅ Codes | ✅ Magic links, SMS OTP |
+| Passwordless (email link) | ✅ Codes + magic links | ✅ Magic links, SMS OTP |
 | Phone/SMS auth | ❌ | ✅ |
 | Social / OAuth providers | ❌ (only via AuthKnight) | ✅ Google, Apple, GitHub, X, etc. |
 | Anonymous auth | ❌ | ✅ |

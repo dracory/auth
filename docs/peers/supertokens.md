@@ -20,7 +20,7 @@ dracory/auth is a good fit and when a full auth service is the better choice.
 | Feature | dracory/auth | SuperTokens |
 |---|---|---|
 | Email/password (username + password) | ✅ Built-in flow | ✅ |
-| Passwordless (email code/link) | ✅ Built-in flow (verification code) | ✅ (email or SMS OTP / magic link) |
+| Passwordless (email code/link) | ✅ Email codes + magic links | ✅ (email or SMS OTP / magic link) |
 | Delegated/external login | ✅ AuthKnight hosted login flow | ✅ Social login (Google, GitHub, Apple, etc.) |
 | Social / OAuth providers | ❌ (only via AuthKnight) | ✅ Wide provider support |
 | Session management | ✅ Cookie/session via your store (Bring-your-own store; session invalidation on password reset) | ✅ Managed sessions, refresh tokens, rotating tokens |

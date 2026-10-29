@@ -18,7 +18,7 @@ the framework-agnostic TypeScript auth library.
 | Feature | dracory/auth | Better Auth |
 |---|---|---|
 | Email/password | ✅ | ✅ |
-| Passwordless | ✅ Email codes | ✅ Magic link / OTP plugins |
+| Passwordless | ✅ Email codes + magic links | ✅ Magic link / OTP plugins |
 | Social / OAuth providers | ❌ (only via AuthKnight) | ✅ Built-in for many providers |
 | Passkeys | ❌ | ✅ Plugin |
 | MFA / TOTP | ❌ | ✅ Two-factor plugin |

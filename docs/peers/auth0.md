@@ -19,7 +19,7 @@ managed identity platform now owned by Okta.
 | Feature | dracory/auth | Auth0 |
 |---|---|---|
 | Email/password | ✅ | ✅ |
-| Passwordless (email code/link, SMS) | ✅ Email codes | ✅ Email + SMS |
+| Passwordless (email code/link, SMS) | ✅ Email codes + magic links | ✅ Email + SMS |
 | Social / OAuth providers | ❌ (only via AuthKnight) | ✅ 50+ connections |
 | Enterprise SSO (SAML, OIDC, LDAP) | ❌ | ✅ (enterprise tier) |
 | MFA | ❌ | ✅ TOTP, SMS, push, WebAuthn |
