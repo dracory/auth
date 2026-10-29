@@ -31,6 +31,7 @@ type authImplementation struct {
 	funcUserExists          func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error)
 	funcSessionCreate       func(ctx context.Context, userID string, options types.UserAuthOptions) (types.SessionInterface, error)
 	funcEmailEnqueue        func(ctx context.Context, deliveryKey string) error
+	postAuthHooks           types.PostAuthHooks
 	sessionStore            types.SessionStoreInterface
 	funcUserFindByAuthToken func(ctx context.Context, token string, options types.UserAuthOptions) (userID string, err error)
 	funcUserLogout          func(ctx context.Context, userID string, options types.UserAuthOptions) (err error)
@@ -510,6 +511,18 @@ func (a authImplementation) GetFuncEmailEnqueue() func(ctx context.Context, deli
 // SetFuncEmailEnqueue allows configuring the queue-safe email enqueue hook.
 func (a *authImplementation) SetFuncEmailEnqueue(fn func(ctx context.Context, deliveryKey string) error) {
 	a.funcEmailEnqueue = fn
+}
+
+// GetPostAuthHooks returns the optional post-auth pipeline hooks shared by
+// every login method's verify path (allowlist, find-or-create, active
+// check, session create, cookie, redirect, register rules).
+func (a authImplementation) GetPostAuthHooks() types.PostAuthHooks {
+	return a.postAuthHooks
+}
+
+// SetPostAuthHooks configures the post-auth pipeline hooks.
+func (a *authImplementation) SetPostAuthHooks(hooks types.PostAuthHooks) {
+	a.postAuthHooks = hooks
 }
 
 // GetRateLimits returns a copy of the per-endpoint rate limit overrides

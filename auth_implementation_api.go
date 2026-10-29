@@ -14,6 +14,11 @@ import (
 	"github.com/dracory/auth/internal/api/api_password_restore"
 	"github.com/dracory/auth/internal/api/api_register"
 	"github.com/dracory/auth/internal/api/api_register_code_verify"
+	"github.com/dracory/auth/internal/core"
+	"github.com/dracory/auth/types"
+
+	"github.com/dracory/api"
+	"github.com/dracory/req"
 )
 
 func (a authImplementation) apiLogin(w http.ResponseWriter, r *http.Request) {
@@ -45,6 +50,33 @@ func (a authImplementation) apiRegisterCodeVerify(w http.ResponseWriter, r *http
 }
 
 func (a authImplementation) authenticateViaUsername(w http.ResponseWriter, r *http.Request, username string, firstName string, lastName string) {
+	// Post-auth pipeline preferred: when ANY PostAuthHook is configured,
+	// the shared pipeline (allowlist → find-or-create → active → session →
+	// cookie → redirect) replaces the legacy authenticate call — every
+	// login method's verify path funnels through it. Checking only a
+	// subset of hooks would silently skip the rest, so trigger on any.
+	// Note: firstName/lastName are intentionally unused here — the pipeline
+	// resolves profile via the user's own session data, unlike the legacy
+	// path which forwards them.
+	if hooks := a.GetPostAuthHooks(); hooks.EmailAllowed != nil ||
+		hooks.UserFindByEmailOrCreate != nil || hooks.UserIsActive != nil ||
+		hooks.SessionCreate != nil || hooks.SetAuthCookie != nil ||
+		hooks.RedirectURL != nil || hooks.RegisterRules != nil {
+		result, err := core.PostAuth(r.Context(), w, r, username, "", core.PostAuthDeps{
+			Hooks:   hooks,
+			Options: types.UserAuthOptions{UserIp: req.GetIP(r), UserAgent: r.UserAgent()},
+			Logger:  a.GetLogger(),
+		})
+		if err != nil {
+			api.Respond(w, r, api.Error(err.Error()))
+			return
+		}
+		api.Respond(w, r, api.SuccessWithData(types.MsgLoginSuccess, map[string]any{
+			"token":    result.Token,
+			"redirect": result.Redirect,
+		}))
+		return
+	}
 	api_authenticate_via_username.ApiAuthenticateViaUsernameWithAuth(w, r, username, firstName, lastName, &a)
 }
 

@@ -31,3 +31,19 @@ type MagicLinkPayload struct {
 func IsSafeReturnPath(p string) bool {
 	return strings.HasPrefix(p, "/") && !strings.HasPrefix(p, "//")
 }
+
+// IsSafeBackURL reports whether backURL is safe to redirect to: a relative
+// path (not "//..."), or an absolute URL on the same origin. Rejects
+// external URLs (open-redirect protection). Reused by magiclink,
+// authknight, and `return` params.
+func IsSafeBackURL(backURL string, host string) bool {
+	if backURL == "" {
+		return false
+	}
+	if strings.HasPrefix(backURL, "/") {
+		return !strings.HasPrefix(backURL, "//")
+	}
+	// Absolute URLs must match the request's origin.
+	return strings.Contains(backURL, "://" + host) ||
+		strings.Contains(backURL, "//"+host+"/")
+}
