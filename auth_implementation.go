@@ -30,6 +30,7 @@ type authImplementation struct {
 	funcTemporaryKeyDelete  func(key string) (err error)
 	funcUserExists          func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error)
 	funcSessionCreate       func(ctx context.Context, userID string, options types.UserAuthOptions) (types.SessionInterface, error)
+	funcEmailEnqueue        func(ctx context.Context, deliveryKey string) error
 	sessionStore            types.SessionStoreInterface
 	funcUserFindByAuthToken func(ctx context.Context, token string, options types.UserAuthOptions) (userID string, err error)
 	funcUserLogout          func(ctx context.Context, userID string, options types.UserAuthOptions) (err error)
@@ -494,6 +495,20 @@ func (a authImplementation) GetFuncSessionCreate() func(ctx context.Context, use
 // that want full control without implementing SessionStoreInterface.
 func (a *authImplementation) SetFuncSessionCreate(fn func(ctx context.Context, userID string, options types.UserAuthOptions) (types.SessionInterface, error)) {
 	a.funcSessionCreate = fn
+}
+
+// GetFuncEmailEnqueue returns the optional queue-safe email enqueue hook.
+// When set it is preferred over FuncEmailSend: send paths store
+// "email:secret" under a delivery key and call this with only that key, so
+// plaintext secrets never enter the task queue. The worker resolves the
+// delivery via utils.ResolveDeliveryKey.
+func (a authImplementation) GetFuncEmailEnqueue() func(ctx context.Context, deliveryKey string) error {
+	return a.funcEmailEnqueue
+}
+
+// SetFuncEmailEnqueue allows configuring the queue-safe email enqueue hook.
+func (a *authImplementation) SetFuncEmailEnqueue(fn func(ctx context.Context, deliveryKey string) error) {
+	a.funcEmailEnqueue = fn
 }
 
 // LinkApiLogin returns the API login endpoint URL.

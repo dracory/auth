@@ -23,6 +23,10 @@ type LoginPasswordlessDeps struct {
 
 	EmailTemplate func(ctx context.Context, email string, verificationCode string) string
 	EmailSend     func(ctx context.Context, email string, subject string, body string) error
+
+	// EmailEnqueue, when set, is preferred over EmailSend: only an opaque
+	// delivery key enters the queue (see utils.DeliverSecret).
+	EmailEnqueue func(ctx context.Context, deliveryKey string) error
 }
 
 // ApiLogin is the HTTP-level handler that combines passwordless and
@@ -103,6 +107,17 @@ func ApiLoginWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthShared
 		return
 	}
 
+	// Optional-hook resolution via type assertion — adding GetFunc* methods
+	// to AuthSharedInterface would break external implementers, so new
+	// hooks ship as optional interfaces instead (same pattern as
+	// FuncTemporaryKeyDelete, FuncUserExists, FuncSessionCreate).
+	var emailEnqueue func(ctx context.Context, deliveryKey string) error
+	if enq, ok := a.(interface {
+		GetFuncEmailEnqueue() func(ctx context.Context, deliveryKey string) error
+	}); ok {
+		emailEnqueue = enq.GetFuncEmailEnqueue()
+	}
+
 	deps := Dependencies{
 		Passwordless: a.IsPasswordless(),
 		Logger:       a.GetLogger(),
@@ -110,6 +125,7 @@ func ApiLoginWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthShared
 			DisableRateLimit: a.GetDisableRateLimit(),
 			TemporaryKeyGet:  a.GetFuncTemporaryKeyGet(),
 			TemporaryKeySet:  a.GetFuncTemporaryKeySet(),
+			EmailEnqueue:     emailEnqueue,
 			ExpiresSeconds:   0, // let business logic apply default
 			EmailTemplate: func(ctx context.Context, email string, verificationCode string) string {
 				fn := a.GetPasswordlessFuncEmailTemplateLoginCode()

@@ -134,7 +134,13 @@ func loginPasswordless(ctx context.Context, r *http.Request, deps LoginPasswordl
 
 	emailContent := deps.EmailTemplate(ctx, email, verificationCode)
 
-	if errEmail := deps.EmailSend(ctx, email, "Login Code", emailContent); errEmail != nil {
+	// Queue-safe delivery preferred: when EmailEnqueue is set only the
+	// opaque delivery key enters the queue; the code stays in the TTL-bound
+	// temporary-key store for the worker to resolve.
+	errEmail := utils.DeliverSecret(ctx, deps.TemporaryKeyGet, deps.TemporaryKeySet,
+		deps.EmailEnqueue, deps.EmailSend, email, verificationCode,
+		"Login Code", emailContent, expires)
+	if errEmail != nil {
 		return nil, &LoginPasswordlessError{
 			Code: LoginPasswordlessErrorCodeEmailSend,
 			Err:  errEmail,

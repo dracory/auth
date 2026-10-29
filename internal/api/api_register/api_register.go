@@ -223,10 +223,20 @@ func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSha
 
 	// Configure passwordless branch dependencies if enabled.
 	if deps.Passwordless {
+		// Optional-hook resolution via type assertion — extending
+		// AuthSharedInterface would break external implementers.
+		var emailEnqueue func(ctx context.Context, deliveryKey string) error
+		if enq, ok := a.(interface {
+			GetFuncEmailEnqueue() func(ctx context.Context, deliveryKey string) error
+		}); ok {
+			emailEnqueue = enq.GetFuncEmailEnqueue()
+		}
+
 		deps.RegisterPasswordlessInitDependencies = RegisterPasswordlessInitDependencies{
 			DisableRateLimit: a.GetDisableRateLimit(),
 			TemporaryKeyGet:  a.GetFuncTemporaryKeyGet(),
 			TemporaryKeySet:  a.GetFuncTemporaryKeySet(),
+			EmailEnqueue:     emailEnqueue,
 			ExpiresSeconds:   0, // let RegisterPasswordlessInit apply default
 			EmailTemplate: func(ctx context.Context, email string, verificationCode string) string {
 				fn := a.GetPasswordlessFuncEmailTemplateRegisterCode()
@@ -281,6 +291,10 @@ type RegisterPasswordlessInitDependencies struct {
 
 	EmailTemplate func(ctx context.Context, email string, verificationCode string) string
 	EmailSend     func(ctx context.Context, email string, subject string, body string) error
+
+	// EmailEnqueue, when set, is preferred over EmailSend: only an opaque
+	// delivery key enters the queue (see utils.DeliverSecret).
+	EmailEnqueue func(ctx context.Context, deliveryKey string) error
 }
 
 // RegisterPasswordlessInitErrorCode categorizes possible error sources.
@@ -441,7 +455,13 @@ func RegisterPasswordlessInit(ctx context.Context, r *http.Request, deps Registe
 
 	emailContent := deps.EmailTemplate(ctx, email, verificationCode)
 
-	if errEmail := deps.EmailSend(ctx, email, types.EmailSubjectRegistrationCode, emailContent); errEmail != nil {
+	// Queue-safe delivery preferred: when EmailEnqueue is set only the
+	// opaque delivery key enters the queue; the code stays in the TTL-bound
+	// temporary-key store for the worker to resolve.
+	errEmail := authutils.DeliverSecret(ctx, deps.TemporaryKeyGet, deps.TemporaryKeySet,
+		deps.EmailEnqueue, deps.EmailSend, email, verificationCode,
+		types.EmailSubjectRegistrationCode, emailContent, expires)
+	if errEmail != nil {
 		return nil, &RegisterPasswordlessInitError{
 			Code: RegisterPasswordlessInitErrorCodeEmailSend,
 			Err:  errEmail,

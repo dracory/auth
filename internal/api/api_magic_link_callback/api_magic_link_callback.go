@@ -93,16 +93,6 @@ func consumeToken(ctx context.Context, r *http.Request, deps Dependencies, token
 		return nil, false
 	}
 
-	// Single-use: invalidate immediately; any later use hits an empty slot.
-	if invErr := utils.InvalidateTempKey(deps.TemporaryKeyDelete, deps.TemporaryKeySet, cacheKey); invErr != nil {
-		logger := deps.Logger
-		if logger == nil {
-			logger = slog.Default()
-		}
-		logger.Error("magic link callback: failed to invalidate token",
-			slog.String("error", invErr.Error()))
-	}
-
 	var payload utils.MagicLinkPayload
 	if json.Unmarshal([]byte(raw), &payload) != nil || payload.Token == "" {
 		return nil, false
@@ -113,9 +103,21 @@ func consumeToken(ctx context.Context, r *http.Request, deps Dependencies, token
 		return nil, false
 	}
 
-	// Optional IP binding: when an IP was recorded at send time it must match.
+	// Optional IP binding (only when send recorded an IP). Checked BEFORE
+	// invalidation: a link triggered from a different IP — URL scanner,
+	// corporate proxy, mobile network switch — must not burn the token.
 	if payload.IP != "" && payload.IP != req.GetIP(r) {
 		return nil, false
+	}
+
+	// All checks passed — consume: single-use, later hits get an empty slot.
+	if invErr := utils.InvalidateTempKey(deps.TemporaryKeyDelete, deps.TemporaryKeySet, cacheKey); invErr != nil {
+		logger := deps.Logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("magic link callback: failed to invalidate token",
+			slog.String("error", invErr.Error()))
 	}
 
 	return &payload, true

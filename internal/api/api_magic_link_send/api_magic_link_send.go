@@ -44,8 +44,13 @@ type Dependencies struct {
 	EmailTemplate func(ctx context.Context, email string, magicLink string) string
 
 	// EmailSend delivers the email. Optional — when nil the link is only
-	// stored (useful for queue-based delivery, task 008).
+	// stored (useful for queue-based delivery).
 	EmailSend func(ctx context.Context, email string, subject string, body string) error
+
+	// EmailEnqueue, when set, is preferred over EmailSend: only an opaque
+	// delivery key enters the queue (see utils.DeliverSecret); the worker
+	// resolves email+link via utils.ResolveDeliveryKey.
+	EmailEnqueue func(ctx context.Context, deliveryKey string) error
 
 	Logger *slog.Logger
 }
@@ -54,12 +59,12 @@ type Dependencies struct {
 type MagicLinkSendErrorCode string
 
 const (
-	MagicLinkSendErrorCodeNone           MagicLinkSendErrorCode = ""
-	MagicLinkSendErrorCodeValidation     MagicLinkSendErrorCode = "validation"
+	MagicLinkSendErrorCodeNone            MagicLinkSendErrorCode = ""
+	MagicLinkSendErrorCodeValidation      MagicLinkSendErrorCode = "validation"
 	MagicLinkSendErrorCodeTokenGeneration MagicLinkSendErrorCode = "token_generation"
-	MagicLinkSendErrorCodeTokenStore     MagicLinkSendErrorCode = "token_store"
-	MagicLinkSendErrorCodeTooManySends   MagicLinkSendErrorCode = "too_many_sends"
-	MagicLinkSendErrorCodeEmailSend      MagicLinkSendErrorCode = "email_send"
+	MagicLinkSendErrorCodeTokenStore      MagicLinkSendErrorCode = "token_store"
+	MagicLinkSendErrorCodeTooManySends    MagicLinkSendErrorCode = "too_many_sends"
+	MagicLinkSendErrorCodeEmailSend       MagicLinkSendErrorCode = "email_send"
 )
 
 // MagicLinkSendError is a structured error for the send flow.
@@ -162,10 +167,6 @@ func MagicLinkSend(ctx context.Context, r *http.Request, deps Dependencies) (boo
 		return false, &MagicLinkSendError{Code: MagicLinkSendErrorCodeTokenStore, Err: err}
 	}
 
-	if deps.EmailSend == nil {
-		return true, nil // stored only — a queue picks it up (task 008)
-	}
-
 	link := token
 	if deps.LinkMagicLinkCallback != nil {
 		link = deps.LinkMagicLinkCallback(token)
@@ -175,7 +176,12 @@ func MagicLinkSend(ctx context.Context, r *http.Request, deps Dependencies) (boo
 	if deps.EmailTemplate != nil {
 		body = deps.EmailTemplate(ctx, email, link)
 	}
-	if err := deps.EmailSend(ctx, email, "Login Link", body); err != nil {
+
+	// Queue-safe delivery preferred: when EmailEnqueue is set only the
+	// opaque delivery key enters the queue; the worker resolves email+link.
+	err = utils.DeliverSecret(ctx, deps.TemporaryKeyGet, deps.TemporaryKeySet,
+		deps.EmailEnqueue, deps.EmailSend, email, link, "Login Link", body, expires)
+	if err != nil {
 		// The link was never delivered — remove the orphaned token so it
 		// cannot be redeemed without the email reaching the user.
 		_ = utils.InvalidateTempKey(deps.TemporaryKeyDelete, deps.TemporaryKeySet, utils.MagicLinkKeyPrefix+token)
