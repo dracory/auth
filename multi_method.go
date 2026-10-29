@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -142,7 +143,8 @@ func (m *MultiMethodAuth) LoginAlternativesHTML(currentMethod string) string {
 
 // otpMethod wraps the passwordless (email code) flow.
 type otpMethod struct {
-	a types.AuthSharedInterface
+	a    types.AuthSharedInterface
+	page http.HandlerFunc // optional override; nil = package page
 }
 
 // NewOTPMethod adapts the passwordless email-code login to types.Method.
@@ -150,9 +152,18 @@ func NewOTPMethod(a types.AuthSharedInterface) types.Method {
 	return &otpMethod{a: a}
 }
 
+// NewOTPMethodWithPage is NewOTPMethod with a caller-supplied login page —
+// for apps that want their own template over the package's generic one.
+func NewOTPMethodWithPage(a types.AuthSharedInterface, page http.HandlerFunc) types.Method {
+	return &otpMethod{a: a, page: page}
+}
+
 func (m *otpMethod) Name() string             { return "otp" }
 func (m *otpMethod) AlternativeLabel() string { return "Email me a code" }
 func (m *otpMethod) PageHandler() http.HandlerFunc {
+	if m.page != nil {
+		return m.page
+	}
 	return func(w http.ResponseWriter, r *http.Request) { page_login.PageLogin(w, r, m.a) }
 }
 func (m *otpMethod) AjaxHandler() http.HandlerFunc {
@@ -180,11 +191,15 @@ type magicLinkMethod struct {
 // NewMagicLinkMethod adapts the magic-link login to types.Method. The page
 // handler is supplied by the caller (a simple email form posting to the
 // send ajax is enough); sendDeps/callbackDeps are the 007 dependency sets.
+// page must not be nil — there is no package default page for this method.
 func NewMagicLinkMethod(
 	page http.HandlerFunc,
 	sendDeps api_magic_link_send.Dependencies,
 	callbackDeps api_magic_link_callback.Dependencies,
 ) types.Method {
+	if page == nil {
+		panic("NewMagicLinkMethod: page handler must not be nil")
+	}
 	return &magicLinkMethod{page: page, sendDeps: sendDeps, callbackDeps: callbackDeps}
 }
 
@@ -200,6 +215,52 @@ func (m *magicLinkMethod) CallbackRoute() (string, http.HandlerFunc, bool) {
 	}, true
 }
 
+// NewMagicLinkMethodFromAuth builds the magic-link method from an
+// AuthSharedInterface — the public counterpart to NewMagicLinkMethod,
+// which takes internal dep types that external apps cannot construct.
+// linkCallback builds the callback URL for a token (e.g.
+// "/auth/magiclink-callback?token=" + token).
+// page must not be nil — there is no package default page for this method.
+func NewMagicLinkMethodFromAuth(
+	a types.AuthSharedInterface,
+	page http.HandlerFunc,
+	linkCallback func(token string) string,
+	opts ...func(*api_magic_link_send.Dependencies, *api_magic_link_callback.Dependencies),
+) types.Method {
+	if page == nil {
+		panic("NewMagicLinkMethodFromAuth: page handler must not be nil")
+	}
+	sendDeps := api_magic_link_send.Dependencies{
+		TemporaryKeyGet:       a.GetFuncTemporaryKeyGet(),
+		TemporaryKeySet:       a.GetFuncTemporaryKeySet(),
+		EmailSend:             a.GetPasswordlessFuncEmailSend(),
+		LinkMagicLinkCallback: linkCallback,
+		Logger:                a.GetLogger(),
+	}
+	callbackDeps := api_magic_link_callback.Dependencies{
+		TemporaryKeyGet:         a.GetFuncTemporaryKeyGet(),
+		TemporaryKeySet:         a.GetFuncTemporaryKeySet(),
+		AuthenticateViaUsername: a.AuthenticateViaUsername,
+		Logger:                  a.GetLogger(),
+	}
+	// Optional hooks via type assertion (public interfaces unchanged).
+	if d, ok := a.(interface{ GetFuncTemporaryKeyDelete() func(string) error }); ok {
+		sendDeps.TemporaryKeyDelete = d.GetFuncTemporaryKeyDelete()
+		callbackDeps.TemporaryKeyDelete = d.GetFuncTemporaryKeyDelete()
+	}
+	if e, ok := a.(interface {
+		GetFuncEmailEnqueue() func(ctx context.Context, key string) error
+	}); ok {
+		sendDeps.EmailEnqueue = e.GetFuncEmailEnqueue()
+	}
+	for _, opt := range opts {
+		if opt != nil {
+			opt(&sendDeps, &callbackDeps)
+		}
+	}
+	return &magicLinkMethod{page: page, sendDeps: sendDeps, callbackDeps: callbackDeps}
+}
+
 // passwordMethod wraps the username/password login plus recovery routes.
 type passwordMethod struct {
 	a    types.AuthSharedInterface
@@ -213,9 +274,14 @@ func NewPasswordMethod(a types.AuthSharedInterface, page http.HandlerFunc) types
 	return &passwordMethod{a: a, page: page}
 }
 
-func (m *passwordMethod) Name() string                  { return "password" }
-func (m *passwordMethod) AlternativeLabel() string      { return "Use a password" }
-func (m *passwordMethod) PageHandler() http.HandlerFunc { return m.page }
+func (m *passwordMethod) Name() string             { return "password" }
+func (m *passwordMethod) AlternativeLabel() string { return "Use a password" }
+func (m *passwordMethod) PageHandler() http.HandlerFunc {
+	if m.page != nil {
+		return m.page
+	}
+	return func(w http.ResponseWriter, r *http.Request) { page_login.PageLogin(w, r, m.a) }
+}
 func (m *passwordMethod) AjaxHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) { api_login.ApiLoginWithAuth(w, r, m.a) }
 }
