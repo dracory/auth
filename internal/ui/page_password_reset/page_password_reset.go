@@ -50,6 +50,7 @@ func PagePasswordReset(w http.ResponseWriter, r *http.Request, a types.AuthShare
 
 	shared.PageRender(w, shared.PageOptions{
 		Title:      "Reset Password",
+		Auth:       a,
 		Layout:     a.GetLayout(),
 		Content:    content,
 		Scripts:    scripts,

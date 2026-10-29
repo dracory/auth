@@ -16,6 +16,10 @@ type PageOptions struct {
 	Scripts    string
 	Logger     *slog.Logger
 	LogMessage string
+
+	// Auth is optional; when set, ThemeCSS/CustomCSS are pulled from the
+	// implementation via optional interfaces (nil-safe for tests).
+	Auth types.AuthSharedInterface
 }
 
 // buildPage composes a full HTML document using the shared UI shell
@@ -34,6 +38,11 @@ func buildPage(opts PageOptions) string {
 	webpage.AddStyles([]string{
 		uncdn.BootstrapCss521(),
 	})
+	if theme := themeCSSOf(opts.Auth); theme != "" {
+		// A theme stylesheet after Bootstrap re-skins the whole page —
+		// e.g. a Bootlegance theme or the app's own hosted CSS.
+		webpage.AddStyleURL(theme)
+	}
 	webpage.AddScripts([]string{
 		uncdn.Jquery360(),
 		uncdn.BootstrapJs521(),
@@ -70,6 +79,9 @@ func buildPage(opts PageOptions) string {
 		-moz-appearance: none;
 		appearance: none;
 	}`)
+	if custom := customCSSOf(opts.Auth); custom != "" {
+		webpage.AddStyle(custom)
+	}
 	webpage.AddChild(hb.NewHTML(laidOutContent))
 
 	return webpage.ToHTML()
@@ -91,6 +103,20 @@ func PageRender(
 			opts.Logger.Error(opts.LogMessage, "error", err)
 		}
 	}
+}
+
+func themeCSSOf(a types.AuthSharedInterface) string {
+	if t, ok := a.(interface{ GetThemeCSS() string }); ok {
+		return t.GetThemeCSS()
+	}
+	return ""
+}
+
+func customCSSOf(a types.AuthSharedInterface) string {
+	if t, ok := a.(interface{ GetCustomCSS() string }); ok {
+		return t.GetCustomCSS()
+	}
+	return ""
 }
 
 type authKnightChecker interface {

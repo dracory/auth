@@ -24,6 +24,7 @@ func PageRegister(w http.ResponseWriter, r *http.Request, a types.AuthSharedInte
 			)
 			shared.PageRender(w, shared.PageOptions{
 				Title:      "Register",
+				Auth:       a,
 				Layout:     a.GetLayout(),
 				Content:    content,
 				Scripts:    scripts,
@@ -64,6 +65,7 @@ func PageRegister(w http.ResponseWriter, r *http.Request, a types.AuthSharedInte
 
 	shared.PageRender(w, shared.PageOptions{
 		Title:      "Register",
+		Auth:       a,
 		Layout:     a.GetLayout(),
 		Content:    content,
 		Scripts:    scripts,

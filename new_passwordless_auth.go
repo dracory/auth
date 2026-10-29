@@ -54,6 +54,8 @@ func NewPasswordlessAuth(config types.ConfigPasswordless) (types.AuthPasswordles
 		auth.cookieName = auth.cookieConfig.Name
 	}
 	auth.funcLayout = config.FuncLayout
+	auth.themeCSS = config.ThemeCSS
+	auth.customCSS = config.CustomCSS
 	if auth.funcLayout == nil {
 		auth.funcLayout = helpers.Layout
 	}

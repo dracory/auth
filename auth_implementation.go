@@ -25,6 +25,8 @@ type authImplementation struct {
 
 	// ===== START: shared by all implementations
 	funcLayout              func(content string) string
+	themeCSS                string
+	customCSS               string
 	funcTemporaryKeyGet     func(key string) (value string, err error)
 	funcTemporaryKeySet     func(key string, value string, expiresSeconds int) (err error)
 	funcTemporaryKeyDelete  func(key string) (err error)
@@ -118,6 +120,19 @@ func (a authImplementation) GetLayout() func(content string) string {
 func (a *authImplementation) SetLayout(layout func(content string) string) {
 	a.funcLayout = layout
 }
+
+// GetThemeCSS returns the optional theme stylesheet URL. Accessed by UI
+// pages through an optional interface so AuthSharedInterface stays stable.
+func (a authImplementation) GetThemeCSS() string { return a.themeCSS }
+
+// SetThemeCSS sets the optional theme stylesheet URL.
+func (a *authImplementation) SetThemeCSS(css string) { a.themeCSS = css }
+
+// GetCustomCSS returns the optional inline CSS overrides.
+func (a authImplementation) GetCustomCSS() string { return a.customCSS }
+
+// SetCustomCSS sets the optional inline CSS overrides.
+func (a *authImplementation) SetCustomCSS(css string) { a.customCSS = css }
 
 func (a authImplementation) IsRegistrationEnabled() bool {
 	return a.enableRegistration

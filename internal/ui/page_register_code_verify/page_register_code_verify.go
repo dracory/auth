@@ -24,6 +24,7 @@ func PageRegisterCodeVerify(w http.ResponseWriter, r *http.Request, a types.Auth
 
 	shared.PageRender(w, shared.PageOptions{
 		Title:      "Verify Registration Code",
+		Auth:       a,
 		Layout:     a.GetLayout(),
 		Content:    content,
 		Scripts:    scripts,

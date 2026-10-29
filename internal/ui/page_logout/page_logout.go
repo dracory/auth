@@ -38,6 +38,7 @@ func PageLogout(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterf
 
 	shared.PageRender(w, shared.PageOptions{
 		Title:      "Logout",
+		Auth:       a,
 		Layout:     a.GetLayout(),
 		Content:    content,
 		Scripts:    scripts,

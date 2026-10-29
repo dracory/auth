@@ -24,6 +24,7 @@ func PageLoginCodeVerify(w http.ResponseWriter, r *http.Request, a types.AuthSha
 
 	shared.PageRender(w, shared.PageOptions{
 		Title:      "Login Code Verification",
+		Auth:       a,
 		Layout:     a.GetLayout(),
 		Content:    content,
 		Scripts:    scripts,

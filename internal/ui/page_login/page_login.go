@@ -38,6 +38,7 @@ func PageLogin(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterfa
 
 	shared.PageRender(w, shared.PageOptions{
 		Title:      "Login",
+		Auth:       a,
 		Layout:     a.GetLayout(),
 		Content:    content,
 		Scripts:    scripts,
