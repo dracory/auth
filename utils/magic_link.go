@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"net/url"
 	"strings"
 )
 
@@ -33,9 +34,9 @@ func IsSafeReturnPath(p string) bool {
 }
 
 // IsSafeBackURL reports whether backURL is safe to redirect to: a relative
-// path (not "//..."), or an absolute URL on the same origin. Rejects
-// external URLs (open-redirect protection). Reused by magiclink,
-// authknight, and `return` params.
+// path (not "//..."), or an absolute URL whose host equals the request's
+// host. Parsed with net/url — substring matching would admit
+// "://example.com.evil.com", userinfo tricks, and query-string smuggling.
 func IsSafeBackURL(backURL string, host string) bool {
 	if backURL == "" {
 		return false
@@ -43,7 +44,9 @@ func IsSafeBackURL(backURL string, host string) bool {
 	if strings.HasPrefix(backURL, "/") {
 		return !strings.HasPrefix(backURL, "//")
 	}
-	// Absolute URLs must match the request's origin.
-	return strings.Contains(backURL, "://" + host) ||
-		strings.Contains(backURL, "//"+host+"/")
+	u, err := url.Parse(backURL)
+	if err != nil || u.Hostname() == "" {
+		return false
+	}
+	return strings.EqualFold(u.Hostname(), host)
 }
