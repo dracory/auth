@@ -32,6 +32,10 @@ type SessionInterface interface {
 // Implementations adapt the host project's session store; an in-memory
 // implementation ships in utils for tests and zero-dependency setups.
 type SessionStoreInterface interface {
+	// NewSession returns a blank session of the store's concrete type so
+	// the module can mint sessions without knowing it.
+	NewSession() SessionInterface
+
 	SessionCreate(ctx context.Context, session SessionInterface) error
 	SessionFindByKey(ctx context.Context, key string) (SessionInterface, error)
 	SessionDeleteByKey(ctx context.Context, key string) error

@@ -30,6 +30,7 @@ type authImplementation struct {
 	funcTemporaryKeyDelete  func(key string) (err error)
 	funcUserExists          func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error)
 	funcSessionCreate       func(ctx context.Context, userID string, options types.UserAuthOptions) (types.SessionInterface, error)
+	funcSessionCreateSet    bool // tracks an explicitly-set hook (precedence over store-derived default)
 	funcEmailEnqueue        func(ctx context.Context, deliveryKey string) error
 	postAuthHooks           types.PostAuthHooks
 	rememberCookieName      string
@@ -482,9 +483,42 @@ func (a authImplementation) GetSessionStore() types.SessionStoreInterface {
 	return a.sessionStore
 }
 
-// SetSessionStore sets the session store used for session-backed auth.
+// SetSessionStore sets the session store used for session-backed auth. It
+// also installs a default FuncSessionCreate derived from the store UNLESS
+// an explicit hook was already set — call order never overrides an
+// explicit SetFuncSessionCreate.
 func (a *authImplementation) SetSessionStore(store types.SessionStoreInterface) {
 	a.sessionStore = store
+	if a.funcSessionCreateSet {
+		return // explicit hook always wins, regardless of setter order
+	}
+	if store == nil {
+		a.funcSessionCreate = nil // clear derived hook on reset
+		return
+	}
+	a.funcSessionCreate = defaultSessionCreate(store)
+}
+
+// DefaultSessionTTL is the lifetime of sessions minted by the
+// store-derived FuncSessionCreate (remember-me issues longer-lived
+// sessions via its own hook).
+const DefaultSessionTTL = 2 * time.Hour
+
+// defaultSessionCreate builds the store-derived session-create hook: mint
+// a session via the store's concrete type, stamp expiry + ip/user-agent,
+// persist, return it.
+func defaultSessionCreate(store types.SessionStoreInterface) func(ctx context.Context, userID string, options types.UserAuthOptions) (types.SessionInterface, error) {
+	return func(ctx context.Context, userID string, options types.UserAuthOptions) (types.SessionInterface, error) {
+		s := store.NewSession()
+		s.SetUserID(userID)
+		s.SetExpiresAt(time.Now().Add(DefaultSessionTTL))
+		s.SetValue("ip", options.UserIp)
+		s.SetValue("user_agent", options.UserAgent)
+		if err := store.SessionCreate(ctx, s); err != nil {
+			return nil, err
+		}
+		return s, nil
+	}
 }
 
 // GetRememberCookieName returns the remember-me cookie name ("" = default).
@@ -508,6 +542,7 @@ func (a authImplementation) GetFuncSessionCreate() func(ctx context.Context, use
 // that want full control without implementing SessionStoreInterface.
 func (a *authImplementation) SetFuncSessionCreate(fn func(ctx context.Context, userID string, options types.UserAuthOptions) (types.SessionInterface, error)) {
 	a.funcSessionCreate = fn
+	a.funcSessionCreateSet = true
 }
 
 // GetFuncEmailEnqueue returns the optional queue-safe email enqueue hook.

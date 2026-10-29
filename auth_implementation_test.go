@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/dracory/auth/internal/links"
 	"github.com/dracory/auth/types"
+	"github.com/dracory/auth/utils"
 )
 
 func TestGetCurrentUserID_EmptyContextReturnsEmptyString(t *testing.T) {
@@ -562,3 +564,72 @@ func TestRemoveAuthCookie_UsesCookieName(t *testing.T) {
 		t.Fatalf("expected cookie value %q, got %q", "none", cookies[0].Value)
 	}
 }
+
+func TestSetSessionStore_DerivesFuncSessionCreate(t *testing.T) {
+	a := &authImplementation{}
+	a.SetSessionStore(utils.NewMemSessionStore())
+	if a.GetFuncSessionCreate() == nil {
+		t.Fatal("expected derived FuncSessionCreate")
+	}
+}
+
+func TestSessionCreate_ExplicitHookWinsEitherOrder(t *testing.T) {
+	custom := func(ctx context.Context, userID string, o types.UserAuthOptions) (types.SessionInterface, error) {
+		return nil, nil
+	}
+	a1 := &authImplementation{}
+	a1.SetFuncSessionCreate(custom)
+	a1.SetSessionStore(utils.NewMemSessionStore())
+	a2 := &authImplementation{}
+	a2.SetSessionStore(utils.NewMemSessionStore())
+	a2.SetFuncSessionCreate(custom)
+	for i, a := range []*authImplementation{a1, a2} {
+		if fmt.Sprintf("%p", a.GetFuncSessionCreate()) != fmt.Sprintf("%p", custom) {
+			t.Fatalf("case %d: explicit hook must win regardless of order", i)
+		}
+	}
+}
+
+func TestSetSessionStore_NilClearsDerivedHook(t *testing.T) {
+	a := &authImplementation{}
+	a.SetSessionStore(utils.NewMemSessionStore())
+	a.SetSessionStore(nil)
+	if a.GetFuncSessionCreate() != nil {
+		t.Fatal("expected nil store to clear derived hook")
+	}
+}
+
+func TestDerivedFuncSessionCreate_StoresFindableSession(t *testing.T) {
+	store := utils.NewMemSessionStore()
+	a := &authImplementation{}
+	a.SetSessionStore(store)
+	sess, err := a.GetFuncSessionCreate()(context.Background(), "u1", types.UserAuthOptions{UserIp: "1.2.3.4"})
+	if err != nil || sess == nil || sess.GetKey() == "" {
+		t.Fatalf("create: %v %v", err, sess)
+	}
+	found, _ := store.SessionFindByKey(context.Background(), sess.GetKey())
+	if found == nil || found.GetUserID() != "u1" || found.GetValue("ip") != "1.2.3.4" {
+		t.Fatalf("findable session mismatch: %v", found)
+	}
+}
+
+func TestDerivedFuncSessionCreate_ErrorPropagates(t *testing.T) {
+	a := &authImplementation{}
+	a.SetSessionStore(errStore{})
+	_, err := a.GetFuncSessionCreate()(context.Background(), "u1", types.UserAuthOptions{})
+	if err == nil {
+		t.Fatal("expected SessionCreate error to propagate")
+	}
+}
+
+type errStore struct{ *utils.MemSessionStore }
+
+func (errStore) NewSession() types.SessionInterface { return utils.NewMemSession() }
+func (errStore) SessionCreate(context.Context, types.SessionInterface) error {
+	return fmt.Errorf("db error")
+}
+func (e errStore) SessionFindByKey(ctx context.Context, k string) (types.SessionInterface, error) {
+	return nil, nil
+}
+func (e errStore) SessionDeleteByKey(ctx context.Context, k string) error    { return nil }
+func (e errStore) SessionDeleteByUserID(ctx context.Context, u string) error { return nil }

@@ -56,6 +56,11 @@ func NewMemSessionStore() *MemSessionStore {
 	}
 }
 
+// NewSession returns a blank *MemSession for the store's concrete type.
+func (m *MemSessionStore) NewSession() types.SessionInterface {
+	return NewMemSession()
+}
+
 // SessionCreate stores the session, generating ID and key when unset.
 func (m *MemSessionStore) SessionCreate(ctx context.Context, session types.SessionInterface) error {
 	if session == nil {
