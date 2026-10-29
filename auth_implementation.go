@@ -28,6 +28,7 @@ type authImplementation struct {
 	funcTemporaryKeyGet     func(key string) (value string, err error)
 	funcTemporaryKeySet     func(key string, value string, expiresSeconds int) (err error)
 	funcTemporaryKeyDelete  func(key string) (err error)
+	funcUserExists          func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error)
 	funcUserFindByAuthToken func(ctx context.Context, token string, options types.UserAuthOptions) (userID string, err error)
 	funcUserLogout          func(ctx context.Context, userID string, options types.UserAuthOptions) (err error)
 	funcUserStoreAuthToken  func(ctx context.Context, token string, userID string, options types.UserAuthOptions) error
@@ -449,6 +450,20 @@ func (a authImplementation) GetFuncTemporaryKeyDelete() func(key string) error {
 // temporary key.
 func (a *authImplementation) SetFuncTemporaryKeyDelete(fn func(key string) error) {
 	a.funcTemporaryKeyDelete = fn
+}
+
+// GetFuncUserExists returns the optional function used to check whether a
+// user exists for an email. When configured, the password login flow calls
+// it before FuncUserLogin so unknown emails get a dummy password compare
+// (timing anti-enumeration).
+func (a authImplementation) GetFuncUserExists() func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error) {
+	return a.funcUserExists
+}
+
+// SetFuncUserExists allows configuring the function used to check whether a
+// user exists for an email.
+func (a *authImplementation) SetFuncUserExists(fn func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error)) {
+	a.funcUserExists = fn
 }
 
 // LinkApiLogin returns the API login endpoint URL.

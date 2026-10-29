@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/dracory/auth/internal/core"
 	"github.com/dracory/auth/internal/testutils"
@@ -114,5 +115,62 @@ func TestCoreLoginWithUsernameAndPassword_TokenStoreError(t *testing.T) {
 	resp := core.LoginWithUsernameAndPassword(context.Background(), a, "test@test.com", "password", types.UserAuthOptions{})
 	if resp.ErrorMessage != "Failed to process request. Please try again later" {
 		t.Fatalf("expected token store error, got %q", resp.ErrorMessage)
+	}
+}
+
+// TestCoreLoginWithUsernameAndPassword_UnknownUserDummyCompare verifies the
+// anti-enumeration path: unknown email still pays a bcrypt compare and the
+// login callback is not reached, while the error message stays generic.
+func TestCoreLoginWithUsernameAndPassword_UnknownUserDummyCompare(t *testing.T) {
+	a := newPasswordAuthForLoginTest(t)
+
+	a.(interface {
+		SetFuncUserExists(func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error))
+	}).SetFuncUserExists(func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error) {
+		return false, nil
+	})
+
+	loginCalled := false
+	a.SetFuncUserLogin(func(ctx context.Context, email, password string, options types.UserAuthOptions) (string, error) {
+		loginCalled = true
+		return "", errors.New("should not be reached")
+	})
+
+	start := time.Now()
+	resp := core.LoginWithUsernameAndPassword(context.Background(), a, "ghost@test.com", "whatever", types.UserAuthOptions{})
+	elapsed := time.Since(start)
+
+	if loginCalled {
+		t.Fatal("expected login callback to be skipped for unknown email")
+	}
+	if resp.ErrorMessage != "Invalid credentials" {
+		t.Fatalf("expected generic 'Invalid credentials', got %q", resp.ErrorMessage)
+	}
+	// bcrypt at DefaultCost takes tens of ms; a short-circuit would be <1ms.
+	if elapsed < 10*time.Millisecond {
+		t.Fatalf("expected dummy compare to take bcrypt time, took %v", elapsed)
+	}
+}
+
+// TestCoreLoginWithUsernameAndPassword_ExistingUserPassesThrough verifies
+// the exists hook does not interfere with a real login.
+func TestCoreLoginWithUsernameAndPassword_ExistingUserPassesThrough(t *testing.T) {
+	a := newPasswordAuthForLoginTest(t)
+
+	a.(interface {
+		SetFuncUserExists(func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error))
+	}).SetFuncUserExists(func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error) {
+		return true, nil
+	})
+	a.SetFuncUserLogin(func(ctx context.Context, email, password string, options types.UserAuthOptions) (string, error) {
+		return "user123", nil
+	})
+	a.SetFuncUserStoreAuthToken(func(ctx context.Context, token, userID string, options types.UserAuthOptions) error {
+		return nil
+	})
+
+	resp := core.LoginWithUsernameAndPassword(context.Background(), a, "test@test.com", "password", types.UserAuthOptions{})
+	if resp.ErrorMessage != "" {
+		t.Fatalf("expected success, got %q", resp.ErrorMessage)
 	}
 }

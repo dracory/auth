@@ -27,6 +27,7 @@ type authSharedTest struct {
 	authKnight                            bool
 	temporaryKeyGet                       func(key string) (string, error)
 	temporaryKeySet                       func(key string, value string, expiresSeconds int) error
+	funcUserExists                        func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error)
 	funcUserFindByAuthToken               func(ctx context.Context, token string, options types.UserAuthOptions) (string, error)
 	redirectOnSuccess                     string
 	loginURL                              string
@@ -123,6 +124,16 @@ func (a *authSharedTest) SetFuncTemporaryKeyGet(fn func(key string) (string, err
 
 func (a *authSharedTest) SetFuncTemporaryKeySet(fn func(key string, value string, expiresSeconds int) error) {
 	a.temporaryKeySet = fn
+}
+
+// GetFuncUserExists returns the optional user-existence check used by the
+// password login flow for timing anti-enumeration.
+func (a *authSharedTest) GetFuncUserExists() func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error) {
+	return a.funcUserExists
+}
+
+func (a *authSharedTest) SetFuncUserExists(fn func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error)) {
+	a.funcUserExists = fn
 }
 
 func (a *authSharedTest) GetDisableRateLimit() bool { return a.disableRateLimit }

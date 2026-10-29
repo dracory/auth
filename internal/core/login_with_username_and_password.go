@@ -43,6 +43,32 @@ func LoginWithUsernameAndPassword(
 	logger := a.GetLogger()
 	hooks := a.GetObservabilityHooks()
 
+	// Anti-enumeration: when the optional FuncUserExists hook is configured,
+	// check existence first so an unknown email still pays the cost of a
+	// bcrypt compare — same wall time as a wrong password — rather than
+	// short-circuiting on a missing user.
+	if checker, ok := a.(interface {
+		GetFuncUserExists() func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error)
+	}); ok {
+		if existsFn := checker.GetFuncUserExists(); existsFn != nil {
+			exists, existsErr := existsFn(ctx, email, options)
+			if existsErr != nil && logger != nil {
+				// Fail-open is deliberate (a flaky existence check must not
+				// block logins) — but it must not be invisible.
+				logger.Warn("user existence check failed, proceeding with login",
+					"error", existsErr,
+					"email", email,
+				)
+			}
+			if existsErr == nil && !exists {
+				authutils.DummyPasswordCompare(password)
+				response.ErrorMessage = types.MsgInvalidCredentials
+				hooks.RecordLoginAttempt(types.LoginMethodPassword, false, nil)
+				return response
+			}
+		}
+	}
+
 	userID, err := loginFn(ctx, email, password, options)
 
 	if err != nil {
