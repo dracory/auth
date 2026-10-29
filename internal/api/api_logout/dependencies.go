@@ -25,6 +25,15 @@ type Dependencies struct {
 	// request, typically from cookies or headers.
 	AuthTokenRetrieve func(r *http.Request, useCookies bool) string
 
+	// RememberCookieName, when set, enables remember-me cleanup on logout:
+	// the marked session is deleted via SessionDeleteByKey and the cookie
+	// expired. Empty means no remember-me handling.
+	RememberCookieName string
+
+	// SessionDeleteByKey deletes a session by key — used for remember
+	// session cleanup. Optional; cookie is still expired when nil.
+	SessionDeleteByKey func(ctx context.Context, key string) error
+
 	// RemoveAuthCookie removes the authentication cookie after a successful
 	// logout when UseCookies is true.
 	RemoveAuthCookie func(w http.ResponseWriter, r *http.Request)

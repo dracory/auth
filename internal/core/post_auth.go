@@ -18,6 +18,14 @@ type PostAuthDeps struct {
 	Options       types.UserAuthOptions
 	Logger        *slog.Logger
 	AuthCookieSet func(w http.ResponseWriter, r *http.Request, token string)
+
+	// Remember-me: when enabled and the request opted in, the pipeline
+	// issues a marked long-lived session via hooks.IssueRememberSession and
+	// sets the remember cookie.
+	RememberMeEnabled  bool
+	RememberMeDays     int
+	RememberCookieName string
+	SecureCookies      bool
 }
 
 // PostAuthResult is what the caller hands back to the client.
@@ -101,6 +109,29 @@ func PostAuth(ctx context.Context, w http.ResponseWriter, r *http.Request, email
 	}
 	if cookieSetter != nil && token != "" {
 		cookieSetter(w, r, token)
+	}
+
+	// 6b. Remember-me: marked long-lived session + second cookie, only when
+	// enabled AND the user opted in (`remember=true`).
+	// Note: opt-in reads the form field — JSON-body login endpoints can't
+	// trigger it unless callers also forward the field.
+	if deps.RememberMeEnabled && hooks.IssueRememberSession != nil && userID != "" &&
+		(r.FormValue("remember") == "true" || r.FormValue("remember") == "on") {
+		rs, rErr := hooks.IssueRememberSession(ctx, userID, options)
+		if rErr == nil && rs != nil && rs.GetKey() != "" {
+			days := deps.RememberMeDays
+			if days <= 0 {
+				days = 30
+			}
+			name := deps.RememberCookieName
+			if name == "" {
+				name = utils.DefaultRememberCookieName
+			}
+			utils.RememberCookieSet(w, name, rs.GetKey(), days, deps.SecureCookies)
+		} else if deps.Logger != nil {
+			deps.Logger.Error("post-auth: remember session issue failed",
+				slog.Any("error", rErr))
+		}
 	}
 
 	// 7. Redirect: safe backURL first, else hook, else root.

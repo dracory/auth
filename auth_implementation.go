@@ -32,6 +32,7 @@ type authImplementation struct {
 	funcSessionCreate       func(ctx context.Context, userID string, options types.UserAuthOptions) (types.SessionInterface, error)
 	funcEmailEnqueue        func(ctx context.Context, deliveryKey string) error
 	postAuthHooks           types.PostAuthHooks
+	rememberCookieName      string
 	sessionStore            types.SessionStoreInterface
 	funcUserFindByAuthToken func(ctx context.Context, token string, options types.UserAuthOptions) (userID string, err error)
 	funcUserLogout          func(ctx context.Context, userID string, options types.UserAuthOptions) (err error)
@@ -484,6 +485,16 @@ func (a authImplementation) GetSessionStore() types.SessionStoreInterface {
 // SetSessionStore sets the session store used for session-backed auth.
 func (a *authImplementation) SetSessionStore(store types.SessionStoreInterface) {
 	a.sessionStore = store
+}
+
+// GetRememberCookieName returns the remember-me cookie name ("" = default).
+func (a authImplementation) GetRememberCookieName() string {
+	return a.rememberCookieName
+}
+
+// SetRememberCookieName sets the remember-me cookie name.
+func (a *authImplementation) SetRememberCookieName(name string) {
+	a.rememberCookieName = name
 }
 
 // GetFuncSessionCreate returns the optional hook used to create a session

@@ -36,6 +36,12 @@ type PostAuthHooks struct {
 	// flow to continue (covers project-specific rules without a closed
 	// enum). First failure short-circuits.
 	RegisterRules func(ctx context.Context, email string) []PostAuthRule
+
+	// IssueRememberSession creates a marked long-lived session
+	// (utils.RememberSessionMarker) for remember-me. Called only when
+	// remember-me is enabled AND the user opted in; the pipeline sets the
+	// remember cookie with the returned session key.
+	IssueRememberSession func(ctx context.Context, userID string, options UserAuthOptions) (SessionInterface, error)
 }
 
 // PostAuthRule is the minimal rule contract for pipeline rules — kept

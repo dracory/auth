@@ -76,6 +76,17 @@ func ApiLogout(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 		deps.RemoveAuthCookie(w, r)
 	}
 
+	// Remember-me cleanup (optional): delete the marked remember session
+	// and expire its cookie, or the user silently stays logged in.
+	if deps.RememberCookieName != "" {
+		if rc, err := r.Cookie(deps.RememberCookieName); err == nil && rc.Value != "" {
+			if deps.SessionDeleteByKey != nil {
+				_ = deps.SessionDeleteByKey(r.Context(), rc.Value)
+			}
+			utils.RememberCookieRemove(w, deps.RememberCookieName)
+		}
+	}
+
 	api.Respond(w, r, api.Success("logout success"))
 }
 
@@ -93,6 +104,20 @@ func ApiLogoutWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthShare
 			a.RemoveAuthCookie(w, r)
 		},
 		Logger: a.GetLogger(),
+	}
+
+	// Optional hooks via type assertion (public interfaces unchanged).
+	if rm, ok := a.(interface {
+		GetSessionStore() types.SessionStoreInterface
+		GetRememberCookieName() string
+	}); ok {
+		if store := rm.GetSessionStore(); store != nil {
+			deps.RememberCookieName = utils.DefaultRememberCookieName
+			if n := rm.GetRememberCookieName(); n != "" {
+				deps.RememberCookieName = n
+			}
+			deps.SessionDeleteByKey = store.SessionDeleteByKey
+		}
 	}
 
 	if fn := a.GetFuncUserFindByAuthToken(); fn != nil {
