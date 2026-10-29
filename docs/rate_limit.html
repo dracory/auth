@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rate Limiting in dracory/auth - dracory/auth docs</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link id="bootlegance" href="" rel="stylesheet">
+<style>
+ body{padding-top:4.5rem}
+ .doc{max-width:960px;margin:0 auto}
+ pre{background:var(--bs-tertiary-bg);padding:1rem;border-radius:.375rem;overflow-x:auto}
+ code{font-size:.875em}
+ table{font-size:.9rem}
+ .navbar-brand{font-weight:700}
+</style>
+</head>
+<body>
+<nav class="navbar navbar-expand-md fixed-top border-bottom bg-body-tertiary">
+ <div class="container-fluid px-3">
+  <a class="navbar-brand" href="index.html">dracory/auth docs</a>
+  <div class="d-flex align-items-center gap-2">
+   <select id="themeSel" class="form-select form-select-sm" style="width:auto">
+    <option value="">Bootstrap default</option>
+<option value="adwaita">Adwaita</option>
+<option value="ant-design">Ant Design</option>
+<option value="ayu">Ayu</option>
+<option value="brutalski">Brutalski</option>
+<option value="carbon">Carbon</option>
+<option value="catppuccin">Catppuccin</option>
+<option value="catppuccin-frappe">Catppuccin Frappe</option>
+<option value="catppuccin-macchiato">Catppuccin Macchiato</option>
+<option value="civic">Civic</option>
+<option value="cyberpunk">Cyberpunk</option>
+<option value="dracula">Dracula</option>
+<option value="dracula-soft">Dracula Soft</option>
+<option value="editorial">Editorial</option>
+<option value="everforest">Everforest</option>
+<option value="fluent">Fluent</option>
+<option value="forest">Forest</option>
+<option value="github-primer">Github Primer</option>
+<option value="glassmorphism">Glassmorphism</option>
+<option value="gruvbox">Gruvbox</option>
+<option value="high-contrast">High Contrast</option>
+<option value="kanagawa">Kanagawa</option>
+<option value="kde-breeze">Kde Breeze</option>
+<option value="mac-classic">Mac Classic</option>
+<option value="material-3">Material 3</option>
+<option value="midnight">Midnight</option>
+<option value="neo-brutalism">Neo Brutalism</option>
+<option value="night-owl">Night Owl</option>
+<option value="nord">Nord</option>
+<option value="nord-aurora">Nord Aurora</option>
+<option value="nord-frost">Nord Frost</option>
+<option value="ocean">Ocean</option>
+<option value="one-dark">One Dark</option>
+<option value="orchis">Orchis</option>
+<option value="orchis-cyan">Orchis Cyan</option>
+<option value="orchis-green">Orchis Green</option>
+<option value="orchis-orange">Orchis Orange</option>
+<option value="orchis-pink">Orchis Pink</option>
+<option value="orchis-purple">Orchis Purple</option>
+<option value="orchis-red">Orchis Red</option>
+<option value="orchis-sage">Orchis Sage</option>
+<option value="orchis-slate">Orchis Slate</option>
+<option value="orchis-yellow">Orchis Yellow</option>
+<option value="pantheon">Pantheon</option>
+<option value="print-optimized">Print Optimized</option>
+<option value="rose-pine">Rose Pine</option>
+<option value="seneca">Seneca</option>
+<option value="sepia">Sepia</option>
+<option value="slate">Slate</option>
+<option value="solarized">Solarized</option>
+<option value="sunrise">Sunrise</option>
+<option value="swiss">Swiss</option>
+<option value="terminal">Terminal</option>
+<option value="tokyo-night">Tokyo Night</option>
+<option value="vanguard">Vanguard</option>
+<option value="vimix">Vimix</option>
+<option value="vimix-dark">Vimix Dark</option>
+<option value="vimix-green">Vimix Green</option>
+<option value="vimix-orange">Vimix Orange</option>
+<option value="vimix-pink">Vimix Pink</option>
+<option value="vimix-purple">Vimix Purple</option>
+<option value="vimix-red">Vimix Red</option>
+<option value="vimix-teal">Vimix Teal</option>
+<option value="vimix-yellow">Vimix Yellow</option>
+<option value="whitehall">Whitehall</option>
+<option value="whitesur">Whitesur</option>
+<option value="win98">Win98</option>
+<option value="yaru">Yaru</option>
+   </select>
+   <div class="btn-group btn-group-sm" role="group">
+    <button type="button" class="btn btn-outline-secondary" id="modeLight" title="Light">&#9728;</button>
+    <button type="button" class="btn btn-outline-secondary" id="modeDark" title="Dark">&#9790;</button>
+   </div>
+  </div>
+ </div>
+</nav>
+<main class="container doc pb-5">
+<h1>Rate Limiting in dracory/auth</h1>
+<p><strong>Last Updated:</strong> 2026-10-29</p>
+<hr>
+<h2>Overview</h2>
+<p><code>dracory/auth</code> includes <strong>built-in rate limiting</strong> for all authentication endpoints. The goal is to protect your application from:</p>
+<ul><li>Brute-force login attempts</li><li>Credential stuffing</li><li>Abuse of registration and password reset flows</li></ul>
+<p>By default, rate limiting is <strong>enabled</strong> and uses an <strong>in-memory sliding window</strong> implementation.</p>
+<hr>
+<h2>What Is Rate Limited?</h2>
+<p>Rate limiting is applied per <strong>IP address</strong> and <strong>logical endpoint</strong> for all auth-related operations, including:</p>
+<ul><li>Login (passwordless OTP, magic link, username/password)</li><li>Registration</li><li>Verification-code endpoints</li><li>Password restore / reset endpoints</li><li>AuthKnight callback endpoint</li></ul>
+<p>Under <code>NewMultiMethodAuth</code> each method's routes keep their own logical endpoint identity, so limits apply per route (e.g. <code>/login</code>, <code>/login-otp</code>, <code>/login-magiclink</code>) rather than being shared globally.</p>
+<p>When the limit is exceeded, the library returns:</p>
+<ul><li>HTTP <strong>429 Too Many Requests</strong></li><li>A <code>Retry-After</code> header with the lockout duration (in seconds)</li><li>A JSON error body: <code>"Too many requests. Please try again later."</code></li></ul>
+<hr>
+<h2>Default Behavior</h2>
+<p>The default in-memory limiter is implemented in the internal <code>utils</code> package (see <code>utils/rate_limiter.go</code>) and is initialized automatically when you create an auth instance (passwordless or username/password) and <strong>do not</strong> provide your own rate-limiter function.</p>
+<p><strong>Defaults:</strong></p>
+<ul><li><strong>Max attempts:</strong> <code>5</code></li><li><strong>Window duration:</strong> <code>15 * time.Minute</code></li><li><strong>Lockout duration:</strong> <code>15 * time.Minute</code></li></ul>
+<p>This means:</p>
+<ul><li>Each IP+endpoint pair is allowed up to <strong>5 requests</strong> within a rolling <strong>15-minute window</strong>.</li><li>When the limit is exceeded, further requests from that IP to that endpoint are blocked for <strong>15 minutes</strong>.</li></ul>
+<blockquote class="blockquote border-start border-3 ps-3 text-secondary"><p>Note: The built-in limiter is <strong>in-memory and per-process</strong>. In a multi-instance deployment, each instance maintains its own counters.</p></blockquote>
+<hr>
+<h2>Configuration Options</h2>
+<p>Rate limiting is configured via shared fields on <code>ConfigPasswordless</code>, <code>ConfigUsernameAndPassword</code>, and <code>ConfigAuthKnight</code>.</p>
+<pre><code class="language-go">// Shared rate limiting options (for both configs)
+DisableRateLimit   bool                                                                                 // Set to true to disable rate limiting (not recommended for production)
+FuncCheckRateLimit func(ip string, endpoint string) (allowed bool, retryAfter time.Duration, err error) // Optional: override default rate limiter
+MaxLoginAttempts   int                                                                                  // Maximum attempts before lockout (default: 5)
+LockoutDuration    time.Duration                                                                        // Duration for sliding window and lockout (default: 15 minutes)</code></pre>
+<h3>Examples</h3>
+<h4>Passwordless Flow</h4>
+<pre><code class="language-go">authInstance, err := auth.NewPasswordlessAuth(auth.ConfigPasswordless{
+    Endpoint:             &quot;/auth&quot;,
+    UrlRedirectOnSuccess: &quot;/dashboard&quot;,
+
+    // Rate limiting (defaults shown explicitly)
+    MaxLoginAttempts: 5,
+    LockoutDuration:  15 * time.Minute,
+})</code></pre>
+<h4>Username/Password Flow</h4>
+<pre><code class="language-go">authInstance, err := auth.NewUsernameAndPasswordAuth(auth.ConfigUsernameAndPassword{
+    Endpoint:             &quot;/auth&quot;,
+    UrlRedirectOnSuccess: &quot;/dashboard&quot;,
+
+    // Rate limiting (defaults shown explicitly)
+    MaxLoginAttempts: 5,
+    LockoutDuration:  15 * time.Minute,
+})</code></pre>
+<h4>AuthKnight Flow</h4>
+<pre><code class="language-go">authInstance, err := auth.NewAuthKnightAuth(types.ConfigAuthKnight{
+    ConfigShared: types.ConfigShared{
+        Endpoint:             &quot;/auth&quot;,
+        UrlRedirectOnSuccess: &quot;/dashboard&quot;,
+
+        // Rate limiting (defaults shown explicitly)
+        MaxLoginAttempts: 5,
+        LockoutDuration:  15 * time.Minute,
+    },
+    FuncUserFindByEmail: userFindByEmail,
+    FuncUserRegister:    userRegister,
+})</code></pre>
+<blockquote class="blockquote border-start border-3 ps-3 text-secondary"><p>You can temporarily set <code>DisableRateLimit: true</code> in development environments, but this is <strong>strongly discouraged</strong> in production.</p></blockquote>
+<hr>
+<h2>Using a Custom Rate Limiter</h2>
+<p>For production systems running multiple instances, you will usually want a <strong>shared rate limiter</strong> (for example, backed by Redis or another central store).</p>
+<p>You can plug in your own implementation via <code>FuncCheckRateLimit</code>:</p>
+<pre><code class="language-go">import &quot;time&quot;
+
+func myRateLimiter(ip string, endpoint string) (bool, time.Duration, error) {
+    // Look up and increment attempt counters in your store (e.g., Redis).
+    // Return allowed = false and a positive retryAfter when the limit is exceeded.
+    // Return an error only for internal failures (network, store, etc.).
+
+    // Example (pseudo-code):
+    // attempts := redis.Incr(key(ip, endpoint))
+    // if attempts &gt; 5 {
+    //     return false, 15 * time.Minute, nil
+    // }
+    // return true, 0, nil
+
+    return true, 0, nil
+}
+
+authInstance, err := auth.NewUsernameAndPasswordAuth(auth.ConfigUsernameAndPassword{
+    Endpoint:             &quot;/auth&quot;,
+    UrlRedirectOnSuccess: &quot;/dashboard&quot;,
+
+    FuncCheckRateLimit: myRateLimiter,
+})</code></pre>
+<p><strong>Important notes:</strong></p>
+<ul><li>If <code>FuncCheckRateLimit</code> returns an error, the library <strong>fails open</strong> (request is allowed) to avoid accidental outages caused by the limiter.</li><li>Always treat rate limiting as a <strong>defense-in-depth</strong> control. It complements, but does not replace, strong passwords, MFA, and other security measures.</li></ul>
+<hr>
+<h2>When to Disable Rate Limiting</h2>
+<p>You might temporarily disable rate limiting by setting <code>DisableRateLimit: true</code> in:</p>
+<ul><li>Local development</li><li>Certain automated test environments</li></ul>
+<p>However:</p>
+<ul><li>Never deploy with <code>DisableRateLimit: true</code> to production.</li><li>Prefer using realistic rate limits and adjusting thresholds instead.</li></ul>
+<hr>
+<h2>Related Documentation</h2>
+<ul><li><a href="https://github.com/dracory/auth#readme">README.md</a> – high-level overview and quick start</li><li><a href="./overview.html">overview.html</a> – architecture and package overview</li><li><a href="./authknight.html">authknight.html</a> – AuthKnight integration guide</li></ul>
+</main>
+<footer class="border-top py-3 text-center text-secondary small">
+ Generated from markdown sources &middot; <a href="https://github.com/dracory/auth">github.com/dracory/auth</a>
+</footer>
+<script>
+(function(){
+ var sel=document.getElementById('themeSel');
+ function applyTheme(t){
+   var l=document.getElementById('bootlegance');
+   l.href = t ? 'https://cdn.jsdelivr.net/gh/lesichkovm/bootlegance@main/themes/'+t+'/theme.css' : '';
+   localStorage.setItem('docs-theme',t);
+ }
+ function applyMode(m){ document.documentElement.setAttribute('data-bs-theme',m); localStorage.setItem('docs-mode',m); }
+ sel.value = localStorage.getItem('docs-theme')||'';
+ applyTheme(sel.value);
+ sel.addEventListener('change',function(){applyTheme(this.value)});
+ var mode = localStorage.getItem('docs-mode') || (window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+ applyMode(mode);
+ document.getElementById('modeLight').onclick=function(){applyMode('light')};
+ document.getElementById('modeDark').onclick=function(){applyMode('dark')};
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script type="module">
+ import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+ mermaid.initialize({startOnLoad:true});
+</script>
+</body>
+</html>

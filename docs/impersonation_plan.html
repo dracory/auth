@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Impersonation Feature — Implementation Plan - dracory/auth docs</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link id="bootlegance" href="" rel="stylesheet">
+<style>
+ body{padding-top:4.5rem}
+ .doc{max-width:960px;margin:0 auto}
+ pre{background:var(--bs-tertiary-bg);padding:1rem;border-radius:.375rem;overflow-x:auto}
+ code{font-size:.875em}
+ table{font-size:.9rem}
+ .navbar-brand{font-weight:700}
+</style>
+</head>
+<body>
+<nav class="navbar navbar-expand-md fixed-top border-bottom bg-body-tertiary">
+ <div class="container-fluid px-3">
+  <a class="navbar-brand" href="index.html">dracory/auth docs</a>
+  <div class="d-flex align-items-center gap-2">
+   <select id="themeSel" class="form-select form-select-sm" style="width:auto">
+    <option value="">Bootstrap default</option>
+<option value="adwaita">Adwaita</option>
+<option value="ant-design">Ant Design</option>
+<option value="ayu">Ayu</option>
+<option value="brutalski">Brutalski</option>
+<option value="carbon">Carbon</option>
+<option value="catppuccin">Catppuccin</option>
+<option value="catppuccin-frappe">Catppuccin Frappe</option>
+<option value="catppuccin-macchiato">Catppuccin Macchiato</option>
+<option value="civic">Civic</option>
+<option value="cyberpunk">Cyberpunk</option>
+<option value="dracula">Dracula</option>
+<option value="dracula-soft">Dracula Soft</option>
+<option value="editorial">Editorial</option>
+<option value="everforest">Everforest</option>
+<option value="fluent">Fluent</option>
+<option value="forest">Forest</option>
+<option value="github-primer">Github Primer</option>
+<option value="glassmorphism">Glassmorphism</option>
+<option value="gruvbox">Gruvbox</option>
+<option value="high-contrast">High Contrast</option>
+<option value="kanagawa">Kanagawa</option>
+<option value="kde-breeze">Kde Breeze</option>
+<option value="mac-classic">Mac Classic</option>
+<option value="material-3">Material 3</option>
+<option value="midnight">Midnight</option>
+<option value="neo-brutalism">Neo Brutalism</option>
+<option value="night-owl">Night Owl</option>
+<option value="nord">Nord</option>
+<option value="nord-aurora">Nord Aurora</option>
+<option value="nord-frost">Nord Frost</option>
+<option value="ocean">Ocean</option>
+<option value="one-dark">One Dark</option>
+<option value="orchis">Orchis</option>
+<option value="orchis-cyan">Orchis Cyan</option>
+<option value="orchis-green">Orchis Green</option>
+<option value="orchis-orange">Orchis Orange</option>
+<option value="orchis-pink">Orchis Pink</option>
+<option value="orchis-purple">Orchis Purple</option>
+<option value="orchis-red">Orchis Red</option>
+<option value="orchis-sage">Orchis Sage</option>
+<option value="orchis-slate">Orchis Slate</option>
+<option value="orchis-yellow">Orchis Yellow</option>
+<option value="pantheon">Pantheon</option>
+<option value="print-optimized">Print Optimized</option>
+<option value="rose-pine">Rose Pine</option>
+<option value="seneca">Seneca</option>
+<option value="sepia">Sepia</option>
+<option value="slate">Slate</option>
+<option value="solarized">Solarized</option>
+<option value="sunrise">Sunrise</option>
+<option value="swiss">Swiss</option>
+<option value="terminal">Terminal</option>
+<option value="tokyo-night">Tokyo Night</option>
+<option value="vanguard">Vanguard</option>
+<option value="vimix">Vimix</option>
+<option value="vimix-dark">Vimix Dark</option>
+<option value="vimix-green">Vimix Green</option>
+<option value="vimix-orange">Vimix Orange</option>
+<option value="vimix-pink">Vimix Pink</option>
+<option value="vimix-purple">Vimix Purple</option>
+<option value="vimix-red">Vimix Red</option>
+<option value="vimix-teal">Vimix Teal</option>
+<option value="vimix-yellow">Vimix Yellow</option>
+<option value="whitehall">Whitehall</option>
+<option value="whitesur">Whitesur</option>
+<option value="win98">Win98</option>
+<option value="yaru">Yaru</option>
+   </select>
+   <div class="btn-group btn-group-sm" role="group">
+    <button type="button" class="btn btn-outline-secondary" id="modeLight" title="Light">&#9728;</button>
+    <button type="button" class="btn btn-outline-secondary" id="modeDark" title="Dark">&#9790;</button>
+   </div>
+  </div>
+ </div>
+</nav>
+<main class="container doc pb-5">
+<h1>Impersonation Feature — Implementation Plan</h1>
+<p><strong>Last Updated:</strong> 2026-07-12 (rev 2 — incorporated review feedback)</p>
+<blockquote class="blockquote border-start border-3 ps-3 text-secondary"><p><strong>Status:</strong> Implemented — see <a href="impersonation.html">impersonation.html</a> for the shipped feature documentation. This plan is kept for historical context.</p></blockquote>
+<hr>
+<h2>Overview</h2>
+<p>Impersonation allows an administrator to "log in as" another user — creating a new auth token for the target user and browsing the application from their perspective. The admin can later "exit" impersonation to return to their original session.</p>
+<p>This document describes the full design for integrating impersonation into <code>dracory/auth</code> as a first-class, opt-in feature.</p>
+<hr>
+<h2>Goals</h2>
+<ul><li><strong>Seamless token swap</strong>: Admin gets a real auth token for the target user — existing middleware and application code work unchanged.</li><li><strong>Reversible</strong>: The admin's original auth token is preserved so they can return to their own session.</li><li><strong>Secure</strong>: Permission check via callback, rate-limited, CSRF-protected, audit-logged.</li><li><strong>Opt-in</strong>: Disabled by default. Consumers must explicitly enable it and provide a permission callback.</li><li><strong>Implementation-agnostic</strong>: Uses the existing callback pattern — no assumptions about the database or session store.</li></ul>
+<hr>
+<h2>Non-Goals</h2>
+<ul><li>UI pages for impersonation (the admin panel / user list is the consumer's responsibility).</li><li>Role-based access control (the consumer decides who can impersonate via the callback).</li><li>Impersonation chains (admin → moderator → user). Only one level of impersonation is supported.</li></ul>
+<hr>
+<h2>Architecture</h2>
+<h3>Current Flow (from user's existing projects)</h3>
+<pre><code class="language-text">Admin (authenticated) → selects target user_id
+  → new session created with target user_id
+  → auth cookie overwritten with new session key
+  → admin browses as target user
+  → (no exit mechanism — admin must log in again)</code></pre>
+<h3>Proposed Flow</h3>
+<pre><code class="language-text">Admin (authenticated) → POST /auth/api/impersonate/start {user_id}
+  → handler resolves adminUserID from current auth token (via FuncUserFindByAuthToken)
+  → chain guard: check if current token already has an imp: mapping → reject 400 if so
+  → FuncCanImpersonate(adminUserID, targetUserID) is called
+  → if allowed:
+      → generate new auth token via str.RandomFromGamma(32, &quot;BCDFGHJKLMNPQRSTVXYZ&quot;)
+      → save admin&#x27;s current auth token via FuncTemporaryKeySet (keyed by imp: + new token)
+      → call FuncUserStoreAuthToken(ctx, newToken, targetUserID, options) to create a session for the target
+      → set auth cookie to newToken (if UseCookies)
+      → call FuncImpersonationStart hook (audit)
+      → RecordImpersonationStart observability hook
+      → RecordSessionCreated(targetUserID) observability hook
+      → return success JSON with token (always, matching api_login pattern)
+
+Admin (browsing as target) → POST /auth/api/impersonate/stop
+  → handler resolves current auth token (the impersonation token)
+  → retrieve saved original admin token via FuncTemporaryKeyGet (keyed by imp: + current token)
+  → if not found → return 400 &quot;not currently impersonating&quot;
+  → resolve targetUserID from current token via FuncUserFindByAuthToken(currentToken)
+  → resolve adminUserID from original token via FuncUserFindByAuthToken(originalToken)
+  → set auth cookie back to original admin token
+  → optionally invalidate impersonation token via FuncUserLogout(ctx, targetUserID, options)
+  → delete the temporary key (see Temp Key Deletion contract below)
+  → call FuncImpersonationStop(ctx, adminUserID, targetUserID) if configured
+  → RecordImpersonationStop(adminUserID, targetUserID) observability hook
+  → return success JSON</code></pre>
+<hr>
+<h2>Detailed Design</h2>
+<h3>1. New Config Fields</h3>
+<p>Added to both <code>ConfigUsernameAndPassword</code> and <code>ConfigPasswordless</code> (in the shared section):</p>
+<pre><code class="language-go">// Impersonation
+EnableImpersonation       bool
+FuncCanImpersonate        func(ctx context.Context, adminUserID string, targetUserID string) (bool, error)
+FuncImpersonationStart    func(ctx context.Context, adminUserID string, targetUserID string) error  // optional
+FuncImpersonationStop     func(ctx context.Context, adminUserID string, targetUserID string) error  // optional</code></pre>
+<p><strong>Validation:</strong></p>
+<ul><li>If <code>EnableImpersonation</code> is <code>true</code> and <code>FuncCanImpersonate</code> is <code>nil</code>, return an error from the constructor.</li><li><code>FuncImpersonationStart</code> and <code>FuncImpersonationStop</code> are optional (default to no-op).</li></ul>
+<h3>2. New Struct Fields on <code>authImplementation</code></h3>
+<pre><code class="language-go">// ===== START: impersonation
+enableImpersonation    bool
+funcCanImpersonate     func(ctx context.Context, adminUserID string, targetUserID string) (bool, error)
+funcImpersonationStart func(ctx context.Context, adminUserID string, targetUserID string) error
+funcImpersonationStop  func(ctx context.Context, adminUserID string, targetUserID string) error
+// ===== END: impersonation</code></pre>
+<h3>3. New Context Keys</h3>
+<p><strong>Important — pre-existing context key inconsistency:</strong> The codebase currently has TWO separate <code>AuthenticatedUserID</code> types:</p>
+<ul><li><code>auth.AuthenticatedUserID{}</code> in <code>constants.go:15</code> — used by <code>GetCurrentUserID()</code> in <code>auth_implementation.go:134</code></li><li><code>types.AuthenticatedUserID{}</code> in <code>types/constants.go:3</code> — used by all middlewares (<code>api_auth_or_error_middleware.go:42</code>, <code>web_auth_or_redirect_middleware.go:45</code>, <code>web_append_user_id_if_exists_middleware.go:38</code>)</li></ul>
+<p>These are <strong>different Go types</strong> and thus <strong>different context keys</strong>. This is a pre-existing bug: middlewares set <code>types.AuthenticatedUserID{}</code> but <code>GetCurrentUserID</code> reads <code>auth.AuthenticatedUserID{}</code>, so the value is never found. The impersonation feature must not repeat this mistake.</p>
+<p><strong>Decision:</strong> Define all new impersonation context keys in <code>types/constants.go</code> only (where the middlewares look for them). Use <code>types.ImpersonatorUserID{}</code> and <code>types.IsImpersonating{}</code> consistently everywhere. Do NOT duplicate them in <code>constants.go</code>.</p>
+<pre><code class="language-go">// In types/constants.go ONLY:
+type ImpersonatorUserID struct{}  // the real admin&#x27;s user ID (present only during impersonation)
+type IsImpersonating struct{}     // boolean flag (present only during impersonation)</code></pre>
+<p><strong>Bug fix (recommended):</strong> Also consolidate <code>AuthenticatedUserID</code> to a single definition in <code>types/constants.go</code> and update <code>GetCurrentUserID</code> to use <code>types.AuthenticatedUserID{}</code>. This is a pre-existing bug that should be fixed alongside the impersonation work.</p>
+<p>These are set in the request context by the impersonation-aware middleware so that application code can detect impersonation and access the real admin's identity.</p>
+<h3>4. New Interface Methods on <code>AuthSharedInterface</code></h3>
+<pre><code class="language-go">// Impersonation
+IsImpersonationEnabled() bool
+
+GetFuncCanImpersonate() func(ctx context.Context, adminUserID string, targetUserID string) (bool, error)
+SetFuncCanImpersonate(fn func(ctx context.Context, adminUserID string, targetUserID string) (bool, error))
+
+GetFuncImpersonationStart() func(ctx context.Context, adminUserID string, targetUserID string) error
+SetFuncImpersonationStart(fn func(ctx context.Context, adminUserID string, targetUserID string) error)
+
+GetFuncImpersonationStop() func(ctx context.Context, adminUserID string, targetUserID string) error
+SetFuncImpersonationStop(fn func(ctx context.Context, adminUserID string, targetUserID string) error)
+
+// Link helpers (must be on the interface, not just on the struct)
+LinkApiImpersonateStart() string
+LinkApiImpersonateStop() string</code></pre>
+<h3>5. New API Endpoints</h3>
+<h4><code>POST /auth/api/impersonate/start</code></h4>
+<p><strong>Path constant:</strong> <code>PathApiImpersonateStart = "api/impersonate/start"</code></p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  &quot;user_id&quot;: &quot;target-user-id&quot;
+}</code></pre>
+<p><strong>Handler logic:</strong></p>
+<ol><li>Resolve the current auth token from the request (cookie or header) via <code>utils.AuthTokenRetrieve</code>.</li><li>Resolve <code>adminUserID</code> from the auth token via <code>FuncUserFindByAuthToken(ctx, authToken, options)</code>. If token is empty or user not found → return <code>401 Unauthorized</code> JSON.</li><li>Read <code>user_id</code> from the request body/form.</li><li>Validate <code>user_id</code> is not empty → <code>400 Bad Request</code> if missing.</li><li><strong>Chain guard:</strong> Check if the current auth token already has an impersonation mapping by calling <code>FuncTemporaryKeyGet(key=impersonationKeyPrefix+authToken)</code>. If a mapping is found → return <code>400 Bad Request</code> ("already impersonating — stop first").</li><li>Call <code>FuncCanImpersonate(ctx, adminUserID, targetUserID)</code>. If not allowed → return <code>403 Forbidden</code> JSON.</li><li>Generate a new auth token via <code>str.RandomFromGamma(32, "BCDFGHJKLMNPQRSTVXYZ")</code> (same pattern as <code>api_authenticate_via_username.go:166</code>).</li><li>Save the admin's current auth token via <code>FuncTemporaryKeySet(key=impersonationKeyPrefix+newToken, value=authToken, expiresSeconds=int(DefaultAuthTokenExpiration.Seconds()))</code>.</li><li>Call <code>FuncUserStoreAuthToken(ctx, newToken, targetUserID, options)</code> to create a session for the target user.</li><li>Set the auth cookie to <code>newToken</code> (if <code>UseCookies</code> is true).</li><li>Call <code>FuncImpersonationStart(ctx, adminUserID, targetUserID)</code> if configured.</li><li>Call <code>RecordImpersonationStart(adminUserID, targetUserID)</code> on observability hooks.</li><li>Call <code>RecordSessionCreated(targetUserID)</code> on observability hooks (consistent with login flow in <code>login_with_username_and_password.go:107</code>).</li><li>Return success JSON (always include token, matching <code>api_login.go:72-74</code> pattern):</li></ol>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;message&quot;: &quot;impersonation started&quot;,
+  &quot;data&quot;: {
+    &quot;token&quot;: &quot;new-token&quot;
+  }
+}</code></pre>
+<p><strong>Authentication enforcement:</strong> The start endpoint does NOT rely on <code>ApiAuthOrErrorMiddleware</code> wrapping (which is commented out in the interface). Instead, the handler itself resolves the auth token and user ID directly, returning <code>401</code> if unauthenticated. This matches the pattern where <code>buildAPIRoutes</code> only wraps CSRF and rate-limiting, not auth middleware.</p>
+<p><strong>Security:</strong></p>
+<ul><li>CSRF protected (same as other POST endpoints).</li><li>Rate limited (same as other API endpoints).</li><li>Chain guard prevents nested impersonation.</li></ul>
+<h4><code>POST /auth/api/impersonate/stop</code></h4>
+<p><strong>Path constant:</strong> <code>PathApiImpersonateStop = "api/impersonate/stop"</code></p>
+<p><strong>Request:</strong> No body required.</p>
+<p><strong>Handler logic:</strong></p>
+<ol><li>Extract the current auth token from the request (cookie or header) via <code>utils.AuthTokenRetrieve</code>.</li><li>If <code>currentAuthToken</code> is empty → return <code>400 Bad Request</code> ("not currently impersonating"). This guards against looking up <code>imp:</code> with no token suffix.</li><li>Look up the saved original admin token via <code>FuncTemporaryKeyGet(key=impersonationKeyPrefix+currentAuthToken)</code>.</li><li>If not found → return <code>400 Bad Request</code> ("not currently impersonating").</li><li>Resolve <code>targetUserID</code> from the current impersonation token via <code>FuncUserFindByAuthToken(ctx, currentAuthToken, options)</code>.</li><li>Resolve <code>adminUserID</code> from the original admin token via <code>FuncUserFindByAuthToken(ctx, originalAdminToken, options)</code>. (The temp value stores the original <strong>token</strong>, not the admin user ID — so we must resolve it.)</li><li>Set the auth cookie back to the original admin token (if <code>UseCookies</code> is true).</li><li>Optionally invalidate the impersonation token via <code>FuncUserLogout(ctx, targetUserID, options)</code>.</li><li>Delete the temporary key (see <strong>Temp Key Deletion</strong> contract below).</li><li>Call <code>FuncImpersonationStop(ctx, adminUserID, targetUserID)</code> if configured.</li><li>Call <code>RecordImpersonationStop(adminUserID, targetUserID)</code> on observability hooks.</li><li>Return success JSON:</li></ol>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;message&quot;: &quot;impersonation stopped&quot;
+}</code></pre>
+<p><strong>Security:</strong></p>
+<ul><li>CSRF protected.</li><li>Rate limited.</li></ul>
+<h3>6. Temp Key Deletion Contract</h3>
+<p>The plan originally said "Delete via <code>FuncTemporaryKeySet(..., value="", expiresSeconds=0)</code>" but <code>expiresSeconds=0</code> may mean "no expiry" (i.e. permanent) in some store implementations, which would leave a stale key forever.</p>
+<p><strong>Decision:</strong> Use <code>FuncTemporaryKeySet(key=impersonationKeyPrefix+currentAuthToken, value="", expiresSeconds=1)</code> — set expiry to 1 second (effectively immediate expiration). This is safe across all store implementations.</p>
+<p><strong>Future enhancement (out of scope):</strong> Consider adding a <code>FuncTemporaryKeyDelete(key string) error</code> callback to the interface for explicit deletion. For now, the 1-second expiry approach works with the existing callback set.</p>
+<h3>7. New Constants</h3>
+<p>In <code>constants.go</code>:</p>
+<pre><code class="language-go">PathApiImpersonateStart string = &quot;api/impersonate/start&quot;
+PathApiImpersonateStop  string = &quot;api/impersonate/stop&quot;
+
+impersonationKeyPrefix = &quot;imp:&quot;  // prefix for temporary keys that store original admin tokens</code></pre>
+<h3>8. New Link Helpers</h3>
+<p>In <code>internal/links/</code>:</p>
+<pre><code class="language-go">func ApiImpersonateStart(endpoint string) string  // returns endpoint + &quot;/api/impersonate/start&quot;
+func ApiImpersonateStop(endpoint string) string   // returns endpoint + &quot;/api/impersonate/stop&quot;</code></pre>
+<h3>9. Router Integration</h3>
+<p><strong>Two changes required in <code>router.go</code>:</strong></p>
+<p><strong>9a. Path detection in <code>AuthHandler</code> (lines 41-69):</strong> The <code>if/else</code> chain that matches URI suffixes to path constants must include the new impersonation paths, otherwise requests fall through to <code>notFoundHandler</code> (which redirects to login):</p>
+<pre><code class="language-go">} else if strings.HasSuffix(uri, PathApiImpersonateStart) {
+    path = PathApiImpersonateStart
+} else if strings.HasSuffix(uri, PathApiImpersonateStop) {
+    path = PathApiImpersonateStop
+}</code></pre>
+<p><strong>9b. Route registration in <code>buildAPIRoutes</code>:</strong> Add the new routes to the <code>apiRoutes</code> slice, but <strong>only when <code>enableImpersonation</code> is <code>true</code></strong>. Since <code>buildAPIRoutes</code> is called unconditionally, the guard must be inside it:</p>
+<pre><code class="language-go">if a.enableImpersonation {
+    apiRoutes = append(apiRoutes, []struct{...}{
+        {PathApiImpersonateStart, &quot;impersonate_start&quot;, a.apiImpersonateStart, true},
+        {PathApiImpersonateStop,  &quot;impersonate_stop&quot;,  a.apiImpersonateStop,  true},
+    }...)
+}</code></pre>
+<h3>10. Observability Hooks</h3>
+<p>Add to <code>ObservabilityHooks</code> interface:</p>
+<pre><code class="language-go">RecordImpersonationStart(adminUserID string, targetUserID string)
+RecordImpersonationStop(adminUserID string, targetUserID string)</code></pre>
+<p>Update <code>NoopObservabilityHooks</code>:</p>
+<pre><code class="language-go">func (NoopObservabilityHooks) RecordImpersonationStart(string, string) {}
+func (NoopObservabilityHooks) RecordImpersonationStop(string, string)  {}</code></pre>
+<h3>11. Impersonation-Aware Middleware (Optional Enhancement)</h3>
+<p>An optional middleware <code>ImpersonationAwareMiddleware</code> that:</p>
+<ol><li>Runs after the standard auth middleware (which sets <code>AuthenticatedUserID</code>).</li><li>Checks if the current auth token has a saved original admin token (via <code>FuncTemporaryKeyGet</code>).</li><li>If yes:</li><li>Sets <code>ImpersonatorUserID</code> in context to the admin's user ID (resolved from the original token).</li><li>Sets <code>IsImpersonating</code> in context to <code>true</code>.</li><li>Passes the request to the next handler.</li></ol>
+<p>This middleware is <strong>optional</strong> — consumers who don't need impersonation context awareness can skip it. It's primarily useful for:</p>
+<ul><li>Audit logging in application handlers.</li><li>Showing a "You are impersonating user X. Click here to exit." banner.</li><li>Restricting certain actions during impersonation (e.g., password changes, deletions).</li></ul>
+<h3>12. Token Storage Strategy</h3>
+<p>The key insight: we use the existing <code>FuncTemporaryKeySet</code> / <code>FuncTemporaryKeyGet</code> callbacks to store the mapping:</p>
+<pre><code class="language-text">Key:   &quot;imp:&lt;impersonationToken&gt;&quot;
+Value: &lt;originalAdminAuthToken&gt;</code></pre>
+<p>This means:</p>
+<ul><li>No new callbacks are needed for storing the original token.</li><li>The temporary key store already has expiration support.</li><li>When the impersonation token expires, the mapping also expires (cleanup is automatic).</li></ul>
+<h3>13. Helper Functions</h3>
+<p>In <code>global_helpers.go</code> (or a new <code>impersonation_helpers.go</code>):</p>
+<pre><code class="language-go">// IsImpersonating checks if the current request is in an impersonation session.
+func IsImpersonating(r *http.Request) bool
+
+// GetImpersonatorUserID returns the real admin&#x27;s user ID if impersonating, empty string otherwise.
+func GetImpersonatorUserID(r *http.Request) string</code></pre>
+<hr>
+<h2>File Changes Summary</h2>
+<table class="table table-striped table-sm"><thead><tr><th>File</th><th>Change</th></tr></thead><tbody><tr><td><code>types/auth_interfaces.go</code></td><td>Add impersonation methods + link helpers to <code>AuthSharedInterface</code></td></tr><tr><td><code>types/config_username_and_password.go</code></td><td>Add impersonation config fields</td></tr><tr><td><code>types/config_passwordless.go</code></td><td>Add impersonation config fields</td></tr><tr><td><code>types/observability.go</code></td><td>Add <code>RecordImpersonationStart</code> / <code>RecordImpersonationStop</code></td></tr><tr><td><code>types/constants.go</code></td><td>Add <code>ImpersonatorUserID</code> and <code>IsImpersonating</code> context keys (ONLY here, not in <code>constants.go</code>)</td></tr><tr><td><code>types/messages.go</code></td><td>Add <code>MsgImpersonationStarted</code>, <code>MsgImpersonationStopped</code>, <code>MsgNotImpersonating</code>, <code>MsgAlreadyImpersonating</code></td></tr><tr><td><code>constants.go</code></td><td>Add <code>PathApiImpersonateStart</code>, <code>PathApiImpersonateStop</code>, <code>impersonationKeyPrefix</code></td></tr><tr><td><code>auth_implementation.go</code></td><td>Add impersonation struct fields, getters/setters, <code>IsImpersonationEnabled()</code>, link helper methods</td></tr><tr><td><code>auth_implementation_api.go</code></td><td>Add <code>apiImpersonateStart</code> / <code>apiImpersonateStop</code> thin wrapper methods (matching existing pattern)</td></tr><tr><td><code>new_username_and_password_auth.go</code></td><td>Wire impersonation config fields, add validation</td></tr><tr><td><code>new_passwordless_auth.go</code></td><td>Wire impersonation config fields, add validation</td></tr><tr><td><code>router.go</code></td><td>Add path detection in <code>AuthHandler</code> if/else chain + conditional route registration in <code>buildAPIRoutes</code></td></tr><tr><td><code>internal/links/links.go</code></td><td>Add <code>ApiImpersonateStart</code> / <code>ApiImpersonateStop</code> link helpers</td></tr><tr><td><code>internal/api/api_impersonate_start/</code></td><td>New package — <code>dependencies.go</code>, <code>api_impersonate_start.go</code>, <code>api_impersonate_start_test.go</code> (follows existing <code>Dependencies</code> + <code>WithAuth</code> pattern)</td></tr><tr><td><code>internal/api/api_impersonate_stop/</code></td><td>New package — <code>dependencies.go</code>, <code>api_impersonate_stop.go</code>, <code>api_impersonate_stop_test.go</code> (follows existing <code>Dependencies</code> + <code>WithAuth</code> pattern)</td></tr><tr><td><code>global_helpers.go</code></td><td>Add <code>IsImpersonating</code> / <code>GetImpersonatorUserID</code> helpers</td></tr><tr><td><code>middlewares/impersonation_aware_middleware.go</code></td><td>New — optional middleware for impersonation context</td></tr><tr><td><code>middlewares/impersonation_aware_middleware_test.go</code></td><td>New — tests for the middleware</td></tr></tbody></table>
+<hr>
+<h2>Testing Plan</h2>
+<h3>Unit Tests</h3>
+<ul><li><strong><code>api_impersonate_start_test.go</code></strong>:</li><li>Happy path: admin impersonates target user successfully.</li><li>No auth token / unauthenticated → 401.</li><li>Missing <code>user_id</code> → 400.</li><li><code>FuncCanImpersonate</code> returns false → 403.</li><li><code>FuncCanImpersonate</code> returns error → 500.</li><li><code>FuncUserStoreAuthToken</code> fails → 500.</li><li><code>FuncTemporaryKeySet</code> fails → 500.</li><li>Chain guard: already impersonating → 400.</li><li>Impersonation disabled → 404 (route not registered).</li><li>CSRF token missing → 403.</li><li>Rate limit exceeded → 429.</li><li>Token is always returned in JSON (not conditional on <code>UseLocalStorage</code>).</li><li><code>RecordSessionCreated</code> is called with <code>targetUserID</code>.</li></ul>
+<ul><li><strong><code>api_impersonate_stop_test.go</code></strong>:</li><li>Happy path: stop impersonation, original token restored, both <code>adminUserID</code> and <code>targetUserID</code> resolved correctly.</li><li>Empty auth token (no cookie/header) → 400 "not currently impersonating".</li><li>Not currently impersonating (token has no imp: mapping) → 400.</li><li><code>FuncTemporaryKeyGet</code> fails → 500.</li><li><code>FuncUserFindByAuthToken</code> fails for original token → 500.</li><li>CSRF token missing → 403.</li><li>Rate limit exceeded → 429.</li></ul>
+<ul><li><strong><code>impersonation_aware_middleware_test.go</code></strong>:</li><li>Impersonation active → context has <code>ImpersonatorUserID</code> and <code>IsImpersonating</code>.</li><li>Not impersonating → context does not have impersonation keys.</li><li>No auth token → passes through without impersonation context.</li></ul>
+<ul><li><strong><code>global_helpers_test.go</code></strong> (additions):</li><li><code>IsImpersonating</code> returns true/false correctly.</li><li><code>GetImpersonatorUserID</code> returns correct ID or empty string.</li></ul>
+<ul><li><strong><code>auth_implementation_api_test.go</code></strong> (additions):</li><li>Smoke test: <code>apiImpersonateStart</code> wrapper calls the internal package correctly.</li><li>Smoke test: <code>apiImpersonateStop</code> wrapper calls the internal package correctly.</li></ul>
+<ul><li><strong><code>links_test.go</code></strong> (new or additions to existing link tests):</li><li><code>ApiImpersonateStart</code> returns correct URL.</li><li><code>ApiImpersonateStop</code> returns correct URL.</li></ul>
+<ul><li><strong><code>new_username_and_password_auth_test.go</code></strong> (additions):</li><li><code>EnableImpersonation=true</code> with <code>FuncCanImpersonate=nil</code> → constructor error.</li><li><code>EnableImpersonation=true</code> with <code>FuncCanImpersonate</code> set → constructor succeeds.</li><li><code>EnableImpersonation=false</code> → <code>IsImpersonationEnabled()</code> returns false.</li></ul>
+<ul><li><strong><code>new_passwordless_auth_test.go</code></strong> (additions):</li><li>Same as above for passwordless config.</li></ul>
+<ul><li><strong><code>observability_test.go</code></strong> (additions):</li><li>Verify <code>RecordImpersonationStart</code> / <code>RecordImpersonationStop</code> are called.</li><li>Verify <code>NoopObservabilityHooks</code> implements the new methods.</li></ul>
+<h3>Integration Tests</h3>
+<ul><li>Full flow: admin logs in → starts impersonation → browses as target → stops impersonation → back as admin.</li><li>Impersonation with cookies vs localStorage.</li><li>Impersonation token expiration cleanup.</li></ul>
+<hr>
+<h2>Security Considerations</h2>
+<ol><li><strong>Permission check is mandatory</strong>: <code>FuncCanImpersonate</code> must be provided when impersonation is enabled. The library never assumes any user can impersonate.</li><li><strong>CSRF protection</strong>: Both start and stop endpoints are CSRF-protected (same as other POST endpoints).</li><li><strong>Rate limiting</strong>: Both endpoints are rate-limited to prevent abuse.</li><li><strong>Token expiration</strong>: The impersonation mapping expires with <code>DefaultAuthTokenExpiration</code> (2 hours). If the admin doesn't exit impersonation within that window, the original token mapping is lost and they must log in again.</li><li><strong>No privilege escalation</strong>: The impersonated session is a regular user session — it has exactly the permissions of the target user, no more.</li><li><strong>Audit trail</strong>: <code>FuncImpersonationStart</code> / <code>FuncImpersonationStop</code> hooks and observability hooks provide a complete audit trail.</li><li><strong>One level only</strong>: The design does not support impersonation chains. The start handler enforces this via a chain guard — it checks if the current auth token already has an <code>imp:</code> mapping in the temporary key store. If so, it rejects with <code>400 Bad Request</code> ("already impersonating — stop first").</li></ol>
+<hr>
+<h2>Open Questions</h2>
+<ol><li><strong>Should the impersonation token be distinguishable from a regular token?</strong> Currently no — it's a regular token stored via <code>FuncUserStoreAuthToken</code>. This means the session store can't tell impersonation sessions apart from real ones. If audit logging at the session level is needed, we could add a <code>FuncUserStoreAuthToken</code> variant that accepts metadata. For now, the audit hooks cover this.</li></ol>
+<ol><li><strong>Should we invalidate the impersonation token on stop?</strong> The plan calls <code>FuncUserLogout</code> for the target user on stop. This is optional — if the consumer wants the impersonation session to remain valid (e.g., for audit), they can skip this. We could make this configurable.</li></ol>
+<ol><li><strong>Should there be a web page endpoint (not just API)?</strong> The current design only has API endpoints. A web page redirect flow (like the user's current controller) could be added if needed, but it's essentially a thin wrapper around the API endpoint.</li></ol>
+<hr>
+<h2>Internal API Package Structure</h2>
+<p>The new <code>internal/api/api_impersonate_start/</code> and <code>internal/api/api_impersonate_stop/</code> packages must follow the existing pattern used by <code>api_login/</code>, <code>api_register/</code>, etc.:</p>
+<ul><li><strong><code>dependencies.go</code></strong> — A <code>Dependencies</code> struct that aggregates all required callbacks (decoupled from <code>authImplementation</code> to avoid import cycles).</li><li><strong><code>api_impersonate_start.go</code></strong> (or <code>_stop.go</code>) — The core handler function that takes <code>Dependencies</code>, plus a <code>WithAuth</code> convenience wrapper that accepts <code>types.AuthSharedInterface</code> and wires the dependencies.</li><li><strong><code>api_impersonate_start_test.go</code></strong> (or <code>_stop_test.go</code>) — Unit tests.</li></ul>
+<p>Example structure for <code>api_impersonate_start/</code>:</p>
+<pre><code class="language-go">// dependencies.go
+type Dependencies struct {
+    CanImpersonate        func(ctx context.Context, adminUserID, targetUserID string) (bool, error)
+    UserFindByAuthToken   func(ctx context.Context, token string, options types.UserAuthOptions) (string, error)
+    UserStoreAuthToken    func(ctx context.Context, token, userID string, options types.UserAuthOptions) error
+    TemporaryKeyGet       func(key string) (string, error)
+    TemporaryKeySet       func(key string, value string, expiresSeconds int) error
+    UseCookies            bool
+    SetAuthCookie         func(w http.ResponseWriter, r *http.Request, token string)
+    ObservabilityHooks    types.ObservabilityHooks
+    ImpersonationStart    func(ctx context.Context, adminUserID, targetUserID string) error  // optional
+}
+
+// api_impersonate_start.go
+func ApiImpersonateStart(w http.ResponseWriter, r *http.Request, deps Dependencies) { ... }
+func ApiImpersonateStartWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) { ... }</code></pre>
+<p>The thin wrapper in <code>auth_implementation_api.go</code> then just calls:</p>
+<pre><code class="language-go">func (a authImplementation) apiImpersonateStart(w http.ResponseWriter, r *http.Request) {
+    api_impersonate_start.ApiImpersonateStartWithAuth(w, r, &amp;a)
+}</code></pre>
+<hr>
+<h2>Implementation Order</h2>
+<ol><li><strong>Types &amp; config</strong> — Add context keys (<code>types/constants.go</code>), config fields (both config structs), interface methods (<code>types/auth_interfaces.go</code>), observability hooks (<code>types/observability.go</code>), message constants (<code>types/messages.go</code>).</li><li><strong>Struct &amp; getters/setters</strong> — Add fields to <code>authImplementation</code> (<code>auth_implementation.go</code>), implement all new interface methods including <code>IsImpersonationEnabled()</code> and link helpers.</li><li><strong>API wrappers</strong> — Add <code>apiImpersonateStart</code> / <code>apiImpersonateStop</code> thin wrappers in <code>auth_implementation_api.go</code>.</li><li><strong>Constructors</strong> — Wire config in both <code>NewUsernameAndPasswordAuth</code> and <code>NewPasswordlessAuth</code>, add validation (<code>EnableImpersonation=true</code> requires <code>FuncCanImpersonate</code>).</li><li><strong>Link helpers</strong> — Add <code>ApiImpersonateStart</code> / <code>ApiImpersonateStop</code> to <code>internal/links/links.go</code>.</li><li><strong>Constants</strong> — Add <code>PathApiImpersonateStart</code>, <code>PathApiImpersonateStop</code>, <code>impersonationKeyPrefix</code> to <code>constants.go</code>.</li><li><strong>API handlers</strong> — Create <code>internal/api/api_impersonate_start/</code> and <code>internal/api/api_impersonate_stop/</code> packages with <code>Dependencies</code> struct + <code>WithAuth</code> wrapper.</li><li><strong>Router</strong> — Add path detection in <code>AuthHandler</code> if/else chain + conditional route registration in <code>buildAPIRoutes</code>.</li><li><strong>Global helpers</strong> — Add <code>IsImpersonating</code> / <code>GetImpersonatorUserID</code>.</li><li><strong>Middleware</strong> — Create <code>ImpersonationAwareMiddleware</code>.</li><li><strong>Tests</strong> — Write all unit and integration tests per the testing plan (TDD — write tests before or alongside each step above).</li><li><strong>Documentation</strong> — Update README, add examples.</li></ol>
+</main>
+<footer class="border-top py-3 text-center text-secondary small">
+ Generated from markdown sources &middot; <a href="https://github.com/dracory/auth">github.com/dracory/auth</a>
+</footer>
+<script>
+(function(){
+ var sel=document.getElementById('themeSel');
+ function applyTheme(t){
+   var l=document.getElementById('bootlegance');
+   l.href = t ? 'https://cdn.jsdelivr.net/gh/lesichkovm/bootlegance@main/themes/'+t+'/theme.css' : '';
+   localStorage.setItem('docs-theme',t);
+ }
+ function applyMode(m){ document.documentElement.setAttribute('data-bs-theme',m); localStorage.setItem('docs-mode',m); }
+ sel.value = localStorage.getItem('docs-theme')||'';
+ applyTheme(sel.value);
+ sel.addEventListener('change',function(){applyTheme(this.value)});
+ var mode = localStorage.getItem('docs-mode') || (window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+ applyMode(mode);
+ document.getElementById('modeLight').onclick=function(){applyMode('light')};
+ document.getElementById('modeDark').onclick=function(){applyMode('dark')};
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script type="module">
+ import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+ mermaid.initialize({startOnLoad:true});
+</script>
+</body>
+</html>

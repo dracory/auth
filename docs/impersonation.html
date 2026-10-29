@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Impersonation - dracory/auth docs</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link id="bootlegance" href="" rel="stylesheet">
+<style>
+ body{padding-top:4.5rem}
+ .doc{max-width:960px;margin:0 auto}
+ pre{background:var(--bs-tertiary-bg);padding:1rem;border-radius:.375rem;overflow-x:auto}
+ code{font-size:.875em}
+ table{font-size:.9rem}
+ .navbar-brand{font-weight:700}
+</style>
+</head>
+<body>
+<nav class="navbar navbar-expand-md fixed-top border-bottom bg-body-tertiary">
+ <div class="container-fluid px-3">
+  <a class="navbar-brand" href="index.html">dracory/auth docs</a>
+  <div class="d-flex align-items-center gap-2">
+   <select id="themeSel" class="form-select form-select-sm" style="width:auto">
+    <option value="">Bootstrap default</option>
+<option value="adwaita">Adwaita</option>
+<option value="ant-design">Ant Design</option>
+<option value="ayu">Ayu</option>
+<option value="brutalski">Brutalski</option>
+<option value="carbon">Carbon</option>
+<option value="catppuccin">Catppuccin</option>
+<option value="catppuccin-frappe">Catppuccin Frappe</option>
+<option value="catppuccin-macchiato">Catppuccin Macchiato</option>
+<option value="civic">Civic</option>
+<option value="cyberpunk">Cyberpunk</option>
+<option value="dracula">Dracula</option>
+<option value="dracula-soft">Dracula Soft</option>
+<option value="editorial">Editorial</option>
+<option value="everforest">Everforest</option>
+<option value="fluent">Fluent</option>
+<option value="forest">Forest</option>
+<option value="github-primer">Github Primer</option>
+<option value="glassmorphism">Glassmorphism</option>
+<option value="gruvbox">Gruvbox</option>
+<option value="high-contrast">High Contrast</option>
+<option value="kanagawa">Kanagawa</option>
+<option value="kde-breeze">Kde Breeze</option>
+<option value="mac-classic">Mac Classic</option>
+<option value="material-3">Material 3</option>
+<option value="midnight">Midnight</option>
+<option value="neo-brutalism">Neo Brutalism</option>
+<option value="night-owl">Night Owl</option>
+<option value="nord">Nord</option>
+<option value="nord-aurora">Nord Aurora</option>
+<option value="nord-frost">Nord Frost</option>
+<option value="ocean">Ocean</option>
+<option value="one-dark">One Dark</option>
+<option value="orchis">Orchis</option>
+<option value="orchis-cyan">Orchis Cyan</option>
+<option value="orchis-green">Orchis Green</option>
+<option value="orchis-orange">Orchis Orange</option>
+<option value="orchis-pink">Orchis Pink</option>
+<option value="orchis-purple">Orchis Purple</option>
+<option value="orchis-red">Orchis Red</option>
+<option value="orchis-sage">Orchis Sage</option>
+<option value="orchis-slate">Orchis Slate</option>
+<option value="orchis-yellow">Orchis Yellow</option>
+<option value="pantheon">Pantheon</option>
+<option value="print-optimized">Print Optimized</option>
+<option value="rose-pine">Rose Pine</option>
+<option value="seneca">Seneca</option>
+<option value="sepia">Sepia</option>
+<option value="slate">Slate</option>
+<option value="solarized">Solarized</option>
+<option value="sunrise">Sunrise</option>
+<option value="swiss">Swiss</option>
+<option value="terminal">Terminal</option>
+<option value="tokyo-night">Tokyo Night</option>
+<option value="vanguard">Vanguard</option>
+<option value="vimix">Vimix</option>
+<option value="vimix-dark">Vimix Dark</option>
+<option value="vimix-green">Vimix Green</option>
+<option value="vimix-orange">Vimix Orange</option>
+<option value="vimix-pink">Vimix Pink</option>
+<option value="vimix-purple">Vimix Purple</option>
+<option value="vimix-red">Vimix Red</option>
+<option value="vimix-teal">Vimix Teal</option>
+<option value="vimix-yellow">Vimix Yellow</option>
+<option value="whitehall">Whitehall</option>
+<option value="whitesur">Whitesur</option>
+<option value="win98">Win98</option>
+<option value="yaru">Yaru</option>
+   </select>
+   <div class="btn-group btn-group-sm" role="group">
+    <button type="button" class="btn btn-outline-secondary" id="modeLight" title="Light">&#9728;</button>
+    <button type="button" class="btn btn-outline-secondary" id="modeDark" title="Dark">&#9790;</button>
+   </div>
+  </div>
+ </div>
+</nav>
+<main class="container doc pb-5">
+<h1>Impersonation</h1>
+<p>This document describes the <strong>opt-in</strong> impersonation feature in <code>dracory/auth</code>. It allows an authenticated administrator to temporarily act on behalf of another user ("login as"), then exit impersonation and return to their own session.</p>
+<hr>
+<h2>Table of Contents</h2>
+<ol><li><a href="#overview">Overview</a></li><li><a href="#security-model">Security Model</a></li><li><a href="#configuration">Configuration</a></li><li><a href="#api-endpoints">API Endpoints</a></li><li><a href="#how-it-works">How It Works</a></li><li><a href="#impersonation-aware-middleware">Impersonation-Aware Middleware</a></li><li><a href="#helper-functions">Helper Functions</a></li><li><a href="#audit-and-observability">Audit and Observability</a></li><li><a href="#complete-example">Complete Example</a></li><li><a href="#testing">Testing</a></li></ol>
+<hr>
+<h2>Overview</h2>
+<p>Impersonation is useful for:</p>
+<ul><li>Customer support agents investigating user-reported issues.</li><li>Administrators performing actions on behalf of another user.</li><li>Debugging permission-specific behavior from a target user's perspective.</li></ul>
+<p>The feature is <strong>disabled by default</strong> and requires the consumer to explicitly enable it and provide a permission callback.</p>
+<hr>
+<h2>Security Model</h2>
+<ul><li><strong>Opt-in only</strong>: Routes are not registered unless <code>EnableImpersonation</code> is <code>true</code>.</li><li><strong>Permission check required</strong>: <code>FuncCanImpersonate</code> is mandatory when enabled. The library never decides who can impersonate.</li><li><strong>One-level only</strong>: Nested impersonation is rejected by the chain guard.</li><li><strong>CSRF protected</strong>: Both endpoints are wrapped with CSRF middleware (same as other POST endpoints).</li><li><strong>Rate limited</strong>: Both endpoints participate in the standard per-IP rate limiting.</li><li><strong>Session bound</strong>: The admin's original token is stored under a temporary key with the same expiry as a normal session.</li><li><strong>Audit trail</strong>: Optional callbacks and observability hooks capture start/stop events.</li></ul>
+<hr>
+<h2>Configuration</h2>
+<p>Add the following fields to <code>types.ConfigPasswordless</code>, <code>types.ConfigUsernameAndPassword</code>, or <code>types.ConfigAuthKnight</code>:</p>
+<pre><code class="language-go">EnableImpersonation: true,
+FuncCanImpersonate: func(ctx context.Context, adminUserID, targetUserID string) (bool, error) {
+    // Implement your permission logic here.
+    // Example: only &quot;superadmin&quot; role can impersonate.
+    return userHasRole(adminUserID, &quot;superadmin&quot;), nil
+},
+FuncImpersonationStart: func(ctx context.Context, adminUserID, targetUserID string) error {
+    // Optional: audit log, metrics, notifications
+    slog.Info(&quot;impersonation started&quot;, &quot;admin&quot;, adminUserID, &quot;target&quot;, targetUserID)
+    return nil
+},
+FuncImpersonationStop: func(ctx context.Context, adminUserID, targetUserID string) error {
+    // Optional: audit log, metrics, notifications
+    slog.Info(&quot;impersonation stopped&quot;, &quot;admin&quot;, adminUserID, &quot;target&quot;, targetUserID)
+    return nil
+},</code></pre>
+<p>Validation rule:</p>
+<ul><li>If <code>EnableImpersonation</code> is <code>true</code> and <code>FuncCanImpersonate</code> is <code>nil</code>, the constructor returns an error.</li></ul>
+<hr>
+<h2>API Endpoints</h2>
+<p>The endpoints are registered only when impersonation is enabled.</p>
+<h3><code>POST /auth/api/impersonate/start</code></h3>
+<p>Starts an impersonation session for the supplied target user.</p>
+<p><strong>Request (form or JSON body):</strong></p>
+<pre><code class="language-json">{
+  &quot;user_id&quot;: &quot;target-user-id&quot;
+}</code></pre>
+<p><strong>Behavior:</strong></p>
+<ol><li>Extracts the current auth token from the request (cookie or <code>Authorization</code> header).</li><li>Resolves <code>adminUserID</code> from the auth token via <code>FuncUserFindByAuthToken</code>. Returns <code>401</code> if token is empty or user not found.</li><li>Reads <code>user_id</code> from the request body/form. Returns <code>400</code> if missing.</li><li><strong>Chain guard</strong>: Checks if the current token already has an <code>imp:</code> mapping via <code>FuncTemporaryKeyGet</code>. Returns <code>400</code> if already impersonating.</li><li>Calls <code>FuncCanImpersonate(adminUserID, targetUserID)</code>. Returns <code>403</code> if not allowed, <code>500</code> on error.</li><li>Generates a new 32-character auth token.</li><li>Stores the mapping <code>imp:&lt;newToken&gt; -&gt; &lt;adminToken&gt;</code> via <code>FuncTemporaryKeySet</code> with 2-hour TTL.</li><li>Persists the new token via <code>FuncUserStoreAuthToken</code>. On failure, cleans up the temp key and returns <code>500</code>.</li><li>Sets the auth cookie to the new token (when <code>UseCookies</code> is true).</li><li>Calls optional <code>FuncImpersonationStart</code> callback.</li><li>Calls <code>RecordImpersonationStart</code> and <code>RecordSessionCreated</code> on observability hooks.</li><li>Returns success JSON with the new token.</li></ol>
+<p><strong>Success response:</strong></p>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;message&quot;: &quot;impersonation started&quot;,
+  &quot;data&quot;: {
+    &quot;token&quot;: &quot;NEW-AUTH-TOKEN&quot;
+  }
+}</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul><li><code>401 Unauthorized</code> — missing or invalid admin auth token.</li><li><code>400 Bad Request</code> — missing <code>user_id</code> or already impersonating (chain guard).</li><li><code>403 Forbidden</code> — <code>FuncCanImpersonate</code> returned <code>false</code>.</li><li><code>500 Internal Server Error</code> — token generation, temp key storage, or <code>FuncUserStoreAuthToken</code> failure.</li><li><code>403</code> / <code>429</code> — CSRF or rate-limit failures from the standard middleware wrappers.</li></ul>
+<h3><code>POST /auth/api/impersonate/stop</code></h3>
+<p>Exits the current impersonation session and restores the admin's original token.</p>
+<p><strong>Request:</strong> no body required.</p>
+<p><strong>Behavior:</strong></p>
+<ol><li>Extracts the current auth token from the request (cookie or <code>Authorization</code> header). Returns <code>400</code> if empty.</li><li>Looks up <code>imp:&lt;currentToken&gt;</code> via <code>FuncTemporaryKeyGet</code> to recover the original admin token. Returns <code>400</code> if no mapping found (not currently impersonating), <code>500</code> on lookup error.</li><li>Resolves <code>targetUserID</code> from the current impersonation token via <code>FuncUserFindByAuthToken</code>. Returns <code>500</code> on error or empty result.</li><li>Resolves <code>adminUserID</code> from the original admin token via <code>FuncUserFindByAuthToken</code>. Returns <code>500</code> on error or empty result.</li><li>Calls <code>FuncUserLogout</code> for the target user (if configured).</li><li>Restores the auth cookie to the original admin token (when <code>UseCookies</code> is true).</li><li>Deletes the temporary mapping by setting it to empty with 1-second expiry.</li><li>Calls optional <code>FuncImpersonationStop</code> callback.</li><li>Calls <code>RecordImpersonationStop</code> on observability hooks.</li><li>Returns success JSON.</li></ol>
+<p><strong>Success response:</strong></p>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;message&quot;: &quot;impersonation stopped&quot;
+}</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul><li><code>400 Bad Request</code> — empty token or no <code>imp:</code> mapping (not currently impersonating).</li><li><code>500 Internal Server Error</code> — temporary key or user lookup failure.</li><li><code>403</code> / <code>429</code> — CSRF or rate-limit failures.</li></ul>
+<hr>
+<h2>How It Works</h2>
+<h3>Token Mapping</h3>
+<p>The library stores a single temporary key during an impersonation session:</p>
+<pre><code class="language-text">Key:   imp:&lt;impersonationToken&gt;
+Value: &lt;originalAdminToken&gt;
+TTL:   DefaultAuthTokenExpiration (2 hours by default)</code></pre>
+<p>This means:</p>
+<ul><li>No schema changes are required in your user store.</li><li>The mapping is automatically cleaned up when the temporary key expires.</li><li>The original admin token is never exposed to the target session.</li></ul>
+<h3>Chain Guard</h3>
+<p>When the admin is already impersonating, their current auth token has an <code>imp:</code> mapping. The start handler detects this and rejects a second impersonation attempt with <code>400 Bad Request</code> (<code>MsgAlreadyImpersonating</code>). This prevents chains such as admin → moderator → user.</p>
+<h3>Cookie vs LocalStorage</h3>
+<p>When <code>UseCookies</code> is <code>true</code>, the start handler overwrites the auth cookie with the new target token, and the stop handler restores the original admin cookie.</p>
+<p>When <code>UseLocalStorage</code> is <code>true</code> (i.e., <code>UseCookies</code> is <code>false</code>), the client is responsible for token management. The API response always includes <code>"token"</code> in the success payload, and the client must swap the stored token.</p>
+<hr>
+<h2>Impersonation-Aware Middleware</h2>
+<p>The library provides an optional middleware that enriches the request context with impersonation metadata:</p>
+<pre><code class="language-go">mux.Handle(&quot;/dashboard&quot;, auth.WebAuthOrRedirectMiddleware(
+    middlewares.ImpersonationAwareMiddleware(dashboardHandler, authInstance),
+))</code></pre>
+<p>If the current session is an impersonation session, the middleware sets:</p>
+<ul><li><code>types.ImpersonatorUserID{}</code> — the real admin's user ID.</li><li><code>types.IsImpersonating{}</code> — <code>true</code>.</li></ul>
+<p>Use the helper functions to read these values:</p>
+<pre><code class="language-go">if auth.IsImpersonating(r) {
+    adminID := auth.GetImpersonatorUserID(r)
+    fmt.Fprintf(w, &quot;You are impersonating user %s. Admin: %s&quot;, userID, adminID)
+}</code></pre>
+<p>The middleware is <strong>optional</strong>. Standard authentication continues to work normally without it.</p>
+<hr>
+<h2>Helper Functions</h2>
+<pre><code class="language-go">// IsImpersonating reports whether the request context is in an impersonation session.
+func IsImpersonating(r *http.Request) bool
+
+// GetImpersonatorUserID returns the real admin&#x27;s user ID, or empty string if not impersonating.
+func GetImpersonatorUserID(r *http.Request) string</code></pre>
+<p>These read from the request context, which is populated by <code>ImpersonationAwareMiddleware</code>. The functions are safe to call even when the middleware is not installed — they return <code>false</code> and <code>""</code> respectively.</p>
+<hr>
+<h2>Audit and Observability</h2>
+<h3>Optional Callbacks</h3>
+<ul><li><code>FuncImpersonationStart</code> — called after a successful start.</li><li><code>FuncImpersonationStop</code> — called after a successful stop.</li></ul>
+<p>Use these for audit logs, external SIEM integrations, or application-specific notifications.</p>
+<h3>Observability Hooks</h3>
+<p>If you set <code>ObservabilityHooks</code> in the config, the following methods are also called:</p>
+<pre><code class="language-go">RecordImpersonationStart(adminUserID string, targetUserID string)
+RecordImpersonationStop(adminUserID string, targetUserID string)
+RecordSessionCreated(targetUserID string)  // called for the new target session</code></pre>
+<p>See <code>types/observability.go</code> for the full interface.</p>
+<hr>
+<h2>Complete Example</h2>
+<pre><code class="language-go">package main
+
+import (
+    &quot;context&quot;
+    &quot;log/slog&quot;
+    &quot;net/http&quot;
+
+    &quot;github.com/dracory/auth&quot;
+    &quot;github.com/dracory/auth/middlewares&quot;
+    &quot;github.com/dracory/auth/types&quot;
+)
+
+func canImpersonate(ctx context.Context, adminUserID, targetUserID string) (bool, error) {
+    // Example: allow only superadmins, and never impersonate another admin.
+    if isSuperAdmin(adminUserID) &amp;&amp; !isAdmin(targetUserID) {
+        return true, nil
+    }
+    return false, nil
+}
+
+func main() {
+    authInstance, err := auth.NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
+        Endpoint:             &quot;/auth&quot;,
+        UrlRedirectOnSuccess: &quot;/dashboard&quot;,
+        UseCookies:           true,
+        EnableImpersonation:  true,
+        FuncCanImpersonate:   canImpersonate,
+        FuncImpersonationStart: func(ctx context.Context, admin, target string) error {
+            slog.Info(&quot;audit: impersonation start&quot;, &quot;admin&quot;, admin, &quot;target&quot;, target)
+            return nil
+        },
+        FuncImpersonationStop: func(ctx context.Context, admin, target string) error {
+            slog.Info(&quot;audit: impersonation stop&quot;, &quot;admin&quot;, admin, &quot;target&quot;, target)
+            return nil
+        },
+        // ... other required callbacks (FuncUserLogin, FuncUserStoreAuthToken, etc.)
+    })
+    if err != nil {
+        panic(err)
+    }
+
+    mux := http.NewServeMux()
+    mux.HandleFunc(&quot;/auth/&quot;, authInstance.Router().ServeHTTP)
+
+    // Protected dashboard with impersonation awareness
+    mux.Handle(&quot;/dashboard&quot;,
+        authInstance.WebAuthOrRedirectMiddleware(
+            middlewares.ImpersonationAwareMiddleware(http.HandlerFunc(dashboardHandler), authInstance),
+        ),
+    )
+
+    http.ListenAndServe(&quot;:8080&quot;, mux)
+}
+
+func dashboardHandler(w http.ResponseWriter, r *http.Request) {
+    userID := auth.GetCurrentUserID(r)
+    if auth.IsImpersonating(r) {
+        adminID := auth.GetImpersonatorUserID(r)
+        w.Write([]byte(&quot;Viewing as user &quot; + userID + &quot;. Impersonating admin: &quot; + adminID))
+        return
+    }
+    w.Write([]byte(&quot;Welcome, user &quot; + userID))
+}</code></pre>
+<hr>
+<h2>Testing</h2>
+<p>The feature ships with dedicated unit tests:</p>
+<ul><li><code>internal/api/api_impersonate_start/api_impersonate_start_test.go</code></li><li><code>internal/api/api_impersonate_stop/api_impersonate_stop_test.go</code></li><li><code>middlewares/impersonation_aware_middleware_test.go</code></li><li><code>impersonation_helpers_test.go</code></li></ul>
+<p>Run them together with the rest of the suite:</p>
+<pre><code class="language-sh">go test ./...</code></pre>
+<p>For coverage:</p>
+<pre><code class="language-sh">go test -cover ./...</code></pre>
+<hr>
+<h2>See Also</h2>
+<ul><li><code>docs/impersonation_plan.html</code> — design and implementation plan.</li><li><code>types/auth_interfaces.go</code> — <code>AuthSharedInterface</code> additions.</li><li><code>types/observability.go</code> — observability hooks.</li><li><code>types/constants.go</code> — <code>ImpersonationKeyPrefix</code> and context key types.</li><li><code>types/messages.go</code> — impersonation message constants.</li></ul>
+</main>
+<footer class="border-top py-3 text-center text-secondary small">
+ Generated from markdown sources &middot; <a href="https://github.com/dracory/auth">github.com/dracory/auth</a>
+</footer>
+<script>
+(function(){
+ var sel=document.getElementById('themeSel');
+ function applyTheme(t){
+   var l=document.getElementById('bootlegance');
+   l.href = t ? 'https://cdn.jsdelivr.net/gh/lesichkovm/bootlegance@main/themes/'+t+'/theme.css' : '';
+   localStorage.setItem('docs-theme',t);
+ }
+ function applyMode(m){ document.documentElement.setAttribute('data-bs-theme',m); localStorage.setItem('docs-mode',m); }
+ sel.value = localStorage.getItem('docs-theme')||'';
+ applyTheme(sel.value);
+ sel.addEventListener('change',function(){applyTheme(this.value)});
+ var mode = localStorage.getItem('docs-mode') || (window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+ applyMode(mode);
+ document.getElementById('modeLight').onclick=function(){applyMode('light')};
+ document.getElementById('modeDark').onclick=function(){applyMode('dark')};
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script type="module">
+ import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+ mermaid.initialize({startOnLoad:true});
+</script>
+</body>
+</html>

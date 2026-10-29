@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UI Patterns - dracory/auth docs</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link id="bootlegance" href="" rel="stylesheet">
+<style>
+ body{padding-top:4.5rem}
+ .doc{max-width:960px;margin:0 auto}
+ pre{background:var(--bs-tertiary-bg);padding:1rem;border-radius:.375rem;overflow-x:auto}
+ code{font-size:.875em}
+ table{font-size:.9rem}
+ .navbar-brand{font-weight:700}
+</style>
+</head>
+<body>
+<nav class="navbar navbar-expand-md fixed-top border-bottom bg-body-tertiary">
+ <div class="container-fluid px-3">
+  <a class="navbar-brand" href="index.html">dracory/auth docs</a>
+  <div class="d-flex align-items-center gap-2">
+   <select id="themeSel" class="form-select form-select-sm" style="width:auto">
+    <option value="">Bootstrap default</option>
+<option value="adwaita">Adwaita</option>
+<option value="ant-design">Ant Design</option>
+<option value="ayu">Ayu</option>
+<option value="brutalski">Brutalski</option>
+<option value="carbon">Carbon</option>
+<option value="catppuccin">Catppuccin</option>
+<option value="catppuccin-frappe">Catppuccin Frappe</option>
+<option value="catppuccin-macchiato">Catppuccin Macchiato</option>
+<option value="civic">Civic</option>
+<option value="cyberpunk">Cyberpunk</option>
+<option value="dracula">Dracula</option>
+<option value="dracula-soft">Dracula Soft</option>
+<option value="editorial">Editorial</option>
+<option value="everforest">Everforest</option>
+<option value="fluent">Fluent</option>
+<option value="forest">Forest</option>
+<option value="github-primer">Github Primer</option>
+<option value="glassmorphism">Glassmorphism</option>
+<option value="gruvbox">Gruvbox</option>
+<option value="high-contrast">High Contrast</option>
+<option value="kanagawa">Kanagawa</option>
+<option value="kde-breeze">Kde Breeze</option>
+<option value="mac-classic">Mac Classic</option>
+<option value="material-3">Material 3</option>
+<option value="midnight">Midnight</option>
+<option value="neo-brutalism">Neo Brutalism</option>
+<option value="night-owl">Night Owl</option>
+<option value="nord">Nord</option>
+<option value="nord-aurora">Nord Aurora</option>
+<option value="nord-frost">Nord Frost</option>
+<option value="ocean">Ocean</option>
+<option value="one-dark">One Dark</option>
+<option value="orchis">Orchis</option>
+<option value="orchis-cyan">Orchis Cyan</option>
+<option value="orchis-green">Orchis Green</option>
+<option value="orchis-orange">Orchis Orange</option>
+<option value="orchis-pink">Orchis Pink</option>
+<option value="orchis-purple">Orchis Purple</option>
+<option value="orchis-red">Orchis Red</option>
+<option value="orchis-sage">Orchis Sage</option>
+<option value="orchis-slate">Orchis Slate</option>
+<option value="orchis-yellow">Orchis Yellow</option>
+<option value="pantheon">Pantheon</option>
+<option value="print-optimized">Print Optimized</option>
+<option value="rose-pine">Rose Pine</option>
+<option value="seneca">Seneca</option>
+<option value="sepia">Sepia</option>
+<option value="slate">Slate</option>
+<option value="solarized">Solarized</option>
+<option value="sunrise">Sunrise</option>
+<option value="swiss">Swiss</option>
+<option value="terminal">Terminal</option>
+<option value="tokyo-night">Tokyo Night</option>
+<option value="vanguard">Vanguard</option>
+<option value="vimix">Vimix</option>
+<option value="vimix-dark">Vimix Dark</option>
+<option value="vimix-green">Vimix Green</option>
+<option value="vimix-orange">Vimix Orange</option>
+<option value="vimix-pink">Vimix Pink</option>
+<option value="vimix-purple">Vimix Purple</option>
+<option value="vimix-red">Vimix Red</option>
+<option value="vimix-teal">Vimix Teal</option>
+<option value="vimix-yellow">Vimix Yellow</option>
+<option value="whitehall">Whitehall</option>
+<option value="whitesur">Whitesur</option>
+<option value="win98">Win98</option>
+<option value="yaru">Yaru</option>
+   </select>
+   <div class="btn-group btn-group-sm" role="group">
+    <button type="button" class="btn btn-outline-secondary" id="modeLight" title="Light">&#9728;</button>
+    <button type="button" class="btn btn-outline-secondary" id="modeDark" title="Dark">&#9790;</button>
+   </div>
+  </div>
+ </div>
+</nav>
+<main class="container doc pb-5">
+<h1>UI Patterns</h1>
+<p>This document outlines the User Interface (UI) patterns used in the <code>dracory/auth</code> codebase.</p>
+<h2>Overview</h2>
+<p>The UI is built server-side using Go, leveraging the <code>github.com/dracory/hb</code> library to construct HTML programmatically. It relies heavily on <strong>Bootstrap 5</strong> for styling and layout, with <strong>jQuery</strong> used for client-side interactivity.</p>
+<p>Every login method ships a default page — <code>page_login</code> (OTP/password), <code>page_magic_link</code> (magic-link email form) — and each <code>types.Method</code> adapter accepts a custom page override when an application wants its own template.</p>
+<h2>Technology Stack</h2>
+<ul><li><strong>HTML Generation</strong>: <code>github.com/dracory/hb</code> (Go-based HTML builder).</li><li><strong>CSS Framework</strong>: Bootstrap 5.2.1 (via <code>github.com/dracory/uncdn</code>).</li><li><strong>JavaScript Library</strong>: jQuery 3.6.0 (via <code>github.com/dracory/uncdn</code>).</li><li><strong>Icons</strong>: Bootstrap Icons (<code>bi</code>).</li><li><strong>Fonts</strong>: "Nunito" (primary) and "Ubuntu" (secondary/fallback).</li></ul>
+<h2>Core Patterns</h2>
+<h3>1. Page Structure</h3>
+<p>Pages are constructed using a "Shell" pattern defined in <code>internal/ui/shared/webpage.go</code>.</p>
+<ul><li><strong><code>buildPage</code> Function</strong>:</li><li>Sets up the full HTML document structure (<code>&lt;html&gt;</code>, <code>&lt;head&gt;</code>, <code>&lt;body&gt;</code>).</li><li>Injects external resources (Bootstrap CSS/JS, jQuery, Fonts).</li><li>Injects global CSS overrides.</li><li>Wraps the specific page content.</li></ul>
+<h3>2. Layout</h3>
+<ul><li><strong>Global Layout</strong>: Defined in <code>layout.go</code>. It provides a basic wrapper, primarily setting the background color and font, and wrapping the content in a centered section with padding.</li><li><strong>Container Pattern</strong>: Most pages use a Bootstrap <code>.container</code> holding a centered <code>.card</code>.</li><li><strong>Card</strong>: Used to frame the content (Login, Register, etc.).</li><li><code>.card-header</code>: Contains the page title.</li><li><code>.card-body</code>: Contains the form and alerts.</li><li><code>.card-footer</code>: Contains secondary actions (e.g., "Forgot password?", "Register").</li></ul>
+<h3>3. Components</h3>
+<ul><li><strong>Forms</strong>: Standard Bootstrap form groups (<code>.form-group</code>) with labels and inputs (<code>.form-control</code>).</li><li><strong>Buttons</strong>: Bootstrap buttons (<code>.btn</code>) often paired with icons.</li><li><em>Example</em>: <code>&lt;button class="btn btn-success"&gt;&lt;i class="bi bi-door-open"&gt;&lt;/i&gt; Log in&lt;/button&gt;</code></li><li><strong>Alerts</strong>: Used for feedback.</li><li><code>.alert-success</code>: For success messages.</li><li><code>.alert-danger</code>: For error messages.</li><li>These are typically hidden by default and toggled via JavaScript.</li><li><strong>Spinners</strong>: Bootstrap spinners (<code>.spinner-border</code>) used inside buttons to indicate loading states.</li></ul>
+<h3>4. Client-Side Logic</h3>
+<ul><li><strong>Inline Scripts</strong>: JavaScript logic is defined as Go strings (e.g., <code>LoginScripts</code> in <code>content.go</code>) and injected into the page.</li><li><strong>Validation</strong>: Simple client-side validation (checking for empty fields) before sending AJAX requests.</li><li><strong>AJAX</strong>: <code>$.post</code> is used to submit forms to API endpoints.</li><li><strong>Feedback</strong>: Functions like <code>loginFormRaiseError</code> and <code>loginFormRaiseSuccess</code> handle showing/hiding alerts.</li></ul>
+<h2>Email Templates</h2>
+<ul><li><strong>Implementation</strong>: <code>html/template</code> package.</li><li><strong>Structure</strong>: Simple HTML strings defined in <code>email_*_template.go</code> files.</li><li><strong>Styling</strong>: Minimal inline styling.</li></ul>
+<hr>
+<h2>Design Improvements</h2>
+<h3>AuthKnight Register Page</h3>
+<p>The AuthKnight register page (<code>/auth/register?ak_key=xxx</code>) uses a distinct pattern for the email field:</p>
+<ul><li><strong>Static text display</strong>: The verified email is rendered as a <code>&lt;div class="form-control-plaintext text-muted"&gt;</code> element, not an <code>&lt;input&gt;</code>. This prevents browser extensions (e.g., LastPass) from modifying the email value.</li><li><strong>Hidden input</strong>: A <code>&lt;input type="hidden" name="email"&gt;</code> carries the verified email for form submission.</li><li><strong>Server-side retrieval</strong>: The email is always retrieved from the temporary key store via <code>ak_key</code>, never trusted from the form submission.</li></ul>
+<h3>AuthKnight Redirect Guard</h3>
+<p>All page handlers that are irrelevant in AuthKnight mode (login, register without <code>ak_key</code>, password-restore, password-reset, login-code-verify, register-code-verify) use a shared helper <code>shared.RedirectAuthKnightIfActive()</code> to redirect to AuthKnight's hosted login. This eliminates duplicated guard blocks across handlers.</p>
+<h3>The following improvements are recommended to enhance consistency, maintainability, and user experience.</h3>
+<h3>1. Unify Typography</h3>
+<p><strong>Current State</strong>: <code>layout.go</code> imports "Nunito", while <code>shared/webpage.go</code> sets <code>font-family: Ubuntu, sans-serif</code> on <code>html,body</code> and then overrides <code>body</code> with <code>Nunito</code>. <strong>Proposal</strong>:</p>
+<ul><li>Standardize on a single font family (e.g., Nunito) across all files.</li><li>Remove the conflicting <code>Ubuntu</code> declaration in <code>shared/webpage.go</code> unless it serves a specific fallback purpose.</li></ul>
+<h3>2. Extract Reusable Components</h3>
+<p><strong>Current State</strong>: The "Card" structure (Header, Body, Footer) is repeated in <code>LoginContent</code>, <code>RegisterContent</code>, etc. <strong>Proposal</strong>:</p>
+<ul><li>Create a <code>shared.Card(header, body, footer)</code> function in <code>internal/ui/shared</code>.</li><li>This will reduce code duplication and ensure consistent styling (e.g., max-width, margins) across all auth pages.</li></ul>
+<h3>3. Externalize JavaScript</h3>
+<p><strong>Current State</strong>: JavaScript is embedded as string literals in Go functions. This makes it hard to lint, format, and test. <strong>Proposal</strong>:</p>
+<ul><li>Move JavaScript to <code>.js</code> files and embed them using <code>//go:embed</code>.</li><li>Alternatively, if dynamic values (URLs) are needed, keep the minimal injection logic in Go but move the core logic (validation, UI toggling) to a static <code>.js</code> file served separately or embedded.</li></ul>
+<h3>4. Centralize Styles</h3>
+<p><strong>Current State</strong>: Styles are scattered across <code>layout.go</code> (inline CSS), <code>shared/webpage.go</code> (injected CSS string), and <code>hb</code> calls (<code>.Style(...)</code>). <strong>Proposal</strong>:</p>
+<ul><li>Define a central <code>styles.go</code> or <code>css.go</code> in <code>internal/ui/shared</code> to hold all CSS strings.</li><li>Replace hardcoded hex codes (e.g., <code>#f8fafc</code>) with named constants (e.g., <code>ColorBackground</code>).</li></ul>
+<h3>5. Enhance Email Templates</h3>
+<p><strong>Current State</strong>: Basic HTML structure. <strong>Proposal</strong>:</p>
+<ul><li>Use a proper HTML email layout with a table-based structure for better compatibility across email clients.</li><li>Add a consistent header (logo) and footer to all emails.</li><li>Extract the common email layout into a helper function, similar to the web page layout.</li></ul>
+<h2>Technical Improvements</h2>
+<h3>1. Expand Public Interfaces</h3>
+<p><strong>Current State</strong>: The <code>authImplementation</code> struct acts as a "shallow proxy" for UI pages. Methods like <code>pageLogin</code> manually construct a <code>Dependencies</code> struct, copying fields from <code>authImplementation</code> one by one. This is verbose, brittle, and violates the "Open/Closed" principle.</p>
+<p><strong>Problematic Code Example (<code>auth_implementation_pages.go</code>)</strong>:</p>
+<pre><code class="language-go">func (a authImplementation) pageLogin(w http.ResponseWriter, r *http.Request) {
+    page_login.PageLogin(w, r, page_login.Dependencies{
+        Passwordless:       a.passwordless,
+        EnableRegistration: a.enableRegistration,
+        Endpoint:           a.endpoint,
+        RedirectOnSuccess:  a.LinkRedirectOnSuccess(),
+        Layout:             a.funcLayout,
+        Logger:             a.GetLogger(),
+    })
+}</code></pre>
+<p><strong>Proposal</strong>: Expand the existing <code>AuthSharedInterface</code> (and its specialized counterparts) to include accessors for common dependencies. This allows the <code>authImplementation</code> (which already implements these interfaces) to be passed directly to UI handlers.</p>
+<p><strong>Recommended Approach: Expand Public Interfaces</strong></p>
+<ol><li><strong>Expand Interface</strong>: Add accessor methods to <code>types.AuthSharedInterface</code>.</li></ol>
+<p>    ```go     // types/auth_interfaces.go     type AuthSharedInterface interface {         // ... existing methods ...</p>
+<p>        // New Accessors         GetEndpoint() string         GetLogger() *slog.Logger         IsRegistrationEnabled() bool         GetLayout() func(content string) string     }     ```</p>
+<ol><li><strong>Update Implementation</strong>: Ensure <code>authImplementation</code> satisfies these new methods. (Most are already present or trivial to add).</li></ol>
+<ol><li><strong>Update Handlers</strong>: Update page handlers to accept the interface.</li></ol>
+<p>    ``<code>go     // internal/ui/page_login/page_login.go     func PageLogin(w http.ResponseWriter, r *http.Request, auth types.AuthSharedInterface) {         // Use auth.GetEndpoint(), auth.IsRegistrationEnabled(), etc.     }     </code>``</p>
+<p><strong>Benefits</strong>:</p>
+<ul><li><strong>Simplicity</strong>: Reuses the existing main interface; no need for a new parallel hierarchy.</li><li><strong>Direct Passing</strong>: The <code>authImplementation</code> can be passed directly to handlers without wrapping or conversion.</li><li><strong>Consistency</strong>: A single interface defines the capabilities of the auth system, both for external consumers and internal UI components.</li></ul>
+</main>
+<footer class="border-top py-3 text-center text-secondary small">
+ Generated from markdown sources &middot; <a href="https://github.com/dracory/auth">github.com/dracory/auth</a>
+</footer>
+<script>
+(function(){
+ var sel=document.getElementById('themeSel');
+ function applyTheme(t){
+   var l=document.getElementById('bootlegance');
+   l.href = t ? 'https://cdn.jsdelivr.net/gh/lesichkovm/bootlegance@main/themes/'+t+'/theme.css' : '';
+   localStorage.setItem('docs-theme',t);
+ }
+ function applyMode(m){ document.documentElement.setAttribute('data-bs-theme',m); localStorage.setItem('docs-mode',m); }
+ sel.value = localStorage.getItem('docs-theme')||'';
+ applyTheme(sel.value);
+ sel.addEventListener('change',function(){applyTheme(this.value)});
+ var mode = localStorage.getItem('docs-mode') || (window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+ applyMode(mode);
+ document.getElementById('modeLight').onclick=function(){applyMode('light')};
+ document.getElementById('modeDark').onclick=function(){applyMode('dark')};
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script type="module">
+ import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+ mermaid.initialize({startOnLoad:true});
+</script>
+</body>
+</html>

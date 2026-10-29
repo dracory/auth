@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feature Comparison: dracory/auth vs Authelia - dracory/auth docs</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link id="bootlegance" href="" rel="stylesheet">
+<style>
+ body{padding-top:4.5rem}
+ .doc{max-width:960px;margin:0 auto}
+ pre{background:var(--bs-tertiary-bg);padding:1rem;border-radius:.375rem;overflow-x:auto}
+ code{font-size:.875em}
+ table{font-size:.9rem}
+ .navbar-brand{font-weight:700}
+</style>
+</head>
+<body>
+<nav class="navbar navbar-expand-md fixed-top border-bottom bg-body-tertiary">
+ <div class="container-fluid px-3">
+  <a class="navbar-brand" href="../index.html">dracory/auth docs</a>
+  <div class="d-flex align-items-center gap-2">
+   <select id="themeSel" class="form-select form-select-sm" style="width:auto">
+    <option value="">Bootstrap default</option>
+<option value="adwaita">Adwaita</option>
+<option value="ant-design">Ant Design</option>
+<option value="ayu">Ayu</option>
+<option value="brutalski">Brutalski</option>
+<option value="carbon">Carbon</option>
+<option value="catppuccin">Catppuccin</option>
+<option value="catppuccin-frappe">Catppuccin Frappe</option>
+<option value="catppuccin-macchiato">Catppuccin Macchiato</option>
+<option value="civic">Civic</option>
+<option value="cyberpunk">Cyberpunk</option>
+<option value="dracula">Dracula</option>
+<option value="dracula-soft">Dracula Soft</option>
+<option value="editorial">Editorial</option>
+<option value="everforest">Everforest</option>
+<option value="fluent">Fluent</option>
+<option value="forest">Forest</option>
+<option value="github-primer">Github Primer</option>
+<option value="glassmorphism">Glassmorphism</option>
+<option value="gruvbox">Gruvbox</option>
+<option value="high-contrast">High Contrast</option>
+<option value="kanagawa">Kanagawa</option>
+<option value="kde-breeze">Kde Breeze</option>
+<option value="mac-classic">Mac Classic</option>
+<option value="material-3">Material 3</option>
+<option value="midnight">Midnight</option>
+<option value="neo-brutalism">Neo Brutalism</option>
+<option value="night-owl">Night Owl</option>
+<option value="nord">Nord</option>
+<option value="nord-aurora">Nord Aurora</option>
+<option value="nord-frost">Nord Frost</option>
+<option value="ocean">Ocean</option>
+<option value="one-dark">One Dark</option>
+<option value="orchis">Orchis</option>
+<option value="orchis-cyan">Orchis Cyan</option>
+<option value="orchis-green">Orchis Green</option>
+<option value="orchis-orange">Orchis Orange</option>
+<option value="orchis-pink">Orchis Pink</option>
+<option value="orchis-purple">Orchis Purple</option>
+<option value="orchis-red">Orchis Red</option>
+<option value="orchis-sage">Orchis Sage</option>
+<option value="orchis-slate">Orchis Slate</option>
+<option value="orchis-yellow">Orchis Yellow</option>
+<option value="pantheon">Pantheon</option>
+<option value="print-optimized">Print Optimized</option>
+<option value="rose-pine">Rose Pine</option>
+<option value="seneca">Seneca</option>
+<option value="sepia">Sepia</option>
+<option value="slate">Slate</option>
+<option value="solarized">Solarized</option>
+<option value="sunrise">Sunrise</option>
+<option value="swiss">Swiss</option>
+<option value="terminal">Terminal</option>
+<option value="tokyo-night">Tokyo Night</option>
+<option value="vanguard">Vanguard</option>
+<option value="vimix">Vimix</option>
+<option value="vimix-dark">Vimix Dark</option>
+<option value="vimix-green">Vimix Green</option>
+<option value="vimix-orange">Vimix Orange</option>
+<option value="vimix-pink">Vimix Pink</option>
+<option value="vimix-purple">Vimix Purple</option>
+<option value="vimix-red">Vimix Red</option>
+<option value="vimix-teal">Vimix Teal</option>
+<option value="vimix-yellow">Vimix Yellow</option>
+<option value="whitehall">Whitehall</option>
+<option value="whitesur">Whitesur</option>
+<option value="win98">Win98</option>
+<option value="yaru">Yaru</option>
+   </select>
+   <div class="btn-group btn-group-sm" role="group">
+    <button type="button" class="btn btn-outline-secondary" id="modeLight" title="Light">&#9728;</button>
+    <button type="button" class="btn btn-outline-secondary" id="modeDark" title="Dark">&#9790;</button>
+   </div>
+  </div>
+ </div>
+</nav>
+<main class="container doc pb-5">
+<h1>Feature Comparison: dracory/auth vs Authelia</h1>
+<p>Comparison of <code>github.com/dracory/auth</code> with <a href="https://www.authelia.com">Authelia</a>, the self-hosted SSO portal and reverse-proxy auth layer.</p>
+<h2>High-Level Differences</h2>
+<table class="table table-striped table-sm"><thead><tr><th></th><th>dracory/auth</th><th>Authelia</th></tr></thead><tbody><tr><td>Type</td><td>Go library embedded in your app</td><td>Identity provider / reverse-proxy auth layer</td></tr><tr><td>Primary use</td><td>Per-app login flows</td><td>SSO across many apps behind a proxy</td></tr><tr><td>Deployment</td><td>No extra infrastructure</td><td>Dedicated service + config + proxy rules</td></tr><tr><td>Architecture</td><td>Your handlers call its APIs</td><td>Requests are intercepted before reaching your app</td></tr></tbody></table>
+<h2>Feature Comparison</h2>
+<table class="table table-striped table-sm"><thead><tr><th></th><th>dracory/auth</th><th>Authelia</th></tr></thead><tbody><tr><td>Email/password</td><td>✅</td><td>✅</td></tr><tr><td>Passwordless (codes/links)</td><td>✅</td><td>❌</td></tr><tr><td>Magic links</td><td>✅</td><td>❌</td></tr><tr><td>MFA / TOTP / WebAuthn</td><td>❌</td><td>✅ TOTP, WebAuthn, Duo</td></tr><tr><td>SSO across apps</td><td>❌</td><td>✅</td></tr><tr><td>OIDC provider</td><td>❌</td><td>✅</td></tr><tr><td>Reverse proxy auth</td><td>❌</td><td>✅ Traefik/Nginx/Caddy/Envoy</td></tr><tr><td>Middleware</td><td>✅ Web/API/optional</td><td>✅ Proxy-level (all apps)</td></tr></tbody></table>
+<table class="table table-striped table-sm"><thead><tr><th>Multiple login methods simultaneously</th><th>✅ Composable via NewMultiMethodAuth + types.Method (otp, magiclink, password, authknight, custom methods)</th><th>{mm}</th></tr></thead><tbody><tr><td>Remember-me (extended sessions)</td><td>✅ Built-in opt-in session extension</td><td>{rm}</td></tr></tbody></table>
+<p>Legend: ✅ built-in · ⚠️ partial/conditional · ❌ not available</p>
+<h2>When to Choose Authelia</h2>
+<ul><li>Internal tools / homelab: protect many apps behind a reverse proxy with</li></ul>
+<p>  one login portal and strong MFA.</p>
+<ul><li>You need SSO without touching each app's code.</li></ul>
+<h2>When to Choose dracory/auth</h2>
+<ul><li>A single Go app owning its own login UX (email codes, magic links,</li></ul>
+<p>  password, impersonation) with no proxy/service layer.</p>
+</main>
+<footer class="border-top py-3 text-center text-secondary small">
+ Generated from markdown sources &middot; <a href="https://github.com/dracory/auth">github.com/dracory/auth</a>
+</footer>
+<script>
+(function(){
+ var sel=document.getElementById('themeSel');
+ function applyTheme(t){
+   var l=document.getElementById('bootlegance');
+   l.href = t ? 'https://cdn.jsdelivr.net/gh/lesichkovm/bootlegance@main/themes/'+t+'/theme.css' : '';
+   localStorage.setItem('docs-theme',t);
+ }
+ function applyMode(m){ document.documentElement.setAttribute('data-bs-theme',m); localStorage.setItem('docs-mode',m); }
+ sel.value = localStorage.getItem('docs-theme')||'';
+ applyTheme(sel.value);
+ sel.addEventListener('change',function(){applyTheme(this.value)});
+ var mode = localStorage.getItem('docs-mode') || (window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+ applyMode(mode);
+ document.getElementById('modeLight').onclick=function(){applyMode('light')};
+ document.getElementById('modeDark').onclick=function(){applyMode('dark')};
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script type="module">
+ import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+ mermaid.initialize({startOnLoad:true});
+</script>
+</body>
+</html>

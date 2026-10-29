@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Package Overview: dracory/auth - dracory/auth docs</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link id="bootlegance" href="" rel="stylesheet">
+<style>
+ body{padding-top:4.5rem}
+ .doc{max-width:960px;margin:0 auto}
+ pre{background:var(--bs-tertiary-bg);padding:1rem;border-radius:.375rem;overflow-x:auto}
+ code{font-size:.875em}
+ table{font-size:.9rem}
+ .navbar-brand{font-weight:700}
+</style>
+</head>
+<body>
+<nav class="navbar navbar-expand-md fixed-top border-bottom bg-body-tertiary">
+ <div class="container-fluid px-3">
+  <a class="navbar-brand" href="index.html">dracory/auth docs</a>
+  <div class="d-flex align-items-center gap-2">
+   <select id="themeSel" class="form-select form-select-sm" style="width:auto">
+    <option value="">Bootstrap default</option>
+<option value="adwaita">Adwaita</option>
+<option value="ant-design">Ant Design</option>
+<option value="ayu">Ayu</option>
+<option value="brutalski">Brutalski</option>
+<option value="carbon">Carbon</option>
+<option value="catppuccin">Catppuccin</option>
+<option value="catppuccin-frappe">Catppuccin Frappe</option>
+<option value="catppuccin-macchiato">Catppuccin Macchiato</option>
+<option value="civic">Civic</option>
+<option value="cyberpunk">Cyberpunk</option>
+<option value="dracula">Dracula</option>
+<option value="dracula-soft">Dracula Soft</option>
+<option value="editorial">Editorial</option>
+<option value="everforest">Everforest</option>
+<option value="fluent">Fluent</option>
+<option value="forest">Forest</option>
+<option value="github-primer">Github Primer</option>
+<option value="glassmorphism">Glassmorphism</option>
+<option value="gruvbox">Gruvbox</option>
+<option value="high-contrast">High Contrast</option>
+<option value="kanagawa">Kanagawa</option>
+<option value="kde-breeze">Kde Breeze</option>
+<option value="mac-classic">Mac Classic</option>
+<option value="material-3">Material 3</option>
+<option value="midnight">Midnight</option>
+<option value="neo-brutalism">Neo Brutalism</option>
+<option value="night-owl">Night Owl</option>
+<option value="nord">Nord</option>
+<option value="nord-aurora">Nord Aurora</option>
+<option value="nord-frost">Nord Frost</option>
+<option value="ocean">Ocean</option>
+<option value="one-dark">One Dark</option>
+<option value="orchis">Orchis</option>
+<option value="orchis-cyan">Orchis Cyan</option>
+<option value="orchis-green">Orchis Green</option>
+<option value="orchis-orange">Orchis Orange</option>
+<option value="orchis-pink">Orchis Pink</option>
+<option value="orchis-purple">Orchis Purple</option>
+<option value="orchis-red">Orchis Red</option>
+<option value="orchis-sage">Orchis Sage</option>
+<option value="orchis-slate">Orchis Slate</option>
+<option value="orchis-yellow">Orchis Yellow</option>
+<option value="pantheon">Pantheon</option>
+<option value="print-optimized">Print Optimized</option>
+<option value="rose-pine">Rose Pine</option>
+<option value="seneca">Seneca</option>
+<option value="sepia">Sepia</option>
+<option value="slate">Slate</option>
+<option value="solarized">Solarized</option>
+<option value="sunrise">Sunrise</option>
+<option value="swiss">Swiss</option>
+<option value="terminal">Terminal</option>
+<option value="tokyo-night">Tokyo Night</option>
+<option value="vanguard">Vanguard</option>
+<option value="vimix">Vimix</option>
+<option value="vimix-dark">Vimix Dark</option>
+<option value="vimix-green">Vimix Green</option>
+<option value="vimix-orange">Vimix Orange</option>
+<option value="vimix-pink">Vimix Pink</option>
+<option value="vimix-purple">Vimix Purple</option>
+<option value="vimix-red">Vimix Red</option>
+<option value="vimix-teal">Vimix Teal</option>
+<option value="vimix-yellow">Vimix Yellow</option>
+<option value="whitehall">Whitehall</option>
+<option value="whitesur">Whitesur</option>
+<option value="win98">Win98</option>
+<option value="yaru">Yaru</option>
+   </select>
+   <div class="btn-group btn-group-sm" role="group">
+    <button type="button" class="btn btn-outline-secondary" id="modeLight" title="Light">&#9728;</button>
+    <button type="button" class="btn btn-outline-secondary" id="modeDark" title="Dark">&#9790;</button>
+   </div>
+  </div>
+ </div>
+</nav>
+<main class="container doc pb-5">
+<h1>Package Overview: dracory/auth</h1>
+<p><strong>Last Updated:</strong> 2026-10-29</p>
+<hr>
+<h2>What is dracory/auth?</h2>
+<p><code>dracory/auth</code> is a <strong>batteries-included authentication library</strong> for Go that provides ready-to-use authentication flows with minimal setup. It is <strong>implementation-agnostic</strong> — you bring your own database, session store, and email service; the library handles the authentication logic, UI pages, and API endpoints.</p>
+<h2>Core Philosophy</h2>
+<ol><li><strong>Four Login Methods, One Composable Mux</strong></li><li><strong>Email OTP (passwordless)</strong> — email-based verification codes</li><li><strong>Magic link</strong> — single-use emailed sign-in links</li><li><strong>Username/password</strong> — traditional authentication with password storage</li><li><strong>AuthKnight</strong> — delegated hosted login (external service verifies the user)</li></ol>
+<p>   Methods are mounted together behind a single mux via <code>NewMultiMethodAuth</code>. The first method owns <code>&lt;endpoint&gt;/login</code>; secondary methods mount at <code>&lt;endpoint&gt;/login-&lt;name&gt;</code>. Custom methods implement the public <code>types.Method</code> interface — no library change required.</p>
+<ol><li><strong>Complete Solution</strong></li><li>Pre-built HTML pages for login, registration, password reset</li><li>JSON API endpoints for SPA/mobile apps</li><li>Authentication middleware for protecting routes</li><li>Customizable email templates</li></ol>
+<ol><li><strong>Production-Grade Security</strong></li><li>Structured error handling with error codes</li><li>CSRF protection and per-route rate limiting</li><li>OTP codes bound to random nonces (not store keys)</li><li>Session invalidation on password reset</li><li>Secure cookie defaults and input validation</li><li>Structured logging for audit trails</li></ol>
+<ol><li><strong>Flexible Storage + Hooks</strong></li><li>You implement the storage layer via callback functions — works with any database (SQL, NoSQL, in-memory)</li><li><code>types.PostAuthHooks</code> drives the shared post-authentication pipeline: allowlist → find-or-create → active check → session → cookie → redirect</li><li>Optional capabilities (session store, temp-key delete, post-auth hooks) are attached via type-asserted setters — the public interfaces stay stable</li></ol>
+<hr>
+<h2>🏗️ Architecture Overview</h2>
+<pre><code class="language-text">Entry points
+  ├── NewPasswordlessAuth(ConfigPasswordless)     → AuthPasswordlessInterface
+  ├── NewUsernameAndPasswordAuth(ConfigUsernameAndPassword) → AuthPasswordInterface
+  ├── NewAuthKnightAuth(ConfigAuthKnight)         → AuthAuthKnightInterface
+  └── NewMultiMethodAuth(endpoint, []types.Method) → composed mux
+        ├── NewOTPMethodWithPage(a, page)
+        ├── NewMagicLinkMethodFromAuth(a, page, linkCallback)
+        ├── NewPasswordMethod(a, page)
+        └── NewAuthKnightMethod(a)
+
+authImplementation
+  ├── types/      — public configs, interfaces, Method, PostAuthHooks
+  ├── internal/api/ — JSON endpoints (login, code-verify, magic-link,
+  │                   register, password reset, impersonation, callbacks)
+  ├── internal/ui/  — server-rendered pages (login, magic-link, register, …)
+  ├── internal/core/ — shared post-auth pipeline
+  └── internal/rules/ — reusable rule checks (throttles, validation)</code></pre>
+<hr>
+<h2>📦 Package Organization</h2>
+<h3><code>types/</code> — Public API types</h3>
+<ul><li><code>config_shared.go</code> — <code>ConfigShared</code> embedded by all method configs</li><li><code>config_passwordless.go</code>, <code>config_username_and_password.go</code>, <code>config_authknight.go</code> — per-method configs</li><li><code>auth_interfaces.go</code> — <code>AuthSharedInterface</code>, <code>AuthPasswordlessInterface</code>, <code>AuthPasswordInterface</code>, <code>AuthAuthKnightInterface</code></li><li><code>method.go</code> — <code>Method</code> interface (<code>Name</code>, <code>PageHandler</code>, <code>AjaxHandler</code>, <code>CallbackRoute</code>) + <code>RouteProvider</code> for extra routes</li><li><code>post_auth.go</code> — <code>PostAuthHooks</code> (EmailAllowed, UserFindByEmailOrCreate, UserIsActive, SessionCreate, SetAuthCookie, RedirectURL, RegisterRules)</li><li><code>session.go</code>, <code>cookie_config.go</code>, <code>observability.go</code>, <code>user_auth_options.go</code>, <code>messages.go</code></li></ul>
+<h3><code>internal/api/</code> — JSON endpoints (one subdirectory per endpoint)</h3>
+<p><code>api_login</code>, <code>api_login_code_verify</code>, <code>api_magic_link_send</code>, <code>api_magic_link_callback</code>, <code>api_register</code>, <code>api_register_code_verify</code>, <code>api_logout</code>, <code>api_password_restore</code>, <code>api_password_reset</code>, <code>api_authenticate_via_username</code>, <code>api_authknight_callback</code>, <code>api_impersonate_start</code>, <code>api_impersonate_stop</code></p>
+<h3><code>internal/ui/</code> — Server-rendered pages</h3>
+<p><code>page_login</code>, <code>page_magic_link</code>, <code>page_login_code_verify</code>, <code>page_register</code>, <code>page_register_code_verify</code>, <code>page_logout</code>, <code>page_password_restore</code>, <code>page_password_reset</code>, <code>shared</code> (page scaffold, AuthKnight redirect)</p>
+<h3><code>internal/</code> support packages</h3>
+<p><code>core</code> (post-auth pipeline), <code>rules</code> (email send throttle, validation), <code>links</code> (route paths), <code>emails</code>, <code>middlewares</code>, <code>helpers</code>, <code>testutils</code></p>
+<h3>Root package — public API</h3>
+<ul><li><strong>Constructors:</strong> <code>NewPasswordlessAuth</code>, <code>NewUsernameAndPasswordAuth</code>, <code>NewAuthKnightAuth</code>, <code>NewMultiMethodAuth</code></li><li><strong>Method adapters:</strong> <code>NewOTPMethod(WithPage)</code>, <code>NewMagicLinkMethod(FromAuth)</code>, <code>NewPasswordMethod</code>, <code>NewAuthKnightMethod</code></li><li><strong>Middleware:</strong> <code>WebAuthOrRedirectMiddleware</code>, <code>ApiAuthOrErrorMiddleware</code>, <code>WebAppendUserIdIfExistsMiddleware</code></li><li><strong>Cookies:</strong> <code>AuthCookieSet</code>, <code>AuthCookieRemove</code>, <code>CookieName</code> + <code>types.WithSecure</code> options</li></ul>
+<hr>
+<h2>🔑 Multi-Method Composition</h2>
+<pre><code class="language-go">a, _ := auth.NewPasswordlessAuth(cfg)          // shared impl serves otp + magiclink
+p, _ := auth.NewUsernameAndPasswordAuth(pcfg)  // password impl
+
+mma, err := auth.NewMultiMethodAuth(&quot;/auth&quot;, []types.Method{
+    auth.NewPasswordMethod(p, nil),                 // primary → /auth/login
+    auth.NewOTPMethodWithPage(a, nil),              // → /auth/login-otp
+    auth.NewMagicLinkMethodFromAuth(a, nil, linkCallback), // → /auth/login-magiclink
+})
+mux.Handle(&quot;/auth/&quot;, http.StripPrefix(&quot;&quot;, mma.Router()))</code></pre>
+<ul><li>First method mounts at <code>GET|POST /auth/login</code>; later methods at <code>/auth/login-&lt;name&gt;</code></li><li>Method callbacks (<code>/magiclink-callback</code>, <code>/authknight-callback</code>) mount once each</li><li><code>RouteProvider.ExtraRoutes()</code> mounts method-scoped routes (OTP code-verify, password restore/reset) only when that method is present</li><li><code>LoginAlternativesHTML</code> renders an "OR — use another method" fragment for login pages</li></ul>
+<h2>🔗 Post-Auth Pipeline</h2>
+<p>Every method's verify path funnels through <code>core.PostAuth</code> when any <code>PostAuthHooks</code> are configured — one place for allowlist checks, user find-or-create, active validation, session creation, cookie writing, and redirect resolution. When no hooks are set, the legacy per-flow behavior (token + <code>FuncUserStoreAuthToken</code>) is used.</p>
+<hr>
+<h2>🔑 Key Flows</h2>
+<h3>Email OTP</h3>
+<p><code>POST /auth/api/login</code> → generate code → <code>FuncTemporaryKeySet</code> → <code>FuncEmailSend</code> → <code>POST /auth/api/login-code-verify</code> → post-auth → session/token + cookie</p>
+<h3>Magic link</h3>
+<p><code>POST &lt;login path&gt;</code> → store <code>MagicLinkPayload{email, token, return, remember}</code> under a nonce key → <code>EmailSend</code>/<code>EmailEnqueue</code> the link → <code>GET /auth/magiclink-callback?token=</code> → post-auth → redirect</p>
+<h3>Username/password</h3>
+<p><code>POST /auth/api/login</code> → <code>FuncUserLogin(username, password)</code> → post-auth → token + cookie. Recovery via <code>/password-restore</code> + <code>/password-reset</code> (session invalidation built in).</p>
+<h3>AuthKnight</h3>
+<p>Login page redirects to the hosted AuthKnight flow → <code>GET /auth/authknight-callback?once=</code> → verify <code>once</code> with AuthKnight's <code>/api/who</code> → post-auth (existing users) or register-redirect with a verified-email temp key (new users).</p>
+<hr>
+<h2>🔒 Middleware</h2>
+<ul><li><code>WebAuthOrRedirectMiddleware</code> — resolves token → userID into context; redirects to login on failure</li><li><code>ApiAuthOrErrorMiddleware</code> — same check, JSON error on failure</li><li><code>WebAppendUserIdIfExistsMiddleware</code> — optional auth, never blocks</li><li><code>auth.GetCurrentUserID(r)</code> — retrieve the authenticated user ID</li></ul>
+<h2>🧪 Examples</h2>
+<p><code>examples/</code> contains runnable apps: <code>passwordless/</code>, <code>usernamepassword/</code>, <code>authknight/</code> — in-memory storage, email via <code>localhost:1025</code>, complete callback implementations.</p>
+<h2>📚 Related Documentation</h2>
+<ul><li><a href="https://github.com/dracory/auth#readme">README.md</a> — getting started</li><li><a href="rate_limit.html">rate_limit.html</a> — rate limiting configuration</li><li><a href="impersonation.html">impersonation.html</a> — admin "login as" feature</li><li><a href="authknight.html">authknight.html</a> — AuthKnight integration guide</li><li><a href="ui-patterns.html">ui-patterns.html</a> — how the built-in pages are rendered</li><li><a href="project-structure.html">project-structure.html</a> — detailed directory layout</li><li><a href="peers/index.html">peers/</a> — feature comparisons vs peer auth solutions</li></ul>
+</main>
+<footer class="border-top py-3 text-center text-secondary small">
+ Generated from markdown sources &middot; <a href="https://github.com/dracory/auth">github.com/dracory/auth</a>
+</footer>
+<script>
+(function(){
+ var sel=document.getElementById('themeSel');
+ function applyTheme(t){
+   var l=document.getElementById('bootlegance');
+   l.href = t ? 'https://cdn.jsdelivr.net/gh/lesichkovm/bootlegance@main/themes/'+t+'/theme.css' : '';
+   localStorage.setItem('docs-theme',t);
+ }
+ function applyMode(m){ document.documentElement.setAttribute('data-bs-theme',m); localStorage.setItem('docs-mode',m); }
+ sel.value = localStorage.getItem('docs-theme')||'';
+ applyTheme(sel.value);
+ sel.addEventListener('change',function(){applyTheme(this.value)});
+ var mode = localStorage.getItem('docs-mode') || (window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+ applyMode(mode);
+ document.getElementById('modeLight').onclick=function(){applyMode('light')};
+ document.getElementById('modeDark').onclick=function(){applyMode('dark')};
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script type="module">
+ import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+ mermaid.initialize({startOnLoad:true});
+</script>
+</body>
+</html>
