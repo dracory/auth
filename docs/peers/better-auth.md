@@ -30,6 +30,8 @@ the framework-agnostic TypeScript auth library.
 | Middleware | ✅ Web/API/optional | ✅ Framework integrations |
 | Fits Go backends | ✅ Native | ❌ (TS only; would need separate service) |
 
+| Multiple login methods simultaneously | ✅ Composable via NewMultiMethodAuth + types.Method (otp, magiclink, password, authknight, custom methods) | {mm} |
+| Remember-me (extended sessions) | ✅ Built-in opt-in session extension | {rm} |
 Legend: ✅ built-in · ⚠️ partial/conditional · ❌ not available
 
 ## When to Choose dracory/auth

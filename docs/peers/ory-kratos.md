@@ -34,6 +34,8 @@ the open-source, API-first identity server written in Go.
 | Ops burden | ✅ None | ❌ Extra service + DB + migrations |
 | Managed cloud option | ❌ | ✅ Ory Network |
 
+| Multiple login methods simultaneously | ✅ Composable via NewMultiMethodAuth + types.Method (otp, magiclink, password, authknight, custom methods) | {mm} |
+| Remember-me (extended sessions) | ✅ Built-in opt-in session extension | {rm} |
 Legend: ✅ built-in · ⚠️ partial/conditional · ❌ not available
 
 ## When to Choose dracory/auth

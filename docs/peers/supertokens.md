@@ -44,6 +44,8 @@ dracory/auth is a good fit and when a full auth service is the better choice.
 | Self-hosted | ✅ It's just a library | ✅ Free self-hosted core; managed cloud paid |
 | Frontend framework requirement | None — server-rendered or SPA-ready API | Best experience with React; vanilla JS possible |
 
+| Multiple login methods simultaneously | ✅ Composable via NewMultiMethodAuth + types.Method (otp, magiclink, password, authknight, custom methods) | {mm} |
+| Remember-me (extended sessions) | ✅ Built-in opt-in session extension | {rm} |
 Legend: ✅ built-in · ⚠️ partial/conditional · ❌ not available
 
 ## When to Choose dracory/auth

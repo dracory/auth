@@ -24,6 +24,8 @@ the open-source passkey-first authentication system.
 | Middleware | ✅ Web/API/optional | ✅ API/gateway integration |
 | Ops burden | ✅ None — it's a library | ⚠️ Separate service |
 
+| Multiple login methods simultaneously | ✅ Composable via NewMultiMethodAuth + types.Method (otp, magiclink, password, authknight, custom methods) | {mm} |
+| Remember-me (extended sessions) | ✅ Built-in opt-in session extension | {rm} |
 Legend: ✅ built-in · ⚠️ partial/conditional · ❌ not available
 
 ## When to Choose Hanko

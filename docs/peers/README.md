@@ -26,5 +26,12 @@ UI, JSON API, middleware, impersonation, and rate limiting — storing everythin
 in *your* database via callbacks, with zero external services and zero per-MAU
 cost.
 
+Four login methods ship today — email OTP, magic link, username/password, and
+delegated AuthKnight — composable behind one mux via `NewMultiMethodAuth` and
+extensible through the public `types.Method` interface (custom methods need no
+library change). Post-authentication behavior (allowlists, find-or-create,
+session creation, cookies, redirects) is hook-driven via `types.PostAuthHooks`,
+with remember-me session extension and per-route rate limits built in.
+
 Its main gaps vs the field: social/OAuth login (except via AuthKnight), MFA/passkeys,
 enterprise SSO (SAML/OIDC), multi-tenancy/organizations, and hosted user-profile UI.

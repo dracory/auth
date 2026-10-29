@@ -37,6 +37,8 @@ managed auth service known for polished drop-in UI components.
 | Vendor lock-in | ✅ None | ❌ High |
 | Offline / self-hosted | ✅ | ❌ |
 
+| Multiple login methods simultaneously | ✅ Composable via NewMultiMethodAuth + types.Method (otp, magiclink, password, authknight, custom methods) | {mm} |
+| Remember-me (extended sessions) | ✅ Built-in opt-in session extension | {rm} |
 Legend: ✅ built-in · ⚠️ partial/conditional · ❌ not available
 
 ## When to Choose dracory/auth

@@ -26,6 +26,8 @@ the Go-based identity infrastructure platform.
 | Middleware | ✅ Web/API/optional | ✅ OIDC/SDK integration |
 | Ops burden | ✅ None — it's a library | ❌ Significant (Postgres, services) |
 
+| Multiple login methods simultaneously | ✅ Composable via NewMultiMethodAuth + types.Method (otp, magiclink, password, authknight, custom methods) | {mm} |
+| Remember-me (extended sessions) | ✅ Built-in opt-in session extension | {rm} |
 Legend: ✅ built-in · ⚠️ partial/conditional · ❌ not available
 
 ## When to Choose ZITADEL

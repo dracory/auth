@@ -25,6 +25,8 @@ the self-hosted SSO portal and reverse-proxy auth layer.
 | Reverse proxy auth | ❌ | ✅ Traefik/Nginx/Caddy/Envoy |
 | Middleware | ✅ Web/API/optional | ✅ Proxy-level (all apps) |
 
+| Multiple login methods simultaneously | ✅ Composable via NewMultiMethodAuth + types.Method (otp, magiclink, password, authknight, custom methods) | {mm} |
+| Remember-me (extended sessions) | ✅ Built-in opt-in session extension | {rm} |
 Legend: ✅ built-in · ⚠️ partial/conditional · ❌ not available
 
 ## When to Choose Authelia

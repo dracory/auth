@@ -27,6 +27,8 @@ the managed enterprise-identity platform.
 | Data stays in-house | ✅ Any DB | ❌ Vendor-hosted |
 | Works offline / air-gapped | ✅ | ❌ |
 
+| Multiple login methods simultaneously | ✅ Composable via NewMultiMethodAuth + types.Method (otp, magiclink, password, authknight, custom methods) | {mm} |
+| Remember-me (extended sessions) | ✅ Built-in opt-in session extension | {rm} |
 Legend: ✅ built-in · ⚠️ partial/conditional · ❌ not available
 
 ## When to Choose WorkOS

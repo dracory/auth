@@ -26,6 +26,8 @@ the flexible self-hosted identity provider.
 | Impersonation | ✅ Built-in | ✅ Admin impersonation |
 | Ops burden | ✅ None — it's a library | ❌ Significant |
 
+| Multiple login methods simultaneously | ✅ Composable via NewMultiMethodAuth + types.Method (otp, magiclink, password, authknight, custom methods) | {mm} |
+| Remember-me (extended sessions) | ✅ Built-in opt-in session extension | {rm} |
 Legend: ✅ built-in · ⚠️ partial/conditional · ❌ not available
 
 ## When to Choose Authentik
