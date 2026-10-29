@@ -28,6 +28,7 @@ type authSharedTest struct {
 	temporaryKeyGet                       func(key string) (string, error)
 	temporaryKeySet                       func(key string, value string, expiresSeconds int) error
 	funcUserExists                        func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error)
+	funcSessionCreate                     func(ctx context.Context, userID string, options types.UserAuthOptions) (types.SessionInterface, error)
 	funcUserFindByAuthToken               func(ctx context.Context, token string, options types.UserAuthOptions) (string, error)
 	redirectOnSuccess                     string
 	loginURL                              string
@@ -134,6 +135,16 @@ func (a *authSharedTest) GetFuncUserExists() func(ctx context.Context, email str
 
 func (a *authSharedTest) SetFuncUserExists(fn func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error)) {
 	a.funcUserExists = fn
+}
+
+// GetFuncSessionCreate returns the optional session-create hook; when set,
+// the login success path creates a session instead of a legacy auth token.
+func (a *authSharedTest) GetFuncSessionCreate() func(ctx context.Context, userID string, options types.UserAuthOptions) (types.SessionInterface, error) {
+	return a.funcSessionCreate
+}
+
+func (a *authSharedTest) SetFuncSessionCreate(fn func(ctx context.Context, userID string, options types.UserAuthOptions) (types.SessionInterface, error)) {
+	a.funcSessionCreate = fn
 }
 
 func (a *authSharedTest) GetDisableRateLimit() bool { return a.disableRateLimit }

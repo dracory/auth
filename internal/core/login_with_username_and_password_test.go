@@ -9,6 +9,7 @@ import (
 	"github.com/dracory/auth/internal/core"
 	"github.com/dracory/auth/internal/testutils"
 	"github.com/dracory/auth/types"
+	"github.com/dracory/auth/utils"
 )
 
 func newPasswordAuthForLoginTest(t *testing.T) types.AuthPasswordInterface {
@@ -172,5 +173,42 @@ func TestCoreLoginWithUsernameAndPassword_ExistingUserPassesThrough(t *testing.T
 	resp := core.LoginWithUsernameAndPassword(context.Background(), a, "test@test.com", "password", types.UserAuthOptions{})
 	if resp.ErrorMessage != "" {
 		t.Fatalf("expected success, got %q", resp.ErrorMessage)
+	}
+}
+
+// TestCoreLoginWithUsernameAndPassword_SessionPath verifies that with
+// FuncSessionCreate configured, the credential returned is the session key
+// and the legacy token store callback is skipped.
+func TestCoreLoginWithUsernameAndPassword_SessionPath(t *testing.T) {
+	a := newPasswordAuthForLoginTest(t)
+
+	a.SetFuncUserLogin(func(ctx context.Context, email, password string, options types.UserAuthOptions) (string, error) {
+		return "user123", nil
+	})
+
+	session := utils.NewMemSession()
+	session.SetKey("session-key-abc")
+	a.(interface {
+		SetFuncSessionCreate(func(ctx context.Context, userID string, options types.UserAuthOptions) (types.SessionInterface, error))
+	}).SetFuncSessionCreate(func(ctx context.Context, userID string, options types.UserAuthOptions) (types.SessionInterface, error) {
+		return session, nil
+	})
+
+	tokenStoreCalled := false
+	a.SetFuncUserStoreAuthToken(func(ctx context.Context, token, userID string, options types.UserAuthOptions) error {
+		tokenStoreCalled = true
+		return nil
+	})
+
+	resp := core.LoginWithUsernameAndPassword(context.Background(), a, "test@test.com", "password", types.UserAuthOptions{})
+
+	if resp.ErrorMessage != "" {
+		t.Fatalf("expected success, got %q", resp.ErrorMessage)
+	}
+	if resp.Token != "session-key-abc" {
+		t.Fatalf("expected session key as credential, got %q", resp.Token)
+	}
+	if tokenStoreCalled {
+		t.Fatal("expected legacy token store to be skipped when session create is set")
 	}
 }

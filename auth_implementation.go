@@ -29,6 +29,8 @@ type authImplementation struct {
 	funcTemporaryKeySet     func(key string, value string, expiresSeconds int) (err error)
 	funcTemporaryKeyDelete  func(key string) (err error)
 	funcUserExists          func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error)
+	funcSessionCreate       func(ctx context.Context, userID string, options types.UserAuthOptions) (types.SessionInterface, error)
+	sessionStore            types.SessionStoreInterface
 	funcUserFindByAuthToken func(ctx context.Context, token string, options types.UserAuthOptions) (userID string, err error)
 	funcUserLogout          func(ctx context.Context, userID string, options types.UserAuthOptions) (err error)
 	funcUserStoreAuthToken  func(ctx context.Context, token string, userID string, options types.UserAuthOptions) error
@@ -464,6 +466,34 @@ func (a authImplementation) GetFuncUserExists() func(ctx context.Context, email 
 // user exists for an email.
 func (a *authImplementation) SetFuncUserExists(fn func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error)) {
 	a.funcUserExists = fn
+}
+
+// GetSessionStore returns the optional session store. When configured, the
+// module can create/find/revoke sessions (password-reset invalidation,
+// remember-me rotation, logout-all) through the minimal
+// types.SessionStoreInterface — the app adapts its own store.
+// Note: staged API — nothing consumes the store yet; session consumers land
+// with the post-auth pipeline and remember-me increments.
+func (a authImplementation) GetSessionStore() types.SessionStoreInterface {
+	return a.sessionStore
+}
+
+// SetSessionStore sets the session store used for session-backed auth.
+func (a *authImplementation) SetSessionStore(store types.SessionStoreInterface) {
+	a.sessionStore = store
+}
+
+// GetFuncSessionCreate returns the optional hook used to create a session
+// for a user at login time. When set, the login success path prefers it
+// over the legacy FuncUserStoreAuthToken token write.
+func (a authImplementation) GetFuncSessionCreate() func(ctx context.Context, userID string, options types.UserAuthOptions) (types.SessionInterface, error) {
+	return a.funcSessionCreate
+}
+
+// SetFuncSessionCreate allows configuring the session-create hook for apps
+// that want full control without implementing SessionStoreInterface.
+func (a *authImplementation) SetFuncSessionCreate(fn func(ctx context.Context, userID string, options types.UserAuthOptions) (types.SessionInterface, error)) {
+	a.funcSessionCreate = fn
 }
 
 // LinkApiLogin returns the API login endpoint URL.

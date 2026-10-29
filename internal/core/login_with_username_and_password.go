@@ -91,40 +91,69 @@ func LoginWithUsernameAndPassword(
 		return response
 	}
 
-	// Reuse the shared login/verification gamma from utils to avoid
-	// duplicating the character set. We keep length at 32 for auth tokens.
-	token, errRandom := str.RandomFromGamma(32, authutils.LoginCodeGamma(false))
-	if errRandom != nil {
-		response.ErrorMessage = types.MsgFailedToGenerateCode
-		if logger != nil {
-			logger.Error("auth token generation failed",
-				"error", errRandom,
-				"error_code", "CODE_GENERATION_FAILED",
-				"email", email,
-				"ip", options.UserIp,
-				"user_agent", options.UserAgent,
-			)
+	// Session-backed auth preferred: when FuncSessionCreate is configured,
+	// create a real session and use its key as the credential placed in the
+	// auth cookie. Otherwise fall back to the legacy token write.
+	var token string
+	if sessionCreator, ok := a.(interface {
+		GetFuncSessionCreate() func(ctx context.Context, userID string, options types.UserAuthOptions) (types.SessionInterface, error)
+	}); ok && sessionCreator.GetFuncSessionCreate() != nil {
+		session, errSession := sessionCreator.GetFuncSessionCreate()(ctx, userID, options)
+		// A nil session or an empty key would leave the client holding a
+		// credential that authenticates nothing — treat as create failure.
+		if errSession != nil || session == nil || session.GetKey() == "" {
+			response.ErrorMessage = types.MsgFailedToProcess
+			if logger != nil {
+				logger.Error("session create failed",
+					"error", errSession,
+					"error_code", "SESSION_CREATE_FAILED",
+					"email", email,
+					"user_id", userID,
+					"ip", options.UserIp,
+					"user_agent", options.UserAgent,
+				)
+			}
+			hooks.RecordLoginAttempt(types.LoginMethodPassword, false, errSession)
+			return response
 		}
-		hooks.RecordLoginAttempt(types.LoginMethodPassword, false, errRandom)
-		return response
-	}
-
-	errSession := storeFn(ctx, token, userID, options)
-
-	if errSession != nil {
-		response.ErrorMessage = types.MsgFailedToProcess
-		if logger != nil {
-			logger.Error("auth token store failed",
-				"error", errSession,
-				"error_code", "TOKEN_STORE_FAILED",
-				"email", email,
-				"user_id", userID,
-				"ip", options.UserIp,
-				"user_agent", options.UserAgent,
-			)
+		token = session.GetKey()
+	} else {
+		// Reuse the shared login/verification gamma from utils to avoid
+		// duplicating the character set. We keep length at 32 for auth tokens.
+		tokenGenerated, errRandom := str.RandomFromGamma(32, authutils.LoginCodeGamma(false))
+		if errRandom != nil {
+			response.ErrorMessage = types.MsgFailedToGenerateCode
+			if logger != nil {
+				logger.Error("auth token generation failed",
+					"error", errRandom,
+					"error_code", "CODE_GENERATION_FAILED",
+					"email", email,
+					"ip", options.UserIp,
+					"user_agent", options.UserAgent,
+				)
+			}
+			hooks.RecordLoginAttempt(types.LoginMethodPassword, false, errRandom)
+			return response
 		}
-		hooks.RecordLoginAttempt(types.LoginMethodPassword, false, errSession)
-		return response
+		token = tokenGenerated
+
+		errSession := storeFn(ctx, token, userID, options)
+
+		if errSession != nil {
+			response.ErrorMessage = types.MsgFailedToProcess
+			if logger != nil {
+				logger.Error("auth token store failed",
+					"error", errSession,
+					"error_code", "TOKEN_STORE_FAILED",
+					"email", email,
+					"user_id", userID,
+					"ip", options.UserIp,
+					"user_agent", options.UserAgent,
+				)
+			}
+			hooks.RecordLoginAttempt(types.LoginMethodPassword, false, errSession)
+			return response
+		}
 	}
 
 	response.SuccessMessage = types.MsgLoginSuccess

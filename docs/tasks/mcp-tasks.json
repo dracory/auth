@@ -1,0 +1,9 @@
+{
+  "bucketOrder": [
+    "pending",
+    "done"
+  ],
+  "_meta": {
+    "info": "This file is managed by MCP Tasks. Do not edit by hand or instruct AI agents to modify it directly — the server rewrites it whenever buckets are created, deleted, or reordered. Manual edits will be overwritten. The 'bucketOrder' array controls the left-to-right display order of kanban columns; buckets not listed here are appended alphabetically as a fallback."
+  }
+}
