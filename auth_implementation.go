@@ -62,6 +62,7 @@ type authImplementation struct {
 	disableRateLimit   bool
 	funcCheckRateLimit func(ip string, endpoint string) (allowed bool, retryAfter time.Duration, err error)
 	rateLimiter        *utils.InMemoryRateLimiter
+	rateLimits         map[string]int
 	// ===== END: rate limiting
 
 	// ===== START: cookie config
@@ -509,6 +510,31 @@ func (a authImplementation) GetFuncEmailEnqueue() func(ctx context.Context, deli
 // SetFuncEmailEnqueue allows configuring the queue-safe email enqueue hook.
 func (a *authImplementation) SetFuncEmailEnqueue(fn func(ctx context.Context, deliveryKey string) error) {
 	a.funcEmailEnqueue = fn
+}
+
+// GetRateLimits returns a copy of the per-endpoint rate limit overrides
+// (route name → max requests per window), e.g. {"login":5,"register":10}.
+func (a authImplementation) GetRateLimits() map[string]int {
+	out := make(map[string]int, len(a.rateLimits))
+	for k, v := range a.rateLimits {
+		out[k] = v
+	}
+	return out
+}
+
+// SetRateLimits configures per-endpoint rate limits keyed by route name
+// ("login", "register", "code-verify", "callback"). Applied to the default
+// in-memory limiter; DisableRateLimit still disables all limits globally.
+// Precondition: call after construction when the internal limiter exists —
+// if rateLimiter is nil the limits are stored but not applied.
+func (a *authImplementation) SetRateLimits(limits map[string]int) {
+	a.rateLimits = limits
+	if a.rateLimiter == nil {
+		return
+	}
+	for endpoint, max := range limits {
+		a.rateLimiter.SetEndpointLimit(endpoint, max)
+	}
 }
 
 // LinkApiLogin returns the API login endpoint URL.

@@ -22,6 +22,7 @@ type requestRecord struct {
 type InMemoryRateLimiter struct {
 	records          sync.Map // map[string]*requestRecord (key: "ip:endpoint")
 	maxAttempts      int
+	endpointLimits   map[string]int // per-endpoint overrides (optional)
 	windowDuration   time.Duration
 	lockoutDuration  time.Duration
 	cleanupInterval  time.Duration
@@ -33,6 +34,7 @@ type InMemoryRateLimiter struct {
 func NewInMemoryRateLimiter(maxAttempts int, windowDuration time.Duration, lockoutDuration time.Duration) *InMemoryRateLimiter {
 	limiter := &InMemoryRateLimiter{
 		maxAttempts:     maxAttempts,
+		endpointLimits:  map[string]int{},
 		windowDuration:  windowDuration,
 		lockoutDuration: lockoutDuration,
 		cleanupInterval: 5 * time.Minute,
@@ -46,10 +48,24 @@ func NewInMemoryRateLimiter(maxAttempts int, windowDuration time.Duration, locko
 	return limiter
 }
 
+// SetEndpointLimit configures a per-endpoint request limit. Endpoints
+// without an explicit limit use the maxAttempts passed to
+// NewInMemoryRateLimiter. Must be called at configuration time, before the
+// limiter serves traffic — the limits map is not synchronized for runtime
+// mutation.
+func (r *InMemoryRateLimiter) SetEndpointLimit(endpoint string, maxAttempts int) {
+	r.endpointLimits[endpoint] = maxAttempts
+}
+
 // Check verifies if a request from the given IP to the given endpoint should be allowed
 func (r *InMemoryRateLimiter) Check(ip string, endpoint string) RateLimitResult {
 	key := ip + ":" + endpoint
 	now := time.Now()
+
+	maxAttempts := r.maxAttempts
+	if v, ok := r.endpointLimits[endpoint]; ok {
+		maxAttempts = v
+	}
 
 	// Load or create record
 	recordInterface, _ := r.records.LoadOrStore(key, &requestRecord{
@@ -88,7 +104,7 @@ func (r *InMemoryRateLimiter) Check(ip string, endpoint string) RateLimitResult 
 	record.timestamps = record.timestamps[:n]
 
 	// Check if limit exceeded
-	if len(record.timestamps) >= r.maxAttempts {
+	if len(record.timestamps) >= maxAttempts {
 		record.lockedUntil = now.Add(r.lockoutDuration)
 		return RateLimitResult{
 			Allowed:    false,

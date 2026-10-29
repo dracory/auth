@@ -18,6 +18,7 @@ import (
 	"github.com/dracory/auth/internal/ui/page_password_reset"
 	"github.com/dracory/auth/internal/ui/page_password_restore"
 	"github.com/dracory/auth/types"
+	"github.com/dracory/auth/utils"
 )
 
 // MultiMethodAuth composes N login methods behind a single mux:
@@ -127,6 +128,13 @@ func (m *MultiMethodAuth) Router() *http.ServeMux { return m.mux }
 
 // Methods returns the configured method list (primary first).
 func (m *MultiMethodAuth) Methods() []types.Method { return m.methods }
+
+// LoginAlternativesHTML renders the "OR — use another method" fragment for
+// the given current method name. Pages (built-in or app-supplied) can embed
+// it so users can switch between mounted methods.
+func (m *MultiMethodAuth) LoginAlternativesHTML(currentMethod string) string {
+	return utils.LoginAlternatives(m.endpoint, currentMethod, m.methods)
+}
 
 // ============================================================================
 // Built-in method adapters
