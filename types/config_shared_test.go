@@ -3,18 +3,21 @@ package types
 import (
 	"context"
 	"log/slog"
+	"net/http"
 	"testing"
 	"time"
 )
 
 func TestConfigShared_Fields(t *testing.T) {
 	c := ConfigShared{
-		EnableRegistration:      true,
-		Endpoint:                "/auth",
-		UrlRedirectOnSuccess:    "/dashboard",
-		UseCookies:              true,
-		UseLocalStorage:         false,
-		FuncLayout:              func(content string) string { return content },
+		EnableRegistration:   true,
+		Endpoint:             "/auth",
+		UrlRedirectOnSuccess: "/dashboard",
+		UseCookies:           true,
+		UseLocalStorage:      false,
+		FuncLayout: func(w http.ResponseWriter, r *http.Request, title string, body string, options LayoutOptions) string {
+			return body
+		},
 		FuncTemporaryKeyGet:     func(key string) (string, error) { return "", nil },
 		FuncTemporaryKeySet:     func(key string, value string, expiresSeconds int) error { return nil },
 		FuncUserStoreAuthToken:  func(ctx context.Context, sessionID string, userID string, options UserAuthOptions) error { return nil },

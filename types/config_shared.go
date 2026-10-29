@@ -3,14 +3,33 @@ package types
 import (
 	"context"
 	"log/slog"
+	"net/http"
 	"time"
 )
+
+// LayoutOptions carries the assets a built-in auth page depends on, so a
+// custom FuncLayout can inject them into the host document (Bootstrap,
+// jQuery, page scripts, theme CSS). The anonymous struct matches
+// blogadmin/shopadmin exactly so one layout function can serve all
+// dracory packages.
+type LayoutOptions = struct {
+	Styles     []string
+	StyleURLs  []string
+	Scripts    []string
+	ScriptURLs []string
+}
 
 // ConfigShared contains fields common to all auth modes.
 type ConfigShared struct {
 	EnableRegistration bool
 	Endpoint           string
-	FuncLayout         func(content string) string
+	// FuncLayout renders a complete HTML document around a built-in auth
+	// page's body content — embed auth pages in your site shell (own
+	// <head>, nav, footer). It receives the request so the host can
+	// access context (locale, flash, user). Return "" to fall back to
+	// the package's standalone page. Signature matches
+	// blogadmin/shopadmin.FuncLayout.
+	FuncLayout func(w http.ResponseWriter, r *http.Request, title string, body string, options LayoutOptions) string
 	// ThemeCSS is a stylesheet URL injected after Bootstrap on every
 	// built-in page — point it at a Bootlegance theme (e.g.
 	// https://cdn.jsdelivr.net/gh/lesichkovm/bootlegance@main/themes/dracula/theme.css)

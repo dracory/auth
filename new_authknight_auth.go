@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dracory/auth/internal/helpers"
 	"github.com/dracory/auth/types"
 	"github.com/dracory/auth/utils"
 	"github.com/dracory/csrf"
@@ -63,9 +62,6 @@ func NewAuthKnightAuth(config types.ConfigAuthKnight) (types.AuthAuthKnightInter
 	a.brandTagline = config.BrandTagline
 	a.brandLogoURL = config.BrandLogoURL
 	a.loginAlternatives = config.LoginAlternatives
-	if a.funcLayout == nil {
-		a.funcLayout = helpers.Layout
-	}
 
 	// Shared callbacks
 	a.funcUserFindByAuthToken = config.FuncUserFindByAuthToken

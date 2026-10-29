@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/dracory/auth/internal/emails"
-	"github.com/dracory/auth/internal/helpers"
 	"github.com/dracory/auth/types"
 	"github.com/dracory/auth/utils"
 	"github.com/dracory/csrf"
@@ -60,9 +59,6 @@ func NewPasswordlessAuth(config types.ConfigPasswordless) (types.AuthPasswordles
 	auth.brandTagline = config.BrandTagline
 	auth.brandLogoURL = config.BrandLogoURL
 	auth.loginAlternatives = config.LoginAlternatives
-	if auth.funcLayout == nil {
-		auth.funcLayout = helpers.Layout
-	}
 	auth.funcTemporaryKeyGet = config.FuncTemporaryKeyGet
 	auth.funcTemporaryKeySet = config.FuncTemporaryKeySet
 	auth.funcUserLogout = config.FuncUserLogout

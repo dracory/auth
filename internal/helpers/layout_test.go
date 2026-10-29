@@ -13,8 +13,11 @@ func TestLayoutWrapsContentWithFontAndStyle(t *testing.T) {
 		t.Fatalf("expected non-empty layout output")
 	}
 
-	if !strings.Contains(html, "fonts.bunny.net/css?family=Nunito") {
-		t.Fatalf("expected layout to include font stylesheet link, got %q", html)
+	if strings.Contains(html, "fonts.bunny.net") {
+		t.Fatalf("layout must not request external font hosts (breaks host CSP), got %q", html)
+	}
+	if !strings.Contains(html, "font-family: Nunito, sans-serif;") {
+		t.Fatalf("expected layout to keep the Nunito font-family fallback, got %q", html)
 	}
 
 	if !strings.Contains(html, "background: #f8fafc;") {

@@ -28,24 +28,27 @@ func (m *mockAuthSharedForAPI) WebAuthOrRedirectMiddleware(next http.Handler) ht
 func (m *mockAuthSharedForAPI) WebAppendUserIdIfExistsMiddleware(next http.Handler) http.Handler {
 	return next
 }
-func (m *mockAuthSharedForAPI) GetCurrentUserID(r *http.Request) string                 { return "" }
-func (m *mockAuthSharedForAPI) LinkLogin() string                                       { return "" }
-func (m *mockAuthSharedForAPI) LinkLogout() string                                      { return "" }
-func (m *mockAuthSharedForAPI) LinkRegister() string                                    { return "" }
-func (m *mockAuthSharedForAPI) LinkRegisterCodeVerify() string                          { return "" }
-func (m *mockAuthSharedForAPI) LinkRedirectOnSuccess() string                           { return "" }
-func (m *mockAuthSharedForAPI) LinkApiLogin() string                                    { return "" }
-func (m *mockAuthSharedForAPI) LinkApiLogout() string                                   { return "" }
-func (m *mockAuthSharedForAPI) LinkApiRegister() string                                 { return "" }
-func (m *mockAuthSharedForAPI) LinkApiRegisterCodeVerify() string                       { return "" }
-func (m *mockAuthSharedForAPI) LinkApiImpersonateStart() string                         { return "" }
-func (m *mockAuthSharedForAPI) LinkApiImpersonateStop() string                          { return "" }
-func (m *mockAuthSharedForAPI) GetEndpoint() string                                     { return "" }
-func (m *mockAuthSharedForAPI) SetEndpoint(string)                                      {}
-func (m *mockAuthSharedForAPI) GetLogger() *slog.Logger                                 { return nil }
-func (m *mockAuthSharedForAPI) SetLogger(*slog.Logger)                                  {}
-func (m *mockAuthSharedForAPI) GetLayout() func(string) string                          { return nil }
-func (m *mockAuthSharedForAPI) SetLayout(func(string) string)                           {}
+func (m *mockAuthSharedForAPI) GetCurrentUserID(r *http.Request) string { return "" }
+func (m *mockAuthSharedForAPI) LinkLogin() string                       { return "" }
+func (m *mockAuthSharedForAPI) LinkLogout() string                      { return "" }
+func (m *mockAuthSharedForAPI) LinkRegister() string                    { return "" }
+func (m *mockAuthSharedForAPI) LinkRegisterCodeVerify() string          { return "" }
+func (m *mockAuthSharedForAPI) LinkRedirectOnSuccess() string           { return "" }
+func (m *mockAuthSharedForAPI) LinkApiLogin() string                    { return "" }
+func (m *mockAuthSharedForAPI) LinkApiLogout() string                   { return "" }
+func (m *mockAuthSharedForAPI) LinkApiRegister() string                 { return "" }
+func (m *mockAuthSharedForAPI) LinkApiRegisterCodeVerify() string       { return "" }
+func (m *mockAuthSharedForAPI) LinkApiImpersonateStart() string         { return "" }
+func (m *mockAuthSharedForAPI) LinkApiImpersonateStop() string          { return "" }
+func (m *mockAuthSharedForAPI) GetEndpoint() string                     { return "" }
+func (m *mockAuthSharedForAPI) SetEndpoint(string)                      {}
+func (m *mockAuthSharedForAPI) GetLogger() *slog.Logger                 { return nil }
+func (m *mockAuthSharedForAPI) SetLogger(*slog.Logger)                  {}
+func (m *mockAuthSharedForAPI) GetLayout() func(http.ResponseWriter, *http.Request, string, string, types.LayoutOptions) string {
+	return nil
+}
+func (m *mockAuthSharedForAPI) SetLayout(func(http.ResponseWriter, *http.Request, string, string, types.LayoutOptions) string) {
+}
 func (m *mockAuthSharedForAPI) GetFuncTemporaryKeyGet() func(string) (string, error)    { return nil }
 func (m *mockAuthSharedForAPI) SetFuncTemporaryKeyGet(func(string) (string, error))     {}
 func (m *mockAuthSharedForAPI) GetFuncTemporaryKeySet() func(string, string, int) error { return nil }

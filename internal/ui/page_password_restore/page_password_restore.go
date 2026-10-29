@@ -25,7 +25,7 @@ func PagePasswordRestore(w http.ResponseWriter, r *http.Request, a types.AuthSha
 		links.Login(a.GetEndpoint()),
 	)
 
-	shared.PageRender(w, shared.PageOptions{
+	shared.PageRender(w, r, shared.PageOptions{
 		Title:      "Restore Password",
 		Auth:       a,
 		Layout:     a.GetLayout(),

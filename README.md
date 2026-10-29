@@ -498,21 +498,39 @@ FuncEmailTemplateLoginCode: customLoginEmailTemplate,
 ### Custom Page Layout
 
 ```go
-func customPageLayout(content string) string {
-    return fmt.Sprintf(`
-        <!DOCTYPE html>
+// The signature matches blogadmin/shopadmin — the function renders the
+// ENTIRE document, so auth pages can be embedded inside your site shell
+// (nav, footer, your own <head>). options carries the assets the page
+// needs (Bootstrap, jQuery, page scripts) — inject them or the built-in
+// forms will break. Return "" to fall back to the default page.
+func customPageLayout(w http.ResponseWriter, r *http.Request, title string, body string, options types.LayoutOptions) string {
+    var styles strings.Builder
+    for _, s := range options.Styles {
+        styles.WriteString("<style>" + s + "</style>")
+    }
+    for _, u := range options.StyleURLs {
+        styles.WriteString(`<link rel="stylesheet" href="` + u + `">`)
+    }
+    var scripts strings.Builder
+    for _, u := range options.ScriptURLs {
+        scripts.WriteString(`<script src="` + u + `"></script>`)
+    }
+    for _, s := range options.Scripts {
+        scripts.WriteString(s)
+    }
+    return fmt.Sprintf(`<!DOCTYPE html>
         <html>
         <head>
-            <title>My App - Authentication</title>
+            <title>%s - My App</title>
             <link rel="stylesheet" href="/css/custom.css">
+            %s
         </head>
         <body>
-            <div class="container">
-                %s
-            </div>
+            <nav>My App</nav>
+            <div class="container">%s</div>
+            %s
         </body>
-        </html>
-    `, content)
+        </html>`, title, styles.String(), body, scripts.String())
 }
 
 // Use in config
@@ -773,7 +791,7 @@ mux.HandleFunc("/admin/auth/", adminAuth.Router().ServeHTTP)
 ```
 
 **Q: How do I customize the UI?**  
-A: Provide a custom `FuncLayout` function to wrap the content with your own HTML/CSS.
+A: Three levels: `ThemeCSS`/`CustomCSS` re-skin the built-in pages (e.g. a Bootlegance theme); `FuncLayout` renders the entire document so you can embed auth pages inside your site shell; or pass a fully custom page per method (`NewPasswordMethod(auth, myPage)`).
 
 **Q: What databases are supported?**  
 A: Any! You implement the storage callbacks, so it works with PostgreSQL, MySQL, MongoDB, Redis, or even in-memory stores.

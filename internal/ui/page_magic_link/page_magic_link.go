@@ -154,7 +154,7 @@ func PageMagicLink(w http.ResponseWriter, r *http.Request, a types.AuthSharedInt
 		}
 	`
 
-	shared.PageRender(w, shared.PageOptions{
+	shared.PageRender(w, r, shared.PageOptions{
 		Title:      "Login",
 		Auth:       a,
 		Layout:     a.GetLayout(),

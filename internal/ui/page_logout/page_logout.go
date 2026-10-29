@@ -17,7 +17,7 @@ import (
 // 		links.Login(deps.Endpoint),
 // 	)
 
-// 	shared.PageRender(w, shared.PageOptions{
+// 	shared.PageRender(w, r, shared.PageOptions{
 // 		Title:      "Logout",
 // 		Layout:     deps.Layout,
 // 		Content:    content,
@@ -36,7 +36,7 @@ func PageLogout(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterf
 		links.Login(a.GetEndpoint()),
 	)
 
-	shared.PageRender(w, shared.PageOptions{
+	shared.PageRender(w, r, shared.PageOptions{
 		Title:      "Logout",
 		Auth:       a,
 		Layout:     a.GetLayout(),

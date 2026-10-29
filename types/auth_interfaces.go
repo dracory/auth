@@ -51,8 +51,8 @@ type AuthSharedInterface interface {
 	GetLogger() *slog.Logger
 	SetLogger(logger *slog.Logger)
 
-	GetLayout() func(content string) string
-	SetLayout(layout func(content string) string)
+	GetLayout() func(w http.ResponseWriter, r *http.Request, title string, body string, options LayoutOptions) string
+	SetLayout(layout func(w http.ResponseWriter, r *http.Request, title string, body string, options LayoutOptions) string)
 
 	GetFuncTemporaryKeyGet() func(key string) (string, error)
 	SetFuncTemporaryKeyGet(fn func(key string) (string, error))

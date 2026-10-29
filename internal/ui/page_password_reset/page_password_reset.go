@@ -48,7 +48,7 @@ func PagePasswordReset(w http.ResponseWriter, r *http.Request, a types.AuthShare
 		links.Login(a.GetEndpoint()),
 	)
 
-	shared.PageRender(w, shared.PageOptions{
+	shared.PageRender(w, r, shared.PageOptions{
 		Title:      "Reset Password",
 		Auth:       a,
 		Layout:     a.GetLayout(),

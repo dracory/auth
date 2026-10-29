@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/dracory/auth/internal/ui/shared"
 	"github.com/dracory/auth/types"
 )
 
@@ -12,14 +13,13 @@ func NewAuthSharedForTest() types.AuthSharedInterface {
 	a := &authSharedTest{}
 	a.SetEndpoint("http://localhost/auth")
 	a.SetRedirectOnSuccess("http://localhost/dashboard")
-	a.SetLayout(func(content string) string { return content })
 	a.SetLogger(slog.Default())
 	return a
 }
 
 type authSharedTest struct {
 	endpoint                              string
-	layout                                func(content string) string
+	layout                                shared.LayoutFunc
 	logger                                *slog.Logger
 	registration                          bool
 	passwordless                          bool
@@ -369,14 +369,11 @@ func (a *authSharedTest) GetObservabilityHooks() types.ObservabilityHooks {
 
 func (a *authSharedTest) SetObservabilityHooks(hooks types.ObservabilityHooks) {}
 
-func (a *authSharedTest) GetLayout() func(content string) string {
-	if a.layout != nil {
-		return a.layout
-	}
-	return func(content string) string { return content }
+func (a *authSharedTest) GetLayout() shared.LayoutFunc {
+	return a.layout
 }
 
-func (a *authSharedTest) SetLayout(layout func(content string) string) { a.layout = layout }
+func (a *authSharedTest) SetLayout(layout shared.LayoutFunc) { a.layout = layout }
 
 func (a *authSharedTest) SetRedirectOnSuccess(url string) { a.redirectOnSuccess = url }
 

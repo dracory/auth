@@ -24,7 +24,7 @@ type authImplementation struct {
 	urlRedirectOnSuccess string
 
 	// ===== START: shared by all implementations
-	funcLayout              func(content string) string
+	funcLayout              func(w http.ResponseWriter, r *http.Request, title string, body string, options types.LayoutOptions) string
 	themeCSS                string
 	customCSS               string
 	brandName               string
@@ -117,11 +117,11 @@ func (a *authImplementation) SetEndpoint(endpoint string) {
 	a.endpoint = endpoint
 }
 
-func (a authImplementation) GetLayout() func(content string) string {
+func (a authImplementation) GetLayout() func(w http.ResponseWriter, r *http.Request, title string, body string, options types.LayoutOptions) string {
 	return a.funcLayout
 }
 
-func (a *authImplementation) SetLayout(layout func(content string) string) {
+func (a *authImplementation) SetLayout(layout func(w http.ResponseWriter, r *http.Request, title string, body string, options types.LayoutOptions) string) {
 	a.funcLayout = layout
 }
 

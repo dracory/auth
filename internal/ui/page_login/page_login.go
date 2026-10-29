@@ -55,7 +55,7 @@ func PageLoginWithAPI(w http.ResponseWriter, r *http.Request, a types.AuthShared
 		)
 	}
 
-	shared.PageRender(w, shared.PageOptions{
+	shared.PageRender(w, r, shared.PageOptions{
 		Title:      "Login",
 		Auth:       a,
 		Layout:     a.GetLayout(),

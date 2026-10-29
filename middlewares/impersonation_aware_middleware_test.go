@@ -40,8 +40,11 @@ func (m *mockAuthShared) GetEndpoint() string                     { return "" }
 func (m *mockAuthShared) SetEndpoint(string)                      {}
 func (m *mockAuthShared) GetLogger() *slog.Logger                 { return nil }
 func (m *mockAuthShared) SetLogger(*slog.Logger)                  {}
-func (m *mockAuthShared) GetLayout() func(string) string          { return nil }
-func (m *mockAuthShared) SetLayout(func(string) string)           {}
+func (m *mockAuthShared) GetLayout() func(http.ResponseWriter, *http.Request, string, string, types.LayoutOptions) string {
+	return nil
+}
+func (m *mockAuthShared) SetLayout(func(http.ResponseWriter, *http.Request, string, string, types.LayoutOptions) string) {
+}
 func (m *mockAuthShared) GetFuncTemporaryKeyGet() func(key string) (string, error) {
 	return m.temporaryKeyGet
 }

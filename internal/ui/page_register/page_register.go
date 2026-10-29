@@ -22,7 +22,7 @@ func PageRegister(w http.ResponseWriter, r *http.Request, a types.AuthSharedInte
 				links.ApiRegister(a.GetEndpoint()),
 				a.LinkRedirectOnSuccess(),
 			)
-			shared.PageRender(w, shared.PageOptions{
+			shared.PageRender(w, r, shared.PageOptions{
 				Title:      "Register",
 				Auth:       a,
 				Layout:     a.GetLayout(),
@@ -63,7 +63,7 @@ func PageRegister(w http.ResponseWriter, r *http.Request, a types.AuthSharedInte
 		)
 	}
 
-	shared.PageRender(w, shared.PageOptions{
+	shared.PageRender(w, r, shared.PageOptions{
 		Title:      "Register",
 		Auth:       a,
 		Layout:     a.GetLayout(),

@@ -158,7 +158,7 @@
 <p><strong>Recommended Approach: Expand Public Interfaces</strong></p>
 <ol><li><strong>Expand Interface</strong>: Add accessor methods to <code>types.AuthSharedInterface</code>.</li></ol>
 <p>    ```go     // types/auth_interfaces.go     type AuthSharedInterface interface {         // ... existing methods ...</p>
-<p>        // New Accessors         GetEndpoint() string         GetLogger() *slog.Logger         IsRegistrationEnabled() bool         GetLayout() func(content string) string     }     ```</p>
+<p>        // New Accessors         GetEndpoint() string         GetLogger() *slog.Logger         IsRegistrationEnabled() bool         GetLayout() func(w http.ResponseWriter, r *http.Request, title, body string, options LayoutOptions) string     }     ```</p>
 <ol><li><strong>Update Implementation</strong>: Ensure <code>authImplementation</code> satisfies these new methods. (Most are already present or trivial to add).</li></ol>
 <ol><li><strong>Update Handlers</strong>: Update page handlers to accept the interface.</li></ol>
 <p>    ``<code>go     // internal/ui/page_login/page_login.go     func PageLogin(w http.ResponseWriter, r *http.Request, auth types.AuthSharedInterface) {         // Use auth.GetEndpoint(), auth.IsRegistrationEnabled(), etc.     }     </code>``</p>

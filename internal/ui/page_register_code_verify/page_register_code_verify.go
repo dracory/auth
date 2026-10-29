@@ -22,7 +22,7 @@ func PageRegisterCodeVerify(w http.ResponseWriter, r *http.Request, a types.Auth
 		a.LinkRedirectOnSuccess(),
 	)
 
-	shared.PageRender(w, shared.PageOptions{
+	shared.PageRender(w, r, shared.PageOptions{
 		Title:      "Verify Registration Code",
 		Auth:       a,
 		Layout:     a.GetLayout(),

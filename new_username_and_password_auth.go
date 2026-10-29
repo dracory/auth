@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/dracory/auth/internal/emails"
-	"github.com/dracory/auth/internal/helpers"
 	"github.com/dracory/auth/types"
 	"github.com/dracory/auth/utils"
 	"github.com/dracory/csrf"
@@ -89,9 +88,6 @@ func NewUsernameAndPasswordAuth(config types.ConfigUsernameAndPassword) (types.A
 	auth.observabilityHooks = config.ObservabilityHooks
 
 	// If no user defined layout is set, use default
-	if auth.funcLayout == nil {
-		auth.funcLayout = helpers.Layout
-	}
 
 	// If no user defined email template is set, use default
 	if auth.funcEmailTemplatePasswordRestore == nil {

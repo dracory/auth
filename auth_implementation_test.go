@@ -164,7 +164,9 @@ func TestSetAndGetEndpoint(t *testing.T) {
 
 func TestSetAndGetLayout(t *testing.T) {
 	a := &authImplementation{}
-	fn := func(content string) string { return "<html>" + content + "</html>" }
+	fn := func(w http.ResponseWriter, r *http.Request, title string, body string, options types.LayoutOptions) string {
+		return "<html>" + body + "</html>"
+	}
 	a.SetLayout(fn)
 	if a.GetLayout() == nil {
 		t.Fatal("expected non-nil layout")

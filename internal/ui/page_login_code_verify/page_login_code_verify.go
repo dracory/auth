@@ -22,7 +22,7 @@ func PageLoginCodeVerify(w http.ResponseWriter, r *http.Request, a types.AuthSha
 		a.LinkRedirectOnSuccess(),
 	)
 
-	shared.PageRender(w, shared.PageOptions{
+	shared.PageRender(w, r, shared.PageOptions{
 		Title:      "Login Code Verification",
 		Auth:       a,
 		Layout:     a.GetLayout(),
