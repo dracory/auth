@@ -8,37 +8,60 @@
      plain text. Intercept internal docs links and keep them inside the
      previewer, resolving each target against the ?url= source. Local/file
      serving is unaffected (links stay relative). */
-  if (location.hostname === 'html-preview.github.io') {
+  var isPreview = location.hostname === 'html-preview.github.io';
+  var docsRoot = null;
+  if (isPreview) {
     var src = new URLSearchParams(location.search).get('url');
     if (src) {
       var srcBlob = src.replace('raw.githubusercontent.com/dracory/auth/', 'github.com/dracory/auth/blob/');
-      document.addEventListener('click', function (e) {
-        var a = e.target.closest('a[href]');
-        if (!a) return;
-        var href = a.getAttribute('href');
-        if (!href || href.charAt(0) === '#') return;
-        var target;
-        if (/^https?:\/\//.test(href)) {
-          // already-rewritten absolute raw/github link — keep it only if it
-          // points back into this docs tree
-          var m = href.match(/(?:raw\.githubusercontent\.com\/dracory\/auth|github\.com\/dracory\/auth\/blob)\/([^/]+\/docs\/.+?\.html)(?:[?#].*)?$/);
-          if (!m) return;
-          target = 'https://github.com/dracory/auth/blob/' + m[1];
-        } else {
-          // relative docs link — resolve against the page's source URL
-          var resolved = new URL(href, srcBlob);
-          if (!/github\.com\/dracory\/auth\/blob\//.test(resolved.href)) return;
-          target = resolved.href;
-        }
-        e.preventDefault();
-        location.href = '/?url=' + encodeURIComponent(target);
-      });
+      // directory of the current doc, normalized to the docs/ root so
+      // docs-root-relative NAV paths resolve correctly from any page
+      docsRoot = srcBlob.replace(/[^/]+$/, '');
+      docsRoot = docsRoot.replace(/peers\/$/, '');
     }
   }
 
-  var inPeers = location.pathname.split('/').slice(-2, -1)[0] === 'peers';
+  // docsHref maps a docs-root-relative path to either a local relative link
+  // or an html-preview ?url= link (the proxy only rewrites anchors present
+  // at load time — dynamically created links need the preview URL directly).
+  function docsHref(rel) {
+    if (docsRoot) {
+      return '/?url=' + encodeURIComponent(new URL(rel, docsRoot).href);
+    }
+    return prefix + rel;
+  }
+
+  if (isPreview && docsRoot) {
+    document.addEventListener('click', function (e) {
+      var a = e.target.closest('a[href]');
+      if (!a) return;
+      var href = a.getAttribute('href');
+      if (!href || href.charAt(0) === '#') return;
+      var target;
+      if (/^https?:\/\//.test(href)) {
+        // already-rewritten absolute raw/github link — keep it only if it
+        // points back into this docs tree
+        var m = href.match(/(?:raw\.githubusercontent\.com\/dracory\/auth|github\.com\/dracory\/auth\/blob)\/([^/]+\/docs\/.+?\.html)(?:[?#].*)?$/);
+        if (!m) return;
+        target = 'https://github.com/dracory/auth/blob/' + m[1];
+      } else {
+        // relative docs link — resolve against the docs root
+        var resolved = new URL(href, docsRoot);
+        if (!/github\.com\/dracory\/auth\/blob\//.test(resolved.href)) return;
+        target = resolved.href;
+      }
+      e.preventDefault();
+      location.href = '/?url=' + encodeURIComponent(target);
+    });
+  }
+
+  // On html-preview the location is /?url=... — the doc path comes from the
+  // source URL, not location.pathname.
+  var docPath = isPreview && src ? src : location.pathname;
+  var docSegs = docPath.split('/').filter(Boolean);
+  var inPeers = docSegs.slice(-2, -1)[0] === 'peers';
   var prefix = inPeers ? '../' : '';
-  var current = location.pathname.split('/').pop() || 'index.html';
+  var current = docSegs[docSegs.length - 1] || 'index.html';
   var currentKey = (inPeers ? 'peers/' : '') + current;
 
   var NAV = [
@@ -106,7 +129,7 @@
       html += '<div class="docs-nav-group" data-group="' + gi + '"' + (collapsed ? ' style="display:none"' : '') + '>';
       group.pages.forEach(function (p) {
         var active = p[0] === currentKey ? ' active' : '';
-        html += '<a class="docs-nav-link' + active + '" href="' + prefix + p[0] + '" data-name="' + p[1].toLowerCase() + '">' + p[1] + '</a>';
+        html += '<a class="docs-nav-link' + active + '" href="' + docsHref(p[0]) + '" data-name="' + p[1].toLowerCase() + '">' + p[1] + '</a>';
       });
       html += '</div>';
     });
