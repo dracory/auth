@@ -12,6 +12,8 @@ const (
 	MsgTokenRequired                     = "Token is required field"
 	MsgUserIDRequired                    = "user_id is required field"
 	MsgVerificationCodeRequired          = "Verification code is required field"
+	MsgNonceRequired                     = "Nonce is required field"
+	MsgNonceInvalid                      = "Nonce is invalid format"
 	MsgPasswordsDoNotMatch               = "Passwords do not match"
 	MsgEmailInvalid                      = "Email is invalid"
 	MsgVerificationCodeInvalidLength     = "Verification code is invalid length"

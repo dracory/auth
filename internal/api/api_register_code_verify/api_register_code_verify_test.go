@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	types "github.com/dracory/auth/types"
+	authutils "github.com/dracory/auth/utils"
 )
 
 func makePostRequest(t *testing.T, path string, values url.Values) (*httptest.ResponseRecorder, *http.Request) {
@@ -44,6 +45,7 @@ func TestApiRegisterCodeVerifyInvalidLength(t *testing.T) {
 
 	values := url.Values{
 		"verification_code": {"123456"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
 	}
 	recorder, req := makePostRequest(t, "/api/register-code-verify", values)
 	ApiRegisterCodeVerify(recorder, req, deps)
@@ -59,6 +61,7 @@ func TestApiRegisterCodeVerifyInvalidCharacters(t *testing.T) {
 
 	values := url.Values{
 		"verification_code": {"12345678"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
 	}
 	recorder, req := makePostRequest(t, "/api/register-code-verify", values)
 	ApiRegisterCodeVerify(recorder, req, deps)
@@ -78,6 +81,7 @@ func TestApiRegisterCodeVerifyExpiredCode(t *testing.T) {
 
 	values := url.Values{
 		"verification_code": {"BCDFGHJK"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
 	}
 	recorder, req := makePostRequest(t, "/api/register-code-verify", values)
 	ApiRegisterCodeVerify(recorder, req, deps)
@@ -97,6 +101,7 @@ func TestApiRegisterCodeVerifyMalformedJSON(t *testing.T) {
 
 	values := url.Values{
 		"verification_code": {"BCDFGHJK"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
 	}
 	recorder, req := makePostRequest(t, "/api/register-code-verify", values)
 	ApiRegisterCodeVerify(recorder, req, deps)
@@ -108,7 +113,7 @@ func TestApiRegisterCodeVerifyMalformedJSON(t *testing.T) {
 }
 
 func TestApiRegisterCodeVerifyRegistrationFailed(t *testing.T) {
-	jsonPayload := `{"email":"test@test.com","first_name":"John","last_name":"Doe","password":"1234"}`
+	jsonPayload := `{"code":"BCDFGHJK","email":"test@test.com","first_name":"John","last_name":"Doe","password":"1234"}`
 
 	deps := Dependencies{
 		TemporaryKeyGet: func(key string) (string, error) {
@@ -122,6 +127,7 @@ func TestApiRegisterCodeVerifyRegistrationFailed(t *testing.T) {
 
 	values := url.Values{
 		"verification_code": {"BCDFGHJK"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
 	}
 	recorder, req := makePostRequest(t, "/api/register-code-verify", values)
 	ApiRegisterCodeVerify(recorder, req, deps)
@@ -133,7 +139,7 @@ func TestApiRegisterCodeVerifyRegistrationFailed(t *testing.T) {
 }
 
 func TestApiRegisterCodeVerifyAuthenticationError(t *testing.T) {
-	jsonPayload := `{"email":"test@test.com","first_name":"John","last_name":"Doe","password":"1234"}`
+	jsonPayload := `{"code":"BCDFGHJK","email":"test@test.com","first_name":"John","last_name":"Doe","password":"1234"}`
 
 	called := false
 	deps := Dependencies{
@@ -154,6 +160,7 @@ func TestApiRegisterCodeVerifyAuthenticationError(t *testing.T) {
 
 	values := url.Values{
 		"verification_code": {"BCDFGHJK"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
 	}
 	recorder, req := makePostRequest(t, "/api/register-code-verify", values)
 	ApiRegisterCodeVerify(recorder, req, deps)
@@ -169,7 +176,7 @@ func TestApiRegisterCodeVerifyAuthenticationError(t *testing.T) {
 }
 
 func TestApiRegisterCodeVerifyUserNotFound(t *testing.T) {
-	jsonPayload := `{"email":"test@test.com","first_name":"John","last_name":"Doe","password":"1234"}`
+	jsonPayload := `{"code":"BCDFGHJK","email":"test@test.com","first_name":"John","last_name":"Doe","password":"1234"}`
 
 	called := false
 	deps := Dependencies{
@@ -190,6 +197,7 @@ func TestApiRegisterCodeVerifyUserNotFound(t *testing.T) {
 
 	values := url.Values{
 		"verification_code": {"BCDFGHJK"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
 	}
 	recorder, req := makePostRequest(t, "/api/register-code-verify", values)
 	ApiRegisterCodeVerify(recorder, req, deps)
@@ -205,7 +213,7 @@ func TestApiRegisterCodeVerifyUserNotFound(t *testing.T) {
 }
 
 func TestApiRegisterCodeVerifyTokenStoreError(t *testing.T) {
-	jsonPayload := `{"email":"test@test.com","first_name":"John","last_name":"Doe","password":"1234"}`
+	jsonPayload := `{"code":"BCDFGHJK","email":"test@test.com","first_name":"John","last_name":"Doe","password":"1234"}`
 
 	called := false
 	deps := Dependencies{
@@ -226,6 +234,7 @@ func TestApiRegisterCodeVerifyTokenStoreError(t *testing.T) {
 
 	values := url.Values{
 		"verification_code": {"BCDFGHJK"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
 	}
 	recorder, req := makePostRequest(t, "/api/register-code-verify", values)
 	ApiRegisterCodeVerify(recorder, req, deps)
@@ -241,7 +250,7 @@ func TestApiRegisterCodeVerifyTokenStoreError(t *testing.T) {
 }
 
 func TestApiRegisterCodeVerifySuccess(t *testing.T) {
-	jsonPayload := `{"email":"test@test.com","first_name":"John","last_name":"Doe","password":"1234"}`
+	jsonPayload := `{"code":"BCDFGHJK","email":"test@test.com","first_name":"John","last_name":"Doe","password":"1234"}`
 
 	called := false
 	deps := Dependencies{
@@ -261,6 +270,7 @@ func TestApiRegisterCodeVerifySuccess(t *testing.T) {
 
 	values := url.Values{
 		"verification_code": {"BCDFGHJK"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
 	}
 	recorder, req := makePostRequest(t, "/api/register-code-verify", values)
 	ApiRegisterCodeVerify(recorder, req, deps)
@@ -310,6 +320,7 @@ func TestApiRegisterCodeVerifyNilTemporaryKeyGet(t *testing.T) {
 
 	values := url.Values{
 		"verification_code": {"BCDFGHJK"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
 	}
 	recorder, req := makePostRequest(t, "/api/register-code-verify", values)
 	ApiRegisterCodeVerify(recorder, req, deps)
@@ -321,7 +332,7 @@ func TestApiRegisterCodeVerifyNilTemporaryKeyGet(t *testing.T) {
 }
 
 func TestApiRegisterCodeVerifyNilAuthenticateViaUsername(t *testing.T) {
-	jsonPayload := `{"email":"test@test.com","first_name":"John","last_name":"Doe"}`
+	jsonPayload := `{"code":"BCDFGHJK","email":"test@test.com","first_name":"John","last_name":"Doe"}`
 
 	deps := Dependencies{
 		TemporaryKeyGet: func(key string) (string, error) {
@@ -336,6 +347,7 @@ func TestApiRegisterCodeVerifyNilAuthenticateViaUsername(t *testing.T) {
 
 	values := url.Values{
 		"verification_code": {"BCDFGHJK"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
 	}
 	recorder, req := makePostRequest(t, "/api/register-code-verify", values)
 	ApiRegisterCodeVerify(recorder, req, deps)
@@ -347,7 +359,7 @@ func TestApiRegisterCodeVerifyNilAuthenticateViaUsername(t *testing.T) {
 }
 
 func TestApiRegisterCodeVerifyPasswordlessNilUserRegister(t *testing.T) {
-	jsonPayload := `{"email":"test@test.com","first_name":"John","last_name":"Doe"}`
+	jsonPayload := `{"code":"BCDFGHJK","email":"test@test.com","first_name":"John","last_name":"Doe"}`
 
 	deps := Dependencies{
 		TemporaryKeyGet: func(key string) (string, error) {
@@ -359,6 +371,7 @@ func TestApiRegisterCodeVerifyPasswordlessNilUserRegister(t *testing.T) {
 
 	values := url.Values{
 		"verification_code": {"BCDFGHJK"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
 	}
 	recorder, req := makePostRequest(t, "/api/register-code-verify", values)
 	ApiRegisterCodeVerify(recorder, req, deps)
@@ -370,7 +383,7 @@ func TestApiRegisterCodeVerifyPasswordlessNilUserRegister(t *testing.T) {
 }
 
 func TestApiRegisterCodeVerifyUsernamePasswordNilUserRegister(t *testing.T) {
-	jsonPayload := `{"email":"test@test.com","first_name":"John","last_name":"Doe","password":"1234"}`
+	jsonPayload := `{"code":"BCDFGHJK","email":"test@test.com","first_name":"John","last_name":"Doe","password":"1234"}`
 
 	deps := Dependencies{
 		TemporaryKeyGet: func(key string) (string, error) {
@@ -382,6 +395,7 @@ func TestApiRegisterCodeVerifyUsernamePasswordNilUserRegister(t *testing.T) {
 
 	values := url.Values{
 		"verification_code": {"BCDFGHJK"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
 	}
 	recorder, req := makePostRequest(t, "/api/register-code-verify", values)
 	ApiRegisterCodeVerify(recorder, req, deps)
@@ -393,7 +407,7 @@ func TestApiRegisterCodeVerifyUsernamePasswordNilUserRegister(t *testing.T) {
 }
 
 func TestApiRegisterCodeVerifyUsernamePasswordStrengthError(t *testing.T) {
-	jsonPayload := `{"email":"test@test.com","first_name":"John","last_name":"Doe","password":"short"}`
+	jsonPayload := `{"code":"BCDFGHJK","email":"test@test.com","first_name":"John","last_name":"Doe","password":"short"}`
 
 	deps := Dependencies{
 		TemporaryKeyGet: func(key string) (string, error) {
@@ -414,6 +428,7 @@ func TestApiRegisterCodeVerifyUsernamePasswordStrengthError(t *testing.T) {
 
 	values := url.Values{
 		"verification_code": {"BCDFGHJK"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
 	}
 	recorder, req := makePostRequest(t, "/api/register-code-verify", values)
 	ApiRegisterCodeVerify(recorder, req, deps)
@@ -425,7 +440,7 @@ func TestApiRegisterCodeVerifyUsernamePasswordStrengthError(t *testing.T) {
 }
 
 func TestApiRegisterCodeVerifyUsernamePasswordSuccess(t *testing.T) {
-	jsonPayload := `{"email":"test@test.com","first_name":"John","last_name":"Doe","password":"StrongPass1!"}`
+	jsonPayload := `{"code":"BCDFGHJK","email":"test@test.com","first_name":"John","last_name":"Doe","password":"StrongPass1!"}`
 
 	called := false
 	deps := Dependencies{
@@ -445,6 +460,7 @@ func TestApiRegisterCodeVerifyUsernamePasswordSuccess(t *testing.T) {
 
 	values := url.Values{
 		"verification_code": {"BCDFGHJK"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
 	}
 	recorder, req := makePostRequest(t, "/api/register-code-verify", values)
 	ApiRegisterCodeVerify(recorder, req, deps)
@@ -456,5 +472,67 @@ func TestApiRegisterCodeVerifyUsernamePasswordSuccess(t *testing.T) {
 	body := recorder.Body.String()
 	if !strings.Contains(body, "\"status\":\"success\"") {
 		t.Fatalf("expected success, got %q", body)
+	}
+}
+
+// TestApiRegisterCodeVerifyNonceKeyedLookup verifies the register payload is
+// looked up by the nonce-prefixed key and the stored "code" must match —
+// a guessed code alone is not the key.
+func TestApiRegisterCodeVerifyNonceKeyedLookup(t *testing.T) {
+	jsonPayload := `{"code":"BCDFGHJK","email":"test@test.com","first_name":"John","last_name":"Doe","password":"StrongPass1!"}`
+
+	deps := Dependencies{
+		TemporaryKeyGet: func(key string) (string, error) {
+			if key != authutils.RegisterCodeKeyPrefix+"0123456789abcdef0123456789abcdef" {
+				t.Fatalf("expected lookup by prefixed nonce, got %q", key)
+			}
+			return jsonPayload, nil
+		},
+		Passwordless: true,
+		PasswordlessUserRegister: func(ctx context.Context, email, firstName, lastName string) error {
+			return nil
+		},
+		AuthenticateViaUsername: func(w http.ResponseWriter, r *http.Request, email, firstName, lastName string) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"status":"success"}`))
+		},
+	}
+
+	values := url.Values{
+		"verification_code": {"BCDFGHJK"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
+	}
+	recorder, req := makePostRequest(t, "/api/register-code-verify", values)
+	ApiRegisterCodeVerify(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "\"status\":\"success\"") {
+		t.Fatalf("expected success, got %q", body)
+	}
+}
+
+func TestApiRegisterCodeVerifyWrongCodeFails(t *testing.T) {
+	jsonPayload := `{"code":"BCDFGHJK","email":"test@test.com","first_name":"John","last_name":"Doe"}`
+
+	deps := Dependencies{
+		TemporaryKeyGet: func(key string) (string, error) {
+			return jsonPayload, nil
+		},
+		Passwordless: true,
+		PasswordlessUserRegister: func(ctx context.Context, email, firstName, lastName string) error {
+			return nil
+		},
+	}
+
+	values := url.Values{
+		"verification_code": {"XXXXXXXX"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
+	}
+	recorder, req := makePostRequest(t, "/api/register-code-verify", values)
+	ApiRegisterCodeVerify(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "\"message\":\"Verification code has expired\"") {
+		t.Fatalf("expected generic expired message, got %q", body)
 	}
 }

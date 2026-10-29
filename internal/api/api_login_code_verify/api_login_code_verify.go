@@ -2,8 +2,10 @@ package api_login_code_verify
 
 import (
 	"context"
+	"crypto/subtle"
 	"log/slog"
 	"net/http"
+	"sync"
 
 	"github.com/dracory/api"
 	"github.com/dracory/auth/types"
@@ -18,6 +20,15 @@ type Dependencies struct {
 	DisableRateLimit bool
 
 	TemporaryKeyGet func(key string) (string, error)
+
+	// TemporaryKeySet is optional; when present the consumed code is
+	// invalidated after a successful verification (single-use).
+	TemporaryKeySet func(key string, value string, expiresSeconds int) error
+
+	// TemporaryKeyDelete is optional; when present it is preferred over
+	// TemporaryKeySet for invalidating consumed codes (store-agnostic
+	// delete vs the "empty value, 0 expiry" convention).
+	TemporaryKeyDelete func(key string) error
 
 	// AuthenticateViaUsername is called on successful code verification
 	// to perform authentication (token generation, cookies, etc.) and send
@@ -107,7 +118,13 @@ func ApiLoginCodeVerifyWithAuth(w http.ResponseWriter, r *http.Request, a types.
 	deps := Dependencies{
 		DisableRateLimit: a.GetDisableRateLimit(),
 		TemporaryKeyGet:  a.GetFuncTemporaryKeyGet(),
+		TemporaryKeySet:  a.GetFuncTemporaryKeySet(),
 		Logger:           a.GetLogger(),
+	}
+	if deleter, ok := a.(interface {
+		GetFuncTemporaryKeyDelete() func(key string) error
+	}); ok {
+		deps.TemporaryKeyDelete = deleter.GetFuncTemporaryKeyDelete()
 	}
 
 	deps.AuthenticateViaUsername = func(w http.ResponseWriter, r *http.Request, email string) {
@@ -122,11 +139,34 @@ func ApiLoginCodeVerifyWithAuth(w http.ResponseWriter, r *http.Request, a types.
 // messages but does not perform authentication or write HTTP responses.
 func LoginCodeVerify(ctx context.Context, r *http.Request, deps Dependencies) (*LoginCodeVerifyResult, *LoginCodeVerifyError) {
 	verificationCode := req.GetStringTrimmed(r, "verification_code")
+	nonce := req.GetStringTrimmed(r, "nonce")
+	email := req.GetStringTrimmed(r, "email")
 
 	if verificationCode == "" {
 		return nil, &LoginCodeVerifyError{
 			Code:    LoginCodeVerifyErrorCodeValidation,
 			Message: types.MsgVerificationCodeRequired,
+		}
+	}
+
+	if nonce == "" {
+		return nil, &LoginCodeVerifyError{
+			Code:    LoginCodeVerifyErrorCodeValidation,
+			Message: types.MsgNonceRequired,
+		}
+	}
+
+	if !utils.IsValidNonce(nonce) {
+		return nil, &LoginCodeVerifyError{
+			Code:    LoginCodeVerifyErrorCodeValidation,
+			Message: types.MsgNonceInvalid,
+		}
+	}
+
+	if email == "" {
+		return nil, &LoginCodeVerifyError{
+			Code:    LoginCodeVerifyErrorCodeValidation,
+			Message: types.MsgEmailRequired,
 		}
 	}
 
@@ -151,13 +191,48 @@ func LoginCodeVerify(ctx context.Context, r *http.Request, deps Dependencies) (*
 		}
 	}
 
-	email, errCode := deps.TemporaryKeyGet(verificationCode)
-	if errCode != nil {
+	// The nonce — not the code — is the storage key. The stored value is
+	// "email:code" and must match exactly what the client presents.
+	// verifyMu serializes the get-compare-invalidate sequence so two
+	// concurrent requests cannot both pass the compare before either
+	// deletes the key (TOCTOU). Cross-process deployments still need an
+	// atomic store; this is best-effort within one process.
+	cacheKey := utils.LoginCodeKeyPrefix + nonce
+	verifyMu.Lock()
+	defer verifyMu.Unlock()
+
+	stored, errCode := deps.TemporaryKeyGet(cacheKey)
+	if errCode != nil || stored == "" {
 		return nil, &LoginCodeVerifyError{
 			Code:    LoginCodeVerifyErrorCodeCodeExpired,
 			Message: types.MsgVerificationCodeExpired,
 		}
 	}
 
+	expected := email + ":" + verificationCode
+	if subtle.ConstantTimeCompare([]byte(stored), []byte(expected)) != 1 {
+		return nil, &LoginCodeVerifyError{
+			Code:    LoginCodeVerifyErrorCodeCodeExpired,
+			Message: types.MsgVerificationCodeExpired,
+		}
+	}
+
+	// Single-use: invalidate the consumed code. Prefer a real delete when
+	// available; otherwise fall back to the "empty value, 0 expiry"
+	// convention the module already uses for authknight keys.
+	invalidateErr := utils.InvalidateTempKey(deps.TemporaryKeyDelete, deps.TemporaryKeySet, cacheKey)
+	if invalidateErr != nil {
+		logger := deps.Logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("login code verify: failed to invalidate consumed code",
+			slog.String("error", invalidateErr.Error()))
+	}
+
 	return &LoginCodeVerifyResult{Email: email}, nil
 }
+
+// verifyMu serializes the get-compare-invalidate sequence in
+// LoginCodeVerify (see comment at the lookup site).
+var verifyMu sync.Mutex

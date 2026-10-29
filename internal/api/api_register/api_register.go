@@ -143,7 +143,9 @@ func ApiRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 			}
 		}
 
-		api.Respond(w, r, api.Success(result.SuccessMessage))
+		api.Respond(w, r, api.SuccessWithData(result.SuccessMessage, map[string]any{
+			"nonce": result.Nonce,
+		}))
 		return
 	}
 
@@ -159,13 +161,15 @@ func ApiRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 	ip := req.GetIP(r)
 	userAgent := r.UserAgent()
 
-	successMessage, errorMessage := deps.RegisterWithUsernameAndPassword(r.Context(), email, password, firstName, lastName, ip, userAgent)
+	successMessage, nonce, errorMessage := deps.RegisterWithUsernameAndPassword(r.Context(), email, password, firstName, lastName, ip, userAgent)
 	if errorMessage != "" {
 		api.Respond(w, r, api.Error(errorMessage))
 		return
 	}
 
-	api.Respond(w, r, api.Success(successMessage))
+	api.Respond(w, r, api.SuccessWithData(successMessage, map[string]any{
+		"nonce": nonce,
+	}))
 }
 
 // ApiRegisterWithAuth is a convenience wrapper that allows callers to pass a
@@ -242,7 +246,7 @@ func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSha
 	}
 
 	// Configure username/password registration handler.
-	deps.RegisterWithUsernameAndPassword = func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string) {
+	deps.RegisterWithUsernameAndPassword = func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string, string) {
 		// Delegate to the core registration helper and adapt its result.
 		res := core.RegisterWithUsernameAndPassword(
 			ctx,
@@ -257,7 +261,7 @@ func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSha
 			passwordAuth,
 			time.Hour,
 		)
-		return res.SuccessMessage, res.ErrorMessage
+		return res.SuccessMessage, res.Nonce, res.ErrorMessage
 	}
 
 	ApiRegister(w, r, deps)
@@ -311,6 +315,10 @@ func (e *RegisterPasswordlessInitError) Error() string {
 // RegisterPasswordlessInitResult represents a successful registration init.
 type RegisterPasswordlessInitResult struct {
 	SuccessMessage string
+	// Nonce identifies the temporary-key under which the registration
+	// payload (including the code) is stored. The client must present it
+	// alongside the code on verification.
+	Nonce string
 }
 
 // RegisterPasswordlessInit contains the core business logic of the passwordless
@@ -359,10 +367,19 @@ func RegisterPasswordlessInit(ctx context.Context, r *http.Request, deps Registe
 		}
 	}
 
+	nonce, err := authutils.GenerateNonce()
+	if err != nil {
+		return nil, &RegisterPasswordlessInitError{
+			Code: RegisterPasswordlessInitErrorCodeCodeGeneration,
+			Err:  err,
+		}
+	}
+
 	payload, errJSON := json.Marshal(map[string]string{
 		"email":      email,
 		"first_name": firstName,
 		"last_name":  lastName,
+		"code":       verificationCode,
 	})
 	if errJSON != nil {
 		return nil, &RegisterPasswordlessInitError{
@@ -384,7 +401,9 @@ func RegisterPasswordlessInit(ctx context.Context, r *http.Request, deps Registe
 		expires = 3600
 	}
 
-	if errTemp := deps.TemporaryKeySet(verificationCode, string(payload), expires); errTemp != nil {
+	// The nonce — not the code — is the storage key; the payload carries the
+	// code for constant-time comparison at verify time.
+	if errTemp := deps.TemporaryKeySet(authutils.RegisterCodeKeyPrefix+nonce, string(payload), expires); errTemp != nil {
 		return nil, &RegisterPasswordlessInitError{
 			Code: RegisterPasswordlessInitErrorCodeTokenStore,
 			Err:  errTemp,
@@ -409,5 +428,6 @@ func RegisterPasswordlessInit(ctx context.Context, r *http.Request, deps Registe
 
 	return &RegisterPasswordlessInitResult{
 		SuccessMessage: types.MsgRegistrationCodeSent,
+		Nonce:          nonce,
 	}, nil
 }

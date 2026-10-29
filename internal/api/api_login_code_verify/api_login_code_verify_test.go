@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/dracory/auth/utils"
 )
 
 func makePostRequest(t *testing.T, path string, values url.Values) (*httptest.ResponseRecorder, *http.Request) {
@@ -41,6 +43,8 @@ func TestApiLoginCodeVerifyInvalidLength(t *testing.T) {
 
 	values := url.Values{
 		"verification_code": {"123456"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
+		"email":             {"user@example.com"},
 	}
 	recorder, req := makePostRequest(t, "/api/login-code-verify", values)
 	ApiLoginCodeVerify(recorder, req, deps)
@@ -56,6 +60,8 @@ func TestApiLoginCodeVerifyInvalidCharacters(t *testing.T) {
 
 	values := url.Values{
 		"verification_code": {"12345678"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
+		"email":             {"user@example.com"},
 	}
 	recorder, req := makePostRequest(t, "/api/login-code-verify", values)
 	ApiLoginCodeVerify(recorder, req, deps)
@@ -75,6 +81,8 @@ func TestApiLoginCodeVerifyExpiredCode(t *testing.T) {
 
 	values := url.Values{
 		"verification_code": {"BCDFGHJK"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
+		"email":             {"user@example.com"},
 	}
 	recorder, req := makePostRequest(t, "/api/login-code-verify", values)
 	ApiLoginCodeVerify(recorder, req, deps)
@@ -89,7 +97,7 @@ func TestApiLoginCodeVerifyAuthenticationError(t *testing.T) {
 	called := false
 	deps := Dependencies{
 		TemporaryKeyGet: func(key string) (string, error) {
-			return "user@example.com", nil
+			return "user@example.com:BCDFGHJK", nil
 		},
 		AuthenticateViaUsername: func(w http.ResponseWriter, r *http.Request, email string) {
 			called = true
@@ -101,6 +109,8 @@ func TestApiLoginCodeVerifyAuthenticationError(t *testing.T) {
 
 	values := url.Values{
 		"verification_code": {"BCDFGHJK"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
+		"email":             {"user@example.com"},
 	}
 	recorder, req := makePostRequest(t, "/api/login-code-verify", values)
 	ApiLoginCodeVerify(recorder, req, deps)
@@ -119,7 +129,7 @@ func TestApiLoginCodeVerifyUserNotFound(t *testing.T) {
 	called := false
 	deps := Dependencies{
 		TemporaryKeyGet: func(key string) (string, error) {
-			return "user@example.com", nil
+			return "user@example.com:BCDFGHJK", nil
 		},
 		AuthenticateViaUsername: func(w http.ResponseWriter, r *http.Request, email string) {
 			called = true
@@ -131,6 +141,8 @@ func TestApiLoginCodeVerifyUserNotFound(t *testing.T) {
 
 	values := url.Values{
 		"verification_code": {"BCDFGHJK"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
+		"email":             {"user@example.com"},
 	}
 	recorder, req := makePostRequest(t, "/api/login-code-verify", values)
 	ApiLoginCodeVerify(recorder, req, deps)
@@ -149,7 +161,7 @@ func TestApiLoginCodeVerifyTokenStoreError(t *testing.T) {
 	called := false
 	deps := Dependencies{
 		TemporaryKeyGet: func(key string) (string, error) {
-			return "user@example.com", nil
+			return "user@example.com:BCDFGHJK", nil
 		},
 		AuthenticateViaUsername: func(w http.ResponseWriter, r *http.Request, email string) {
 			called = true
@@ -161,6 +173,8 @@ func TestApiLoginCodeVerifyTokenStoreError(t *testing.T) {
 
 	values := url.Values{
 		"verification_code": {"BCDFGHJK"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
+		"email":             {"user@example.com"},
 	}
 	recorder, req := makePostRequest(t, "/api/login-code-verify", values)
 	ApiLoginCodeVerify(recorder, req, deps)
@@ -179,7 +193,7 @@ func TestApiLoginCodeVerifySuccess(t *testing.T) {
 	called := false
 	deps := Dependencies{
 		TemporaryKeyGet: func(key string) (string, error) {
-			return "user@example.com", nil
+			return "user@example.com:BCDFGHJK", nil
 		},
 		AuthenticateViaUsername: func(w http.ResponseWriter, r *http.Request, email string) {
 			called = true
@@ -190,6 +204,8 @@ func TestApiLoginCodeVerifySuccess(t *testing.T) {
 
 	values := url.Values{
 		"verification_code": {"BCDFGHJK"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
+		"email":             {"user@example.com"},
 	}
 	recorder, req := makePostRequest(t, "/api/login-code-verify", values)
 	ApiLoginCodeVerify(recorder, req, deps)
@@ -239,6 +255,8 @@ func TestApiLoginCodeVerifyNilTemporaryKeyGet(t *testing.T) {
 
 	values := url.Values{
 		"verification_code": {"BCDFGHJK"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
+		"email":             {"user@example.com"},
 	}
 	recorder, req := makePostRequest(t, "/api/login-code-verify", values)
 	ApiLoginCodeVerify(recorder, req, deps)
@@ -252,13 +270,15 @@ func TestApiLoginCodeVerifyNilTemporaryKeyGet(t *testing.T) {
 func TestApiLoginCodeVerifyNilAuthenticateViaUsername(t *testing.T) {
 	deps := Dependencies{
 		TemporaryKeyGet: func(key string) (string, error) {
-			return "user@example.com", nil
+			return "user@example.com:BCDFGHJK", nil
 		},
 		AuthenticateViaUsername: nil,
 	}
 
 	values := url.Values{
 		"verification_code": {"BCDFGHJK"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
+		"email":             {"user@example.com"},
 	}
 	recorder, req := makePostRequest(t, "/api/login-code-verify", values)
 	ApiLoginCodeVerify(recorder, req, deps)
@@ -266,5 +286,126 @@ func TestApiLoginCodeVerifyNilAuthenticateViaUsername(t *testing.T) {
 	body := recorder.Body.String()
 	if !strings.Contains(body, "Failed to process request") {
 		t.Fatalf("expected failed to process, got %q", body)
+	}
+}
+
+func TestApiLoginCodeVerifyRequiresNonce(t *testing.T) {
+	deps := Dependencies{
+		TemporaryKeyGet: func(key string) (string, error) {
+			t.Fatalf("store must not be read when nonce is missing")
+			return "", nil
+		},
+	}
+
+	values := url.Values{
+		"verification_code": {"BCDFGHJK"},
+		"email":             {"user@example.com"},
+	}
+	recorder, req := makePostRequest(t, "/api/login-code-verify", values)
+	ApiLoginCodeVerify(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "\"message\":\"Nonce is required field\"") {
+		t.Fatalf("expected nonce required message, got %q", body)
+	}
+}
+
+func TestApiLoginCodeVerifyRequiresEmail(t *testing.T) {
+	deps := Dependencies{
+		TemporaryKeyGet: func(key string) (string, error) {
+			t.Fatalf("store must not be read when email is missing")
+			return "", nil
+		},
+	}
+
+	values := url.Values{
+		"verification_code": {"BCDFGHJK"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
+	}
+	recorder, req := makePostRequest(t, "/api/login-code-verify", values)
+	ApiLoginCodeVerify(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "\"message\":\"Email is required field\"") {
+		t.Fatalf("expected email required message, got %q", body)
+	}
+}
+
+func TestApiLoginCodeVerifyWrongCode(t *testing.T) {
+	deps := Dependencies{
+		TemporaryKeyGet: func(key string) (string, error) {
+			return "user@example.com:BCDFGHJK", nil
+		},
+	}
+
+	// Valid nonce but wrong code -> generic expired message, no auth.
+	values := url.Values{
+		"verification_code": {"XXXXXXXX"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
+		"email":             {"user@example.com"},
+	}
+	recorder, req := makePostRequest(t, "/api/login-code-verify", values)
+	ApiLoginCodeVerify(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "\"message\":\"Verification code has expired\"") {
+		t.Fatalf("expected generic expired message, got %q", body)
+	}
+}
+
+func TestApiLoginCodeVerifyWrongEmail(t *testing.T) {
+	deps := Dependencies{
+		TemporaryKeyGet: func(key string) (string, error) {
+			return "user@example.com:BCDFGHJK", nil
+		},
+	}
+
+	// Correct code but different email -> generic expired message.
+	values := url.Values{
+		"verification_code": {"BCDFGHJK"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
+		"email":             {"other@example.com"},
+	}
+	recorder, req := makePostRequest(t, "/api/login-code-verify", values)
+	ApiLoginCodeVerify(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "\"message\":\"Verification code has expired\"") {
+		t.Fatalf("expected generic expired message, got %q", body)
+	}
+}
+
+func TestApiLoginCodeVerifySingleUseConsume(t *testing.T) {
+	var consumedKey, consumedValue string
+	var consumedExpires int
+	deps := Dependencies{
+		TemporaryKeyGet: func(key string) (string, error) {
+			if key != utils.LoginCodeKeyPrefix+"0123456789abcdef0123456789abcdef" {
+				t.Fatalf("expected lookup by prefixed nonce, got %q", key)
+			}
+			return "user@example.com:BCDFGHJK", nil
+		},
+		TemporaryKeySet: func(key string, value string, expiresSeconds int) error {
+			consumedKey = key
+			consumedValue = value
+			consumedExpires = expiresSeconds
+			return nil
+		},
+		AuthenticateViaUsername: func(w http.ResponseWriter, r *http.Request, email string) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"status":"success"}`))
+		},
+	}
+
+	values := url.Values{
+		"verification_code": {"BCDFGHJK"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
+		"email":             {"user@example.com"},
+	}
+	recorder, req := makePostRequest(t, "/api/login-code-verify", values)
+	ApiLoginCodeVerify(recorder, req, deps)
+
+	if consumedKey != utils.LoginCodeKeyPrefix+"0123456789abcdef0123456789abcdef" || consumedValue != "" || consumedExpires != 0 {
+		t.Fatalf("expected consumed key invalidated (empty value, 0 expiry), got key=%q value=%q exp=%d", consumedKey, consumedValue, consumedExpires)
 	}
 }

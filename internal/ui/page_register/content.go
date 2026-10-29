@@ -119,6 +119,11 @@ func RegisterPasswordlessScripts(urlApiRegister, urlOnSuccess string) string {
 
 				registerFormRaiseSuccess('Success');
 				$('div.alert-danger').html('').hide();
+				// Hand the nonce to the code-verify page via sessionStorage —
+				// query params would leak into history, logs, and Referer.
+				if (response.data && response.data.nonce) {
+					sessionStorage.setItem('auth_register_nonce', response.data.nonce);
+				}
 				setTimeout(function () {
 					window.location.href=urlOnSuccess;
 				}, 100);
@@ -250,6 +255,11 @@ func RegisterUsernameAndPasswordScripts(urlApiRegister, urlOnSuccess string) str
 
 				registerFormRaiseSuccess('Success');
 				$('div.alert-danger').html('').hide();
+				// Hand the nonce to the code-verify page via sessionStorage —
+				// query params would leak into history, logs, and Referer.
+				if (response.data && response.data.nonce) {
+					sessionStorage.setItem('auth_register_nonce', response.data.nonce);
+				}
 				setTimeout(function () {
 					window.location.href=urlOnSuccess;
 				}, 2000);
@@ -381,6 +391,11 @@ func RegisterAuthKnightScripts(urlApiRegister, urlOnSuccess string) string {
 
 				registerFormRaiseSuccess('Success');
 				$('div.alert-danger').html('').hide();
+				// Hand the nonce to the code-verify page via sessionStorage —
+				// query params would leak into history, logs, and Referer.
+				if (response.data && response.data.nonce) {
+					sessionStorage.setItem('auth_register_nonce', response.data.nonce);
+				}
 				setTimeout(function () {
 					window.location.href=urlOnSuccess;
 				}, 100);

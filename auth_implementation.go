@@ -27,6 +27,7 @@ type authImplementation struct {
 	funcLayout              func(content string) string
 	funcTemporaryKeyGet     func(key string) (value string, err error)
 	funcTemporaryKeySet     func(key string, value string, expiresSeconds int) (err error)
+	funcTemporaryKeyDelete  func(key string) (err error)
 	funcUserFindByAuthToken func(ctx context.Context, token string, options types.UserAuthOptions) (userID string, err error)
 	funcUserLogout          func(ctx context.Context, userID string, options types.UserAuthOptions) (err error)
 	funcUserStoreAuthToken  func(ctx context.Context, token string, userID string, options types.UserAuthOptions) error
@@ -435,6 +436,19 @@ func (a authImplementation) GetFuncTemporaryKeySet() func(key string, value stri
 // This is useful for integrating with application authentication systems or for testing.
 func (a *authImplementation) SetFuncTemporaryKeySet(fn func(key string, value string, expiresSeconds int) error) {
 	a.funcTemporaryKeySet = fn
+}
+
+// GetFuncTemporaryKeyDelete returns the function used to delete a temporary
+// key. Optional — when nil, verify flows fall back to the "empty value, 0
+// expiry" convention for invalidating consumed codes.
+func (a authImplementation) GetFuncTemporaryKeyDelete() func(key string) error {
+	return a.funcTemporaryKeyDelete
+}
+
+// SetFuncTemporaryKeyDelete allows configuring the function used to delete a
+// temporary key.
+func (a *authImplementation) SetFuncTemporaryKeyDelete(fn func(key string) error) {
+	a.funcTemporaryKeyDelete = fn
 }
 
 // LinkApiLogin returns the API login endpoint URL.

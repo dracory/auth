@@ -13,6 +13,9 @@ type RegisterWithUsernameAndPasswordResult struct {
 	ErrorMessage   string
 	SuccessMessage string
 	Token          string
+	// Nonce identifies the temporary-key under which the registration
+	// payload (including the code) is stored when verification is enabled.
+	Nonce string
 }
 
 func RegisterWithUsernameAndPassword(
@@ -95,11 +98,28 @@ func RegisterWithUsernameAndPassword(
 		return response
 	}
 
+	nonce, errNonce := authutils.GenerateNonce()
+	if errNonce != nil {
+		response.ErrorMessage = types.MsgFailedToGenerateCode
+		if logger != nil {
+			logger.Error("registration nonce generation failed",
+				"error", errNonce,
+				"error_code", "NONCE_GENERATION_FAILED",
+				"email", email,
+				"ip", options.UserIp,
+				"user_agent", options.UserAgent,
+			)
+		}
+		hooks.RecordRegistrationAttempt(false, errNonce)
+		return response
+	}
+
 	jsonPayload, errJson := json.Marshal(map[string]string{
 		"email":      email,
 		"first_name": firstName,
 		"last_name":  lastName,
 		"password":   password,
+		"code":       verificationCode,
 	})
 	if errJson != nil {
 		response.ErrorMessage = types.MsgFailedToProcess
@@ -117,7 +137,7 @@ func RegisterWithUsernameAndPassword(
 	}
 
 	temporaryKeySet := a.GetFuncTemporaryKeySet()
-	errTempTokenSave := temporaryKeySet(verificationCode, string(jsonPayload), int(verificationExpiration.Seconds()))
+	errTempTokenSave := temporaryKeySet(authutils.RegisterCodeKeyPrefix+nonce, string(jsonPayload), int(verificationExpiration.Seconds()))
 	if errTempTokenSave != nil {
 		response.ErrorMessage = types.MsgFailedToProcess
 		if logger != nil {
@@ -165,6 +185,7 @@ func RegisterWithUsernameAndPassword(
 	}
 
 	response.SuccessMessage = types.MsgRegistrationCodeSent
+	response.Nonce = nonce
 	hooks.RecordRegistrationAttempt(true, nil)
 	return response
 }

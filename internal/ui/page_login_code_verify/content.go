@@ -89,7 +89,12 @@ func LoginCodeVerifyScripts(urlApiLoginCodeVerify, urlOnSuccess string) string {
 
 			$('.ButtonLogin .ImgLoading').show();
 
-			var data = {"verification_code": verificationCode};
+			// The nonce travels via sessionStorage (set by the login page),
+			// not the URL — keeps it out of history, logs, and Referer.
+			var nonce = sessionStorage.getItem('auth_login_nonce') || '';
+			var email = sessionStorage.getItem('auth_login_email') || '';
+
+			var data = {"verification_code": verificationCode, "nonce": nonce, "email": email};
 
 			$.post(urlApiLoginCodeVerify, data).then(function (response) {
 				$('.ButtonLogin .ImgLoading').hide();
@@ -100,6 +105,8 @@ func LoginCodeVerifyScripts(urlApiLoginCodeVerify, urlOnSuccess string) string {
 
 				$$.setAuthToken(response.data.token);
 				$$.setAuthUser(response.data.user);
+				sessionStorage.removeItem('auth_login_nonce');
+				sessionStorage.removeItem('auth_login_email');
 				loginFormRaiseSuccess('Verification successful');
 				$('div.alert-danger').html('').hide();
 				setTimeout(function () {

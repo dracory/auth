@@ -22,7 +22,7 @@ type Dependencies struct {
 	// registration when Passwordless is false. It is responsible for all
 	// validation and business rules, and returns a user-facing success or
 	// error message.
-	RegisterWithUsernameAndPassword func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (successMessage, errorMessage string)
+	RegisterWithUsernameAndPassword func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (successMessage, nonce, errorMessage string)
 
 	// AuthKnight indicates whether the registration flow is AuthKnight-based.
 	AuthKnight bool

@@ -137,6 +137,13 @@ func LoginPasswordlessScripts(urlApiLogin, urlSuccess string) string {
 
 				loginFormRaiseSuccess('Success');
 				$('div.alert-danger').html('').hide();
+				// Hand the nonce (and email) to the code-verify page via
+				// sessionStorage — query params would leak into browser
+				// history, access logs, and Referer headers.
+				if (response.data && response.data.nonce) {
+					sessionStorage.setItem('auth_login_nonce', response.data.nonce);
+					sessionStorage.setItem('auth_login_email', email);
+				}
 				setTimeout(function () {
 					$$.to(urlOnSuccess);
 				}, 2000);

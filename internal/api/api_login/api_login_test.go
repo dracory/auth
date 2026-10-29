@@ -2,12 +2,15 @@ package api_login
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/dracory/auth/utils"
 )
 
 // helper to build a POST request with form values
@@ -312,6 +315,58 @@ func TestApiLoginPasswordlessSuccess(t *testing.T) {
 	}
 	if !strings.Contains(body, `"message":"Login code was sent successfully"`) {
 		t.Fatalf("expected success message, got %q", body)
+	}
+}
+
+// TestApiLoginPasswordlessStoresNonceBoundCode verifies the OTP key model:
+// the nonce — not the code — is the temporary-key, the value is
+// "email:code", and the nonce is returned to the client in the response.
+func TestApiLoginPasswordlessStoresNonceBoundCode(t *testing.T) {
+	var storedKey, storedValue string
+	deps := Dependencies{
+		Passwordless: true,
+		PasswordlessDependencies: LoginPasswordlessDeps{
+			DisableRateLimit: false,
+			TemporaryKeySet: func(key string, value string, expiresSeconds int) error {
+				storedKey = key
+				storedValue = value
+				return nil
+			},
+			ExpiresSeconds: 3600,
+			EmailTemplate: func(ctx context.Context, email string, code string) string {
+				return ""
+			},
+			EmailSend: func(ctx context.Context, email string, subject string, body string) error {
+				return nil
+			},
+		},
+	}
+
+	values := url.Values{
+		"email": {"test@test.com"},
+	}
+	recorder, req := makePostRequest(t, "/api/login", values)
+	ApiLogin(recorder, req, deps)
+
+	if !strings.HasPrefix(storedKey, utils.LoginCodeKeyPrefix) {
+		t.Fatalf("expected key prefixed with %q, got %q", utils.LoginCodeKeyPrefix, storedKey)
+	}
+	nonce := strings.TrimPrefix(storedKey, utils.LoginCodeKeyPrefix)
+	if len(nonce) != 32 {
+		t.Fatalf("expected 32-char hex nonce key, got %q", nonce)
+	}
+	if _, err := hex.DecodeString(nonce); err != nil {
+		t.Fatalf("expected hex nonce, got %q", nonce)
+	}
+
+	// Value is "email:code" — a guessed code alone is not the key.
+	if !strings.HasPrefix(storedValue, "test@test.com:") {
+		t.Fatalf("expected value 'email:code', got %q", storedValue)
+	}
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, `"nonce":"`+nonce+`"`) {
+		t.Fatalf("expected response to carry the nonce %q, got %q", nonce, body)
 	}
 }
 

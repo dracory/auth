@@ -2,10 +2,12 @@ package api_register_code_verify
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
+	"sync"
 
 	"github.com/dracory/api"
 	types "github.com/dracory/auth/types"
@@ -20,6 +22,14 @@ type Dependencies struct {
 	DisableRateLimit bool
 
 	TemporaryKeyGet func(key string) (string, error)
+
+	// TemporaryKeySet is optional; when present the consumed code is
+	// invalidated after a successful verification (single-use).
+	TemporaryKeySet func(key string, value string, expiresSeconds int) error
+
+	// TemporaryKeyDelete is optional; when present it is preferred over
+	// TemporaryKeySet for invalidating consumed codes.
+	TemporaryKeyDelete func(key string) error
 
 	PasswordStrength *types.PasswordStrengthConfig
 
@@ -137,9 +147,15 @@ func ApiRegisterCodeVerifyWithAuth(w http.ResponseWriter, r *http.Request, a typ
 	deps := Dependencies{
 		DisableRateLimit: a.GetDisableRateLimit(),
 		TemporaryKeyGet:  a.GetFuncTemporaryKeyGet(),
+		TemporaryKeySet:  a.GetFuncTemporaryKeySet(),
 		PasswordStrength: a.GetPasswordStrength(),
 		Passwordless:     a.IsPasswordless(),
 		Logger:           a.GetLogger(),
+	}
+	if deleter, ok := a.(interface {
+		GetFuncTemporaryKeyDelete() func(key string) error
+	}); ok {
+		deps.TemporaryKeyDelete = deleter.GetFuncTemporaryKeyDelete()
 	}
 
 	if fn := a.GetPasswordlessUserRegister(); fn != nil {
@@ -172,12 +188,27 @@ func ApiRegisterCodeVerifyWithAuth(w http.ResponseWriter, r *http.Request, a typ
 // user. It does not log or write HTTP responses.
 func RegisterCodeVerify(ctx context.Context, r *http.Request, deps Dependencies) (*RegisterCodeVerifyResult, *RegisterCodeVerifyError) {
 	verificationCode := req.GetStringTrimmed(r, "verification_code")
+	nonce := req.GetStringTrimmed(r, "nonce")
 
 	// Input validation mirrors the original behaviour/messages.
 	if verificationCode == "" {
 		return nil, &RegisterCodeVerifyError{
 			Code:    RegisterCodeVerifyErrorCodeValidation,
 			Message: types.MsgVerificationCodeRequired,
+		}
+	}
+
+	if nonce == "" {
+		return nil, &RegisterCodeVerifyError{
+			Code:    RegisterCodeVerifyErrorCodeValidation,
+			Message: types.MsgNonceRequired,
+		}
+	}
+
+	if !authutils.IsValidNonce(nonce) {
+		return nil, &RegisterCodeVerifyError{
+			Code:    RegisterCodeVerifyErrorCodeValidation,
+			Message: types.MsgNonceInvalid,
 		}
 	}
 
@@ -202,8 +233,16 @@ func RegisterCodeVerify(ctx context.Context, r *http.Request, deps Dependencies)
 		}
 	}
 
-	registerJSON, errCode := deps.TemporaryKeyGet(verificationCode)
-	if errCode != nil {
+	// The nonce — not the code — is the storage key. The stored payload
+	// carries the code for constant-time comparison.
+	// verifyMu serializes get-compare-invalidate to prevent concurrent
+	// reuse of the same nonce (TOCTOU, best-effort within one process).
+	cacheKey := authutils.RegisterCodeKeyPrefix + nonce
+	verifyMu.Lock()
+	defer verifyMu.Unlock()
+
+	registerJSON, errCode := deps.TemporaryKeyGet(cacheKey)
+	if errCode != nil || registerJSON == "" {
 		return nil, &RegisterCodeVerifyError{
 			Code:    RegisterCodeVerifyErrorCodeCodeExpired,
 			Message: types.MsgVerificationCodeExpired,
@@ -219,6 +258,24 @@ func RegisterCodeVerify(ctx context.Context, r *http.Request, deps Dependencies)
 			Message: types.MsgSerializedFormatMalformed,
 			Err:     errJSON,
 		}
+	}
+
+	storedCode, _ := registerMap["code"].(string)
+	if storedCode == "" || subtle.ConstantTimeCompare([]byte(storedCode), []byte(verificationCode)) != 1 {
+		return nil, &RegisterCodeVerifyError{
+			Code:    RegisterCodeVerifyErrorCodeCodeExpired,
+			Message: types.MsgVerificationCodeExpired,
+		}
+	}
+
+	// Single-use: invalidate the consumed code; prefer a real delete.
+	if err := authutils.InvalidateTempKey(deps.TemporaryKeyDelete, deps.TemporaryKeySet, cacheKey); err != nil {
+		logger := deps.Logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("register code verify: failed to invalidate consumed code",
+			slog.String("error", err.Error()))
 	}
 
 	email := ""
@@ -294,3 +351,7 @@ func RegisterCodeVerify(ctx context.Context, r *http.Request, deps Dependencies)
 		LastName:  lastName,
 	}, nil
 }
+
+// verifyMu serializes the get-compare-invalidate sequence in
+// RegisterCodeVerify (see comment at the lookup site).
+var verifyMu sync.Mutex

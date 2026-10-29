@@ -39,6 +39,9 @@ func (e *LoginPasswordlessError) Error() string {
 // LoginPasswordlessResult represents a successful passwordless login operation.
 type LoginPasswordlessResult struct {
 	SuccessMessage string
+	// Nonce identifies the temporary-key under which "email:code" is stored.
+	// The client must present it alongside the code on verification.
+	Nonce string
 }
 
 // LoginPasswordless contains the core business logic of the passwordless login API.
@@ -70,6 +73,14 @@ func loginPasswordless(ctx context.Context, r *http.Request, deps LoginPasswordl
 		}
 	}
 
+	nonce, err := utils.GenerateNonce()
+	if err != nil {
+		return nil, &LoginPasswordlessError{
+			Code: LoginPasswordlessErrorCodeCodeGeneration,
+			Err:  err,
+		}
+	}
+
 	if deps.TemporaryKeySet == nil {
 		return nil, &LoginPasswordlessError{
 			Code: LoginPasswordlessErrorCodeTokenStore,
@@ -85,7 +96,9 @@ func loginPasswordless(ctx context.Context, r *http.Request, deps LoginPasswordl
 		expires = 3600
 	}
 
-	if errTemp := deps.TemporaryKeySet(verificationCode, email, expires); errTemp != nil {
+	// The nonce — not the code — is the storage key, so a guessed code alone
+	// cannot be redeemed; the client must also present the 128-bit nonce.
+	if errTemp := deps.TemporaryKeySet(utils.LoginCodeKeyPrefix+nonce, email+":"+verificationCode, expires); errTemp != nil {
 		return nil, &LoginPasswordlessError{
 			Code: LoginPasswordlessErrorCodeTokenStore,
 			Err:  errTemp,
@@ -110,5 +123,6 @@ func loginPasswordless(ctx context.Context, r *http.Request, deps LoginPasswordl
 
 	return &LoginPasswordlessResult{
 		SuccessMessage: types.MsgLoginCodeSent,
+		Nonce:          nonce,
 	}, nil
 }

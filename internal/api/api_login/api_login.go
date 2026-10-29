@@ -57,7 +57,9 @@ func ApiLogin(w http.ResponseWriter, r *http.Request, dependencies Dependencies)
 			}
 		}
 
-		api.Respond(w, r, api.Success(result.SuccessMessage))
+		api.Respond(w, r, api.SuccessWithData(result.SuccessMessage, map[string]any{
+			"nonce": result.Nonce,
+		}))
 		return
 	}
 

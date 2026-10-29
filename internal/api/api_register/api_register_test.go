@@ -29,11 +29,11 @@ func makePostRequest(t *testing.T, path string, values url.Values) (*httptest.Re
 func TestApiRegisterUsernameAndPasswordRequiresFirstName(t *testing.T) {
 	deps := Dependencies{
 		Passwordless: false,
-		RegisterWithUsernameAndPassword: func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string) {
+		RegisterWithUsernameAndPassword: func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string, string) {
 			if firstName == "" {
-				return "", "First name is required field"
+				return "", "", "First name is required field"
 			}
-			return "", ""
+			return "", "", ""
 		},
 	}
 
@@ -52,11 +52,11 @@ func TestApiRegisterUsernameAndPasswordRequiresFirstName(t *testing.T) {
 func TestApiRegisterUsernameAndPasswordRequiresLastName(t *testing.T) {
 	deps := Dependencies{
 		Passwordless: false,
-		RegisterWithUsernameAndPassword: func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string) {
+		RegisterWithUsernameAndPassword: func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string, string) {
 			if lastName == "" {
-				return "", "Last name is required field"
+				return "", "", "Last name is required field"
 			}
-			return "", ""
+			return "", "", ""
 		},
 	}
 
@@ -75,11 +75,11 @@ func TestApiRegisterUsernameAndPasswordRequiresLastName(t *testing.T) {
 func TestApiRegisterUsernameAndPasswordRequiresEmail(t *testing.T) {
 	deps := Dependencies{
 		Passwordless: false,
-		RegisterWithUsernameAndPassword: func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string) {
+		RegisterWithUsernameAndPassword: func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string, string) {
 			if email == "" {
-				return "", "Email is required field"
+				return "", "", "Email is required field"
 			}
-			return "", ""
+			return "", "", ""
 		},
 	}
 
@@ -99,11 +99,11 @@ func TestApiRegisterUsernameAndPasswordRequiresEmail(t *testing.T) {
 func TestApiRegisterUsernameAndPasswordRequiresPassword(t *testing.T) {
 	deps := Dependencies{
 		Passwordless: false,
-		RegisterWithUsernameAndPassword: func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string) {
+		RegisterWithUsernameAndPassword: func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string, string) {
 			if password == "" {
-				return "", "Password is required field"
+				return "", "", "Password is required field"
 			}
-			return "", ""
+			return "", "", ""
 		},
 	}
 
@@ -124,11 +124,11 @@ func TestApiRegisterUsernameAndPasswordRequiresPassword(t *testing.T) {
 func TestApiRegisterUsernameAndPasswordInvalidEmail(t *testing.T) {
 	deps := Dependencies{
 		Passwordless: false,
-		RegisterWithUsernameAndPassword: func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string) {
+		RegisterWithUsernameAndPassword: func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string, string) {
 			if email == "invalid-email" {
-				return "", "This is not a valid email: invalid-email"
+				return "", "", "This is not a valid email: invalid-email"
 			}
-			return "", ""
+			return "", "", ""
 		},
 	}
 
@@ -150,8 +150,8 @@ func TestApiRegisterUsernameAndPasswordInvalidEmail(t *testing.T) {
 func TestApiRegisterUsernameAndPasswordFuncUserRegisterNotDefined(t *testing.T) {
 	deps := Dependencies{
 		Passwordless: false,
-		RegisterWithUsernameAndPassword: func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string) {
-			return "", "registration failed. FuncUserRegister function not defined"
+		RegisterWithUsernameAndPassword: func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string, string) {
+			return "", "", "registration failed. FuncUserRegister function not defined"
 		},
 	}
 
@@ -173,8 +173,8 @@ func TestApiRegisterUsernameAndPasswordFuncUserRegisterNotDefined(t *testing.T) 
 func TestApiRegisterUsernameAndPasswordRegistrationFailed(t *testing.T) {
 	deps := Dependencies{
 		Passwordless: false,
-		RegisterWithUsernameAndPassword: func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string) {
-			return "", "registration failed."
+		RegisterWithUsernameAndPassword: func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string, string) {
+			return "", "", "registration failed."
 		},
 	}
 
@@ -196,8 +196,8 @@ func TestApiRegisterUsernameAndPasswordRegistrationFailed(t *testing.T) {
 func TestApiRegisterUsernameAndPasswordSuccess(t *testing.T) {
 	deps := Dependencies{
 		Passwordless: false,
-		RegisterWithUsernameAndPassword: func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string) {
-			return "registration success", ""
+		RegisterWithUsernameAndPassword: func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string, string) {
+			return "registration success", "testnonce", ""
 		},
 	}
 

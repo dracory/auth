@@ -98,7 +98,11 @@ func RegisterCodeVerifyScripts(urlApiRegisterCodeVerify, urlOnSuccess string) st
 
 			$('.buttonLogin .imgLoading').show();
 
-			var data = {"verification_code": verificationCode};
+			// The nonce travels via sessionStorage (set by the register
+			// page), not the URL — keeps it out of history, logs, Referer.
+			var nonce = sessionStorage.getItem('auth_register_nonce') || '';
+
+			var data = {"verification_code": verificationCode, "nonce": nonce};
 
 			$.post(urlApiRegisterCodeVerify, data).then(function (response) {
 				$('.buttonLogin .imgLoading').hide();
@@ -109,6 +113,7 @@ func RegisterCodeVerifyScripts(urlApiRegisterCodeVerify, urlOnSuccess string) st
 
 				$$.setAuthToken(response.data.token);
 				$$.setAuthUser(response.data.user);
+				sessionStorage.removeItem('auth_register_nonce');
 				loginFormRaiseSuccess('Verification successful');
 				$('div.alert-danger').html('').hide();
 				setTimeout(function () {
