@@ -13,6 +13,7 @@
  .card:hover{transform:translateY(-3px);box-shadow:0 .5rem 1rem rgba(0,0,0,.15)}
  .navbar-brand{font-weight:700}
 </style>
+<link href="assets/docs.css" rel="stylesheet">
 </head>
 <body>
 <nav class="navbar navbar-expand-md fixed-top border-bottom bg-body-tertiary">
@@ -96,7 +97,9 @@
   </div>
  </div>
 </nav>
-<main class="container doc pb-5">
+<div class="docs-layout">
+<aside class="docs-sidebar" id="docsSidebar"><div id="docsNav"></div></aside>
+<main class="docs-main">
 <h1 class="border-bottom pb-2">dracory/auth Documentation</h1>
 <p class="lead">Batteries-included authentication for Go — four composable login methods
 (email OTP, magic link, username/password, AuthKnight) with server-rendered UI,
@@ -158,6 +161,8 @@ JSON API, middleware, and a hook-driven post-auth pipeline.</p>
   <p class="card-text small text-secondary">README, examples, and source code.</p></div></a></div>
 </div>
 </main>
+<aside class="docs-toc" id="docsToc"></aside>
+</div>
 <footer class="border-top py-3 text-center text-secondary small">
  Generated HTML documentation &middot; <a href="https://github.com/dracory/auth">github.com/dracory/auth</a>
 </footer>
@@ -180,5 +185,6 @@ JSON API, middleware, and a hook-driven post-auth pipeline.</p>
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="assets/docs.js"></script>
 </body>
 </html>

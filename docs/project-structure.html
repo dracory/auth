@@ -14,6 +14,7 @@
  table{font-size:.9rem}
  .navbar-brand{font-weight:700}
 </style>
+<link href="assets/docs.css" rel="stylesheet">
 </head>
 <body>
 <nav class="navbar navbar-expand-md fixed-top border-bottom bg-body-tertiary">
@@ -97,7 +98,9 @@
   </div>
  </div>
 </nav>
-<main class="container doc pb-5">
+<div class="docs-layout">
+<aside class="docs-sidebar" id="docsSidebar"><div id="docsNav"></div></aside>
+<main class="docs-main">
 <h1>Project Structure</h1>
 <p><strong>Last Updated:</strong> 2026-10-29</p>
 <p>The <code>dracory/auth</code> library is organized into focused packages for clarity and maintainability.</p>
@@ -141,6 +144,8 @@
 <h2>Public vs Internal</h2>
 <p><strong>Safe to import:</strong> <code>github.com/dracory/auth</code>, <code>github.com/dracory/auth/types</code> <strong>Do not import:</strong> <code>github.com/dracory/auth/internal/*</code>, <code>github.com/dracory/auth/utils</code></p>
 </main>
+<aside class="docs-toc" id="docsToc"></aside>
+</div>
 <footer class="border-top py-3 text-center text-secondary small">
  Generated from markdown sources &middot; <a href="https://github.com/dracory/auth">github.com/dracory/auth</a>
 </footer>
@@ -167,5 +172,6 @@
  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
  mermaid.initialize({startOnLoad:true});
 </script>
+<script src="assets/docs.js"></script>
 </body>
 </html>

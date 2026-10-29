@@ -14,6 +14,7 @@
  table{font-size:.9rem}
  .navbar-brand{font-weight:700}
 </style>
+<link href="assets/docs.css" rel="stylesheet">
 </head>
 <body>
 <nav class="navbar navbar-expand-md fixed-top border-bottom bg-body-tertiary">
@@ -97,7 +98,9 @@
   </div>
  </div>
 </nav>
-<main class="container doc pb-5">
+<div class="docs-layout">
+<aside class="docs-sidebar" id="docsSidebar"><div id="docsNav"></div></aside>
+<main class="docs-main">
 <h1>Structure Improvement Recommendations</h1>
 <p><strong>Document Date:</strong> 2025-11-29   <strong>Focus:</strong> Maintainability and Code Organization   <strong>Current State:</strong> Good - Recent refactoring has significantly improved structure  </p>
 <blockquote class="blockquote border-start border-3 ps-3 text-secondary"><p><strong>Status (2026-10-29):</strong> Largely applied — implementation now lives under <code>internal/</code> (api, ui, core, rules, links, emails, middlewares), multi-method composition landed via <code>types.Method</code> + <code>NewMultiMethodAuth</code>, and <code>docs/project-structure.md</code> reflects the current layout. Kept for history.</p></blockquote>
@@ -234,6 +237,8 @@ package auth</code></pre>
 <hr>
 <p><strong>Prepared by:</strong> Structure Analysis   <strong>Date:</strong> 2025-11-29   <strong>Status:</strong> Recommendations for Consideration</p>
 </main>
+<aside class="docs-toc" id="docsToc"></aside>
+</div>
 <footer class="border-top py-3 text-center text-secondary small">
  Generated from markdown sources &middot; <a href="https://github.com/dracory/auth">github.com/dracory/auth</a>
 </footer>
@@ -260,5 +265,6 @@ package auth</code></pre>
  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
  mermaid.initialize({startOnLoad:true});
 </script>
+<script src="assets/docs.js"></script>
 </body>
 </html>

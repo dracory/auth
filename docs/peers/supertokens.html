@@ -14,6 +14,7 @@
  table{font-size:.9rem}
  .navbar-brand{font-weight:700}
 </style>
+<link href="../assets/docs.css" rel="stylesheet">
 </head>
 <body>
 <nav class="navbar navbar-expand-md fixed-top border-bottom bg-body-tertiary">
@@ -97,7 +98,9 @@
   </div>
  </div>
 </nav>
-<main class="container doc pb-5">
+<div class="docs-layout">
+<aside class="docs-sidebar" id="docsSidebar"><div id="docsNav"></div></aside>
+<main class="docs-main">
 <h1>Feature Comparison: dracory/auth vs SuperTokens</h1>
 <p>This document compares <code>github.com/dracory/auth</code> with <a href="https://supertokens.com">SuperTokens</a>, a popular open-source authentication provider. It is intended to help decide when dracory/auth is a good fit and when a full auth service is the better choice.</p>
 <h2>High-Level Differences</h2>
@@ -120,6 +123,8 @@
 <ul><li>dracory/auth's storage is entirely callback-driven; SuperTokens owns its schema.</li></ul>
 <p>  Migrating to SuperTokens later means exporting users and re-mapping sessions.</p>
 </main>
+<aside class="docs-toc" id="docsToc"></aside>
+</div>
 <footer class="border-top py-3 text-center text-secondary small">
  Generated from markdown sources &middot; <a href="https://github.com/dracory/auth">github.com/dracory/auth</a>
 </footer>
@@ -146,5 +151,6 @@
  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
  mermaid.initialize({startOnLoad:true});
 </script>
+<script src="../assets/docs.js"></script>
 </body>
 </html>

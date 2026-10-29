@@ -14,6 +14,7 @@
  table{font-size:.9rem}
  .navbar-brand{font-weight:700}
 </style>
+<link href="assets/docs.css" rel="stylesheet">
 </head>
 <body>
 <nav class="navbar navbar-expand-md fixed-top border-bottom bg-body-tertiary">
@@ -97,7 +98,9 @@
   </div>
  </div>
 </nav>
-<main class="container doc pb-5">
+<div class="docs-layout">
+<aside class="docs-sidebar" id="docsSidebar"><div id="docsNav"></div></aside>
+<main class="docs-main">
 <h1>Impersonation</h1>
 <p>This document describes the <strong>opt-in</strong> impersonation feature in <code>dracory/auth</code>. It allows an authenticated administrator to temporarily act on behalf of another user ("login as"), then exit impersonation and return to their own session.</p>
 <hr>
@@ -289,6 +292,8 @@ func dashboardHandler(w http.ResponseWriter, r *http.Request) {
 <h2>See Also</h2>
 <ul><li><code>docs/impersonation_plan.html</code> — design and implementation plan.</li><li><code>types/auth_interfaces.go</code> — <code>AuthSharedInterface</code> additions.</li><li><code>types/observability.go</code> — observability hooks.</li><li><code>types/constants.go</code> — <code>ImpersonationKeyPrefix</code> and context key types.</li><li><code>types/messages.go</code> — impersonation message constants.</li></ul>
 </main>
+<aside class="docs-toc" id="docsToc"></aside>
+</div>
 <footer class="border-top py-3 text-center text-secondary small">
  Generated from markdown sources &middot; <a href="https://github.com/dracory/auth">github.com/dracory/auth</a>
 </footer>
@@ -315,5 +320,6 @@ func dashboardHandler(w http.ResponseWriter, r *http.Request) {
  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
  mermaid.initialize({startOnLoad:true});
 </script>
+<script src="assets/docs.js"></script>
 </body>
 </html>

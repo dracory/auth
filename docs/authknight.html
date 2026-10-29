@@ -14,6 +14,7 @@
  table{font-size:.9rem}
  .navbar-brand{font-weight:700}
 </style>
+<link href="assets/docs.css" rel="stylesheet">
 </head>
 <body>
 <nav class="navbar navbar-expand-md fixed-top border-bottom bg-body-tertiary">
@@ -97,7 +98,9 @@
   </div>
  </div>
 </nav>
-<main class="container doc pb-5">
+<div class="docs-layout">
+<aside class="docs-sidebar" id="docsSidebar"><div id="docsNav"></div></aside>
+<main class="docs-main">
 <h1>AuthKnight Integration</h1>
 <p>AuthKnight provides passwordless authentication via a hosted login page. The user enters their email on AuthKnight's site, receives a verification code, and upon success AuthKnight redirects back to your application with a one-time token. Your server verifies the token with AuthKnight's API and receives the verified email.</p>
 <h2>How It Works</h2>
@@ -239,6 +242,8 @@ mma, _ := auth.NewMultiMethodAuth(&quot;/auth&quot;, []types.Method{
 go run main.go</code></pre>
 <p>Available at <code>http://localhost:8084</code>.</p>
 </main>
+<aside class="docs-toc" id="docsToc"></aside>
+</div>
 <footer class="border-top py-3 text-center text-secondary small">
  Generated from markdown sources &middot; <a href="https://github.com/dracory/auth">github.com/dracory/auth</a>
 </footer>
@@ -265,5 +270,6 @@ go run main.go</code></pre>
  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
  mermaid.initialize({startOnLoad:true});
 </script>
+<script src="assets/docs.js"></script>
 </body>
 </html>

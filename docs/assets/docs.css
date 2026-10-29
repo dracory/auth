@@ -1,0 +1,175 @@
+/* ==========================================================================
+   dracory/auth docs — documentation layout & interactive components
+   ========================================================================== */
+
+/* --- Layout: sidebar | content | toc ----------------------------------- */
+.docs-layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr) 200px;
+  gap: 2.25rem;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 1.5rem 5rem;
+}
+@media (max-width: 1199.98px) {
+  .docs-layout { grid-template-columns: 240px minmax(0, 1fr); }
+  .docs-toc { display: none; }
+}
+@media (max-width: 991.98px) {
+  .docs-layout { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* --- Sidebar ------------------------------------------------------------ */
+.docs-sidebar {
+  position: sticky;
+  top: 4.5rem;
+  align-self: start;
+  height: calc(100vh - 5rem);
+  overflow-y: auto;
+  padding-bottom: 2rem;
+  scrollbar-width: thin;
+}
+@media (max-width: 991.98px) {
+  .docs-sidebar {
+    position: fixed;
+    top: 4rem;
+    left: 0;
+    bottom: 0;
+    width: min(320px, 85vw);
+    height: auto;
+    z-index: 1045;
+    background: var(--bs-body-bg);
+    border-right: 1px solid var(--bs-border-color);
+    padding: 1rem 1.25rem 2rem;
+    transform: translateX(-105%);
+    transition: transform .2s ease;
+  }
+  .docs-sidebar.open { transform: translateX(0); box-shadow: 0 0 2rem rgba(0,0,0,.25); }
+}
+.docs-nav-search {
+  position: sticky;
+  top: 0;
+  padding: .75rem 0 .5rem;
+  background: var(--bs-body-bg);
+  z-index: 2;
+}
+.docs-nav-section {
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+  margin: 1.25rem 0 .35rem;
+  padding-left: .75rem;
+}
+.docs-nav-link {
+  display: block;
+  padding: .3rem .75rem;
+  border-left: 2px solid var(--bs-border-color);
+  color: var(--bs-body-color);
+  text-decoration: none;
+  font-size: .9rem;
+  line-height: 1.4;
+}
+.docs-nav-link:hover { color: var(--bs-primary); border-left-color: var(--bs-primary); }
+.docs-nav-link.active {
+  color: var(--bs-primary);
+  border-left-color: var(--bs-primary);
+  font-weight: 600;
+  background: color-mix(in srgb, var(--bs-primary) 8%, transparent);
+}
+.docs-nav-empty { padding: .5rem .75rem; font-size: .85rem; color: var(--bs-secondary-color); display: none; }
+.docs-nav-group-toggle {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; border: 0; background: none; padding: 0;
+}
+.docs-nav-group-toggle .chev { transition: transform .15s; }
+.docs-nav-group-toggle.collapsed .chev { transform: rotate(-90deg); }
+.docs-nav-group { overflow: hidden; }
+
+/* --- Right TOC ---------------------------------------------------------- */
+.docs-toc {
+  position: sticky;
+  top: 4.5rem;
+  align-self: start;
+  height: calc(100vh - 5rem);
+  overflow-y: auto;
+  font-size: .82rem;
+  scrollbar-width: thin;
+}
+.docs-toc-title {
+  font-size: .72rem; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--bs-secondary-color);
+  margin-bottom: .5rem; padding-left: .75rem;
+}
+.docs-toc a {
+  display: block; padding: .2rem .75rem;
+  border-left: 2px solid var(--bs-border-color);
+  color: var(--bs-secondary-color); text-decoration: none;
+}
+.docs-toc a:hover { color: var(--bs-primary); }
+.docs-toc a.active { color: var(--bs-primary); border-left-color: var(--bs-primary); font-weight: 600; }
+.docs-toc a.lvl-3 { padding-left: 1.5rem; }
+
+/* --- Main content ------------------------------------------------------- */
+.docs-main { min-width: 0; }
+.docs-main h1 { font-weight: 800; letter-spacing: -.01em; margin-bottom: 1rem; }
+.docs-main h2 { margin-top: 2.5rem; padding-top: .5rem; border-top: 1px solid var(--bs-border-color); }
+.docs-main h2:first-of-type { border-top: 0; margin-top: 1.5rem; }
+.docs-main h3 { margin-top: 1.75rem; }
+.docs-main p, .docs-main li { line-height: 1.7; }
+.docs-main img, .docs-main video { max-width: 100%; }
+
+/* Heading anchor links */
+.anchor-link {
+  opacity: 0; margin-left: .5rem; text-decoration: none;
+  color: var(--bs-secondary-color); font-size: .85em; transition: opacity .15s;
+}
+h1:hover .anchor-link, h2:hover .anchor-link, h3:hover .anchor-link,
+h4:hover .anchor-link, .anchor-link:hover { opacity: 1; }
+
+/* --- Code blocks -------------------------------------------------------- */
+.codeblock { position: relative; margin: 1rem 0; }
+.codeblock pre {
+  margin: 0; padding: 1rem 3.25rem 1rem 1rem;
+  border-radius: .5rem; border: 1px solid var(--bs-border-color);
+  background: #0d1117; color: #e6edf3;
+  overflow-x: auto; font-size: .85rem; line-height: 1.55;
+}
+[data-bs-theme="light"] .codeblock pre { background: #f6f8fa; color: #1f2328; }
+.codeblock .copy-btn {
+  position: absolute; top: .5rem; right: .5rem;
+  border: 1px solid var(--bs-border-color); border-radius: .375rem;
+  background: var(--bs-body-bg); color: var(--bs-secondary-color);
+  font-size: .72rem; padding: .2rem .55rem; cursor: pointer;
+  opacity: 0; transition: opacity .15s;
+}
+.codeblock:hover .copy-btn { opacity: 1; }
+.copy-btn.copied { color: var(--bs-success); border-color: var(--bs-success); opacity: 1; }
+.docs-main code:not(pre code) {
+  background: color-mix(in srgb, var(--bs-secondary) 15%, transparent);
+  padding: .1em .4em; border-radius: .3rem; font-size: .88em;
+}
+
+/* --- Callouts ------------------------------------------------------------ */
+.docs-main .alert { border-left-width: .35rem; }
+.docs-main .alert-heading { font-size: .85rem; text-transform: uppercase; letter-spacing: .05em; }
+
+/* --- Tables --------------------------------------------------------------- */
+.docs-main table { display: block; overflow-x: auto; }
+.docs-main table td, .docs-main table th { white-space: nowrap; }
+.docs-main table td:first-child { white-space: normal; }
+
+/* --- Mermaid ------------------------------------------------------------ */
+.mermaid { text-align: center; margin: 1.5rem 0; }
+
+/* --- Mobile sidebar toggle ------------------------------------------------ */
+.docs-nav-toggle { display: none; }
+@media (max-width: 991.98px) {
+  .docs-nav-toggle { display: inline-flex; }
+}
+.docs-backdrop {
+  position: fixed; inset: 0; z-index: 1040;
+  background: rgba(0,0,0,.35); display: none;
+}
+.docs-backdrop.show { display: block; }

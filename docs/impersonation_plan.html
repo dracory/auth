@@ -14,6 +14,7 @@
  table{font-size:.9rem}
  .navbar-brand{font-weight:700}
 </style>
+<link href="assets/docs.css" rel="stylesheet">
 </head>
 <body>
 <nav class="navbar navbar-expand-md fixed-top border-bottom bg-body-tertiary">
@@ -97,7 +98,9 @@
   </div>
  </div>
 </nav>
-<main class="container doc pb-5">
+<div class="docs-layout">
+<aside class="docs-sidebar" id="docsSidebar"><div id="docsNav"></div></aside>
+<main class="docs-main">
 <h1>Impersonation Feature — Implementation Plan</h1>
 <p><strong>Last Updated:</strong> 2026-07-12 (rev 2 — incorporated review feedback)</p>
 <blockquote class="blockquote border-start border-3 ps-3 text-secondary"><p><strong>Status:</strong> Implemented — see <a href="impersonation.html">impersonation.html</a> for the shipped feature documentation. This plan is kept for historical context.</p></blockquote>
@@ -328,6 +331,8 @@ func ApiImpersonateStartWithAuth(w http.ResponseWriter, r *http.Request, a types
 <h2>Implementation Order</h2>
 <ol><li><strong>Types &amp; config</strong> — Add context keys (<code>types/constants.go</code>), config fields (both config structs), interface methods (<code>types/auth_interfaces.go</code>), observability hooks (<code>types/observability.go</code>), message constants (<code>types/messages.go</code>).</li><li><strong>Struct &amp; getters/setters</strong> — Add fields to <code>authImplementation</code> (<code>auth_implementation.go</code>), implement all new interface methods including <code>IsImpersonationEnabled()</code> and link helpers.</li><li><strong>API wrappers</strong> — Add <code>apiImpersonateStart</code> / <code>apiImpersonateStop</code> thin wrappers in <code>auth_implementation_api.go</code>.</li><li><strong>Constructors</strong> — Wire config in both <code>NewUsernameAndPasswordAuth</code> and <code>NewPasswordlessAuth</code>, add validation (<code>EnableImpersonation=true</code> requires <code>FuncCanImpersonate</code>).</li><li><strong>Link helpers</strong> — Add <code>ApiImpersonateStart</code> / <code>ApiImpersonateStop</code> to <code>internal/links/links.go</code>.</li><li><strong>Constants</strong> — Add <code>PathApiImpersonateStart</code>, <code>PathApiImpersonateStop</code>, <code>impersonationKeyPrefix</code> to <code>constants.go</code>.</li><li><strong>API handlers</strong> — Create <code>internal/api/api_impersonate_start/</code> and <code>internal/api/api_impersonate_stop/</code> packages with <code>Dependencies</code> struct + <code>WithAuth</code> wrapper.</li><li><strong>Router</strong> — Add path detection in <code>AuthHandler</code> if/else chain + conditional route registration in <code>buildAPIRoutes</code>.</li><li><strong>Global helpers</strong> — Add <code>IsImpersonating</code> / <code>GetImpersonatorUserID</code>.</li><li><strong>Middleware</strong> — Create <code>ImpersonationAwareMiddleware</code>.</li><li><strong>Tests</strong> — Write all unit and integration tests per the testing plan (TDD — write tests before or alongside each step above).</li><li><strong>Documentation</strong> — Update README, add examples.</li></ol>
 </main>
+<aside class="docs-toc" id="docsToc"></aside>
+</div>
 <footer class="border-top py-3 text-center text-secondary small">
  Generated from markdown sources &middot; <a href="https://github.com/dracory/auth">github.com/dracory/auth</a>
 </footer>
@@ -354,5 +359,6 @@ func ApiImpersonateStartWithAuth(w http.ResponseWriter, r *http.Request, a types
  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
  mermaid.initialize({startOnLoad:true});
 </script>
+<script src="assets/docs.js"></script>
 </body>
 </html>

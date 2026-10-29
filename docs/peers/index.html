@@ -14,6 +14,7 @@
  table{font-size:.9rem}
  .navbar-brand{font-weight:700}
 </style>
+<link href="../assets/docs.css" rel="stylesheet">
 </head>
 <body>
 <nav class="navbar navbar-expand-md fixed-top border-bottom bg-body-tertiary">
@@ -97,7 +98,9 @@
   </div>
  </div>
 </nav>
-<main class="container doc pb-5">
+<div class="docs-layout">
+<aside class="docs-sidebar" id="docsSidebar"><div id="docsNav"></div></aside>
+<main class="docs-main">
 <h1>Peer Comparisons</h1>
 <p>Feature comparisons of <code>github.com/dracory/auth</code> against peer authentication solutions. Each document covers a high-level positioning table, a feature matrix, and guidance on when each option is the better fit.</p>
 <table class="table table-striped table-sm"><thead><tr><th>Peer</th><th>Type</th><th>Document</th></tr></thead><tbody><tr><td>SuperTokens</td><td>Open-source auth service + SDKs</td><td><a href="supertokens.html">supertokens.html</a></td></tr><tr><td>Auth0 (Okta)</td><td>Hosted SaaS IdP</td><td><a href="auth0.html">auth0.md</a></td></tr><tr><td>Clerk</td><td>Hosted SaaS, component-first</td><td><a href="clerk.html">clerk.html</a></td></tr><tr><td>Firebase Auth</td><td>Google managed service</td><td><a href="firebase-auth.html">firebase-auth.html</a></td></tr><tr><td>Keycloak</td><td>Self-hosted IAM server</td><td><a href="keycloak.html">keycloak.html</a></td></tr><tr><td>Ory Kratos</td><td>Open-source API-first identity service</td><td><a href="ory-kratos.html">ory-kratos.html</a></td></tr><tr><td>Better Auth</td><td>TypeScript embedded library</td><td><a href="better-auth.html">better-auth.html</a></td></tr><tr><td>Hanko</td><td>Open-source passkey-first auth</td><td><a href="hanko.html">hanko.html</a></td></tr><tr><td>Authelia</td><td>Self-hosted SSO portal / proxy auth</td><td><a href="authelia.html">authelia.html</a></td></tr><tr><td>Authentik</td><td>Self-hosted identity provider</td><td><a href="authentik.html">authentik.html</a></td></tr><tr><td>ZITADEL</td><td>Go-based identity platform</td><td><a href="zitadel.html">zitadel.html</a></td></tr><tr><td>WorkOS</td><td>Managed enterprise identity</td><td><a href="workos.html">workos.html</a></td></tr></tbody></table>
@@ -106,6 +109,8 @@
 <p>Four login methods ship today — email OTP, magic link, username/password, and delegated AuthKnight — composable behind one mux via <code>NewMultiMethodAuth</code> and extensible through the public <code>types.Method</code> interface (custom methods need no library change). Post-authentication behavior (allowlists, find-or-create, session creation, cookies, redirects) is hook-driven via <code>types.PostAuthHooks</code>, with remember-me session extension and per-route rate limits built in.</p>
 <p>Its main gaps vs the field: social/OAuth login (except via AuthKnight), MFA/passkeys, enterprise SSO (SAML/OIDC), multi-tenancy/organizations, and hosted user-profile UI.</p>
 </main>
+<aside class="docs-toc" id="docsToc"></aside>
+</div>
 <footer class="border-top py-3 text-center text-secondary small">
  Generated from markdown sources &middot; <a href="https://github.com/dracory/auth">github.com/dracory/auth</a>
 </footer>
@@ -132,5 +137,6 @@
  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
  mermaid.initialize({startOnLoad:true});
 </script>
+<script src="../assets/docs.js"></script>
 </body>
 </html>

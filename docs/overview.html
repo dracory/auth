@@ -14,6 +14,7 @@
  table{font-size:.9rem}
  .navbar-brand{font-weight:700}
 </style>
+<link href="assets/docs.css" rel="stylesheet">
 </head>
 <body>
 <nav class="navbar navbar-expand-md fixed-top border-bottom bg-body-tertiary">
@@ -97,7 +98,9 @@
   </div>
  </div>
 </nav>
-<main class="container doc pb-5">
+<div class="docs-layout">
+<aside class="docs-sidebar" id="docsSidebar"><div id="docsNav"></div></aside>
+<main class="docs-main">
 <h1>Package Overview: dracory/auth</h1>
 <p><strong>Last Updated:</strong> 2026-10-29</p>
 <hr>
@@ -172,6 +175,8 @@ mux.Handle(&quot;/auth/&quot;, http.StripPrefix(&quot;&quot;, mma.Router()))</co
 <h2>📚 Related Documentation</h2>
 <ul><li><a href="https://github.com/dracory/auth#readme">README.md</a> — getting started</li><li><a href="rate_limit.html">rate_limit.html</a> — rate limiting configuration</li><li><a href="impersonation.html">impersonation.html</a> — admin "login as" feature</li><li><a href="authknight.html">authknight.html</a> — AuthKnight integration guide</li><li><a href="ui-patterns.html">ui-patterns.html</a> — how the built-in pages are rendered</li><li><a href="project-structure.html">project-structure.html</a> — detailed directory layout</li><li><a href="peers/index.html">peers/</a> — feature comparisons vs peer auth solutions</li></ul>
 </main>
+<aside class="docs-toc" id="docsToc"></aside>
+</div>
 <footer class="border-top py-3 text-center text-secondary small">
  Generated from markdown sources &middot; <a href="https://github.com/dracory/auth">github.com/dracory/auth</a>
 </footer>
@@ -198,5 +203,6 @@ mux.Handle(&quot;/auth/&quot;, http.StripPrefix(&quot;&quot;, mma.Router()))</co
  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
  mermaid.initialize({startOnLoad:true});
 </script>
+<script src="assets/docs.js"></script>
 </body>
 </html>

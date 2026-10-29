@@ -14,6 +14,7 @@
  table{font-size:.9rem}
  .navbar-brand{font-weight:700}
 </style>
+<link href="assets/docs.css" rel="stylesheet">
 </head>
 <body>
 <nav class="navbar navbar-expand-md fixed-top border-bottom bg-body-tertiary">
@@ -97,7 +98,9 @@
   </div>
  </div>
 </nav>
-<main class="container doc pb-5">
+<div class="docs-layout">
+<aside class="docs-sidebar" id="docsSidebar"><div id="docsNav"></div></aside>
+<main class="docs-main">
 <h1>UI Patterns</h1>
 <p>This document outlines the User Interface (UI) patterns used in the <code>dracory/auth</code> codebase.</p>
 <h2>Overview</h2>
@@ -165,6 +168,8 @@
 <p><strong>Benefits</strong>:</p>
 <ul><li><strong>Simplicity</strong>: Reuses the existing main interface; no need for a new parallel hierarchy.</li><li><strong>Direct Passing</strong>: The <code>authImplementation</code> can be passed directly to handlers without wrapping or conversion.</li><li><strong>Consistency</strong>: A single interface defines the capabilities of the auth system, both for external consumers and internal UI components.</li></ul>
 </main>
+<aside class="docs-toc" id="docsToc"></aside>
+</div>
 <footer class="border-top py-3 text-center text-secondary small">
  Generated from markdown sources &middot; <a href="https://github.com/dracory/auth">github.com/dracory/auth</a>
 </footer>
@@ -191,5 +196,6 @@
  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
  mermaid.initialize({startOnLoad:true});
 </script>
+<script src="assets/docs.js"></script>
 </body>
 </html>
