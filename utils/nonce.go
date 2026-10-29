@@ -14,6 +14,18 @@ const LoginCodeKeyPrefix = "logincode:"
 // code payloads are stored.
 const RegisterCodeKeyPrefix = "registercode:"
 
+// LoginCodeAttemptsKeyPrefix prefixes the per-nonce failed-attempt counters
+// for passwordless login codes.
+const LoginCodeAttemptsKeyPrefix = "logincode_attempts:"
+
+// RegisterCodeAttemptsKeyPrefix prefixes the per-nonce failed-attempt
+// counters for registration codes.
+const RegisterCodeAttemptsKeyPrefix = "registercode_attempts:"
+
+// MaxCodeAttempts is the number of verification attempts allowed per nonce
+// before the code is invalidated and a new one must be requested.
+const MaxCodeAttempts = 5
+
 // GenerateNonce generates a cryptographically random 128-bit hex nonce used
 // as the temporary-key under which verification secrets are stored. The
 // nonce is returned to the client and must be presented alongside the code

@@ -410,6 +410,14 @@ func RegisterPasswordlessInit(ctx context.Context, r *http.Request, deps Registe
 		}
 	}
 
+	// Seed the per-nonce attempt counter alongside the payload.
+	if errTemp := deps.TemporaryKeySet(authutils.RegisterCodeAttemptsKeyPrefix+nonce, "0", expires); errTemp != nil {
+		return nil, &RegisterPasswordlessInitError{
+			Code: RegisterPasswordlessInitErrorCodeTokenStore,
+			Err:  errTemp,
+		}
+	}
+
 	if deps.EmailTemplate == nil || deps.EmailSend == nil {
 		return nil, &RegisterPasswordlessInitError{
 			Code: RegisterPasswordlessInitErrorCodeInternal,

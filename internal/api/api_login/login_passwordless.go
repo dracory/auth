@@ -105,6 +105,15 @@ func loginPasswordless(ctx context.Context, r *http.Request, deps LoginPasswordl
 		}
 	}
 
+	// Seed the per-nonce attempt counter alongside the code; verify enforces
+	// utils.MaxCodeAttempts before invalidating the code.
+	if errTemp := deps.TemporaryKeySet(utils.LoginCodeAttemptsKeyPrefix+nonce, "0", expires); errTemp != nil {
+		return nil, &LoginPasswordlessError{
+			Code: LoginPasswordlessErrorCodeTokenStore,
+			Err:  errTemp,
+		}
+	}
+
 	if deps.EmailTemplate == nil || deps.EmailSend == nil {
 		return nil, &LoginPasswordlessError{
 			Code: LoginPasswordlessErrorCodeEmailSend,

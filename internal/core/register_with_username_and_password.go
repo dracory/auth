@@ -153,6 +153,13 @@ func RegisterWithUsernameAndPassword(
 		return response
 	}
 
+	// Seed the per-nonce attempt counter alongside the payload.
+	if errAttempts := temporaryKeySet(authutils.RegisterCodeAttemptsKeyPrefix+nonce, "0", int(verificationExpiration.Seconds())); errAttempts != nil {
+		response.ErrorMessage = types.MsgFailedToProcess
+		hooks.RecordRegistrationAttempt(false, errAttempts)
+		return response
+	}
+
 	emailTemplate := a.GetFuncEmailTemplateRegisterCode()
 	if emailTemplate == nil {
 		response.ErrorMessage = types.MsgRegistrationFailedEmailTpl

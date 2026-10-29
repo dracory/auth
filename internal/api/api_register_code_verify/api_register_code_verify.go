@@ -5,15 +5,17 @@ import (
 	"crypto/subtle"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"sync"
 
 	"github.com/dracory/api"
+	"github.com/dracory/auth/internal/rules"
 	types "github.com/dracory/auth/types"
 	authutils "github.com/dracory/auth/utils"
 	"github.com/dracory/req"
-	"github.com/dracory/str"
+	"github.com/dracory/rule"
 )
 
 // Dependencies defines the dependencies required for verifying a registration
@@ -57,6 +59,7 @@ const (
 	RegisterCodeVerifyErrorCodeDeserialize        RegisterCodeVerifyErrorCode = "deserialize"
 	RegisterCodeVerifyErrorCodePasswordValidation RegisterCodeVerifyErrorCode = "password_validation"
 	RegisterCodeVerifyErrorCodeRegister           RegisterCodeVerifyErrorCode = "register"
+	RegisterCodeVerifyErrorCodeTooManyAttempts    RegisterCodeVerifyErrorCode = "too_many_attempts"
 )
 
 // RegisterCodeVerifyError represents a structured error.
@@ -106,7 +109,8 @@ func ApiRegisterCodeVerify(w http.ResponseWriter, r *http.Request, deps Dependen
 		switch perr.Code {
 		case RegisterCodeVerifyErrorCodeValidation,
 			RegisterCodeVerifyErrorCodeCodeExpired,
-			RegisterCodeVerifyErrorCodeDeserialize:
+			RegisterCodeVerifyErrorCodeDeserialize,
+			RegisterCodeVerifyErrorCodeTooManyAttempts:
 			api.Respond(w, r, api.Error(perr.Message))
 			return
 		case RegisterCodeVerifyErrorCodePasswordValidation:
@@ -190,39 +194,15 @@ func RegisterCodeVerify(ctx context.Context, r *http.Request, deps Dependencies)
 	verificationCode := req.GetStringTrimmed(r, "verification_code")
 	nonce := req.GetStringTrimmed(r, "nonce")
 
-	// Input validation mirrors the original behaviour/messages.
-	if verificationCode == "" {
-		return nil, &RegisterCodeVerifyError{
-			Code:    RegisterCodeVerifyErrorCodeValidation,
-			Message: types.MsgVerificationCodeRequired,
-		}
-	}
-
-	if nonce == "" {
-		return nil, &RegisterCodeVerifyError{
-			Code:    RegisterCodeVerifyErrorCodeValidation,
-			Message: types.MsgNonceRequired,
-		}
-	}
-
-	if !authutils.IsValidNonce(nonce) {
-		return nil, &RegisterCodeVerifyError{
-			Code:    RegisterCodeVerifyErrorCodeValidation,
-			Message: types.MsgNonceInvalid,
-		}
-	}
-
-	if len(verificationCode) != authutils.LoginCodeLength(deps.DisableRateLimit) {
-		return nil, &RegisterCodeVerifyError{
-			Code:    RegisterCodeVerifyErrorCodeValidation,
-			Message: types.MsgVerificationCodeInvalidLength,
-		}
-	}
-
-	if !str.ContainsOnly(verificationCode, authutils.LoginCodeGamma(deps.DisableRateLimit)) {
-		return nil, &RegisterCodeVerifyError{
-			Code:    RegisterCodeVerifyErrorCodeValidation,
-			Message: types.MsgVerificationCodeInvalidCharacters,
+	for _, check := range []rule.RuleInterface{
+		rules.NewVerificationCodeRule(verificationCode, deps.DisableRateLimit),
+		rules.NewNonceRule(nonce),
+	} {
+		if check.Fails() {
+			return nil, &RegisterCodeVerifyError{
+				Code:    RegisterCodeVerifyErrorCodeValidation,
+				Message: check.FailMessageFirst(),
+			}
 		}
 	}
 
@@ -238,8 +218,25 @@ func RegisterCodeVerify(ctx context.Context, r *http.Request, deps Dependencies)
 	// verifyMu serializes get-compare-invalidate to prevent concurrent
 	// reuse of the same nonce (TOCTOU, best-effort within one process).
 	cacheKey := authutils.RegisterCodeKeyPrefix + nonce
+	attemptsKey := authutils.RegisterCodeAttemptsKeyPrefix + nonce
 	verifyMu.Lock()
 	defer verifyMu.Unlock()
+
+	// Per-nonce attempt limit, enforced before the payload lookup.
+	// Fail-open on read: a store error or a missing/corrupt counter resets
+	// to 0 — intentional, so codes issued before this feature still verify.
+	attempts := 0
+	if attemptsStr, err := deps.TemporaryKeyGet(attemptsKey); err == nil {
+		_, _ = fmt.Sscanf(attemptsStr, "%d", &attempts)
+	}
+	if attempts >= authutils.MaxCodeAttempts {
+		_ = authutils.InvalidateTempKey(deps.TemporaryKeyDelete, deps.TemporaryKeySet, cacheKey)
+		_ = authutils.InvalidateTempKey(deps.TemporaryKeyDelete, deps.TemporaryKeySet, attemptsKey)
+		return nil, &RegisterCodeVerifyError{
+			Code:    RegisterCodeVerifyErrorCodeTooManyAttempts,
+			Message: types.MsgTooManyAttempts,
+		}
+	}
 
 	registerJSON, errCode := deps.TemporaryKeyGet(cacheKey)
 	if errCode != nil || registerJSON == "" {
@@ -261,6 +258,21 @@ func RegisterCodeVerify(ctx context.Context, r *http.Request, deps Dependencies)
 	}
 
 	storedCode, _ := registerMap["code"].(string)
+
+	// Count every attempt against the nonce before the compare.
+	// The fixed 3600 TTL mirrors the send fallback; the counter only needs
+	// to live as long as the code, and both are deleted together.
+	if deps.TemporaryKeySet != nil {
+		if err := deps.TemporaryKeySet(attemptsKey, fmt.Sprintf("%d", attempts+1), 3600); err != nil {
+			logger := deps.Logger
+			if logger == nil {
+				logger = slog.Default()
+			}
+			logger.Error("register code verify: failed to update attempts counter",
+				slog.String("error", err.Error()))
+		}
+	}
+
 	if storedCode == "" || subtle.ConstantTimeCompare([]byte(storedCode), []byte(verificationCode)) != 1 {
 		return nil, &RegisterCodeVerifyError{
 			Code:    RegisterCodeVerifyErrorCodeCodeExpired,
@@ -268,7 +280,7 @@ func RegisterCodeVerify(ctx context.Context, r *http.Request, deps Dependencies)
 		}
 	}
 
-	// Single-use: invalidate the consumed code; prefer a real delete.
+	// Single-use: invalidate the consumed code and its attempt counter.
 	if err := authutils.InvalidateTempKey(deps.TemporaryKeyDelete, deps.TemporaryKeySet, cacheKey); err != nil {
 		logger := deps.Logger
 		if logger == nil {
@@ -277,6 +289,7 @@ func RegisterCodeVerify(ctx context.Context, r *http.Request, deps Dependencies)
 		logger.Error("register code verify: failed to invalidate consumed code",
 			slog.String("error", err.Error()))
 	}
+	_ = authutils.InvalidateTempKey(deps.TemporaryKeyDelete, deps.TemporaryKeySet, attemptsKey)
 
 	email := ""
 	if val, ok := registerMap["email"]; ok {

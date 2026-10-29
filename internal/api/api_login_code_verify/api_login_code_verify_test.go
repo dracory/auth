@@ -376,19 +376,19 @@ func TestApiLoginCodeVerifyWrongEmail(t *testing.T) {
 }
 
 func TestApiLoginCodeVerifySingleUseConsume(t *testing.T) {
-	var consumedKey, consumedValue string
-	var consumedExpires int
+	writes := map[string][2]any{}
 	deps := Dependencies{
 		TemporaryKeyGet: func(key string) (string, error) {
+			if key == utils.LoginCodeAttemptsKeyPrefix+"0123456789abcdef0123456789abcdef" {
+				return "0", nil
+			}
 			if key != utils.LoginCodeKeyPrefix+"0123456789abcdef0123456789abcdef" {
 				t.Fatalf("expected lookup by prefixed nonce, got %q", key)
 			}
 			return "user@example.com:BCDFGHJK", nil
 		},
 		TemporaryKeySet: func(key string, value string, expiresSeconds int) error {
-			consumedKey = key
-			consumedValue = value
-			consumedExpires = expiresSeconds
+			writes[key] = [2]any{value, expiresSeconds}
 			return nil
 		},
 		AuthenticateViaUsername: func(w http.ResponseWriter, r *http.Request, email string) {
@@ -405,7 +405,100 @@ func TestApiLoginCodeVerifySingleUseConsume(t *testing.T) {
 	recorder, req := makePostRequest(t, "/api/login-code-verify", values)
 	ApiLoginCodeVerify(recorder, req, deps)
 
-	if consumedKey != utils.LoginCodeKeyPrefix+"0123456789abcdef0123456789abcdef" || consumedValue != "" || consumedExpires != 0 {
-		t.Fatalf("expected consumed key invalidated (empty value, 0 expiry), got key=%q value=%q exp=%d", consumedKey, consumedValue, consumedExpires)
+	codeKey := utils.LoginCodeKeyPrefix + "0123456789abcdef0123456789abcdef"
+	attemptsKey := utils.LoginCodeAttemptsKeyPrefix + "0123456789abcdef0123456789abcdef"
+
+	// Both keys must end invalidated (empty value, 0 expiry).
+	if w, ok := writes[codeKey]; !ok || w[0].(string) != "" || w[1].(int) != 0 {
+		t.Fatalf("expected code key invalidated (empty value, 0 expiry), got %v", writes[codeKey])
+	}
+	if w, ok := writes[attemptsKey]; !ok || w[0].(string) != "" || w[1].(int) != 0 {
+		t.Fatalf("expected attempts key invalidated (empty value, 0 expiry), got %v", writes[attemptsKey])
+	}
+}
+
+// TestApiLoginCodeVerifyAttemptLimit verifies the per-nonce attempt cap:
+// at MaxCodeAttempts the nonce is rejected and both keys are invalidated.
+func TestApiLoginCodeVerifyAttemptLimit(t *testing.T) {
+	writes := map[string][2]any{}
+	deps := Dependencies{
+		TemporaryKeyGet: func(key string) (string, error) {
+			if key == utils.LoginCodeAttemptsKeyPrefix+"0123456789abcdef0123456789abcdef" {
+				return "5", nil // already at the limit
+			}
+			if key == utils.LoginCodeKeyPrefix+"0123456789abcdef0123456789abcdef" {
+				return "user@example.com:BCDFGHJK", nil
+			}
+			return "", errors.New("not found")
+		},
+		TemporaryKeySet: func(key string, value string, expiresSeconds int) error {
+			writes[key] = [2]any{value, expiresSeconds}
+			return nil
+		},
+		AuthenticateViaUsername: func(w http.ResponseWriter, r *http.Request, email string) {
+			t.Fatalf("AuthenticateViaUsername must not be called at the attempt limit")
+		},
+	}
+
+	values := url.Values{
+		"verification_code": {"BCDFGHJK"}, // correct code — still rejected
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
+		"email":             {"user@example.com"},
+	}
+	recorder, req := makePostRequest(t, "/api/login-code-verify", values)
+	ApiLoginCodeVerify(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "\"message\":\"Too many attempts, please request a new code\"") {
+		t.Fatalf("expected too many attempts message, got %q", body)
+	}
+
+	codeKey := utils.LoginCodeKeyPrefix + "0123456789abcdef0123456789abcdef"
+	attemptsKey := utils.LoginCodeAttemptsKeyPrefix + "0123456789abcdef0123456789abcdef"
+	if w, ok := writes[codeKey]; !ok || w[0].(string) != "" {
+		t.Fatalf("expected code key invalidated at limit, got %v", writes[codeKey])
+	}
+	if w, ok := writes[attemptsKey]; !ok || w[0].(string) != "" {
+		t.Fatalf("expected attempts key invalidated at limit, got %v", writes[attemptsKey])
+	}
+}
+
+// TestApiLoginCodeVerifyAttemptsIncrement verifies each failed verify bumps
+// the per-nonce counter before the compare.
+func TestApiLoginCodeVerifyAttemptsIncrement(t *testing.T) {
+	writes := map[string][2]any{}
+	deps := Dependencies{
+		TemporaryKeyGet: func(key string) (string, error) {
+			if key == utils.LoginCodeAttemptsKeyPrefix+"0123456789abcdef0123456789abcdef" {
+				return "2", nil
+			}
+			if key == utils.LoginCodeKeyPrefix+"0123456789abcdef0123456789abcdef" {
+				return "user@example.com:BCDFGHJK", nil
+			}
+			return "", errors.New("not found")
+		},
+		TemporaryKeySet: func(key string, value string, expiresSeconds int) error {
+			writes[key] = [2]any{value, expiresSeconds}
+			return nil
+		},
+	}
+
+	// Wrong code on attempt 3 -> counter goes to 3, generic error.
+	values := url.Values{
+		"verification_code": {"XXXXXXXX"},
+		"nonce":             {"0123456789abcdef0123456789abcdef"},
+		"email":             {"user@example.com"},
+	}
+	recorder, req := makePostRequest(t, "/api/login-code-verify", values)
+	ApiLoginCodeVerify(recorder, req, deps)
+
+	attemptsKey := utils.LoginCodeAttemptsKeyPrefix + "0123456789abcdef0123456789abcdef"
+	if w := writes[attemptsKey]; w[0].(string) != "3" {
+		t.Fatalf("expected attempts counter incremented to 3, got %v", w[0])
+	}
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "\"message\":\"Verification code has expired\"") {
+		t.Fatalf("expected generic expired message, got %q", body)
 	}
 }

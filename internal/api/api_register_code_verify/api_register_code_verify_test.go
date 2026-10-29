@@ -483,6 +483,9 @@ func TestApiRegisterCodeVerifyNonceKeyedLookup(t *testing.T) {
 
 	deps := Dependencies{
 		TemporaryKeyGet: func(key string) (string, error) {
+			if key == authutils.RegisterCodeAttemptsKeyPrefix+"0123456789abcdef0123456789abcdef" {
+				return "0", nil
+			}
 			if key != authutils.RegisterCodeKeyPrefix+"0123456789abcdef0123456789abcdef" {
 				t.Fatalf("expected lookup by prefixed nonce, got %q", key)
 			}

@@ -3,15 +3,17 @@ package api_login_code_verify
 import (
 	"context"
 	"crypto/subtle"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"sync"
 
 	"github.com/dracory/api"
+	"github.com/dracory/auth/internal/rules"
 	"github.com/dracory/auth/types"
 	"github.com/dracory/auth/utils"
 	"github.com/dracory/req"
-	"github.com/dracory/str"
+	"github.com/dracory/rule"
 )
 
 // Dependencies defines dependencies for verifying a passwordless
@@ -43,9 +45,10 @@ type Dependencies struct {
 type LoginCodeVerifyErrorCode string
 
 const (
-	LoginCodeVerifyErrorCodeNone        LoginCodeVerifyErrorCode = ""
-	LoginCodeVerifyErrorCodeValidation  LoginCodeVerifyErrorCode = "validation"
-	LoginCodeVerifyErrorCodeCodeExpired LoginCodeVerifyErrorCode = "code_expired"
+	LoginCodeVerifyErrorCodeNone            LoginCodeVerifyErrorCode = ""
+	LoginCodeVerifyErrorCodeValidation      LoginCodeVerifyErrorCode = "validation"
+	LoginCodeVerifyErrorCodeCodeExpired     LoginCodeVerifyErrorCode = "code_expired"
+	LoginCodeVerifyErrorCodeTooManyAttempts LoginCodeVerifyErrorCode = "too_many_attempts"
 )
 
 // LoginCodeVerifyError represents a structured error in the login code
@@ -93,7 +96,8 @@ func ApiLoginCodeVerify(w http.ResponseWriter, r *http.Request, deps Dependencie
 		}
 		switch perr.Code {
 		case LoginCodeVerifyErrorCodeValidation,
-			LoginCodeVerifyErrorCodeCodeExpired:
+			LoginCodeVerifyErrorCodeCodeExpired,
+			LoginCodeVerifyErrorCodeTooManyAttempts:
 			api.Respond(w, r, api.Error(perr.Message))
 			return
 		default:
@@ -142,45 +146,16 @@ func LoginCodeVerify(ctx context.Context, r *http.Request, deps Dependencies) (*
 	nonce := req.GetStringTrimmed(r, "nonce")
 	email := req.GetStringTrimmed(r, "email")
 
-	if verificationCode == "" {
-		return nil, &LoginCodeVerifyError{
-			Code:    LoginCodeVerifyErrorCodeValidation,
-			Message: types.MsgVerificationCodeRequired,
-		}
-	}
-
-	if nonce == "" {
-		return nil, &LoginCodeVerifyError{
-			Code:    LoginCodeVerifyErrorCodeValidation,
-			Message: types.MsgNonceRequired,
-		}
-	}
-
-	if !utils.IsValidNonce(nonce) {
-		return nil, &LoginCodeVerifyError{
-			Code:    LoginCodeVerifyErrorCodeValidation,
-			Message: types.MsgNonceInvalid,
-		}
-	}
-
-	if email == "" {
-		return nil, &LoginCodeVerifyError{
-			Code:    LoginCodeVerifyErrorCodeValidation,
-			Message: types.MsgEmailRequired,
-		}
-	}
-
-	if len(verificationCode) != utils.LoginCodeLength(deps.DisableRateLimit) {
-		return nil, &LoginCodeVerifyError{
-			Code:    LoginCodeVerifyErrorCodeValidation,
-			Message: types.MsgVerificationCodeInvalidLength,
-		}
-	}
-
-	if !str.ContainsOnly(verificationCode, utils.LoginCodeGamma(deps.DisableRateLimit)) {
-		return nil, &LoginCodeVerifyError{
-			Code:    LoginCodeVerifyErrorCodeValidation,
-			Message: types.MsgVerificationCodeInvalidCharacters,
+	for _, check := range []rule.RuleInterface{
+		rules.NewVerificationCodeRule(verificationCode, deps.DisableRateLimit),
+		rules.NewNonceRule(nonce),
+		rules.NewRequiredFieldRule(email, types.MsgEmailRequired),
+	} {
+		if check.Fails() {
+			return nil, &LoginCodeVerifyError{
+				Code:    LoginCodeVerifyErrorCodeValidation,
+				Message: check.FailMessageFirst(),
+			}
 		}
 	}
 
@@ -198,14 +173,48 @@ func LoginCodeVerify(ctx context.Context, r *http.Request, deps Dependencies) (*
 	// deletes the key (TOCTOU). Cross-process deployments still need an
 	// atomic store; this is best-effort within one process.
 	cacheKey := utils.LoginCodeKeyPrefix + nonce
+	attemptsKey := utils.LoginCodeAttemptsKeyPrefix + nonce
 	verifyMu.Lock()
 	defer verifyMu.Unlock()
+
+	// Per-nonce attempt limit, enforced before the code lookup so a known
+	// nonce cannot be used to probe the code space until expiry.
+	// Fail-open on read: a store error or a missing/corrupt counter resets
+	// to 0 — intentional, so codes issued before this feature (or an
+	// evicted counter key) still verify.
+	attempts := 0
+	if attemptsStr, err := deps.TemporaryKeyGet(attemptsKey); err == nil {
+		_, _ = fmt.Sscanf(attemptsStr, "%d", &attempts)
+	}
+	if attempts >= utils.MaxCodeAttempts {
+		_ = utils.InvalidateTempKey(deps.TemporaryKeyDelete, deps.TemporaryKeySet, cacheKey)
+		_ = utils.InvalidateTempKey(deps.TemporaryKeyDelete, deps.TemporaryKeySet, attemptsKey)
+		return nil, &LoginCodeVerifyError{
+			Code:    LoginCodeVerifyErrorCodeTooManyAttempts,
+			Message: types.MsgTooManyAttempts,
+		}
+	}
 
 	stored, errCode := deps.TemporaryKeyGet(cacheKey)
 	if errCode != nil || stored == "" {
 		return nil, &LoginCodeVerifyError{
 			Code:    LoginCodeVerifyErrorCodeCodeExpired,
 			Message: types.MsgVerificationCodeExpired,
+		}
+	}
+
+	// Count every attempt against the nonce before the compare — including
+	// the (rare) successful one, which deletes the keys anyway.
+	// The fixed 3600 TTL mirrors the send fallback; the counter only needs
+	// to live as long as the code, and both are deleted together.
+	if deps.TemporaryKeySet != nil {
+		if err := deps.TemporaryKeySet(attemptsKey, fmt.Sprintf("%d", attempts+1), 3600); err != nil {
+			logger := deps.Logger
+			if logger == nil {
+				logger = slog.Default()
+			}
+			logger.Error("login code verify: failed to update attempts counter",
+				slog.String("error", err.Error()))
 		}
 	}
 
@@ -217,10 +226,11 @@ func LoginCodeVerify(ctx context.Context, r *http.Request, deps Dependencies) (*
 		}
 	}
 
-	// Single-use: invalidate the consumed code. Prefer a real delete when
-	// available; otherwise fall back to the "empty value, 0 expiry"
-	// convention the module already uses for authknight keys.
+	// Single-use: invalidate the consumed code and its attempt counter.
+	// Prefer a real delete when available; otherwise fall back to the
+	// "empty value, 0 expiry" convention the module already uses.
 	invalidateErr := utils.InvalidateTempKey(deps.TemporaryKeyDelete, deps.TemporaryKeySet, cacheKey)
+	_ = utils.InvalidateTempKey(deps.TemporaryKeyDelete, deps.TemporaryKeySet, attemptsKey)
 	if invalidateErr != nil {
 		logger := deps.Logger
 		if logger == nil {

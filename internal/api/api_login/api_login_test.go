@@ -322,14 +322,13 @@ func TestApiLoginPasswordlessSuccess(t *testing.T) {
 // the nonce — not the code — is the temporary-key, the value is
 // "email:code", and the nonce is returned to the client in the response.
 func TestApiLoginPasswordlessStoresNonceBoundCode(t *testing.T) {
-	var storedKey, storedValue string
+	stored := map[string]string{}
 	deps := Dependencies{
 		Passwordless: true,
 		PasswordlessDependencies: LoginPasswordlessDeps{
 			DisableRateLimit: false,
 			TemporaryKeySet: func(key string, value string, expiresSeconds int) error {
-				storedKey = key
-				storedValue = value
+				stored[key] = value
 				return nil
 			},
 			ExpiresSeconds: 3600,
@@ -348,10 +347,20 @@ func TestApiLoginPasswordlessStoresNonceBoundCode(t *testing.T) {
 	recorder, req := makePostRequest(t, "/api/login", values)
 	ApiLogin(recorder, req, deps)
 
-	if !strings.HasPrefix(storedKey, utils.LoginCodeKeyPrefix) {
-		t.Fatalf("expected key prefixed with %q, got %q", utils.LoginCodeKeyPrefix, storedKey)
+	// Find the code key (nonce-prefixed) and the attempts key.
+	var codeKey, attemptsKey string
+	for k := range stored {
+		if strings.HasPrefix(k, utils.LoginCodeAttemptsKeyPrefix) {
+			attemptsKey = k
+		} else if strings.HasPrefix(k, utils.LoginCodeKeyPrefix) {
+			codeKey = k
+		}
 	}
-	nonce := strings.TrimPrefix(storedKey, utils.LoginCodeKeyPrefix)
+
+	if codeKey == "" {
+		t.Fatalf("expected a %q-prefixed code key in store, got %v", utils.LoginCodeKeyPrefix, stored)
+	}
+	nonce := strings.TrimPrefix(codeKey, utils.LoginCodeKeyPrefix)
 	if len(nonce) != 32 {
 		t.Fatalf("expected 32-char hex nonce key, got %q", nonce)
 	}
@@ -360,8 +369,13 @@ func TestApiLoginPasswordlessStoresNonceBoundCode(t *testing.T) {
 	}
 
 	// Value is "email:code" — a guessed code alone is not the key.
-	if !strings.HasPrefix(storedValue, "test@test.com:") {
-		t.Fatalf("expected value 'email:code', got %q", storedValue)
+	if !strings.HasPrefix(stored[codeKey], "test@test.com:") {
+		t.Fatalf("expected value 'email:code', got %q", stored[codeKey])
+	}
+
+	// The attempts counter is seeded alongside the code.
+	if stored[attemptsKey] != "0" {
+		t.Fatalf("expected attempts key seeded to \"0\", got %q (key %q)", stored[attemptsKey], attemptsKey)
 	}
 
 	body := recorder.Body.String()
