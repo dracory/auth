@@ -101,13 +101,6 @@
         ['peers/zitadel.html', 'vs Zitadel'],
       ],
     },
-    {
-      section: 'Reference',
-      pages: [
-        ['impersonation_plan.html', 'Impersonation Plan'],
-        ['structure_improvement_recommendations.html', 'Structure Recommendations'],
-      ],
-    },
   ];
 
   /* --- Sidebar ----------------------------------------------------------- */
