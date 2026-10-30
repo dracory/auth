@@ -9,7 +9,6 @@ require (
 	github.com/dracory/req v0.1.0
 	github.com/dracory/rule v0.8.0
 	github.com/dracory/str v0.18.0
-	github.com/dracory/uncdn v0.9.0
 	golang.org/x/crypto v0.54.0
 )
 

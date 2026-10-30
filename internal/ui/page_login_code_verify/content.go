@@ -47,51 +47,6 @@ func LoginCodeVerifyScripts(urlApiLoginCodeVerify, urlOnSuccess string) string {
 		var urlApiLoginCodeVerify = "` + urlApiLoginCodeVerify + `";
 		var urlOnSuccess = "` + urlOnSuccess + `";
 
-	function alertShow(cls, message) {
-		var other = cls === 'div.alert-danger' ? 'div.alert-success' : 'div.alert-danger';
-		var o = document.querySelector(other);
-		o.innerHTML = ''; o.style.display = 'none';
-		var el = document.querySelector(cls);
-		el.innerHTML = message; el.style.display = 'block';
-		setTimeout(function () { el.innerHTML = ''; el.style.display = 'none'; }, 10000);
-		return false;
-	}
-	function loginFormRaiseError(error) { return alertShow('div.alert-danger', error); }
-	function loginFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
-	function registerFormRaiseError(error) { return alertShow('div.alert-danger', error); }
-	function registerFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
-	function resetFormRaiseError(error) { return alertShow('div.alert-danger', error); }
-	function resetFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
-	function passwordRestoreFormRaiseError(error) { return alertShow('div.alert-danger', error); }
-	function passwordRestoreFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
-	function logoutFormRaiseError(error) { return alertShow('div.alert-danger', error); }
-	function logoutFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
-
-	// postForm posts url-encoded form data and parses the JSON response,
-	// mirroring the $.post behavior the pages previously relied on.
-	function postForm(url, data) {
-		return fetch(url, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-			body: new URLSearchParams(data)
-		}).then(function (response) { return response.json(); });
-	}
-	function inputVal(name) {
-		var el = document.querySelector('input[name=' + name + ']');
-		return el ? el.value.trim() : '';
-	}
-	function spinner(show) {
-		var el = document.querySelector('.ImgLoading');
-		if (el) { el.style.display = show ? 'inline-block' : 'none'; }
-	}
-	function onReady(fn) {
-		if (document.readyState === 'loading') {
-			document.addEventListener('DOMContentLoaded', fn);
-		} else {
-			fn();
-		}
-	}
-
 		function loginFormValidate() {
 			var verificationCode = inputVal('verification_code');
 
@@ -113,13 +68,13 @@ func LoginCodeVerifyScripts(urlApiLoginCodeVerify, urlOnSuccess string) string {
 					return loginFormRaiseError(response.message);
 				}
 
-				$$.setAuthToken(response.data.token);
-				$$.setAuthUser(response.data.user);
+				authStore('AuthToken', response.data.token);
+				authStore('AuthUser', response.data.user);
 				sessionStorage.removeItem('auth_login_nonce');
 				sessionStorage.removeItem('auth_login_email');
 				loginFormRaiseSuccess('Verification successful');
 				setTimeout(function () {
-					$$.to(urlOnSuccess);
+					authTo(urlOnSuccess);
 				}, 2000);
 			}).catch(function (error) {
 				console.log(error);

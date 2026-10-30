@@ -34,51 +34,6 @@ func RegisterPasswordlessScripts(urlApiRegister, urlOnSuccess string) string {
 		var urlApiRegister = "` + urlApiRegister + `";
 		var urlOnSuccess = "` + urlOnSuccess + `";
 
-	function alertShow(cls, message) {
-		var other = cls === 'div.alert-danger' ? 'div.alert-success' : 'div.alert-danger';
-		var o = document.querySelector(other);
-		o.innerHTML = ''; o.style.display = 'none';
-		var el = document.querySelector(cls);
-		el.innerHTML = message; el.style.display = 'block';
-		setTimeout(function () { el.innerHTML = ''; el.style.display = 'none'; }, 10000);
-		return false;
-	}
-	function loginFormRaiseError(error) { return alertShow('div.alert-danger', error); }
-	function loginFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
-	function registerFormRaiseError(error) { return alertShow('div.alert-danger', error); }
-	function registerFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
-	function resetFormRaiseError(error) { return alertShow('div.alert-danger', error); }
-	function resetFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
-	function passwordRestoreFormRaiseError(error) { return alertShow('div.alert-danger', error); }
-	function passwordRestoreFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
-	function logoutFormRaiseError(error) { return alertShow('div.alert-danger', error); }
-	function logoutFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
-
-	// postForm posts url-encoded form data and parses the JSON response,
-	// mirroring the $.post behavior the pages previously relied on.
-	function postForm(url, data) {
-		return fetch(url, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-			body: new URLSearchParams(data)
-		}).then(function (response) { return response.json(); });
-	}
-	function inputVal(name) {
-		var el = document.querySelector('input[name=' + name + ']');
-		return el ? el.value.trim() : '';
-	}
-	function spinner(show) {
-		var el = document.querySelector('.ImgLoading');
-		if (el) { el.style.display = show ? 'inline-block' : 'none'; }
-	}
-	function onReady(fn) {
-		if (document.readyState === 'loading') {
-			document.addEventListener('DOMContentLoaded', fn);
-		} else {
-			fn();
-		}
-	}
-
 		function registerFormValidate() {
 			var first_name = inputVal('first_name');
 			var last_name = inputVal('last_name');
@@ -164,51 +119,6 @@ func RegisterUsernameAndPasswordScripts(urlApiRegister, urlOnSuccess string) str
 		var urlApiRegister = "` + urlApiRegister + `";
 		var urlOnSuccess = "` + urlOnSuccess + `";
 
-	function alertShow(cls, message) {
-		var other = cls === 'div.alert-danger' ? 'div.alert-success' : 'div.alert-danger';
-		var o = document.querySelector(other);
-		o.innerHTML = ''; o.style.display = 'none';
-		var el = document.querySelector(cls);
-		el.innerHTML = message; el.style.display = 'block';
-		setTimeout(function () { el.innerHTML = ''; el.style.display = 'none'; }, 10000);
-		return false;
-	}
-	function loginFormRaiseError(error) { return alertShow('div.alert-danger', error); }
-	function loginFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
-	function registerFormRaiseError(error) { return alertShow('div.alert-danger', error); }
-	function registerFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
-	function resetFormRaiseError(error) { return alertShow('div.alert-danger', error); }
-	function resetFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
-	function passwordRestoreFormRaiseError(error) { return alertShow('div.alert-danger', error); }
-	function passwordRestoreFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
-	function logoutFormRaiseError(error) { return alertShow('div.alert-danger', error); }
-	function logoutFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
-
-	// postForm posts url-encoded form data and parses the JSON response,
-	// mirroring the $.post behavior the pages previously relied on.
-	function postForm(url, data) {
-		return fetch(url, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-			body: new URLSearchParams(data)
-		}).then(function (response) { return response.json(); });
-	}
-	function inputVal(name) {
-		var el = document.querySelector('input[name=' + name + ']');
-		return el ? el.value.trim() : '';
-	}
-	function spinner(show) {
-		var el = document.querySelector('.ImgLoading');
-		if (el) { el.style.display = show ? 'inline-block' : 'none'; }
-	}
-	function onReady(fn) {
-		if (document.readyState === 'loading') {
-			document.addEventListener('DOMContentLoaded', fn);
-		} else {
-			fn();
-		}
-	}
-
 		function registerFormValidate() {
 			var first_name = inputVal('first_name');
 			var last_name = inputVal('last_name');
@@ -289,51 +199,6 @@ func RegisterAuthKnightScripts(urlApiRegister, urlOnSuccess string) string {
 	return `
 		var urlApiRegister = "` + urlApiRegister + `";
 		var urlOnSuccess = "` + urlOnSuccess + `";
-
-	function alertShow(cls, message) {
-		var other = cls === 'div.alert-danger' ? 'div.alert-success' : 'div.alert-danger';
-		var o = document.querySelector(other);
-		o.innerHTML = ''; o.style.display = 'none';
-		var el = document.querySelector(cls);
-		el.innerHTML = message; el.style.display = 'block';
-		setTimeout(function () { el.innerHTML = ''; el.style.display = 'none'; }, 10000);
-		return false;
-	}
-	function loginFormRaiseError(error) { return alertShow('div.alert-danger', error); }
-	function loginFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
-	function registerFormRaiseError(error) { return alertShow('div.alert-danger', error); }
-	function registerFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
-	function resetFormRaiseError(error) { return alertShow('div.alert-danger', error); }
-	function resetFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
-	function passwordRestoreFormRaiseError(error) { return alertShow('div.alert-danger', error); }
-	function passwordRestoreFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
-	function logoutFormRaiseError(error) { return alertShow('div.alert-danger', error); }
-	function logoutFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
-
-	// postForm posts url-encoded form data and parses the JSON response,
-	// mirroring the $.post behavior the pages previously relied on.
-	function postForm(url, data) {
-		return fetch(url, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-			body: new URLSearchParams(data)
-		}).then(function (response) { return response.json(); });
-	}
-	function inputVal(name) {
-		var el = document.querySelector('input[name=' + name + ']');
-		return el ? el.value.trim() : '';
-	}
-	function spinner(show) {
-		var el = document.querySelector('.ImgLoading');
-		if (el) { el.style.display = show ? 'inline-block' : 'none'; }
-	}
-	function onReady(fn) {
-		if (document.readyState === 'loading') {
-			document.addEventListener('DOMContentLoaded', fn);
-		} else {
-			fn();
-		}
-	}
 
 		function registerFormValidate() {
 			var first_name = inputVal('first_name');

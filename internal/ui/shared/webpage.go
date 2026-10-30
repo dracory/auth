@@ -7,7 +7,6 @@ import (
 	"github.com/dracory/auth/internal/helpers"
 	"github.com/dracory/auth/types"
 	"github.com/dracory/hb"
-	"github.com/dracory/uncdn"
 )
 
 // LayoutFunc renders a complete HTML document around a page's body
@@ -38,9 +37,13 @@ type PageOptions struct {
 // (each delegated click toggles twice).
 func layoutOptionsFor(opts PageOptions) types.LayoutOptions {
 	options := types.LayoutOptions{
-		// bootstrap-icons CSS must come from the CDN — its font files are
-		// referenced relatively, so the stylesheet cannot be vendored inline.
-		StyleURLs: []string{bootstrapIconsURL},
+		// Bootstrap CSS + bootstrap-icons + Notiflix come from the CDN — the
+		// pages are stock Bootstrap markup, and the icons stylesheet
+		// references its font files relatively so it cannot be vendored.
+		StyleURLs: []string{bootstrapCssURL, bootstrapIconsURL, notiflixCssURL},
+		// Notiflix provides the toast notifications the pages use for form
+		// feedback; pageHelpersJS degrades to alert divs if it is absent.
+		ScriptURLs: []string{notiflixJsURL},
 	}
 	if theme := themeCSSOf(opts.Auth); theme != "" {
 		options.StyleURLs = append(options.StyleURLs, theme)
@@ -48,6 +51,7 @@ func layoutOptionsFor(opts PageOptions) types.LayoutOptions {
 	if custom := customCSSOf(opts.Auth); custom != "" {
 		options.Styles = append(options.Styles, custom)
 	}
+	options.Scripts = append(options.Scripts, pageHelpersJS)
 	if opts.Scripts != "" {
 		options.Scripts = append(options.Scripts, opts.Scripts)
 	}
@@ -78,12 +82,9 @@ func defaultDocument(title string, body string, options types.LayoutOptions) str
 	webpage := hb.NewWebpage()
 	webpage.SetTitle(title)
 	webpage.SetFavicon(faviconImgCms)
-	webpage.AddStyles(append([]string{uncdn.BootstrapCss521()}, options.Styles...))
+	webpage.AddStyles(options.Styles)
 	webpage.AddStyleURLs(options.StyleURLs)
-	webpage.AddScripts(append([]string{
-		uncdn.BootstrapJs521(),
-		uncdn.WebJs260(),
-	}, options.Scripts...))
+	webpage.AddScripts(options.Scripts)
 	webpage.AddScriptURLs(options.ScriptURLs)
 	webpage.AddChild(hb.NewHTML(body))
 
@@ -109,10 +110,17 @@ func PageRender(
 	}
 }
 
-// bootstrapIconsURL supplies the icon font all built-in pages use. Served
-// from the CDN because the stylesheet references its woff/woff2 files
-// relatively — inlining it would break the font URLs.
+// bootstrapCssURL supplies the stock Bootstrap 5 stylesheet the built-in
+// pages are written against. bootstrapIconsURL supplies the icon font —
+// served from the CDN because its woff/woff2 files are referenced
+// relatively and cannot be vendored inline.
+const bootstrapCssURL = "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
 const bootstrapIconsURL = "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+
+// notiflixJsURL/notiflixCssURL supply the toast notification library used
+// for form feedback — the same notify pattern as coursethread.
+const notiflixJsURL = "https://cdn.jsdelivr.net/npm/notiflix@3.2.8/dist/notiflix-aio-3.2.8.min.js"
+const notiflixCssURL = "https://cdn.jsdelivr.net/npm/notiflix@3.2.8/src/notiflix.min.css"
 
 func themeCSSOf(a types.AuthSharedInterface) string {
 	if t, ok := a.(interface{ GetThemeCSS() string }); ok {
