@@ -371,10 +371,10 @@ func RegisterPasswordlessInit(ctx context.Context, r *http.Request, deps Registe
 		}
 	}
 
-	if msg := authutils.ValidateEmailFormat(email); msg != "" {
+	if check := rules.NewEmailFormatRule(email); check.Fails() {
 		return nil, &RegisterPasswordlessInitError{
 			Code:    RegisterPasswordlessInitErrorCodeValidation,
-			Message: msg,
+			Message: check.FailMessageFirst(),
 		}
 	}
 

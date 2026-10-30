@@ -332,12 +332,10 @@ func RegisterCodeVerify(ctx context.Context, r *http.Request, deps Dependencies)
 		errRegister = deps.PasswordlessUserRegister(ctx, email, firstName, lastName)
 	} else {
 		// Username/password flow with strength validation
-		if deps.PasswordStrength != nil {
-			if err := authutils.ValidatePasswordStrength(password, deps.PasswordStrength); err != nil {
-				return nil, &RegisterCodeVerifyError{
-					Code: RegisterCodeVerifyErrorCodePasswordValidation,
-					Err:  err,
-				}
+		if check := rules.NewPasswordStrengthRule(password, deps.PasswordStrength); check.Fails() {
+			return nil, &RegisterCodeVerifyError{
+				Code: RegisterCodeVerifyErrorCodePasswordValidation,
+				Err:  errors.New(check.FailMessageFirst()),
 			}
 		}
 

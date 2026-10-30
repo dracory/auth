@@ -114,8 +114,8 @@ func MagicLinkSend(ctx context.Context, r *http.Request, deps Dependencies) (boo
 	if email == "" {
 		return false, &MagicLinkSendError{Code: MagicLinkSendErrorCodeValidation, Message: types.MsgEmailRequired}
 	}
-	if msg := utils.ValidateEmailFormat(email); msg != "" {
-		return false, &MagicLinkSendError{Code: MagicLinkSendErrorCodeValidation, Message: msg}
+	if check := rules.NewEmailFormatRule(email); check.Fails() {
+		return false, &MagicLinkSendError{Code: MagicLinkSendErrorCodeValidation, Message: check.FailMessageFirst()}
 	}
 	// `return` must be a safe relative path or dropped entirely — never
 	// propagate an external URL into the emailed link.

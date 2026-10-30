@@ -59,10 +59,10 @@ func loginPasswordless(ctx context.Context, r *http.Request, deps LoginPasswordl
 		}
 	}
 
-	if msg := utils.ValidateEmailFormat(email); msg != "" {
+	if check := rules.NewEmailFormatRule(email); check.Fails() {
 		return nil, &LoginPasswordlessError{
 			Code:    LoginPasswordlessErrorCodeValidation,
-			Message: msg,
+			Message: check.FailMessageFirst(),
 		}
 	}
 

@@ -51,13 +51,13 @@ func RegisterWithUsernameAndPassword(
 		return response
 	}
 
-	if err := authutils.ValidatePasswordStrength(password, a.GetPasswordStrength()); err != nil {
-		response.ErrorMessage = err.Error()
+	if check := rules.NewPasswordStrengthRule(password, a.GetPasswordStrength()); check.Fails() {
+		response.ErrorMessage = check.FailMessageFirst()
 		return response
 	}
 
-	if msg := authutils.ValidateEmailFormat(email); msg != "" {
-		response.ErrorMessage = msg
+	if check := rules.NewEmailFormatRule(email); check.Fails() {
+		response.ErrorMessage = check.FailMessageFirst()
 		return response
 	}
 

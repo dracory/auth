@@ -8,8 +8,8 @@ import (
 	"net/http"
 
 	"github.com/dracory/api"
+	"github.com/dracory/auth/internal/rules"
 	"github.com/dracory/auth/types"
-	"github.com/dracory/auth/utils"
 	"github.com/dracory/req"
 )
 
@@ -165,12 +165,10 @@ func PasswordReset(ctx context.Context, r *http.Request, deps Dependencies) (*Pa
 		}
 	}
 
-	if deps.PasswordStrength != nil {
-		if err := utils.ValidatePasswordStrength(password, deps.PasswordStrength); err != nil {
-			return nil, &PasswordResetError{
-				Code: PasswordResetErrorCodePasswordStrength,
-				Err:  err,
-			}
+	if check := rules.NewPasswordStrengthRule(password, deps.PasswordStrength); check.Fails() {
+		return nil, &PasswordResetError{
+			Code: PasswordResetErrorCodePasswordStrength,
+			Err:  errors.New(check.FailMessageFirst()),
 		}
 	}
 

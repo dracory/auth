@@ -135,8 +135,8 @@ func passwordRestore(ctx context.Context, r *http.Request, dependencies dependen
 		return "", types.MsgEmailRequired
 	}
 
-	if msg := utils.ValidateEmailFormat(email); msg != "" {
-		return "", msg
+	if check := rules.NewEmailFormatRule(email); check.Fails() {
+		return "", check.FailMessageFirst()
 	}
 
 	if firstName == "" {
