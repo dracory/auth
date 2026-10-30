@@ -828,34 +828,56 @@ go test -cover ./...
 
 ## 📝 Working Examples
 
-The [examples](./examples) directory contains complete working applications:
+The [examples](./examples) directory contains complete working applications. Each example includes unit tests (`main_test.go`) and screenshots (`screenshot.png`, `screenshot_login.png`, `screenshot_code_verify.png`, etc.) for every step/screen of the authentication flow:
 
 ### [AuthKnight Example](./examples/authknight)
 - Passwordless authentication via AuthKnight hosted login
 - New user registration with verified email
-- In-memory storage for quick testing
+- Screenshots: `screenshot_home.png`
 - Run with: `cd examples/authknight && go run main.go`
+- Available at: `http://localhost:8084`
+
+### [Multi-Method Example](./examples/multimethod)
+- Muxes username/password, email OTP, and magic-link login on a single router
+- Screenshots: `screenshot_login_password.png`, `screenshot_login_otp.png`, `screenshot_login_magiclink.png`
+- Run with: `cd examples/multimethod && go run main.go`
 - Available at: `http://localhost:8084`
 
 ### [Passwordless Example](./examples/passwordless)
 - Email-based authentication with verification codes
-- In-memory storage for quick testing
-- Local SMTP server integration (localhost:1025)
+- Screenshots: `screenshot_login.png`, `screenshot_code_verify.png`, `screenshot_register.png`, `screenshot_register_code_verify.png`
 - Run with: `cd examples/passwordless && go run main.go`
+- Available at: `http://localhost:8083`
 
 ### [Username/Password Example](./examples/usernamepassword)
-- Traditional username/password authentication
-- Password reset flow
-- In-memory storage for quick testing
-- Local SMTP server integration (localhost:1025)
+- Traditional username/password authentication & reset flow
+- Screenshots: `screenshot_login.png`, `screenshot_register.png`, `screenshot_password_restore.png`, `screenshot_password_reset.png`
 - Run with: `cd examples/usernamepassword && go run main.go`
+- Available at: `http://localhost:8082`
 
-Both examples demonstrate:
+### [Magic Link Example](./examples/magiclink)
+- Standalone single-use emailed sign-in links
+- Screenshots: `screenshot_login.png`
+- Run with: `cd examples/magiclink && go run main.go`
+- Available at: `http://localhost:8085`
+
+### [Impersonation Example](./examples/impersonation)
+- Administrator "login as" feature with session swapping
+- Screenshots: `screenshot_login.png`
+- Run with: `cd examples/impersonation && go run main.go`
+- Available at: `http://localhost:8086`
+
+### [Custom UI Example](./examples/customui)
+- Custom page layout (`FuncLayout`), branding, and custom CSS
+- Screenshots: `screenshot_login.png`
+- Run with: `cd examples/customui && go run main.go`
+- Available at: `http://localhost:8087`
+
+All examples demonstrate:
 - Complete callback implementations
-- Email sending
-- Session management
-- Protected routes
-- Registration flows
+- Unit tests (`main_test.go`) in each folder
+- Full multi-screen UI screenshots (`screenshot_*.png`)
+- Session management & protected routes
 
 ## 🤝 Contributing
 
