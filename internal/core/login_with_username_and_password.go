@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 
+	"github.com/dracory/auth/internal/rules"
 	"github.com/dracory/auth/types"
 	authutils "github.com/dracory/auth/utils"
 	"github.com/dracory/str"
@@ -33,8 +34,8 @@ func LoginWithUsernameAndPassword(
 		return response
 	}
 
-	if msg := authutils.ValidateEmailFormat(email); msg != "" {
-		response.ErrorMessage = msg
+	if check := rules.NewEmailFormatRule(email); check.Fails() {
+		response.ErrorMessage = check.FailMessageFirst()
 		return response
 	}
 
