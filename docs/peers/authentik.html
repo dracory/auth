@@ -109,6 +109,8 @@
 <table class="table table-striped table-sm"><thead><tr><th></th><th>dracory/auth</th><th>Authentik</th></tr></thead><tbody><tr><td>Email/password</td><td>✅</td><td>✅</td></tr><tr><td>Passwordless (codes/links)</td><td>✅</td><td>⚠️ Via flows</td></tr><tr><td>Magic links</td><td>✅</td><td>⚠️</td></tr><tr><td>MFA / TOTP / WebAuthn</td><td>❌</td><td>✅ TOTP, WebAuthn, Duo</td></tr><tr><td>SSO / OIDC / SAML / LDAP</td><td>❌</td><td>✅ All</td></tr><tr><td>Federation (social, SAML IdP)</td><td>❌</td><td>✅</td></tr><tr><td>Multi-tenancy</td><td>❌</td><td>✅ Brands/tenants</td></tr><tr><td>Impersonation</td><td>✅ Built-in</td><td>✅ Admin impersonation</td></tr><tr><td>Ops burden</td><td>✅ None — it's a library</td><td>❌ Significant</td></tr></tbody></table>
 <table class="table table-striped table-sm"><thead><tr><th>Multiple login methods simultaneously</th><th>✅ Composable via NewMultiMethodAuth + types.Method (otp, magiclink, password, authknight, custom methods)</th><th>{mm}</th></tr></thead><tbody><tr><td>Remember-me (extended sessions)</td><td>✅ Built-in opt-in session extension</td><td>{rm}</td></tr></tbody></table>
 <p>Legend: ✅ built-in · ⚠️ partial/conditional · ❌ not available</p>
+<h2>Branding &amp; Layout Options</h2>
+<table class="table table-striped table-sm"><thead><tr><th>Aspect</th><th>dracory/auth</th><th>Authentik</th></tr></thead><tbody><tr><td>Full layout control</td><td>✅ FuncLayout wraps any page body in your own site shell (own &lt;head&gt;, nav, footer)</td><td>✅ Full flow/branding customization, custom CSS &amp; background, templates via blueprints</td></tr><tr><td>Theming / CSS</td><td>✅ ThemeCSS (any hosted stylesheet / Bootlegance) + CustomCSS inline overrides</td><td>✅ Per-brand themes, custom CSS, dark mode</td></tr><tr><td>Brand name / logo</td><td>✅ BrandName, BrandTagline, BrandLogoURL rendered above the login card</td><td>✅ Per-brand: title, logo, favicon, background; custom domains</td></tr><tr><td>Email templates</td><td>✅ Per-flow FuncEmailTemplate* callbacks — full control</td><td>✅ Customizable templates</td></tr></tbody></table>
 <h2>When to Choose Authentik</h2>
 <ul><li>Centralizing identity across many apps with SSO, federation, MFA, and</li></ul>
 <p>  directory management — full IAM territory.</p>
@@ -121,7 +123,7 @@
 <aside class="docs-toc" id="docsToc"></aside>
 </div>
 <footer class="border-top py-3 text-center text-secondary small">
- Generated from markdown sources &middot; <a href="https://github.com/dracory/auth">github.com/dracory/auth</a>
+ <a href="https://github.com/dracory/auth">github.com/dracory/auth</a>
 </footer>
 <script>
 (function(){

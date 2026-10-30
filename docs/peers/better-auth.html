@@ -109,6 +109,8 @@
 <table class="table table-striped table-sm"><thead><tr><th>Feature</th><th>dracory/auth</th><th>Better Auth</th></tr></thead><tbody><tr><td>Email/password</td><td>✅</td><td>✅</td></tr><tr><td>Passwordless</td><td>✅ Email codes + magic links</td><td>✅ Magic link / OTP plugins</td></tr><tr><td>Social / OAuth providers</td><td>❌ (only via AuthKnight)</td><td>✅ Built-in for many providers</td></tr><tr><td>Passkeys</td><td>❌</td><td>✅ Plugin</td></tr><tr><td>MFA / TOTP</td><td>❌</td><td>✅ Two-factor plugin</td></tr><tr><td>Organizations / teams</td><td>❌</td><td>✅ Organization plugin</td></tr><tr><td>Admin / impersonation</td><td>✅ Built-in</td><td>✅ Admin plugin (impersonation included)</td></tr><tr><td>Session management</td><td>✅ Your store + cookies</td><td>✅ DB sessions, JWT/plugin options</td></tr><tr><td>Rate limiting</td><td>✅ Built-in</td><td>✅ Built-in</td></tr><tr><td>Ready-to-use UI</td><td>✅ Server-rendered</td><td>❌ API + client only</td></tr><tr><td>Middleware</td><td>✅ Web/API/optional</td><td>✅ Framework integrations</td></tr><tr><td>Fits Go backends</td><td>✅ Native</td><td>❌ (TS only; would need separate service)</td></tr></tbody></table>
 <table class="table table-striped table-sm"><thead><tr><th>Multiple login methods simultaneously</th><th>✅ Composable via NewMultiMethodAuth + types.Method (otp, magiclink, password, authknight, custom methods)</th><th>{mm}</th></tr></thead><tbody><tr><td>Remember-me (extended sessions)</td><td>✅ Built-in opt-in session extension</td><td>{rm}</td></tr></tbody></table>
 <p>Legend: ✅ built-in · ⚠️ partial/conditional · ❌ not available</p>
+<h2>Branding &amp; Layout Options</h2>
+<table class="table table-striped table-sm"><thead><tr><th>Aspect</th><th>dracory/auth</th><th>Better Auth</th></tr></thead><tbody><tr><td>Full layout control</td><td>✅ FuncLayout wraps any page body in your own site shell (own &lt;head&gt;, nav, footer)</td><td>✅ Headless — no shipped UI; you render everything in your app</td></tr><tr><td>Theming / CSS</td><td>✅ ThemeCSS (any hosted stylesheet / Bootlegance) + CustomCSS inline overrides</td><td>✅ N/A — your own UI/CSS entirely</td></tr><tr><td>Brand name / logo</td><td>✅ BrandName, BrandTagline, BrandLogoURL rendered above the login card</td><td>✅ Your app owns all branding</td></tr><tr><td>Email templates</td><td>✅ Per-flow FuncEmailTemplate* callbacks — full control</td><td>✅ Your own templates via callbacks</td></tr></tbody></table>
 <h2>When to Choose dracory/auth</h2>
 <ul><li>Go codebase — Better Auth does not target Go at all.</li><li>You want ready-made server-rendered pages, not API-only primitives.</li></ul>
 <h2>When to Choose Better Auth</h2>
@@ -118,7 +120,7 @@
 <aside class="docs-toc" id="docsToc"></aside>
 </div>
 <footer class="border-top py-3 text-center text-secondary small">
- Generated from markdown sources &middot; <a href="https://github.com/dracory/auth">github.com/dracory/auth</a>
+ <a href="https://github.com/dracory/auth">github.com/dracory/auth</a>
 </footer>
 <script>
 (function(){

@@ -109,6 +109,8 @@
 <table class="table table-striped table-sm"><thead><tr><th>Feature</th><th>dracory/auth</th><th>Keycloak</th></tr></thead><tbody><tr><td>Email/password</td><td>✅</td><td>✅</td></tr><tr><td>Passwordless</td><td>✅ Email codes + magic links</td><td>✅ WebAuthn/magic link (config)</td></tr><tr><td>Social / identity brokering</td><td>❌</td><td>✅ Brokering to Google, GitHub, AD, etc.</td></tr><tr><td>Enterprise SSO (SAML, OIDC, LDAP/Kerberos)</td><td>❌</td><td>✅ User federation, mappers</td></tr><tr><td>MFA / WebAuthn</td><td>❌</td><td>✅ OTP, WebAuthn, conditional flows</td></tr><tr><td>SSO across many apps</td><td>❌ Per-app sessions</td><td>✅ Realms + single sign-on</td></tr><tr><td>Fine-grained authorization</td><td>❌</td><td>✅ Roles, groups, policies, UMA</td></tr><tr><td>Organizations / multi-tenancy</td><td>❌</td><td>✅ Realms / Organizations (newer)</td></tr><tr><td>Impersonation</td><td>✅ Built-in</td><td>✅ Admin impersonation</td></tr><tr><td>Brute-force protection</td><td>✅ Rate limiting + lockout</td><td>✅</td></tr><tr><td>Ready-to-use UI</td><td>✅ Server-rendered</td><td>✅ Themed hosted pages</td></tr><tr><td>Middleware</td><td>✅ Web/API/optional</td><td>✅ Adapters / OIDC middleware</td></tr><tr><td>Ops burden</td><td>✅ None — it's a library</td><td>❌ Significant (JVM, DB, upgrades, HA)</td></tr><tr><td>Resource footprint</td><td>✅ Tiny</td><td>❌ Heavy (Java + DB)</td></tr><tr><td>Audit / events</td><td>✅ <code>log/slog</code> hooks</td><td>✅ Event listeners, admin events</td></tr></tbody></table>
 <table class="table table-striped table-sm"><thead><tr><th>Multiple login methods simultaneously</th><th>✅ Composable via NewMultiMethodAuth + types.Method (otp, magiclink, password, authknight, custom methods)</th><th>{mm}</th></tr></thead><tbody><tr><td>Remember-me (extended sessions)</td><td>✅ Built-in opt-in session extension</td><td>{rm}</td></tr></tbody></table>
 <p>Legend: ✅ built-in · ⚠️ partial/conditional · ❌ not available</p>
+<h2>Branding &amp; Layout Options</h2>
+<table class="table table-striped table-sm"><thead><tr><th>Aspect</th><th>dracory/auth</th><th>Keycloak</th></tr></thead><tbody><tr><td>Full layout control</td><td>✅ FuncLayout wraps any page body in your own site shell (own &lt;head&gt;, nav, footer)</td><td>✅ FreeMarker theme engine — override any page (.ftl) per realm</td></tr><tr><td>Theming / CSS</td><td>✅ ThemeCSS (any hosted stylesheet / Bootlegance) + CustomCSS inline overrides</td><td>✅ Custom themes: CSS, images, messages; per-realm assignment</td></tr><tr><td>Brand name / logo</td><td>✅ BrandName, BrandTagline, BrandLogoURL rendered above the login card</td><td>✅ Display name per realm + logo via custom theme</td></tr><tr><td>Email templates</td><td>✅ Per-flow FuncEmailTemplate* callbacks — full control</td><td>✅ Themed email templates (.ftl)</td></tr></tbody></table>
 <h2>When to Choose dracory/auth</h2>
 <ul><li>Single Go app, simple auth needs, minimal ops footprint.</li><li>You don't need SSO across applications or SAML/OIDC federation.</li></ul>
 <h2>When to Choose Keycloak</h2>
@@ -117,7 +119,7 @@
 <aside class="docs-toc" id="docsToc"></aside>
 </div>
 <footer class="border-top py-3 text-center text-secondary small">
- Generated from markdown sources &middot; <a href="https://github.com/dracory/auth">github.com/dracory/auth</a>
+ <a href="https://github.com/dracory/auth">github.com/dracory/auth</a>
 </footer>
 <script>
 (function(){

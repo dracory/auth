@@ -109,6 +109,8 @@
 <table class="table table-striped table-sm"><thead><tr><th></th><th>dracory/auth</th><th>WorkOS</th></tr></thead><tbody><tr><td>Email/password</td><td>✅</td><td>✅</td></tr><tr><td>Passwordless (codes/links)</td><td>✅</td><td>✅</td></tr><tr><td>Magic links</td><td>✅</td><td>✅</td></tr><tr><td>MFA / TOTP</td><td>❌</td><td>✅</td></tr><tr><td>SSO (SAML/OIDC for enterprises)</td><td>❌</td><td>✅ Flagship feature</td></tr><tr><td>SCIM / directory sync</td><td>❌</td><td>✅</td></tr><tr><td>Audit logs</td><td>✅ <code>log/slog</code> hooks</td><td>✅ Hosted</td></tr><tr><td>Impersonation</td><td>✅ Built-in</td><td>⚠️ Admin portal</td></tr><tr><td>Data stays in-house</td><td>✅ Any DB</td><td>❌ Vendor-hosted</td></tr><tr><td>Works offline / air-gapped</td><td>✅</td><td>❌</td></tr></tbody></table>
 <table class="table table-striped table-sm"><thead><tr><th>Multiple login methods simultaneously</th><th>✅ Composable via NewMultiMethodAuth + types.Method (otp, magiclink, password, authknight, custom methods)</th><th>{mm}</th></tr></thead><tbody><tr><td>Remember-me (extended sessions)</td><td>✅ Built-in opt-in session extension</td><td>{rm}</td></tr></tbody></table>
 <p>Legend: ✅ built-in · ⚠️ partial/conditional · ❌ not available</p>
+<h2>Branding &amp; Layout Options</h2>
+<table class="table table-striped table-sm"><thead><tr><th>Aspect</th><th>dracory/auth</th><th>WorkOS</th></tr></thead><tbody><tr><td>Full layout control</td><td>✅ FuncLayout wraps any page body in your own site shell (own &lt;head&gt;, nav, footer)</td><td>❌ Hosted AuthKit only; layout is WorkOS-rendered</td></tr><tr><td>Theming / CSS</td><td>✅ ThemeCSS (any hosted stylesheet / Bootlegance) + CustomCSS inline overrides</td><td>⚠️ Branding editor: logo, colors, dark mode; no custom CSS/layout</td></tr><tr><td>Brand name / logo</td><td>✅ BrandName, BrandTagline, BrandLogoURL rendered above the login card</td><td>✅ Logo, colors, custom domain</td></tr><tr><td>Email templates</td><td>✅ Per-flow FuncEmailTemplate* callbacks — full control</td><td>✅ Customizable templates</td></tr></tbody></table>
 <h2>When to Choose WorkOS</h2>
 <ul><li>Selling to enterprises that demand SAML SSO, SCIM directory sync, and</li></ul>
 <p>  hosted audit trails — that's WorkOS's entire reason to exist.</p>
@@ -120,7 +122,7 @@
 <aside class="docs-toc" id="docsToc"></aside>
 </div>
 <footer class="border-top py-3 text-center text-secondary small">
- Generated from markdown sources &middot; <a href="https://github.com/dracory/auth">github.com/dracory/auth</a>
+ <a href="https://github.com/dracory/auth">github.com/dracory/auth</a>
 </footer>
 <script>
 (function(){
