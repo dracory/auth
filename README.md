@@ -828,7 +828,7 @@ go test -cover ./...
 
 ## 📝 Working Examples
 
-The [examples](./examples) directory contains complete working applications:
+The [examples](./examples) directory contains complete working applications. Each example includes unit tests (`main_test.go`) and a screenshot (`screenshot.png`) of the final result:
 
 ### [AuthKnight Example](./examples/authknight)
 - Passwordless authentication via AuthKnight hosted login
@@ -837,11 +837,18 @@ The [examples](./examples) directory contains complete working applications:
 - Run with: `cd examples/authknight && go run main.go`
 - Available at: `http://localhost:8084`
 
+### [Multi-Method Example](./examples/multimethod)
+- Muxes username/password, email OTP, and magic-link login on a single router
+- Demonstrates branding and cross-links between sibling login methods
+- Run with: `cd examples/multimethod && go run main.go`
+- Available at: `http://localhost:8084`
+
 ### [Passwordless Example](./examples/passwordless)
 - Email-based authentication with verification codes
 - In-memory storage for quick testing
 - Local SMTP server integration (localhost:1025)
 - Run with: `cd examples/passwordless && go run main.go`
+- Available at: `http://localhost:8083`
 
 ### [Username/Password Example](./examples/usernamepassword)
 - Traditional username/password authentication
@@ -849,13 +856,31 @@ The [examples](./examples) directory contains complete working applications:
 - In-memory storage for quick testing
 - Local SMTP server integration (localhost:1025)
 - Run with: `cd examples/usernamepassword && go run main.go`
+- Available at: `http://localhost:8082`
 
-Both examples demonstrate:
+### [Magic Link Example](./examples/magiclink)
+- Standalone single-use emailed sign-in links
+- In-memory token and session lifecycle
+- Run with: `cd examples/magiclink && go run main.go`
+- Available at: `http://localhost:8085`
+
+### [Impersonation Example](./examples/impersonation)
+- Administrator "login as" feature with session swapping
+- Permission checks via `FuncCanImpersonate` and security chain guard
+- Run with: `cd examples/impersonation && go run main.go`
+- Available at: `http://localhost:8086`
+
+### [Custom UI Example](./examples/customui)
+- Custom page layout (`FuncLayout`), branding (`BrandName`, `BrandTagline`), and custom CSS
+- Embeds built-in auth cards seamlessly into custom site shells
+- Run with: `cd examples/customui && go run main.go`
+- Available at: `http://localhost:8087`
+
+All examples demonstrate:
 - Complete callback implementations
-- Email sending
-- Session management
-- Protected routes
-- Registration flows
+- Unit tests (`main_test.go`) in each folder
+- Rendered UI screenshots (`screenshot.png`)
+- Session management & protected routes
 
 ## 🤝 Contributing
 

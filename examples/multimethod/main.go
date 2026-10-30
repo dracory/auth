@@ -61,14 +61,14 @@ func (s *memoryStore) userLogin(_ context.Context, username, password string, _ 
 	return u.ID, nil
 }
 
-func (s *memoryStore) userRegister(_ context.Context, username, _, firstName, lastName string, _ types.UserAuthOptions) error {
+func (s *memoryStore) userRegister(_ context.Context, username, password, firstName, lastName string, _ types.UserAuthOptions) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, exists := s.users[username]; exists {
 		return errors.New("user already exists")
 	}
 	s.nextID++
-	s.users[username] = user{ID: fmt.Sprint(s.nextID), Email: username, FirstName: firstName, LastName: lastName}
+	s.users[username] = user{ID: fmt.Sprint(s.nextID), Email: username, Password: password, FirstName: firstName, LastName: lastName}
 	return nil
 }
 
