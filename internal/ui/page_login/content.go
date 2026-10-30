@@ -13,6 +13,23 @@ type LoginExtras struct {
 	BrandTagline string
 	BrandLogoURL string
 	Alternatives []types.LoginAlternative
+	// RememberMe renders the opt-in "remember me" checkbox; the login
+	// scripts post remember=true when it is checked.
+	RememberMe bool
+}
+
+// rememberBlock renders the opt-in remember-me checkbox inside the login
+// card (empty when the feature is off).
+func rememberBlock(x LoginExtras) string {
+	if !x.RememberMe {
+		return ""
+	}
+	return hb.NewDiv().Class("form-check mb-3").Children([]hb.TagInterface{
+		hb.NewInput().Class("form-check-input").Type("checkbox").
+			Name("remember").ID("remember").Attr("value", "true"),
+		hb.NewLabel().Class("form-check-label small text-muted").
+			Attr("for", "remember").Text("Remember me on this device"),
+	}).ToHTML()
 }
 
 // brandBlock renders the optional brand header above the login card.
@@ -75,6 +92,7 @@ func LoginPasswordlessContentX(enableRegistration bool, urlRegister string, x Lo
 	card := shared.Card(
 		shared.AlertGroup(),
 		shared.FieldGroup("Email", emailInput),
+		hb.NewHTML(rememberBlock(x)),
 		shared.PrimaryButton("ButtonLogin", "bi-send", "Send me a login code", "loginFormValidate()"),
 		hb.NewHTML(alternativesBlock(x)),
 	)
@@ -107,7 +125,8 @@ func LoginPasswordlessScripts(urlApiLogin, urlSuccess string) string {
 
 			spinner(true);
 
-			postForm(urlApiLogin, {"email": email}).then(function (response) {
+			var remember = document.querySelector('input[name=remember]');
+			postForm(urlApiLogin, {"email": email, "remember": remember && remember.checked ? "true" : ""}).then(function (response) {
 				spinner(false);
 
 				if (response.status !== "success") {
@@ -121,6 +140,7 @@ func LoginPasswordlessScripts(urlApiLogin, urlSuccess string) string {
 				if (response.data && response.data.nonce) {
 					sessionStorage.setItem('auth_login_nonce', response.data.nonce);
 					sessionStorage.setItem('auth_login_email', email);
+					sessionStorage.setItem('auth_login_remember', remember && remember.checked ? "true" : "");
 				}
 				setTimeout(function () {
 					authTo(urlOnSuccess);
@@ -163,6 +183,7 @@ func LoginContentX(enableRegistration bool, urlRegister, urlPasswordRestore stri
 		shared.AlertGroup(),
 		shared.FieldGroup("Email", emailInput),
 		shared.FieldGroup("Password", passwordInput),
+		hb.NewHTML(rememberBlock(x)),
 		shared.PrimaryButton("ButtonLogin", "bi-box-arrow-in-right", "Sign in", "loginFormValidate()"),
 		hb.NewDiv().Class("text-center small mt-3").Child(
 			hb.NewHyperlink().Href(urlPasswordRestore).Text("Forgot password?")),
@@ -202,7 +223,8 @@ func LoginScripts(urlApiLogin, urlOnSuccess string) string {
 
 			spinner(true);
 
-			postForm(urlApiLogin, {"email": email, "password": password}).then(function (response) {
+			var remember = document.querySelector('input[name=remember]');
+			postForm(urlApiLogin, {"email": email, "password": password, "remember": remember && remember.checked ? "true" : ""}).then(function (response) {
 				spinner(false);
 
 				if (response.status !== "success") {

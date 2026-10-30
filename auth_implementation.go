@@ -39,6 +39,8 @@ type authImplementation struct {
 	funcSessionCreateSet    bool // tracks an explicitly-set hook (precedence over store-derived default)
 	funcEmailEnqueue        func(ctx context.Context, deliveryKey string) error
 	postAuthHooks           types.PostAuthHooks
+	rememberMeEnabled       bool
+	rememberMeDays          int
 	rememberCookieName      string
 	sessionStore            types.SessionStoreInterface
 	funcUserFindByAuthToken func(ctx context.Context, token string, options types.UserAuthOptions) (userID string, err error)
@@ -569,6 +571,28 @@ func defaultSessionCreate(store types.SessionStoreInterface) func(ctx context.Co
 	}
 }
 
+// GetRememberMeEnabled reports whether remember-me sessions may be issued
+// on login (the pipeline checks it together with the user's opt-in).
+func (a authImplementation) GetRememberMeEnabled() bool {
+	return a.rememberMeEnabled
+}
+
+// SetRememberMeEnabled toggles remember-me session issuing on login.
+func (a *authImplementation) SetRememberMeEnabled(enabled bool) {
+	a.rememberMeEnabled = enabled
+}
+
+// GetRememberMeDays returns the remember-me session/cookie TTL in days
+// (0 = package default of 30).
+func (a authImplementation) GetRememberMeDays() int {
+	return a.rememberMeDays
+}
+
+// SetRememberMeDays sets the remember-me session/cookie TTL in days.
+func (a *authImplementation) SetRememberMeDays(days int) {
+	a.rememberMeDays = days
+}
+
 // GetRememberCookieName returns the remember-me cookie name ("" = default).
 func (a authImplementation) GetRememberCookieName() string {
 	return a.rememberCookieName
@@ -577,6 +601,12 @@ func (a authImplementation) GetRememberCookieName() string {
 // SetRememberCookieName sets the remember-me cookie name.
 func (a *authImplementation) SetRememberCookieName(name string) {
 	a.rememberCookieName = name
+}
+
+// GetSecureCookies reports whether auth cookies carry the Secure flag —
+// the post-auth pipeline reuses it for the remember cookie.
+func (a authImplementation) GetSecureCookies() bool {
+	return a.cookieConfig.Secure == "yes"
 }
 
 // GetFuncSessionCreate returns the optional hook used to create a session

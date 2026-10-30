@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Remember-me wired end-to-end: `SetRememberMeEnabled`/`SetRememberMeDays`/
+  `GetSecureCookies` on the implementation populate `core.PostAuthDeps`
+  (previously never set, so `PostAuthHooks.IssueRememberSession` could not
+  fire). Opt-in checkbox on the built-in login pages posts `remember=true`;
+  the OTP flow carries the choice through sessionStorage to code-verify.
+- `middlewares.RememberMeMiddleware` promoted to the public `middlewares`
+  package and upgraded: grace-window rotation (consumed remember sessions
+  are shortened to `RotationGrace`, never extended), optional `UserIsActive`
+  revocation, `Enabled` master switch (misuse checks still run when off),
+  same-request Cookie-header rewrite so downstream auth middleware sees the
+  minted session immediately. `SessionUpdater` optional interface lets
+  stores shorten sessions in place; `utils.MemSessionStore` implements it.
+
 ## v0.40.0 — 2026-10-30
 
 ### Breaking

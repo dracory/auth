@@ -60,8 +60,9 @@ func LoginCodeVerifyScripts(urlApiLoginCodeVerify, urlOnSuccess string) string {
 			// not the URL — keeps it out of history, logs, and Referer.
 			var nonce = sessionStorage.getItem('auth_login_nonce') || '';
 			var email = sessionStorage.getItem('auth_login_email') || '';
+			var remember = sessionStorage.getItem('auth_login_remember') || '';
 
-			postForm(urlApiLoginCodeVerify, {"verification_code": verificationCode, "nonce": nonce, "email": email}).then(function (response) {
+			postForm(urlApiLoginCodeVerify, {"verification_code": verificationCode, "nonce": nonce, "email": email, "remember": remember}).then(function (response) {
 				spinner(false);
 
 				if (response.status !== "success") {
@@ -72,6 +73,7 @@ func LoginCodeVerifyScripts(urlApiLoginCodeVerify, urlOnSuccess string) string {
 				authStore('AuthUser', response.data.user);
 				sessionStorage.removeItem('auth_login_nonce');
 				sessionStorage.removeItem('auth_login_email');
+				sessionStorage.removeItem('auth_login_remember');
 				loginFormRaiseSuccess('Verification successful');
 				setTimeout(function () {
 					authTo(urlOnSuccess);

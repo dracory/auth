@@ -33,6 +33,9 @@ func PageLoginWithAPI(w http.ResponseWriter, r *http.Request, a types.AuthShared
 	}); ok {
 		x.Alternatives = getter.GetLoginAlternatives()
 	}
+	if g, ok := a.(interface{ GetRememberMeEnabled() bool }); ok {
+		x.RememberMe = g.GetRememberMeEnabled()
+	}
 
 	content := ""
 	scripts := ""

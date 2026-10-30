@@ -60,6 +60,14 @@ func ApiMagicLinkCallback(w http.ResponseWriter, r *http.Request, deps Dependenc
 	}
 
 	if deps.AuthenticateViaUsername != nil {
+		// Forward the remember-me choice captured at send time: the
+		// post-auth pipeline reads r.FormValue("remember"), and for a GET
+		// callback that resolves to the URL query.
+		if payload.Remember {
+			q := r.URL.Query()
+			q.Set("remember", "true")
+			r.URL.RawQuery = q.Encode()
+		}
 		deps.AuthenticateViaUsername(w, r, payload.Email, "", "")
 		return
 	}

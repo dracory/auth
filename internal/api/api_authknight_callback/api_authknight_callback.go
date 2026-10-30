@@ -249,11 +249,25 @@ func apiAuthKnightCallbackPostAuth(w http.ResponseWriter, r *http.Request, a typ
 		return
 	}
 
-	result, err := core.PostAuth(r.Context(), w, r, email, "", core.PostAuthDeps{
+	deps := core.PostAuthDeps{
 		Hooks:   hooks,
 		Options: types.UserAuthOptions{UserIp: req.GetIP(r), UserAgent: r.UserAgent()},
 		Logger:  logger,
-	})
+	}
+	if g, ok := any(a).(interface{ GetRememberMeEnabled() bool }); ok {
+		deps.RememberMeEnabled = g.GetRememberMeEnabled()
+	}
+	if g, ok := any(a).(interface{ GetRememberMeDays() int }); ok {
+		deps.RememberMeDays = g.GetRememberMeDays()
+	}
+	if g, ok := any(a).(interface{ GetRememberCookieName() string }); ok {
+		deps.RememberCookieName = g.GetRememberCookieName()
+	}
+	if g, ok := any(a).(interface{ GetSecureCookies() bool }); ok {
+		deps.SecureCookies = g.GetSecureCookies()
+	}
+
+	result, err := core.PostAuth(r.Context(), w, r, email, "", deps)
 	if err != nil {
 		logger.Error("authknight callback: post-auth failed",
 			slog.String("error", err.Error()))

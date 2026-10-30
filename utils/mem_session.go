@@ -117,6 +117,28 @@ func (m *MemSessionStore) SessionFindByKey(ctx context.Context, key string) (typ
 	return ms, nil
 }
 
+// SessionUpdate stores the session under its existing key (middlewares
+// use it for grace-window shortening). Unknown keys are inserted.
+func (m *MemSessionStore) SessionUpdate(ctx context.Context, session types.SessionInterface) error {
+	if session == nil {
+		return errors.New("session is nil")
+	}
+	ms, ok := session.(*MemSession)
+	if !ok {
+		return errors.New("MemSessionStore only accepts *MemSession values")
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.byKey[ms.key] = ms
+	if ms.userID != "" {
+		if m.byUserID[ms.userID] == nil {
+			m.byUserID[ms.userID] = map[string]struct{}{}
+		}
+		m.byUserID[ms.userID][ms.key] = struct{}{}
+	}
+	return nil
+}
+
 // SessionDeleteByKey removes the session for key; unknown keys are a no-op.
 func (m *MemSessionStore) SessionDeleteByKey(ctx context.Context, key string) error {
 	m.mu.Lock()
