@@ -239,6 +239,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// No alternatives wiring needed: NewMultiMethodAuth auto-links the
+	// methods. Each login page renders an OR divider with buttons for
+	// its siblings (per method, even though OTP and magic-link share one
+	// impl). Set ConfigShared.LoginAlternatives to override.
+
 	methods := []types.Method{
 		auth.NewPasswordMethod(passwordAuth, nil),
 		auth.NewOTPMethod(passwordlessAuth),

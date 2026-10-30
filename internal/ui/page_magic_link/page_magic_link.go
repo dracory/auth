@@ -12,6 +12,22 @@ import (
 	"github.com/dracory/hb"
 )
 
+// alternativesBlock renders an "or" divider with one outlined button per
+// sibling login method, when the impl provides them.
+func alternativesBlock(a types.AuthSharedInterface) string {
+	getter, ok := a.(interface {
+		GetLoginAlternatives() []types.LoginAlternative
+	})
+	if !ok || len(getter.GetLoginAlternatives()) == 0 {
+		return ""
+	}
+	btns := ""
+	for _, alt := range getter.GetLoginAlternatives() {
+		btns += shared.AltLink(alt.URL, alt.Icon, alt.Label).ToHTML()
+	}
+	return shared.OrDivider().ToHTML() + btns
+}
+
 // PageMagicLink renders a minimal "email me a sign-in link" form. The form
 // posts to window.location.pathname so it works whether the method is
 // mounted as the primary (/login) or a secondary (/login-magiclink) route.
@@ -34,6 +50,7 @@ func PageMagicLink(w http.ResponseWriter, r *http.Request, a types.AuthSharedInt
 		shared.AlertGroup(),
 		shared.FieldGroup("Email", emailInput),
 		shared.PrimaryButton("ButtonLogin", "bi-envelope", "Send me a quick login link", "loginFormValidate()"),
+		hb.NewHTML(alternativesBlock(a)),
 	)
 
 	container := hb.NewDiv().Children([]hb.TagInterface{

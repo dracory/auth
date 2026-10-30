@@ -66,6 +66,8 @@ func NewMultiMethodAuth(endpoint string, methods []types.Method) (*MultiMethodAu
 		seen[m.Name()] = true
 	}
 
+	wireAlternatives(endpoint, methods)
+
 	mma := &MultiMethodAuth{endpoint: endpoint, methods: methods, mux: http.NewServeMux()}
 	mounted := map[string]bool{}
 	mount := func(pattern string, handler http.HandlerFunc) error {
@@ -159,6 +161,59 @@ type methodAuth interface {
 	authImpl() types.AuthSharedInterface
 }
 
+// implSwapper lets the composer replace a method's backing impl — used to
+// inject the per-method alternatives decorator below.
+type implSwapper interface {
+	methodAuth
+	setAuthImpl(types.AuthSharedInterface)
+}
+
+// altAuthImpl decorates an auth impl with a fixed alternatives list, so
+// each method page links to its siblings even when several methods share
+// one impl (e.g. OTP + magic-link on the same passwordless auth).
+type altAuthImpl struct {
+	types.AuthSharedInterface
+	alts []types.LoginAlternative
+}
+
+// GetLoginAlternatives returns the sibling methods of the decorated one.
+func (w altAuthImpl) GetLoginAlternatives() []types.LoginAlternative { return w.alts }
+
+// wireAlternatives gives every built-in method's page an "OR — use another
+// method" block listing its siblings. Skipped when the impl already has
+// alternatives configured (host override wins).
+func wireAlternatives(endpoint string, methods []types.Method) {
+	for i, m := range methods {
+		sw, ok := m.(implSwapper)
+		if !ok {
+			continue
+		}
+		a := sw.authImpl()
+		if a == nil {
+			continue
+		}
+		if g, ok := a.(interface {
+			GetLoginAlternatives() []types.LoginAlternative
+		}); ok && len(g.GetLoginAlternatives()) > 0 {
+			continue
+		}
+		var alts []types.LoginAlternative
+		for j, sib := range methods {
+			if j == i {
+				continue
+			}
+			url := endpoint + "/login"
+			if j > 0 {
+				url = endpoint + "/login-" + sib.Name()
+			}
+			alts = append(alts, types.LoginAlternative{Label: sib.AlternativeLabel(), URL: url})
+		}
+		if len(alts) > 0 {
+			sw.setAuthImpl(altAuthImpl{AuthSharedInterface: a, alts: alts})
+		}
+	}
+}
+
 // registrationImpl returns the impl that should serve register routes:
 // the password method's when present, else the first impl with
 // registration enabled.
@@ -222,7 +277,10 @@ func NewOTPMethodWithPage(a types.AuthSharedInterface, page http.HandlerFunc) ty
 
 func (m *otpMethod) Name() string                        { return "otp" }
 func (m *otpMethod) authImpl() types.AuthSharedInterface { return m.a }
-func (m *otpMethod) AlternativeLabel() string            { return "Email me a code" }
+func (m *otpMethod) setAuthImpl(a types.AuthSharedInterface) {
+	m.a = a
+}
+func (m *otpMethod) AlternativeLabel() string { return "Email me a code" }
 func (m *otpMethod) PageHandler() http.HandlerFunc {
 	if m.page != nil {
 		return m.page
@@ -272,7 +330,10 @@ func NewMagicLinkMethod(
 
 func (m *magicLinkMethod) Name() string                        { return "magiclink" }
 func (m *magicLinkMethod) authImpl() types.AuthSharedInterface { return m.a }
-func (m *magicLinkMethod) AlternativeLabel() string            { return "Email me a link" }
+func (m *magicLinkMethod) setAuthImpl(a types.AuthSharedInterface) {
+	m.a = a
+}
+func (m *magicLinkMethod) AlternativeLabel() string { return "Email me a link" }
 func (m *magicLinkMethod) PageHandler() http.HandlerFunc {
 	if m.page != nil {
 		return m.page
@@ -349,7 +410,10 @@ func NewPasswordMethod(a types.AuthSharedInterface, page http.HandlerFunc) types
 
 func (m *passwordMethod) Name() string                        { return "password" }
 func (m *passwordMethod) authImpl() types.AuthSharedInterface { return m.a }
-func (m *passwordMethod) AlternativeLabel() string            { return "Use a password" }
+func (m *passwordMethod) setAuthImpl(a types.AuthSharedInterface) {
+	m.a = a
+}
+func (m *passwordMethod) AlternativeLabel() string { return "Use a password" }
 func (m *passwordMethod) PageHandler() http.HandlerFunc {
 	if m.page != nil {
 		return m.page
