@@ -2,16 +2,14 @@ package helpers
 
 import "github.com/dracory/hb"
 
-// Layout builds the default HTML layout for auth pages.
+// Layout wraps a built-in auth page's card content in the shared outer
+// shell — a vertically centered, narrow column on a light background.
+// Stock Bootstrap classes only, so consumer themes restyle it cleanly.
 func Layout(content string) string {
-	style := hb.NewStyle(`
-	html, body {
-		background: #f8fafc;
-		font-family: Nunito, sans-serif;
-	}
-	`).ToHTML()
-	h := hb.NewSection().
-		Style("padding:120px 0px").
-		AddChild(hb.NewHTML(content))
-	return style + h.ToHTML()
+	return hb.NewDiv().Class("min-vh-100 d-flex align-items-center justify-content-center bg-light py-5").
+		Child(hb.NewDiv().Class("container").
+			Child(hb.NewDiv().Class("row justify-content-center").
+				Child(hb.NewDiv().Class("col-12 col-sm-10 col-md-8 col-lg-5 col-xl-4").
+					HTML(content)))).
+		ToHTML()
 }

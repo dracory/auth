@@ -1,68 +1,35 @@
 package page_password_restore
 
-import "github.com/dracory/hb"
+import (
+	"github.com/dracory/auth/internal/ui/shared"
+	"github.com/dracory/hb"
+)
 
 // PasswordRestoreContent builds the HTML for the password restore page.
 func PasswordRestoreContent(enableRegistration bool, urlLogin, urlRegister string) string {
-	// Elements for the form
-	alertSuccess := hb.NewDiv().Class("alert alert-success").Style("display:none")
-	alertDanger := hb.NewDiv().Class("alert alert-danger").Style("display:none")
-	alertGroup := hb.NewDiv().Class("alert-group").AddChild(alertSuccess).AddChild(alertDanger)
+	emailInput := hb.NewInput().
+		Class("form-control form-control-lg").
+		Name("email").
+		Placeholder("you@example.com").
+		Attr("autocomplete", "username").
+		Attr("required", "required")
 
-	header := hb.NewHeading5().
-		Style("margin:0px;").
-		HTML("Restore password")
-	firstNameLabel := hb.NewLabel().Text("First Name")
-	firstNameInput := hb.NewInput().Class("form-control").Name("first_name").Placeholder("Enter first name")
-	firstNameFormGroup := hb.NewDiv().Class("form-group mt-3").AddChild(firstNameLabel).AddChild(firstNameInput)
-	lastNameLabel := hb.NewLabel().Text("Last Name")
-	lastNameInput := hb.NewInput().Class("form-control").Name("last_name").Placeholder("Enter last name")
-	lastNameFormGroup := hb.NewDiv().Class("form-group mt-3").AddChild(lastNameLabel).AddChild(lastNameInput)
-	emailLabel := hb.NewLabel().Text("E-mail Address")
-	emailInput := hb.NewInput().Class("form-control").Name("email").Placeholder("Enter e-mail address")
-	emailFormGroup := hb.NewDiv().Class("form-group mt-3").AddChild(emailLabel).AddChild(emailInput)
+	card := shared.Card(
+		shared.AlertGroup(),
+		shared.NameRow(false),
+		shared.FieldGroup("Email", emailInput),
+		shared.PrimaryButton("ButtonContinue", "bi-envelope", "Send reset link", "passwordRestoreFormValidate()"),
+	)
 
-	buttonContinue := hb.NewButton().
-		Class("ButtonContinue btn btn-lg btn-success btn-block w-100").
-		OnClick("passwordRestoreFormValidate()").
-		HTML("Send Password Reset Link")
-
-	buttonContinueFormGroup := hb.NewDiv().
-		Class("form-group mt-3 mb-3").
-		Child(buttonContinue)
-
-	buttonLogin := hb.NewHyperlink().
-		Class("btn btn-info float-start").
-		Href(urlLogin).
-		HTML("Login")
-
-	buttonRegister := hb.NewHyperlink().
-		Class("btn btn-warning float-end").
-		Href(urlRegister).
-		HTML("Register")
-
-	// Add elements in a card
-	cardHeader := hb.NewDiv().Class("card-header").AddChild(header)
-	cardBody := hb.NewDiv().Class("card-body").AddChildren([]hb.TagInterface{
-		alertGroup,
-		firstNameFormGroup,
-		lastNameFormGroup,
-		emailFormGroup,
-		buttonContinueFormGroup,
-	})
-	cardFooter := hb.NewDiv().Class("card-footer").AddChildren([]hb.TagInterface{
-		buttonLogin,
+	container := hb.NewDiv().Children([]hb.TagInterface{
+		shared.PageHeader("Forgot your password?", "Enter your email and we'll send you a reset link."),
+		card,
+		shared.FooterText("Remembered it?", urlLogin, "Login"),
 	})
 
 	if enableRegistration {
-		cardFooter.AddChild(buttonRegister)
+		container.Child(shared.FooterText("Don't have an account?", urlRegister, "Register"))
 	}
-
-	card := hb.NewDiv().Class("card card-default").Style("margin:0 auto;max-width: 360px;")
-	card.AddChild(cardHeader).AddChild(cardBody).AddChild(cardFooter)
-
-	container := hb.NewDiv().Class("container").
-		AddChild(card)
 
 	return container.ToHTML()
 }

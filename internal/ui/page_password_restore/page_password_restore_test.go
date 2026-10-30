@@ -27,7 +27,7 @@ func TestPagePasswordRestore(t *testing.T) {
 	body := recorder.Body.String()
 
 	expected := []string{
-		"Restore password",
+		"Forgot your password?",
 		"name=\"first_name\"",
 		"name=\"last_name\"",
 		"name=\"email\"",

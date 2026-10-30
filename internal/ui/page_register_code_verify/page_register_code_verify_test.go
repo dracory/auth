@@ -27,7 +27,7 @@ func TestPageRegisterCodeVerify(t *testing.T) {
 	body := recorder.Body.String()
 
 	expected := []string{
-		"Registration Code Verification",
+		"Check your email",
 		"Verification code",
 		"var urlApiRegisterCodeVerify = \"http://localhost/auth/api/register-code-verify\";",
 		"var urlOnSuccess = \"http://localhost/dashboard\";",

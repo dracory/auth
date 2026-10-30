@@ -13,15 +13,14 @@ func TestLayoutWrapsContentWithFontAndStyle(t *testing.T) {
 		t.Fatalf("expected non-empty layout output")
 	}
 
-	if strings.Contains(html, "fonts.bunny.net") {
-		t.Fatalf("layout must not request external font hosts (breaks host CSP), got %q", html)
+	if !strings.Contains(html, "min-vh-100") {
+		t.Fatalf("expected layout to vertically center the column, got %q", html)
 	}
-	if !strings.Contains(html, "font-family: Nunito, sans-serif;") {
-		t.Fatalf("expected layout to keep the Nunito font-family fallback, got %q", html)
+	if !strings.Contains(html, "bg-light") {
+		t.Fatalf("expected layout to use the light background utility, got %q", html)
 	}
-
-	if !strings.Contains(html, "background: #f8fafc;") {
-		t.Fatalf("expected layout to include background style, got %q", html)
+	if !strings.Contains(html, "col-12") {
+		t.Fatalf("expected layout to wrap content in a centered column, got %q", html)
 	}
 
 	if !strings.Contains(html, content) {

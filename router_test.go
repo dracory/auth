@@ -70,8 +70,8 @@ func TestRouter_LoginPathServesLoginPage(t *testing.T) {
 	}
 
 	body := recorder.Body.String()
-	if !strings.Contains(body, "<span>Log in</span>") {
-		t.Fatalf("expected login page HTML to contain %q, got %s", "<span>Log in</span>", body)
+	if !strings.Contains(body, "<span>Sign in</span>") {
+		t.Fatalf("expected login page HTML to contain %q, got %s", "<span>Sign in</span>", body)
 	}
 }
 

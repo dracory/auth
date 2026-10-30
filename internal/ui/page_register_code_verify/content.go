@@ -1,60 +1,29 @@
 package page_register_code_verify
 
-import "github.com/dracory/hb"
+import (
+	"github.com/dracory/auth/internal/ui/shared"
+	"github.com/dracory/hb"
+)
 
 // RegisterCodeVerifyContent builds the HTML for the registration code verification page.
 func RegisterCodeVerifyContent(urlBack string) string {
-	// Elements for the form
-	alertSuccess := hb.NewDiv().Class("alert alert-success").Style("display:none")
-	alertDanger := hb.NewDiv().Class("alert alert-danger").Style("display:none")
-	alertGroup := hb.NewDiv().Class("alert-group").AddChild(alertSuccess).AddChild(alertDanger)
-
-	header := hb.NewHeading5().Text("Registration Code Verification").Style("margin:0px;")
-
-	verificationCodeLabel := hb.NewLabel().Text("Verification code")
 	verificationCodeInput := hb.NewInput().
-		Class("form-control").
+		Class("form-control form-control-lg").
 		Name("verification_code").
-		Placeholder("Enter verification code")
-	verificationCodeFormGroup := hb.NewDiv().
-		Class("form-group mt-3").
-		Child(verificationCodeLabel).
-		Child(verificationCodeInput)
-	buttonVerify := hb.NewButton().
-		Class("btn btn-lg btn-success btn-block w-100").
-		Children([]hb.TagInterface{
-			hb.NewI().Class("bi bi-person-circle").Style("margin-right:8px;margin-top:-2px;"),
-			hb.NewSpan().Text("Verify Registration"),
-		}).
-		OnClick("registerCodeFormValidate()")
-	buttonVerifyFormGroup := hb.NewDiv().
-		Class("form-group mt-3 mb-3").
-		AddChild(buttonVerify)
-	buttonBack := hb.NewButton().Class("btn btn-info text-white float-start").Children([]hb.TagInterface{
-		hb.NewI().Class("bi bi-chevron-left").Style("margin-right:8px;margin-top:-2px;"),
-		hb.NewSpan().Text("Resend code"),
-	}).Href(urlBack)
+		Placeholder("Enter verification code").
+		Attr("required", "required")
 
-	// Add elements in a card
-	cardHeader := hb.NewDiv().Class("card-header").Child(header)
-	cardBody := hb.NewDiv().Class("card-body").Children([]hb.TagInterface{
-		alertGroup,
-		verificationCodeFormGroup,
-		buttonVerifyFormGroup,
-	})
-	cardFooter := hb.NewDiv().Class("card-footer").Children([]hb.TagInterface{
-		buttonBack,
-	})
+	card := shared.Card(
+		shared.AlertGroup(),
+		shared.FieldGroup("Verification code", verificationCodeInput),
+		shared.PrimaryButton("buttonVerify", "bi-check2-circle", "Verify registration", "registerCodeFormValidate()"),
+	)
 
-	card := hb.NewDiv().Class("card card-default").Style("margin:0 auto;max-width: 360px;").Children([]hb.TagInterface{
-		cardHeader,
-		cardBody,
-		cardFooter,
-	})
-
-	container := hb.NewDiv().Class("container").Child(card)
-
-	return container.ToHTML()
+	return hb.NewDiv().Children([]hb.TagInterface{
+		shared.PageHeader("Check your email", "We sent a verification code to your email to confirm your new account."),
+		card,
+		shared.FooterText("Didn't get a code?", urlBack, "Resend"),
+	}).ToHTML()
 }
 
 // RegisterCodeVerifyScripts builds the JS for the registration code verification page.

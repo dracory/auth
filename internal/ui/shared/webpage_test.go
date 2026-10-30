@@ -84,7 +84,10 @@ func TestBuildPage_BootstrapInclusion(t *testing.T) {
 	}
 }
 
-// TestBuildPage_CustomStyles tests that the default styles are included.
+// TestBuildPage_CustomStyles tests that the default document injects no
+// package-owned opinionated CSS — pages must be restylable with a plain
+// Bootstrap theme — and that the bootstrap-icons font stylesheet is loaded
+// from the CDN (its font URLs are relative, so it cannot be vendored inline).
 func TestBuildPage_CustomStyles(t *testing.T) {
 	opts := PageOptions{
 		Title:   "Test",
@@ -93,14 +96,13 @@ func TestBuildPage_CustomStyles(t *testing.T) {
 
 	html := buildPage(nil, nil, opts)
 
-	if !strings.Contains(html, "font-family") {
-		t.Error("expected custom font-family style")
+	if !strings.Contains(html, "bootstrap-icons") {
+		t.Error("expected bootstrap-icons stylesheet")
 	}
-	if !strings.Contains(html, "background-color: #f8fafc") {
-		t.Error("expected custom background color")
-	}
-	if !strings.Contains(html, ".form-select") {
-		t.Error("expected form-select style")
+	for _, stale := range []string{"Nunito", "#f8fafc"} {
+		if strings.Contains(html, stale) {
+			t.Errorf("package-owned base styles must not be injected: %s", stale)
+		}
 	}
 }
 
@@ -114,7 +116,7 @@ func TestBuildPage_DefaultBodyDecoration(t *testing.T) {
 
 	html := buildPage(nil, nil, opts)
 
-	if !strings.Contains(html, "padding:120px 0px") {
+	if !strings.Contains(html, "min-vh-100") {
 		t.Error("expected default padded section wrapper")
 	}
 	if !strings.Contains(html, "<p>Inner Content</p>") {
@@ -205,8 +207,8 @@ func TestBuildPage_CustomLayoutDocument(t *testing.T) {
 	}
 	// The package's required assets must be passed through options so the
 	// host document can inject them.
-	if len(gotOptions.Styles) == 0 {
-		t.Error("expected required styles in layout options")
+	if len(gotOptions.StyleURLs) == 0 || !strings.Contains(strings.Join(gotOptions.StyleURLs, "\n"), "bootstrap-icons") {
+		t.Error("expected bootstrap-icons URL in layout options")
 	}
 	if len(gotOptions.Scripts) == 0 {
 		t.Error("expected required scripts in layout options")

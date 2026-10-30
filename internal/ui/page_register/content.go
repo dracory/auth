@@ -1,58 +1,31 @@
 package page_register
 
-import "github.com/dracory/hb"
+import (
+	"github.com/dracory/auth/internal/ui/shared"
+	"github.com/dracory/hb"
+)
 
 // RegisterPasswordlessContent builds the HTML for the passwordless registration page.
 func RegisterPasswordlessContent(urlLogin string) string {
-	// Elements for the form
-	alertSuccess := hb.NewDiv().Class("alert alert-success").Style("display:none")
-	alertDanger := hb.NewDiv().Class("alert alert-danger").Style("display:none")
-	alertGroup := hb.NewDiv().Class("alert-group").Child(alertSuccess).Child(alertDanger)
+	emailInput := hb.NewInput().
+		Class("form-control form-control-lg").
+		Name("email").
+		Placeholder("you@example.com").
+		Attr("autocomplete", "username").
+		Attr("required", "required")
 
-	header := hb.NewHeading5().Text("Register").Style("margin:0px;")
+	card := shared.Card(
+		shared.AlertGroup(),
+		shared.NameRow(true),
+		shared.FieldGroup("Email", emailInput),
+		shared.PrimaryButton("buttonRegister", "bi-person-plus", "Create account", "registerFormValidate()"),
+	)
 
-	firstNameLabel := hb.NewLabel().Text("First Name")
-	firstNameInput := hb.NewInput().Class("form-control").Name("first_name").Placeholder("Enter first name")
-	firstNameFormGroup := hb.NewDiv().Class("form-group mt-3").Child(firstNameLabel).Child(firstNameInput)
-
-	lastNameLabel := hb.NewLabel().Text("Last Name")
-	lastNameInput := hb.NewInput().Class("form-control").Name("last_name").Placeholder("Enter last name")
-	lastNameFormGroup := hb.NewDiv().Class("form-group mt-3").Child(lastNameLabel).Child(lastNameInput)
-
-	emailLabel := hb.NewLabel().Text("E-mail Address")
-	emailInput := hb.NewInput().Class("form-control").Name("email").Placeholder("Enter e-mail address")
-	emailFormGroup := hb.NewDiv().Class("form-group mt-3").AddChild(emailLabel).AddChild(emailInput)
-
-	buttonRegister := hb.NewButton().Class("btn btn-lg btn-success btn-block w-100").Children([]hb.TagInterface{
-		hb.NewI().Class("bi bi-person-circle").Style("margin-right:8px;margin-top:-2px;"),
-		hb.NewSpan().Text("Register"),
-	}).OnClick("registerFormValidate()")
-
-	buttonRegisterFormGroup := hb.NewDiv().Class("form-group mt-3 mb-3").Child(buttonRegister)
-
-	buttonLogin := hb.NewHyperlink().Class("btn btn-info text-white float-start").Children([]hb.TagInterface{
-		hb.NewI().Class("bi bi-send").Style("margin-right:8px;margin-top:-2px;"),
-		hb.NewSpan().Text("Login"),
-	}).Href(urlLogin)
-
-	// Add elements in a card
-	cardHeader := hb.NewDiv().Class("card-header").AddChild(header)
-	cardBody := hb.NewDiv().Class("card-body").AddChildren([]hb.TagInterface{
-		alertGroup,
-		firstNameFormGroup,
-		lastNameFormGroup,
-		emailFormGroup,
-		buttonRegisterFormGroup,
-	})
-	cardFooter := hb.NewDiv().Class("card-footer").Children([]hb.TagInterface{
-		buttonLogin,
-	})
-	card := hb.NewDiv().Class("card card-default").Style("margin:0 auto;max-width: 360px;")
-	card.AddChild(cardHeader).Child(cardBody).Child(cardFooter)
-
-	container := hb.NewDiv().Class("container").Child(card)
-
-	return container.ToHTML()
+	return hb.NewDiv().Children([]hb.TagInterface{
+		shared.PageHeader("Create your account", "A few details and you're in."),
+		card,
+		shared.FooterText("Already have an account?", urlLogin, "Login"),
+	}).ToHTML()
 }
 
 // RegisterPasswordlessScripts builds the JS for the passwordless registration page.
@@ -142,49 +115,35 @@ func RegisterPasswordlessScripts(urlApiRegister, urlOnSuccess string) string {
 
 // RegisterUsernameAndPasswordContent builds the HTML for the username/password registration page.
 func RegisterUsernameAndPasswordContent(urlLogin, urlPasswordRestore string) string {
-	// Elements for the form
-	alertSuccess := hb.NewDiv().Class("alert alert-success").Style("display:none")
-	alertDanger := hb.NewDiv().Class("alert alert-danger").Style("display:none")
-	alertGroup := hb.NewDiv().Class("alert-group").AddChild(alertSuccess).AddChild(alertDanger)
+	emailInput := hb.NewInput().
+		Class("form-control form-control-lg").
+		Name("email").
+		Placeholder("you@example.com").
+		Attr("autocomplete", "username").
+		Attr("required", "required")
+	passwordInput := hb.NewInput().
+		Class("form-control form-control-lg").
+		Name("password").
+		Type(hb.TYPE_PASSWORD).
+		Placeholder("Min 8 characters").
+		Attr("autocomplete", "new-password").
+		Attr("required", "required")
 
-	header := hb.NewHeading5().Text("Register").Style("margin:0px;")
-	firstNameLabel := hb.NewLabel().Text("First Name")
-	firstNameInput := hb.NewInput().Class("form-control").Name("first_name").Placeholder("Enter first name")
-	firstNameFormGroup := hb.NewDiv().Class("form-group mt-3").AddChild(firstNameLabel).AddChild(firstNameInput)
-	lastNameLabel := hb.NewLabel().Text("Last Name")
-	lastNameInput := hb.NewInput().Class("form-control").Name("last_name").Placeholder("Enter last name")
-	lastNameFormGroup := hb.NewDiv().Class("form-group mt-3").AddChild(lastNameLabel).AddChild(lastNameInput)
-	emailLabel := hb.NewLabel().Text("E-mail Address")
-	emailInput := hb.NewInput().Class("form-control").Name("email").Placeholder("Enter e-mail address")
-	emailFormGroup := hb.NewDiv().Class("form-group mt-3").AddChild(emailLabel).AddChild(emailInput)
-	passwordLabel := hb.NewLabel().AddChild(hb.NewHTML("Password"))
-	passwordInput := hb.NewInput().Class("form-control").Name("password").Type(hb.TYPE_PASSWORD).Placeholder("Enter password")
-	passwordFormGroup := hb.NewDiv().Class("form-group mt-3").AddChild(passwordLabel).AddChild(passwordInput)
-	buttonRegister := hb.NewButton().Class("btn btn-lg btn-success btn-block w-100").Text("Register").OnClick("registerFormValidate()")
-	buttonRegisterFormGroup := hb.NewDiv().Class("form-group mt-3 mb-3").AddChild(buttonRegister)
-	buttonLogin := hb.NewHyperlink().Class("btn btn-info float-start").Text("Login").Href(urlLogin)
-	buttonForgotPassword := hb.NewHyperlink().Class("btn btn-warning float-end").Text("Forgot password?").Href(urlPasswordRestore)
+	card := shared.Card(
+		shared.AlertGroup(),
+		shared.NameRow(true),
+		shared.FieldGroup("Email", emailInput),
+		shared.FieldGroup("Password", passwordInput),
+		shared.PrimaryButton("buttonRegister", "bi-person-plus", "Create account", "registerFormValidate()"),
+		hb.NewDiv().Class("text-center small mt-3").Child(
+			hb.NewHyperlink().Href(urlPasswordRestore).Text("Forgot password?")),
+	)
 
-	// Add elements in a card
-	cardHeader := hb.NewDiv().Class("card-header").AddChild(header)
-	cardBody := hb.NewDiv().Class("card-body").AddChildren([]hb.TagInterface{
-		alertGroup,
-		firstNameFormGroup,
-		lastNameFormGroup,
-		emailFormGroup,
-		passwordFormGroup,
-		buttonRegisterFormGroup,
-	})
-	cardFooter := hb.NewDiv().Class("card-footer").AddChildren([]hb.TagInterface{
-		buttonLogin,
-		buttonForgotPassword,
-	})
-	card := hb.NewDiv().Class("card card-default").Style("margin:0 auto;max-width: 360px;")
-	card.AddChild(cardHeader).AddChild(cardBody).AddChild(cardFooter)
-
-	container := hb.NewDiv().Class("container").Child(card)
-
-	return container.ToHTML()
+	return hb.NewDiv().Children([]hb.TagInterface{
+		shared.PageHeader("Create your account", "A few details and you're in."),
+		card,
+		shared.FooterText("Already have an account?", urlLogin, "Login"),
+	}).ToHTML()
 }
 
 // RegisterUsernameAndPasswordScripts builds the JS for the username/password registration page.
@@ -280,55 +239,27 @@ func RegisterUsernameAndPasswordScripts(urlApiRegister, urlOnSuccess string) str
 // The email field is read-only (pre-populated from the verified AuthKnight email).
 // akKey is the temporary key that maps to the verified email in the temp key store.
 func RegisterAuthKnightContent(urlLogin string, verifiedEmail string, akKey string) string {
-	alertSuccess := hb.NewDiv().Class("alert alert-success").Style("display:none")
-	alertDanger := hb.NewDiv().Class("alert alert-danger").Style("display:none")
-	alertGroup := hb.NewDiv().Class("alert-group").AddChild(alertSuccess).AddChild(alertDanger)
-
-	header := hb.NewHeading5().Text("Register").Style("margin:0px;")
-
-	firstNameLabel := hb.NewLabel().Text("First Name")
-	firstNameInput := hb.NewInput().Class("form-control").Name("first_name").Placeholder("Enter first name")
-	firstNameFormGroup := hb.NewDiv().Class("form-group mt-3").AddChild(firstNameLabel).AddChild(firstNameInput)
-
-	lastNameLabel := hb.NewLabel().Text("Last Name")
-	lastNameInput := hb.NewInput().Class("form-control").Name("last_name").Placeholder("Enter last name")
-	lastNameFormGroup := hb.NewDiv().Class("form-group mt-3").AddChild(lastNameLabel).AddChild(lastNameInput)
-
-	emailLabel := hb.NewLabel().Text("E-mail Address (verified)")
-	emailDisplay := hb.NewDiv().Class("form-control-plaintext text-muted").Style("font-size:1rem;padding:0.5rem 0;").Text(verifiedEmail)
-	emailHidden := hb.NewInput().Type("hidden").Name("email").Value(verifiedEmail)
-	emailFormGroup := hb.NewDiv().Class("form-group mt-3").AddChild(emailLabel).AddChild(emailDisplay).AddChild(emailHidden)
+	emailGroup := hb.NewDiv().Class("mb-3").Children([]hb.TagInterface{
+		hb.NewLabel().Class("form-label small fw-bold text-uppercase text-secondary").Text("Email (verified)"),
+		hb.NewDiv().Class("form-control-plaintext text-muted").Text(verifiedEmail),
+		hb.NewInput().Type("hidden").Name("email").Value(verifiedEmail),
+	})
 
 	akKeyInput := hb.NewInput().Type("hidden").Name("ak_key").Value(akKey)
 
-	buttonRegister := hb.NewButton().Class("btn btn-lg btn-success btn-block w-100").Children([]hb.TagInterface{
-		hb.NewI().Class("bi bi-person-circle").Style("margin-right:8px;margin-top:-2px;"),
-		hb.NewSpan().Text("Register"),
-	}).OnClick("registerFormValidate()")
-
-	buttonRegisterFormGroup := hb.NewDiv().Class("form-group mt-3 mb-3").AddChild(buttonRegister)
-
-	buttonLogin := hb.NewHyperlink().Class("btn btn-info text-white float-start").Children([]hb.TagInterface{
-		hb.NewI().Class("bi bi-send").Style("margin-right:8px;margin-top:-2px;"),
-		hb.NewSpan().Text("Login"),
-	}).Href(urlLogin)
-
-	cardHeader := hb.NewDiv().Class("card-header").AddChild(header)
-	cardBody := hb.NewDiv().Class("card-body").AddChildren([]hb.TagInterface{
-		alertGroup,
-		firstNameFormGroup,
-		lastNameFormGroup,
-		emailFormGroup,
+	card := shared.Card(
+		shared.AlertGroup(),
+		shared.NameRow(true),
+		emailGroup,
 		akKeyInput,
-		buttonRegisterFormGroup,
-	})
-	cardFooter := hb.NewDiv().Class("card-footer").AddChild(buttonLogin)
-	card := hb.NewDiv().Class("card card-default").Style("margin:0 auto;max-width: 360px;")
-	card.AddChild(cardHeader).AddChild(cardBody).AddChild(cardFooter)
+		shared.PrimaryButton("buttonRegister", "bi-person-plus", "Create account", "registerFormValidate()"),
+	)
 
-	container := hb.NewDiv().Class("container").AddChild(card)
-
-	return container.ToHTML()
+	return hb.NewDiv().Children([]hb.TagInterface{
+		shared.PageHeader("Create your account", "Confirm your details to finish registration."),
+		card,
+		shared.FooterText("Already have an account?", urlLogin, "Login"),
+	}).ToHTML()
 }
 
 // RegisterAuthKnightScripts builds the JS for the AuthKnight registration page.

@@ -23,82 +23,29 @@ func PageMagicLink(w http.ResponseWriter, r *http.Request, a types.AuthSharedInt
 	urlRegister := links.Register(a.GetEndpoint())
 	enableRegistration := a.IsRegistrationEnabled()
 
-	alertSuccess := hb.NewDiv().
-		Class("alert alert-success").
-		Style("display:none")
-	alertDanger := hb.NewDiv().
-		Class("alert alert-danger").
-		Style("display:none")
-	alertGroup := hb.NewDiv().
-		Class("alert-group").
-		Child(alertSuccess).
-		Child(alertDanger)
-
-	header := hb.NewHeading5().
-		Text("Login").
-		Style("margin:0px;")
-
-	emailLabel := hb.NewLabel().
-		Text("E-mail Address")
 	emailInput := hb.NewInput().
-		Class("form-control").
+		Class("form-control form-control-lg").
 		Name("email").
-		Placeholder("Enter e-mail address")
-	emailFormGroup := hb.NewDiv().
-		Class("form-group mt-3").
-		Child(emailLabel).
-		Child(emailInput)
+		Placeholder("you@example.com").
+		Attr("autocomplete", "username").
+		Attr("required", "required")
 
-	buttonLogin := hb.NewButton().
-		Class("ButtonLogin btn btn-lg btn-success btn-block w-100").
-		OnClick("loginFormValidate()").
-		Children([]hb.TagInterface{
-			hb.NewI().Class("bi bi-envelope").Style("margin-right:8px;margin-top:-2px;"),
-			hb.NewSpan().Text("Email me a sign-in link"),
-			hb.NewDiv().
-				Class("ImgLoading spinner-border spinner-border-sm text-light").
-				Style("display:none;margin-left:10px;"),
-		})
-	buttonLoginFormGroup := hb.NewDiv().
-		Class("form-group mt-3 mb-3").
-		Child(buttonLogin)
-	buttonRegister := hb.NewHyperlink().
-		Class("btn btn-info text-white float-start").
-		Children([]hb.TagInterface{
-			hb.NewI().
-				Class("bi bi-person-circle").
-				Style("margin-right:8px;margin-top:-2px;"),
-			hb.NewSpan().Text("Register"),
-		}).Href(urlRegister)
+	card := shared.Card(
+		shared.AlertGroup(),
+		shared.FieldGroup("Email", emailInput),
+		shared.PrimaryButton("ButtonLogin", "bi-envelope", "Send me a quick login link", "loginFormValidate()"),
+	)
 
-	cardHeader := hb.NewDiv().
-		Class("card-header").
-		Child(header)
-	cardBody := hb.NewDiv().
-		Class("card-body").
-		Children([]hb.TagInterface{
-			alertGroup,
-			emailFormGroup,
-			buttonLoginFormGroup,
-		})
-	cardFooter := hb.NewDiv().
-		Class("card-footer").
-		AddChildren([]hb.TagInterface{})
+	container := hb.NewDiv().Children([]hb.TagInterface{
+		shared.PageHeader("Login to your account", "We'll email you a secure link to log in instantly — no password needed."),
+		card,
+	})
+
 	if enableRegistration {
-		cardFooter.AddChild(buttonRegister)
+		container.Child(shared.FooterText("Don't have an account?", urlRegister, "Register"))
 	}
 
-	card := hb.NewDiv().
-		Class("card card-default").
-		Style("margin:0 auto;max-width: 360px;").
-		Child(cardHeader).
-		Child(cardBody).
-		Child(cardFooter)
-
-	content := hb.NewDiv().
-		Class("container").
-		Child(card).
-		ToHTML()
+	content := container.ToHTML()
 
 	scripts := `
 		/**

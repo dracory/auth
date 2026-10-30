@@ -31,7 +31,7 @@ func TestPageLogin_UsernameAndPassword(t *testing.T) {
 	body := recorder.Body.String()
 
 	expected := []string{
-		`<span>Log in</span>`,
+		`<span>Sign in</span>`,
 		`var urlApiLogin = "http://localhost/auth/api/login";`,
 		`var urlOnSuccess = "http://localhost/dashboard";`,
 	}
@@ -198,7 +198,7 @@ func TestPageRegisterCodeVerify(t *testing.T) {
 	body := recorder.Body.String()
 
 	expected := []string{
-		"Registration Code Verification",
+		"Check your email",
 		"Verification code",
 		"var urlApiRegisterCodeVerify = \"http://localhost/auth/api/register-code-verify\";",
 		"var urlOnSuccess = \"http://localhost/dashboard\";",
@@ -268,7 +268,7 @@ func TestPagePasswordRestore(t *testing.T) {
 	body := recorder.Body.String()
 
 	expected := []string{
-		"Restore password",
+		"Forgot your password?",
 		"name=\"first_name\"",
 		"name=\"last_name\"",
 		"name=\"email\"",
@@ -386,7 +386,7 @@ func TestPageLoginCodeVerify(t *testing.T) {
 
 	expected := []string{
 		"Login Code Verification",
-		"login code to your email. Please check your mailbox",
+		"We sent a 6-digit code to your email",
 		"var urlApiLoginCodeVerify = \"http://localhost/auth/api/login-code-verify\";",
 		"var urlOnSuccess = \"http://localhost/dashboard\";",
 	}

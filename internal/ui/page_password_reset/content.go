@@ -1,10 +1,12 @@
 package page_password_reset
 
-import "github.com/dracory/hb"
+import (
+	"github.com/dracory/auth/internal/ui/shared"
+	"github.com/dracory/hb"
+)
 
 // PasswordResetContent builds the HTML for the password reset page.
 func PasswordResetContent(token, errorMessage, urlPasswordRestore, urlLogin, urlRegister string, enableRegistration bool) string {
-	// Elements for the form
 	alertSuccess := hb.NewDiv().Class("alert alert-success").Style("display:none")
 	alertDanger := hb.NewDiv().Class("alert alert-danger")
 	if errorMessage != "" {
@@ -14,52 +16,39 @@ func PasswordResetContent(token, errorMessage, urlPasswordRestore, urlLogin, url
 	}
 	alertGroup := hb.NewDiv().Class("alert-group").AddChild(alertSuccess).AddChild(alertDanger)
 
-	header := hb.NewHeading5().Text("Reset Password").Style("margin:0px;")
-	tokenInput := hb.NewInput().Name("token").Value(token)
-	passwordLabel := hb.NewLabel().Text("New Password")
-	passwordInput := hb.NewInput().Class("form-control").Name("password").Placeholder("Enter new password")
-	passwordFormGroup := hb.NewDiv().Class("form-group mt-3").Child(passwordLabel).Child(passwordInput)
-	passwordConfirmLabel := hb.NewLabel().Text("Confirm New Password")
-	passwordConfirmInput := hb.NewInput().Class("form-control").Name("password_confirm").Placeholder("Enter confirmation of new password")
-	passwordConfirmFormGroup := hb.NewDiv().Class("form-group mt-3").Child(passwordConfirmLabel).Child(passwordConfirmInput)
-	buttonContinue := hb.NewButton().Class("ButtonContinue btn btn-lg btn-success btn-block w-100").Text("Reset Password").OnClick("resetFormValidate()")
-	buttonContinueFormGroup := hb.NewDiv().Class("form-group mt-3").AddChild(buttonContinue)
-	buttonLogin := hb.NewHyperlink().Class("btn btn-info float-start").Text("Login").Href(urlLogin)
-	buttonRegister := hb.NewHyperlink().Class("btn btn-warning float-end").Text("Register").Href(urlRegister)
-
-	// Add elements in a card
-	cardHeader := hb.NewDiv().Class("card-header").AddChild(header)
-	cardBody := hb.NewDiv().Class("card-body").AddChildren([]hb.TagInterface{
-		alertGroup,
-	})
-
+	var cardBody hb.TagInterface
 	if errorMessage == "" {
-		cardBody.AddChild(tokenInput)
-		cardBody.AddChild(passwordFormGroup)
-		cardBody.AddChild(passwordConfirmFormGroup)
-		cardBody.AddChild(buttonContinueFormGroup)
+		tokenInput := hb.NewInput().Name("token").Value(token)
+		passwordInput := hb.NewInput().Class("form-control form-control-lg").Name("password").Type(hb.TYPE_PASSWORD).
+			Placeholder("Min 8 characters").Attr("autocomplete", "new-password").Attr("required", "required")
+		passwordConfirmInput := hb.NewInput().Class("form-control form-control-lg").Name("password_confirm").Type(hb.TYPE_PASSWORD).
+			Placeholder("Repeat password").Attr("autocomplete", "new-password").Attr("required", "required")
+		cardBody = shared.Card(
+			alertGroup,
+			tokenInput,
+			shared.FieldGroup("New password", passwordInput),
+			shared.FieldGroup("Confirm new password", passwordConfirmInput),
+			shared.PrimaryButton("ButtonContinue", "bi-shield-check", "Reset password", "resetFormValidate()"),
+		)
 	} else {
-		cardBody.AddChild(hb.NewParagraph().Text("Sorry, there was an error processing your request. Please select one of the following options:"))
-		cardBody.AddChild(hb.NewParagraph().AddChild(hb.NewHyperlink().Href(urlPasswordRestore).Text("request a reset of your password")))
-		cardBody.AddChild(hb.NewParagraph().AddChild(hb.NewHyperlink().Href(urlLogin).Text("login to the system")))
-		cardBody.AddChild(hb.NewParagraph().AddChild(hb.NewHyperlink().Href(urlRegister).Text("create a new account")))
+		cardBody = shared.Card(
+			alertGroup,
+			hb.NewParagraph().Text("Sorry, there was an error processing your request. Please select one of the following options:"),
+			hb.NewParagraph().AddChild(hb.NewHyperlink().Href(urlPasswordRestore).Text("request a reset of your password")),
+			hb.NewParagraph().AddChild(hb.NewHyperlink().Href(urlLogin).Text("login to the system")),
+			hb.NewParagraph().AddChild(hb.NewHyperlink().Href(urlRegister).Text("create a new account")),
+		)
 	}
 
-	cardFooter := hb.NewDiv().Class("card-footer").AddChildren([]hb.TagInterface{
-		buttonLogin,
+	container := hb.NewDiv().Children([]hb.TagInterface{
+		shared.PageHeader("Set a new password", "Choose a strong password for your account."),
+		cardBody,
+		shared.FooterText("Remembered it?", urlLogin, "Login"),
 	})
 
 	if enableRegistration {
-		cardFooter.AddChild(buttonRegister)
+		container.Child(shared.FooterText("Don't have an account?", urlRegister, "Register"))
 	}
-
-	card := hb.NewDiv().
-		Class("card card-default").
-		Style("margin:0 auto;max-width: 360px;")
-
-	card.AddChild(cardHeader).AddChild(cardBody).AddChild(cardFooter)
-
-	container := hb.NewDiv().Class("container").Child(card)
 
 	return container.ToHTML()
 }

@@ -28,7 +28,7 @@ func TestPageLogin_UsernameAndPassword(t *testing.T) {
 	body := recorder.Body.String()
 
 	expected := []string{
-		`<span>Log in</span>`,
+		`<span>Sign in</span>`,
 		`var urlApiLogin = "http://localhost/auth/api/login";`,
 		`var urlOnSuccess = "http://localhost/dashboard";`,
 	}

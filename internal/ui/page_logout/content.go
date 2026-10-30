@@ -1,33 +1,21 @@
 package page_logout
 
-import "github.com/dracory/hb"
+import (
+	"github.com/dracory/auth/internal/ui/shared"
+	"github.com/dracory/hb"
+)
 
 // LogoutContent builds the HTML for the logout page.
 func LogoutContent() string {
-	// Elements for the form
-	alertSuccess := hb.NewDiv().Class("alert alert-success").Style("display:none")
-	alertDanger := hb.NewDiv().Class("alert alert-danger").Style("display:none")
-	alertGroup := hb.NewDiv().Class("alert-group").AddChild(alertSuccess).AddChild(alertDanger)
+	card := shared.Card(
+		shared.AlertGroup(),
+		shared.PrimaryButton("ButtonLogout", "bi-box-arrow-right", "Logout", "logoutFormValidate()"),
+	)
 
-	header := hb.NewHeading5().Text("Sign out").Style("margin:0px;")
-	buttonContinue := hb.NewButton().Class("btn btn-lg btn-success btn-block w-100").Text("Logout").OnClick("logoutFormValidate()")
-	buttonContinueFormGroup := hb.NewDiv().Class("form-group mt-3").AddChild(buttonContinue)
-
-	// Add elements in a card
-	cardHeader := hb.NewDiv().Class("card-header").AddChild(header)
-	cardBody := hb.NewDiv().Class("card-body").AddChildren([]hb.TagInterface{
-		alertGroup,
-		buttonContinueFormGroup,
-	})
-
-	card := hb.NewDiv().Class("card card-default").
-		Style("margin:0 auto;max-width: 360px;").
-		AddChild(cardHeader).
-		AddChild(cardBody)
-
-	container := hb.NewDiv().Class("container").AddChild(card)
-
-	return container.ToHTML()
+	return hb.NewDiv().Children([]hb.TagInterface{
+		shared.PageHeader("Sign out", "Are you sure you want to sign out of your account?"),
+		card,
+	}).ToHTML()
 }
 
 // LogoutScripts builds the JS for the logout page.
@@ -63,12 +51,12 @@ func LogoutScripts(urlApiLogout, urlOnSuccess string) string {
 		 * @returns  {Boolean}
 		 */
 		function logoutFormValidate() {
-			$('.buttonLogin .imgLoading').show();
+			$('.ButtonLogout .ImgLoading').show();
 
 			var data = {};
 
 			$.post(urlApiLogout, data).then(function (response) {
-				$('.buttonLogin .imgLoading').hide();
+				$('.ButtonLogout .ImgLoading').hide();
 
 				if (response.status !== "success") {
 					return logoutFormRaiseError(response.message);
@@ -84,7 +72,7 @@ func LogoutScripts(urlApiLogout, urlOnSuccess string) string {
 				return;
 			}).fail(function (error) {
 				console.log(error);
-				$('.buttonLogin .imgLoading').hide();
+				$('.ButtonLogout .ImgLoading').hide();
 				return logoutFormRaiseError('There was an error. Try again later!');
 			});
 		}
