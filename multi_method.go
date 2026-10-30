@@ -140,7 +140,11 @@ func NewMultiMethodAuth(endpoint string, methods []types.Method) (*MultiMethodAu
 				api_register_code_verify.ApiRegisterCodeVerifyWithAuth(w, r, reg)
 			},
 		} {
-			if err := mount(pattern, h); err != nil {
+			// Keys embed the HTTP method but not the endpoint — prefix it
+			// like ExtraRoutes do, else the inner mux 404s on /auth/register.
+			parts := strings.SplitN(pattern, " ", 2)
+			full := parts[0] + " " + endpoint + parts[1]
+			if err := mount(full, h); err != nil {
 				return nil, err
 			}
 		}
