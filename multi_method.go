@@ -10,6 +10,7 @@ import (
 	"github.com/dracory/auth/internal/api/api_authknight_callback"
 	"github.com/dracory/auth/internal/api/api_login"
 	"github.com/dracory/auth/internal/api/api_login_code_verify"
+	"github.com/dracory/auth/internal/api/api_logout"
 	"github.com/dracory/auth/internal/api/api_magic_link_callback"
 	"github.com/dracory/auth/internal/api/api_magic_link_send"
 	"github.com/dracory/auth/internal/api/api_password_reset"
@@ -18,6 +19,7 @@ import (
 	"github.com/dracory/auth/internal/api/api_register_code_verify"
 	"github.com/dracory/auth/internal/ui/page_login"
 	"github.com/dracory/auth/internal/ui/page_login_code_verify"
+	"github.com/dracory/auth/internal/ui/page_logout"
 	"github.com/dracory/auth/internal/ui/page_magic_link"
 	"github.com/dracory/auth/internal/ui/page_password_reset"
 	"github.com/dracory/auth/internal/ui/page_password_restore"
@@ -152,6 +154,27 @@ func NewMultiMethodAuth(endpoint string, methods []types.Method) (*MultiMethodAu
 		}
 	}
 
+	// Logout is method-agnostic — mount it once using the first impl that
+	// exposes one.
+	for _, m := range methods {
+		acc, ok := m.(methodAuth)
+		if !ok || acc.authImpl() == nil {
+			continue
+		}
+		a := acc.authImpl()
+		if err := mount("GET "+endpoint+"/logout", func(w http.ResponseWriter, r *http.Request) {
+			page_logout.PageLogout(w, r, a)
+		}); err != nil {
+			return nil, err
+		}
+		if err := mount("POST "+endpoint+"/api/logout", func(w http.ResponseWriter, r *http.Request) {
+			api_logout.ApiLogoutWithAuth(w, r, a)
+		}); err != nil {
+			return nil, err
+		}
+		break
+	}
+
 	return mma, nil
 }
 
@@ -178,6 +201,10 @@ type altAuthImpl struct {
 
 // GetLoginAlternatives returns the sibling methods of the decorated one.
 func (w altAuthImpl) GetLoginAlternatives() []types.LoginAlternative { return w.alts }
+
+// Unwrap returns the decorated impl so handlers can recover capability
+// interfaces (e.g. AuthPasswordInterface) hidden by this decorator.
+func (w altAuthImpl) Unwrap() types.AuthSharedInterface { return w.AuthSharedInterface }
 
 // wireAlternatives gives every built-in method's page an "OR — use another
 // method" block listing its siblings. Skipped when the impl already has

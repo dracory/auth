@@ -67,6 +67,7 @@ func ApiPasswordRestore(w http.ResponseWriter, r *http.Request, deps dependencie
 // manually wiring dependencies. It constructs the dependencies struct using the
 // interface accessors and preserves the existing behaviour.
 func ApiPasswordRestoreWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) {
+	a = types.UnwrapAuth(a)
 	passwordAuth, ok := a.(types.AuthPasswordInterface)
 	if !ok {
 		if logger := a.GetLogger(); logger != nil {

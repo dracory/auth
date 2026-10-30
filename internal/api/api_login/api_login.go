@@ -98,6 +98,7 @@ func ApiLogin(w http.ResponseWriter, r *http.Request, dependencies Dependencies)
 // wiring Dependencies. It constructs the Dependencies struct using the
 // interface accessors and preserves the existing behaviour.
 func ApiLoginWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) {
+	a = types.UnwrapAuth(a)
 	passwordAuth, ok := a.(types.AuthPasswordInterface)
 	if !ok {
 		if logger := a.GetLogger(); logger != nil {

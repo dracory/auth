@@ -1,6 +1,9 @@
 package page_login
 
 import (
+	_ "embed"
+	"strings"
+
 	"github.com/dracory/auth/internal/ui/shared"
 	"github.com/dracory/auth/types"
 	"github.com/dracory/hb"
@@ -111,51 +114,15 @@ func LoginPasswordlessContentX(enableRegistration bool, urlRegister string, x Lo
 }
 
 // LoginPasswordlessScripts builds the JavaScript for the passwordless login page.
+//
+//go:embed login_passwordless.js
+var loginPasswordlessJS string
+
 func LoginPasswordlessScripts(urlApiLogin, urlSuccess string) string {
-	return `
-		var urlApiLogin = "` + urlApiLogin + `";
-		var urlOnSuccess = "` + urlSuccess + `";
-
-		function loginFormValidate() {
-			var email = inputVal('email');
-
-			if (email === '') {
-				return loginFormRaiseError('Email is required');
-			}
-
-			spinner(true);
-
-			var remember = document.querySelector('input[name=remember]');
-			postForm(urlApiLogin, {"email": email, "remember": remember && remember.checked ? "true" : ""}).then(function (response) {
-				spinner(false);
-
-				if (response.status !== "success") {
-					return loginFormRaiseError(response.message);
-				}
-
-				loginFormRaiseSuccess('Success');
-				// Hand the nonce (and email) to the code-verify page via
-				// sessionStorage — query params would leak into browser
-				// history, access logs, and Referer headers.
-				if (response.data && response.data.nonce) {
-					sessionStorage.setItem('auth_login_nonce', response.data.nonce);
-					sessionStorage.setItem('auth_login_email', email);
-					sessionStorage.setItem('auth_login_remember', remember && remember.checked ? "true" : "");
-				}
-				setTimeout(function () {
-					authTo(urlOnSuccess);
-				}, 2000);
-			}).catch(function (error) {
-				console.log(error);
-				spinner(false);
-				return loginFormRaiseError('There was an error. Try again later!');
-			});
-		}
-		onReady(function () {
-			var el = document.querySelector('input[name=email]');
-			if (el) { el.focus(); }
-		});
-	`
+	s := loginPasswordlessJS
+	s = strings.ReplaceAll(s, "__URL_API_LOGIN__", urlApiLogin)
+	s = strings.ReplaceAll(s, "__URL_ON_SUCCESS__", urlSuccess)
+	return s
 }
 
 // LoginContent builds the HTML content for the standard login page.
@@ -204,48 +171,13 @@ func LoginContentX(enableRegistration bool, urlRegister, urlPasswordRestore stri
 }
 
 // LoginScripts builds the JavaScript for the standard login page.
+//
+//go:embed login_password.js
+var loginPasswordJS string
+
 func LoginScripts(urlApiLogin, urlOnSuccess string) string {
-	return `
-		var urlApiLogin = "` + urlApiLogin + `";
-		var urlOnSuccess = "` + urlOnSuccess + `";
-
-		function loginFormValidate() {
-			var email = inputVal('email');
-			var password = inputVal('password');
-
-			if (email === '') {
-				return loginFormRaiseError('Email is required');
-			}
-
-			if (password === '') {
-				return loginFormRaiseError('Password is required');
-			}
-
-			spinner(true);
-
-			var remember = document.querySelector('input[name=remember]');
-			postForm(urlApiLogin, {"email": email, "password": password, "remember": remember && remember.checked ? "true" : ""}).then(function (response) {
-				spinner(false);
-
-				if (response.status !== "success") {
-					return loginFormRaiseError(response.message);
-				}
-
-				authStore('AuthToken', response.data.token);
-				authStore('AuthUser', response.data.user);
-				loginFormRaiseSuccess('Success');
-				setTimeout(function () {
-					authTo(urlOnSuccess);
-				}, 2000);
-			}).catch(function (error) {
-				console.log(error);
-				spinner(false);
-				return loginFormRaiseError('There was an error. Try again later!');
-			});
-		}
-		onReady(function () {
-			var el = document.querySelector('input[name=email]');
-			if (el) { el.focus(); }
-		});
-	`
+	s := loginPasswordJS
+	s = strings.ReplaceAll(s, "__URL_API_LOGIN__", urlApiLogin)
+	s = strings.ReplaceAll(s, "__URL_ON_SUCCESS__", urlOnSuccess)
+	return s
 }

@@ -1,6 +1,9 @@
 package page_register
 
 import (
+	_ "embed"
+	"strings"
+
 	"github.com/dracory/auth/internal/ui/shared"
 	"github.com/dracory/hb"
 )
@@ -29,55 +32,15 @@ func RegisterPasswordlessContent(urlLogin string) string {
 }
 
 // RegisterPasswordlessScripts builds the JS for the passwordless registration page.
+//
+//go:embed register_passwordless.js
+var registerPasswordlessJS string
+
 func RegisterPasswordlessScripts(urlApiRegister, urlOnSuccess string) string {
-	return `
-		var urlApiRegister = "` + urlApiRegister + `";
-		var urlOnSuccess = "` + urlOnSuccess + `";
-
-		function registerFormValidate() {
-			var first_name = inputVal('first_name');
-			var last_name = inputVal('last_name');
-			var email = inputVal('email');
-
-			if (first_name === '') {
-				return registerFormRaiseError('First name is required');
-			}
-			if (last_name === '') {
-				return registerFormRaiseError('Last name is required');
-			}
-			if (email === '') {
-				return registerFormRaiseError('Email is required');
-			}
-
-			spinner(true);
-
-			postForm(urlApiRegister, {"first_name": first_name, "last_name": last_name, "email": email}).then(function (response) {
-				spinner(false);
-
-				if (response.status !== "success") {
-					return registerFormRaiseError(response.message);
-				}
-
-				registerFormRaiseSuccess('Success');
-				// Hand the nonce to the code-verify page via sessionStorage —
-				// query params would leak into history, logs, and Referer.
-				if (response.data && response.data.nonce) {
-					sessionStorage.setItem('auth_register_nonce', response.data.nonce);
-				}
-				setTimeout(function () {
-					window.location.href = urlOnSuccess;
-				}, 100);
-			}).catch(function (error) {
-				console.log(error);
-				spinner(false);
-				return registerFormRaiseError('There was an error. Try again later!');
-			});
-		}
-		onReady(function () {
-			var el = document.querySelector('input[name=first_name]');
-			if (el) { el.focus(); }
-		});
-	`
+	s := registerPasswordlessJS
+	s = strings.ReplaceAll(s, "__URL_API_REGISTER__", urlApiRegister)
+	s = strings.ReplaceAll(s, "__URL_ON_SUCCESS__", urlOnSuccess)
+	return s
 }
 
 // RegisterUsernameAndPasswordContent builds the HTML for the username/password registration page.
@@ -114,57 +77,15 @@ func RegisterUsernameAndPasswordContent(urlLogin, urlPasswordRestore string) str
 }
 
 // RegisterUsernameAndPasswordScripts builds the JS for the username/password registration page.
+//
+//go:embed register_username_password.js
+var registerUsernamePasswordJS string
+
 func RegisterUsernameAndPasswordScripts(urlApiRegister, urlOnSuccess string) string {
-	return `
-		var urlApiRegister = "` + urlApiRegister + `";
-		var urlOnSuccess = "` + urlOnSuccess + `";
-
-		function registerFormValidate() {
-			var first_name = inputVal('first_name');
-			var last_name = inputVal('last_name');
-			var email = inputVal('email');
-			var password = inputVal('password');
-
-			if (first_name === '') {
-				return registerFormRaiseError('First name is required');
-			}
-			if (last_name === '') {
-				return registerFormRaiseError('Last name is required');
-			}
-			if (email === '') {
-				return registerFormRaiseError('Email is required');
-			}
-			if (password === '') {
-				return registerFormRaiseError('Password is required');
-			}
-
-			spinner(true);
-
-			postForm(urlApiRegister, {"first_name": first_name, "last_name": last_name, "email": email, "password": password}).then(function (response) {
-				spinner(false);
-
-				if (response.status !== "success") {
-					return registerFormRaiseError(response.message);
-				}
-
-				registerFormRaiseSuccess('Success');
-				if (response.data && response.data.nonce) {
-					sessionStorage.setItem('auth_register_nonce', response.data.nonce);
-				}
-				setTimeout(function () {
-					window.location.href = urlOnSuccess;
-				}, 2000);
-			}).catch(function (error) {
-				console.log(error);
-				spinner(false);
-				return registerFormRaiseError('There was an error. Try again later!');
-			});
-		}
-		onReady(function () {
-			var el = document.querySelector('input[name=first_name]');
-			if (el) { el.focus(); }
-		});
-	`
+	s := registerUsernamePasswordJS
+	s = strings.ReplaceAll(s, "__URL_API_REGISTER__", urlApiRegister)
+	s = strings.ReplaceAll(s, "__URL_ON_SUCCESS__", urlOnSuccess)
+	return s
 }
 
 // RegisterAuthKnightContent builds the HTML for the AuthKnight registration page.
@@ -195,49 +116,13 @@ func RegisterAuthKnightContent(urlLogin string, verifiedEmail string, akKey stri
 }
 
 // RegisterAuthKnightScripts builds the JS for the AuthKnight registration page.
+//
+//go:embed register_authknight.js
+var registerAuthKnightJS string
+
 func RegisterAuthKnightScripts(urlApiRegister, urlOnSuccess string) string {
-	return `
-		var urlApiRegister = "` + urlApiRegister + `";
-		var urlOnSuccess = "` + urlOnSuccess + `";
-
-		function registerFormValidate() {
-			var first_name = inputVal('first_name');
-			var last_name = inputVal('last_name');
-			var email = inputVal('email');
-			var ak_key = inputVal('ak_key');
-
-			if (first_name === '') {
-				return registerFormRaiseError('First name is required');
-			}
-			if (last_name === '') {
-				return registerFormRaiseError('Last name is required');
-			}
-
-			spinner(true);
-
-			postForm(urlApiRegister, {"first_name": first_name, "last_name": last_name, "email": email, "ak_key": ak_key}).then(function (response) {
-				spinner(false);
-
-				if (response.status !== "success") {
-					return registerFormRaiseError(response.message);
-				}
-
-				registerFormRaiseSuccess('Success');
-				if (response.data && response.data.nonce) {
-					sessionStorage.setItem('auth_register_nonce', response.data.nonce);
-				}
-				setTimeout(function () {
-					window.location.href = urlOnSuccess;
-				}, 100);
-			}).catch(function (error) {
-				console.log(error);
-				spinner(false);
-				return registerFormRaiseError('There was an error. Try again later!');
-			});
-		}
-		onReady(function () {
-			var el = document.querySelector('input[name=first_name]');
-			if (el) { el.focus(); }
-		});
-	`
+	s := registerAuthKnightJS
+	s = strings.ReplaceAll(s, "__URL_API_REGISTER__", urlApiRegister)
+	s = strings.ReplaceAll(s, "__URL_ON_SUCCESS__", urlOnSuccess)
+	return s
 }

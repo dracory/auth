@@ -24,6 +24,22 @@ jobs:
     - name: Test
       run: go test -v ./...
 
+  js-syntax-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    # The built-in page scripts are shipped as embedded .js files
+    # (internal/ui/**). node --check parses each without executing —
+    # catches syntax regressions that go vet/test cannot see.
+    - name: Syntax-check embedded page scripts
+      run: |
+        set -e
+        find internal/ui -name '*.js' -print0 | while IFS= read -r -d '' f; do
+          echo "checking $f"
+          node --check "$f"
+        done
+
   race-detection:
     runs-on: ubuntu-latest
     steps:

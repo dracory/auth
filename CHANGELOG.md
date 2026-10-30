@@ -15,6 +15,27 @@
   same-request Cookie-header rewrite so downstream auth middleware sees the
   minted session immediately. `SessionUpdater` optional interface lets
   stores shorten sessions in place; `utils.MemSessionStore` implements it.
+- Page JavaScript extracted from Go string literals into `//go:embed`-ed
+  `.js` files under `internal/ui/**` (see
+  `dev/proposals/2026-10-30-extract-page-scripts-to-js-files.md`), with a
+  `js-syntax-check` CI job running `node --check` over all of them.
+- `MultiMethodAuth` now mounts `GET /logout` and `POST /api/logout`
+  (previously absent — the routes 404'd under a multi-method mux).
+
+### Fixed
+- `altAuthImpl` (the multi-method alternatives decorator) hid the wrapped
+  impl's capability interfaces, so `AuthPasswordInterface` assertions in
+  `ApiLoginWithAuth`/`ApiPasswordRestoreWithAuth`/`ApiRegisterWithAuth`
+  failed with 500. Added `types.UnwrapAuth` and `altAuthImpl.Unwrap`; the
+  handlers unwrap before asserting.
+- `authStore` in the shared page helpers threw on `undefined` values
+  (`response.data.user` is never returned by the login API), so a
+  successful login surfaced the generic error toast. It now skips
+  undefined values.
+- Login code verification: the segmented input was hardcoded to 6
+  digit-only boxes while issued codes are 8 uppercase consonants, so a
+  real code could never be entered. Now 8 alphanumeric boxes
+  (auto-uppercased), matching `utils.LoginCodeLength`.
 
 ## v0.40.0 — 2026-10-30
 

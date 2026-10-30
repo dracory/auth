@@ -1,6 +1,9 @@
 package page_password_reset
 
 import (
+	_ "embed"
+	"strings"
+
 	"github.com/dracory/auth/internal/ui/shared"
 	"github.com/dracory/hb"
 )
@@ -54,38 +57,13 @@ func PasswordResetContent(token, errorMessage, urlPasswordRestore, urlLogin, url
 }
 
 // PasswordResetScripts builds the JS for the password reset page.
+//
+//go:embed password_reset.js
+var passwordResetJS string
+
 func PasswordResetScripts(urlApiPasswordReset, urlOnSuccess string) string {
-	return `
-		var urlApiPasswordReset = "` + urlApiPasswordReset + `";
-		var urlOnSuccess = "` + urlOnSuccess + `";
-
-		function resetFormValidate() {
-			var token = inputVal('token');
-			var password = inputVal('password');
-			var passwordConfirm = inputVal('password_confirm');
-
-			spinner(true);
-
-			postForm(urlApiPasswordReset, {"password": password, "password_confirm": passwordConfirm, "token": token}).then(function (response) {
-				spinner(false);
-
-				if (response.status !== "success") {
-					return resetFormRaiseError(response.message);
-				}
-
-				resetFormRaiseSuccess('Success');
-				setTimeout(function () {
-					window.location.href = urlOnSuccess;
-				}, 2000);
-			}).catch(function (error) {
-				console.log(error);
-				spinner(false);
-				return resetFormRaiseError('There was an error. Try again later!');
-			});
-		}
-		onReady(function () {
-			var el = document.querySelector('input[name=password]');
-			if (el) { el.focus(); }
-		});
-	`
+	s := passwordResetJS
+	s = strings.ReplaceAll(s, "__URL_API_PASSWORD_RESET__", urlApiPasswordReset)
+	s = strings.ReplaceAll(s, "__URL_ON_SUCCESS__", urlOnSuccess)
+	return s
 }

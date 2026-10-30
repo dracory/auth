@@ -180,6 +180,7 @@ func ApiRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 // wiring Dependencies. It constructs the Dependencies struct using the
 // interface accessors and preserves the existing behaviour.
 func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) {
+	a = types.UnwrapAuth(a)
 	deps := Dependencies{}
 	deps.Passwordless = a.IsPasswordless()
 	deps.Logger = a.GetLogger()
