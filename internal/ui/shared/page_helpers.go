@@ -1,5 +1,42 @@
 package shared
 
+// ensureAssetsJS injects the pages' CDN dependencies (Bootstrap CSS,
+// bootstrap-icons, Notiflix) only when the current document does not
+// already have them — dedup happens client-side because the package
+// cannot see what a host layout already rendered. Runs first, before
+// pageHelpersJS and the page script. A host that bundles or otherwise
+// manages its own assets can set window.AUTH_ASSETS_PROVIDED = true (or
+// <html data-auth-assets="provided">) to skip the check entirely.
+const ensureAssetsJS = `
+	(function () {
+		if (window.AUTH_ASSETS_PROVIDED ||
+			document.documentElement.getAttribute('data-auth-assets') === 'provided') {
+			return;
+		}
+		function present(tag, attr, key) {
+			return !!document.querySelector(tag + '[' + attr + '*="' + key + '"]');
+		}
+		var styles = [
+			['bootstrap.min.css', 'BOOTSTRAP_CSS'],
+			['bootstrap-icons', 'BOOTSTRAP_ICONS'],
+			['notiflix', 'NOTIFLIX_CSS']
+		];
+		styles.forEach(function (s) {
+			if (!present('link', 'href', s[0])) {
+				var l = document.createElement('link');
+				l.rel = 'stylesheet';
+				l.href = s[1];
+				document.head.appendChild(l);
+			}
+		});
+		if (!present('script', 'src', 'notiflix')) {
+			var sc = document.createElement('script');
+			sc.src = 'NOTIFLIX_JS';
+			document.head.appendChild(sc);
+		}
+	})();
+`
+
 // pageHelpersJS is the shared vanilla-JS runtime for the built-in pages —
 // injected once ahead of each page's own script so every page stays free
 // of duplicated helpers.

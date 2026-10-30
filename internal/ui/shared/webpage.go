@@ -3,6 +3,7 @@ package shared
 import (
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/dracory/auth/internal/helpers"
 	"github.com/dracory/auth/types"
@@ -51,7 +52,13 @@ func layoutOptionsFor(opts PageOptions) types.LayoutOptions {
 	if custom := customCSSOf(opts.Auth); custom != "" {
 		options.Styles = append(options.Styles, custom)
 	}
-	options.Scripts = append(options.Scripts, pageHelpersJS)
+	ensure := strings.NewReplacer(
+		"BOOTSTRAP_CSS", bootstrapCssURL,
+		"BOOTSTRAP_ICONS", bootstrapIconsURL,
+		"NOTIFLIX_CSS", notiflixCssURL,
+		"NOTIFLIX_JS", notiflixJsURL,
+	).Replace(ensureAssetsJS)
+	options.Scripts = append(options.Scripts, ensure, pageHelpersJS)
 	if opts.Scripts != "" {
 		options.Scripts = append(options.Scripts, opts.Scripts)
 	}
