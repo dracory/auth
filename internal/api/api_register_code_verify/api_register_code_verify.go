@@ -2,7 +2,6 @@ package api_register_code_verify
 
 import (
 	"context"
-	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -27,6 +26,8 @@ type Dependencies struct {
 
 	// TemporaryKeySet is optional; when present the consumed code is
 	// invalidated after a successful verification (single-use).
+	// It also backs the per-nonce attempt counter — without it the
+	// counter never increments and MaxCodeAttempts becomes a no-op.
 	TemporaryKeySet func(key string, value string, expiresSeconds int) error
 
 	// TemporaryKeyDelete is optional; when present it is preferred over
@@ -223,20 +224,16 @@ func RegisterCodeVerify(ctx context.Context, r *http.Request, deps Dependencies)
 	defer verifyMu.Unlock()
 
 	// Per-nonce attempt limit, enforced before the payload lookup.
-	// Fail-open on read: a store error or a missing/corrupt counter resets
-	// to 0 — intentional, so codes issued before this feature still verify.
-	attempts := 0
-	if attemptsStr, err := deps.TemporaryKeyGet(attemptsKey); err == nil {
-		_, _ = fmt.Sscanf(attemptsStr, "%d", &attempts)
-	}
-	if attempts >= authutils.MaxCodeAttempts {
-		_ = authutils.InvalidateTempKey(deps.TemporaryKeyDelete, deps.TemporaryKeySet, cacheKey)
-		_ = authutils.InvalidateTempKey(deps.TemporaryKeyDelete, deps.TemporaryKeySet, attemptsKey)
+	attemptsLimit := rules.NewCodeAttemptsLimitRule(
+		deps.TemporaryKeyGet, deps.TemporaryKeyDelete, deps.TemporaryKeySet,
+		cacheKey, attemptsKey)
+	if attemptsLimit.Fails() {
 		return nil, &RegisterCodeVerifyError{
 			Code:    RegisterCodeVerifyErrorCodeTooManyAttempts,
-			Message: types.MsgTooManyAttempts,
+			Message: attemptsLimit.FailMessageFirst(),
 		}
 	}
+	attempts := attemptsLimit.Attempts()
 
 	registerJSON, errCode := deps.TemporaryKeyGet(cacheKey)
 	if errCode != nil || registerJSON == "" {
@@ -273,10 +270,10 @@ func RegisterCodeVerify(ctx context.Context, r *http.Request, deps Dependencies)
 		}
 	}
 
-	if storedCode == "" || subtle.ConstantTimeCompare([]byte(storedCode), []byte(verificationCode)) != 1 {
+	if check := rules.NewCodeMatchRule(storedCode, verificationCode); check.Fails() {
 		return nil, &RegisterCodeVerifyError{
 			Code:    RegisterCodeVerifyErrorCodeCodeExpired,
-			Message: types.MsgVerificationCodeExpired,
+			Message: check.FailMessageFirst(),
 		}
 	}
 

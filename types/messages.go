@@ -23,6 +23,7 @@ const (
 	MsgVerificationCodeInvalidCharacters = "Verification code contains invalid characters"
 	MsgVerificationCodeExpired           = "Verification code has expired"
 	MsgSerializedFormatMalformed         = "Serialized format is malformed"
+	MsgUnsafeReturnPath                  = "Return path is invalid"
 
 	// Auth errors
 	MsgInvalidCredentials = "Invalid credentials"

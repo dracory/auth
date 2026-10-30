@@ -2,7 +2,6 @@ package api_password_reset
 
 import (
 	"context"
-	"crypto/subtle"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -11,6 +10,7 @@ import (
 	"github.com/dracory/auth/internal/rules"
 	"github.com/dracory/auth/types"
 	"github.com/dracory/req"
+	"github.com/dracory/rule"
 )
 
 // PasswordResetErrorCode categorizes error sources in the password reset flow.
@@ -144,24 +144,16 @@ func PasswordReset(ctx context.Context, r *http.Request, deps Dependencies) (*Pa
 	password := req.GetStringTrimmed(r, "password")
 	passwordConfirm := req.GetStringTrimmed(r, "password_confirm")
 
-	if token == "" {
-		return nil, &PasswordResetError{
-			Code:    PasswordResetErrorCodeValidation,
-			Message: types.MsgTokenRequired,
-		}
-	}
-
-	if password == "" {
-		return nil, &PasswordResetError{
-			Code:    PasswordResetErrorCodeValidation,
-			Message: types.MsgPasswordRequired,
-		}
-	}
-
-	if subtle.ConstantTimeCompare([]byte(password), []byte(passwordConfirm)) != 1 {
-		return nil, &PasswordResetError{
-			Code:    PasswordResetErrorCodeValidation,
-			Message: types.MsgPasswordsDoNotMatch,
+	for _, check := range []rule.RuleInterface{
+		rules.NewRequiredFieldRule(token, types.MsgTokenRequired),
+		rules.NewRequiredFieldRule(password, types.MsgPasswordRequired),
+		rules.NewPasswordsMatchRule(password, passwordConfirm),
+	} {
+		if check.Fails() {
+			return nil, &PasswordResetError{
+				Code:    PasswordResetErrorCodeValidation,
+				Message: check.FailMessageFirst(),
+			}
 		}
 	}
 

@@ -15,6 +15,7 @@ import (
 	"github.com/dracory/auth/types"
 	authutils "github.com/dracory/auth/utils"
 	"github.com/dracory/req"
+	"github.com/dracory/rule"
 	"github.com/dracory/str"
 )
 
@@ -350,31 +351,17 @@ func RegisterPasswordlessInit(ctx context.Context, r *http.Request, deps Registe
 	firstName := html.EscapeString(req.GetStringTrimmed(r, "first_name"))
 	lastName := html.EscapeString(req.GetStringTrimmed(r, "last_name"))
 
-	if firstName == "" {
-		return nil, &RegisterPasswordlessInitError{
-			Code:    RegisterPasswordlessInitErrorCodeValidation,
-			Message: types.MsgFirstNameRequired,
-		}
-	}
-
-	if lastName == "" {
-		return nil, &RegisterPasswordlessInitError{
-			Code:    RegisterPasswordlessInitErrorCodeValidation,
-			Message: types.MsgLastNameRequired,
-		}
-	}
-
-	if email == "" {
-		return nil, &RegisterPasswordlessInitError{
-			Code:    RegisterPasswordlessInitErrorCodeValidation,
-			Message: types.MsgEmailRequired,
-		}
-	}
-
-	if check := rules.NewEmailFormatRule(email); check.Fails() {
-		return nil, &RegisterPasswordlessInitError{
-			Code:    RegisterPasswordlessInitErrorCodeValidation,
-			Message: check.FailMessageFirst(),
+	for _, check := range []rule.RuleInterface{
+		rules.NewRequiredFieldRule(firstName, types.MsgFirstNameRequired),
+		rules.NewRequiredFieldRule(lastName, types.MsgLastNameRequired),
+		rules.NewRequiredFieldRule(email, types.MsgEmailRequired),
+		rules.NewEmailFormatRule(email),
+	} {
+		if check.Fails() {
+			return nil, &RegisterPasswordlessInitError{
+				Code:    RegisterPasswordlessInitErrorCodeValidation,
+				Message: check.FailMessageFirst(),
+			}
 		}
 	}
 

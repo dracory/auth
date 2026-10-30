@@ -2,7 +2,6 @@ package api_login_code_verify
 
 import (
 	"context"
-	"crypto/subtle"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -25,6 +24,8 @@ type Dependencies struct {
 
 	// TemporaryKeySet is optional; when present the consumed code is
 	// invalidated after a successful verification (single-use).
+	// It also backs the per-nonce attempt counter — without it the
+	// counter never increments and MaxCodeAttempts becomes a no-op.
 	TemporaryKeySet func(key string, value string, expiresSeconds int) error
 
 	// TemporaryKeyDelete is optional; when present it is preferred over
@@ -179,21 +180,16 @@ func LoginCodeVerify(ctx context.Context, r *http.Request, deps Dependencies) (*
 
 	// Per-nonce attempt limit, enforced before the code lookup so a known
 	// nonce cannot be used to probe the code space until expiry.
-	// Fail-open on read: a store error or a missing/corrupt counter resets
-	// to 0 — intentional, so codes issued before this feature (or an
-	// evicted counter key) still verify.
-	attempts := 0
-	if attemptsStr, err := deps.TemporaryKeyGet(attemptsKey); err == nil {
-		_, _ = fmt.Sscanf(attemptsStr, "%d", &attempts)
-	}
-	if attempts >= utils.MaxCodeAttempts {
-		_ = utils.InvalidateTempKey(deps.TemporaryKeyDelete, deps.TemporaryKeySet, cacheKey)
-		_ = utils.InvalidateTempKey(deps.TemporaryKeyDelete, deps.TemporaryKeySet, attemptsKey)
+	attemptsLimit := rules.NewCodeAttemptsLimitRule(
+		deps.TemporaryKeyGet, deps.TemporaryKeyDelete, deps.TemporaryKeySet,
+		cacheKey, attemptsKey)
+	if attemptsLimit.Fails() {
 		return nil, &LoginCodeVerifyError{
 			Code:    LoginCodeVerifyErrorCodeTooManyAttempts,
-			Message: types.MsgTooManyAttempts,
+			Message: attemptsLimit.FailMessageFirst(),
 		}
 	}
+	attempts := attemptsLimit.Attempts()
 
 	stored, errCode := deps.TemporaryKeyGet(cacheKey)
 	if errCode != nil || stored == "" {
@@ -219,10 +215,10 @@ func LoginCodeVerify(ctx context.Context, r *http.Request, deps Dependencies) (*
 	}
 
 	expected := email + ":" + verificationCode
-	if subtle.ConstantTimeCompare([]byte(stored), []byte(expected)) != 1 {
+	if check := rules.NewCodeMatchRule(stored, expected); check.Fails() {
 		return nil, &LoginCodeVerifyError{
 			Code:    LoginCodeVerifyErrorCodeCodeExpired,
-			Message: types.MsgVerificationCodeExpired,
+			Message: check.FailMessageFirst(),
 		}
 	}
 

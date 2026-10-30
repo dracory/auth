@@ -1,7 +1,7 @@
 # Proposal: Extract Remaining Business Logic into `internal/rules`
 
 **Date:** 2026-10-30
-**Status:** Proposed
+**Status:** Completed
 **Scope:** `internal/rules`, `internal/api/*`, `internal/core/*`
 
 ## Motivation

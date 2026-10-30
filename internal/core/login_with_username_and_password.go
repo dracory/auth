@@ -6,6 +6,7 @@ import (
 	"github.com/dracory/auth/internal/rules"
 	"github.com/dracory/auth/types"
 	authutils "github.com/dracory/auth/utils"
+	"github.com/dracory/rule"
 	"github.com/dracory/str"
 )
 
@@ -24,19 +25,15 @@ func LoginWithUsernameAndPassword(
 ) LoginWithUsernameAndPasswordResult {
 	var response LoginWithUsernameAndPasswordResult
 
-	if email == "" {
-		response.ErrorMessage = types.MsgEmailRequired
-		return response
-	}
-
-	if password == "" {
-		response.ErrorMessage = types.MsgPasswordRequired
-		return response
-	}
-
-	if check := rules.NewEmailFormatRule(email); check.Fails() {
-		response.ErrorMessage = check.FailMessageFirst()
-		return response
+	for _, check := range []rule.RuleInterface{
+		rules.NewRequiredFieldRule(email, types.MsgEmailRequired),
+		rules.NewRequiredFieldRule(password, types.MsgPasswordRequired),
+		rules.NewEmailFormatRule(email),
+	} {
+		if check.Fails() {
+			response.ErrorMessage = check.FailMessageFirst()
+			return response
+		}
 	}
 
 	loginFn := a.GetFuncUserLogin()

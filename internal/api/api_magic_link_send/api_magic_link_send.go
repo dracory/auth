@@ -13,6 +13,7 @@ import (
 	"github.com/dracory/auth/types"
 	"github.com/dracory/auth/utils"
 	"github.com/dracory/req"
+	"github.com/dracory/rule"
 )
 
 // Dependencies defines dependencies for sending a magic login link.
@@ -111,21 +112,20 @@ func MagicLinkSend(ctx context.Context, r *http.Request, deps Dependencies) (boo
 	email := req.GetStringTrimmed(r, "email")
 	returnPath := req.GetStringTrimmed(r, "return")
 
-	if email == "" {
-		return false, &MagicLinkSendError{Code: MagicLinkSendErrorCodeValidation, Message: types.MsgEmailRequired}
-	}
-	if check := rules.NewEmailFormatRule(email); check.Fails() {
-		return false, &MagicLinkSendError{Code: MagicLinkSendErrorCodeValidation, Message: check.FailMessageFirst()}
+	for _, check := range []rule.RuleInterface{
+		rules.NewRequiredFieldRule(email, types.MsgEmailRequired),
+		rules.NewEmailFormatRule(email),
+		// Allowlist check runs before any token is created or email sent.
+		rules.NewEmailAllowedRule(deps.EmailAllowed, email),
+	} {
+		if check.Fails() {
+			return false, &MagicLinkSendError{Code: MagicLinkSendErrorCodeValidation, Message: check.FailMessageFirst()}
+		}
 	}
 	// `return` must be a safe relative path or dropped entirely — never
 	// propagate an external URL into the emailed link.
-	if returnPath != "" && !utils.IsSafeReturnPath(returnPath) {
+	if rules.NewSafeReturnPathRule(returnPath).Fails() {
 		returnPath = ""
-	}
-
-	// Allowlist check runs before any token is created or email sent.
-	if deps.EmailAllowed != nil && !deps.EmailAllowed(email) {
-		return false, &MagicLinkSendError{Code: MagicLinkSendErrorCodeValidation, Message: types.MsgInvalidCredentials}
 	}
 
 	// Per-email send throttle (shared with the code-send paths).

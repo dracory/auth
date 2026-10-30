@@ -8,6 +8,7 @@ import (
 	"github.com/dracory/auth/internal/rules"
 	"github.com/dracory/auth/types"
 	authutils "github.com/dracory/auth/utils"
+	"github.com/dracory/rule"
 )
 
 type RegisterWithUsernameAndPasswordResult struct {
@@ -31,34 +32,18 @@ func RegisterWithUsernameAndPassword(
 ) RegisterWithUsernameAndPasswordResult {
 	var response RegisterWithUsernameAndPasswordResult
 
-	if firstName == "" {
-		response.ErrorMessage = types.MsgFirstNameRequired
-		return response
-	}
-
-	if lastName == "" {
-		response.ErrorMessage = types.MsgLastNameRequired
-		return response
-	}
-
-	if email == "" {
-		response.ErrorMessage = types.MsgEmailRequired
-		return response
-	}
-
-	if password == "" {
-		response.ErrorMessage = types.MsgPasswordRequired
-		return response
-	}
-
-	if check := rules.NewPasswordStrengthRule(password, a.GetPasswordStrength()); check.Fails() {
-		response.ErrorMessage = check.FailMessageFirst()
-		return response
-	}
-
-	if check := rules.NewEmailFormatRule(email); check.Fails() {
-		response.ErrorMessage = check.FailMessageFirst()
-		return response
+	for _, check := range []rule.RuleInterface{
+		rules.NewRequiredFieldRule(firstName, types.MsgFirstNameRequired),
+		rules.NewRequiredFieldRule(lastName, types.MsgLastNameRequired),
+		rules.NewRequiredFieldRule(email, types.MsgEmailRequired),
+		rules.NewRequiredFieldRule(password, types.MsgPasswordRequired),
+		rules.NewPasswordStrengthRule(password, a.GetPasswordStrength()),
+		rules.NewEmailFormatRule(email),
+	} {
+		if check.Fails() {
+			response.ErrorMessage = check.FailMessageFirst()
+			return response
+		}
 	}
 
 	registerFn := a.GetFuncUserRegister()

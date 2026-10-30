@@ -1,7 +1,7 @@
 ---
 created: '2026-10-30'
 priority: high
-status: pending
+status: done
 tags:
 - rules
 - refactor

@@ -12,6 +12,7 @@ import (
 	"github.com/dracory/auth/types"
 	"github.com/dracory/auth/utils"
 	"github.com/dracory/req"
+	"github.com/dracory/rule"
 )
 
 // PasswordRestoreErrorCode categorizes error sources in the password restore
@@ -131,20 +132,15 @@ func passwordRestore(ctx context.Context, r *http.Request, dependencies dependen
 	firstName := html.EscapeString(req.GetStringTrimmed(r, "first_name"))
 	lastName := html.EscapeString(req.GetStringTrimmed(r, "last_name"))
 
-	if email == "" {
-		return "", types.MsgEmailRequired
-	}
-
-	if check := rules.NewEmailFormatRule(email); check.Fails() {
-		return "", check.FailMessageFirst()
-	}
-
-	if firstName == "" {
-		return "", types.MsgFirstNameRequired
-	}
-
-	if lastName == "" {
-		return "", types.MsgLastNameRequired
+	for _, check := range []rule.RuleInterface{
+		rules.NewRequiredFieldRule(email, types.MsgEmailRequired),
+		rules.NewEmailFormatRule(email),
+		rules.NewRequiredFieldRule(firstName, types.MsgFirstNameRequired),
+		rules.NewRequiredFieldRule(lastName, types.MsgLastNameRequired),
+	} {
+		if check.Fails() {
+			return "", check.FailMessageFirst()
+		}
 	}
 
 	userID, err := dependencies.UserFindByUsername(ctx, email, firstName, lastName)

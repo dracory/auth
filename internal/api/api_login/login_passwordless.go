@@ -8,6 +8,7 @@ import (
 	"github.com/dracory/auth/internal/rules"
 	"github.com/dracory/auth/types"
 	"github.com/dracory/req"
+	"github.com/dracory/rule"
 
 	"github.com/dracory/auth/utils"
 )
@@ -52,17 +53,15 @@ type LoginPasswordlessResult struct {
 func loginPasswordless(ctx context.Context, r *http.Request, deps LoginPasswordlessDeps) (*LoginPasswordlessResult, *LoginPasswordlessError) {
 	email := req.GetStringTrimmed(r, "email")
 
-	if email == "" {
-		return nil, &LoginPasswordlessError{
-			Code:    LoginPasswordlessErrorCodeValidation,
-			Message: types.MsgEmailRequired,
-		}
-	}
-
-	if check := rules.NewEmailFormatRule(email); check.Fails() {
-		return nil, &LoginPasswordlessError{
-			Code:    LoginPasswordlessErrorCodeValidation,
-			Message: check.FailMessageFirst(),
+	for _, check := range []rule.RuleInterface{
+		rules.NewRequiredFieldRule(email, types.MsgEmailRequired),
+		rules.NewEmailFormatRule(email),
+	} {
+		if check.Fails() {
+			return nil, &LoginPasswordlessError{
+				Code:    LoginPasswordlessErrorCodeValidation,
+				Message: check.FailMessageFirst(),
+			}
 		}
 	}
 

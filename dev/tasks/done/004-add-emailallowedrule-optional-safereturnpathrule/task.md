@@ -1,7 +1,7 @@
 ---
 created: '2026-10-30'
 priority: low
-status: pending
+status: done
 tags:
 - rules
 title: 'Add EmailAllowedRule (optional: SafeReturnPathRule)'
