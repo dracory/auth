@@ -81,7 +81,6 @@ func defaultDocument(title string, body string, options types.LayoutOptions) str
 	webpage.AddStyles(append([]string{uncdn.BootstrapCss521()}, options.Styles...))
 	webpage.AddStyleURLs(options.StyleURLs)
 	webpage.AddScripts(append([]string{
-		uncdn.Jquery360(),
 		uncdn.BootstrapJs521(),
 		uncdn.WebJs260(),
 	}, options.Scripts...))

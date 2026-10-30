@@ -31,50 +31,67 @@ func RegisterCodeVerifyScripts(urlApiRegisterCodeVerify, urlOnSuccess string) st
 	return `
 		var urlApiRegisterCodeVerify = "` + urlApiRegisterCodeVerify + `";
 		var urlOnSuccess = "` + urlOnSuccess + `";
-		/**
-		 * Raises an error message
-		 * @param  {String} error
-		 * @returns  {Boolean}
-		 */
-		function loginFormRaiseError(error) {
-			$('div.alert-success').html('').hide();
-			$('div.alert-danger').html(error).show();
-			setTimeout(function () {
-				$('div.alert-danger').html('').hide();
-			}, 10000);
-			return false;
-		}
 
-		function loginFormRaiseSuccess(success) {
-			$('div.alert-danger').html('').hide();
-			$('div.alert-success').html(success).show();
-			setTimeout(function () {
-				$('div.alert-success').html('').hide();
-			}, 10000);
-			return false;
-		}
+	function alertShow(cls, message) {
+		var other = cls === 'div.alert-danger' ? 'div.alert-success' : 'div.alert-danger';
+		var o = document.querySelector(other);
+		o.innerHTML = ''; o.style.display = 'none';
+		var el = document.querySelector(cls);
+		el.innerHTML = message; el.style.display = 'block';
+		setTimeout(function () { el.innerHTML = ''; el.style.display = 'none'; }, 10000);
+		return false;
+	}
+	function loginFormRaiseError(error) { return alertShow('div.alert-danger', error); }
+	function loginFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
+	function registerFormRaiseError(error) { return alertShow('div.alert-danger', error); }
+	function registerFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
+	function resetFormRaiseError(error) { return alertShow('div.alert-danger', error); }
+	function resetFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
+	function passwordRestoreFormRaiseError(error) { return alertShow('div.alert-danger', error); }
+	function passwordRestoreFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
+	function logoutFormRaiseError(error) { return alertShow('div.alert-danger', error); }
+	function logoutFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
 
-		/**
-		 * Validate Login Form
-		 * @returns  {Boolean}
-		 */
+	// postForm posts url-encoded form data and parses the JSON response,
+	// mirroring the $.post behavior the pages previously relied on.
+	function postForm(url, data) {
+		return fetch(url, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+			body: new URLSearchParams(data)
+		}).then(function (response) { return response.json(); });
+	}
+	function inputVal(name) {
+		var el = document.querySelector('input[name=' + name + ']');
+		return el ? el.value.trim() : '';
+	}
+	function spinner(show) {
+		var el = document.querySelector('.ImgLoading');
+		if (el) { el.style.display = show ? 'inline-block' : 'none'; }
+	}
+	function onReady(fn) {
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', fn);
+		} else {
+			fn();
+		}
+	}
+
 		function registerCodeFormValidate() {
-			var verificationCode = $.trim($('input[name=verification_code]').val());
+			var verificationCode = inputVal('verification_code');
 
 			if (verificationCode === '') {
 				return loginFormRaiseError('Code is required');
 			}
 
-			$('.buttonLogin .imgLoading').show();
+			spinner(true);
 
 			// The nonce travels via sessionStorage (set by the register
 			// page), not the URL — keeps it out of history, logs, Referer.
 			var nonce = sessionStorage.getItem('auth_register_nonce') || '';
 
-			var data = {"verification_code": verificationCode, "nonce": nonce};
-
-			$.post(urlApiRegisterCodeVerify, data).then(function (response) {
-				$('.buttonLogin .imgLoading').hide();
+			postForm(urlApiRegisterCodeVerify, {"verification_code": verificationCode, "nonce": nonce}).then(function (response) {
+				spinner(false);
 
 				if (response.status !== "success") {
 					return loginFormRaiseError(response.message);
@@ -84,19 +101,18 @@ func RegisterCodeVerifyScripts(urlApiRegisterCodeVerify, urlOnSuccess string) st
 				$$.setAuthUser(response.data.user);
 				sessionStorage.removeItem('auth_register_nonce');
 				loginFormRaiseSuccess('Verification successful');
-				$('div.alert-danger').html('').hide();
 				setTimeout(function () {
 					$$.to(urlOnSuccess);
 				}, 2000);
-				return;
-			}).fail(function (error) {
+			}).catch(function (error) {
 				console.log(error);
-				$('.buttonLogin .imgLoading').hide();
+				spinner(false);
 				return loginFormRaiseError('There was an error. Try again later!');
 			});
 		}
-		$(function () {
-			$("#email").focus();
+		onReady(function () {
+			var el = document.querySelector('input[name=verification_code]');
+			if (el) { el.focus(); }
 		});
 	`
 }

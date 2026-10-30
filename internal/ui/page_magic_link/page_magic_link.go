@@ -48,57 +48,78 @@ func PageMagicLink(w http.ResponseWriter, r *http.Request, a types.AuthSharedInt
 	content := container.ToHTML()
 
 	scripts := `
-		/**
-		 * Raises an error message
-		 * @param  {String} error
-		 * @returns  {Boolean}
-		 */
-		function loginFormRaiseError(error) {
-			$('div.alert-success').html('').hide();
-			$('div.alert-danger').html(error).show();
-			setTimeout(function () {
-				$('div.alert-danger').html('').hide();
-			}, 10000);
-			return false;
-		}
 
-		function loginFormRaiseSuccess(success) {
-			$('div.alert-danger').html('').hide();
-			$('div.alert-success').html(success).show();
-			return false;
-		}
+	function alertShow(cls, message) {
+		var other = cls === 'div.alert-danger' ? 'div.alert-success' : 'div.alert-danger';
+		var o = document.querySelector(other);
+		o.innerHTML = ''; o.style.display = 'none';
+		var el = document.querySelector(cls);
+		el.innerHTML = message; el.style.display = 'block';
+		setTimeout(function () { el.innerHTML = ''; el.style.display = 'none'; }, 10000);
+		return false;
+	}
+	function loginFormRaiseError(error) { return alertShow('div.alert-danger', error); }
+	function loginFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
+	function registerFormRaiseError(error) { return alertShow('div.alert-danger', error); }
+	function registerFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
+	function resetFormRaiseError(error) { return alertShow('div.alert-danger', error); }
+	function resetFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
+	function passwordRestoreFormRaiseError(error) { return alertShow('div.alert-danger', error); }
+	function passwordRestoreFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
+	function logoutFormRaiseError(error) { return alertShow('div.alert-danger', error); }
+	function logoutFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
 
-		/**
-		 * Validate Login Form
-		 * @returns  {Boolean}
-		 */
+	// postForm posts url-encoded form data and parses the JSON response,
+	// mirroring the $.post behavior the pages previously relied on.
+	function postForm(url, data) {
+		return fetch(url, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+			body: new URLSearchParams(data)
+		}).then(function (response) { return response.json(); });
+	}
+	function inputVal(name) {
+		var el = document.querySelector('input[name=' + name + ']');
+		return el ? el.value.trim() : '';
+	}
+	function spinner(show) {
+		var el = document.querySelector('.ImgLoading');
+		if (el) { el.style.display = show ? 'inline-block' : 'none'; }
+	}
+	function onReady(fn) {
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', fn);
+		} else {
+			fn();
+		}
+	}
+
 		function loginFormValidate() {
-			var email = $.trim($('input[name=email]').val());
+			var email = inputVal('email');
 
 			if (email === '') {
 				return loginFormRaiseError('Email is required');
 			}
 
-			$('.ButtonLogin .ImgLoading').show();
+			spinner(true);
 
 			// The send ajax shares this page's path (GET renders, POST sends).
-			var data = {"email": email};
-
-			$.post(window.location.pathname, data).then(function (response) {
-				$('.ButtonLogin .ImgLoading').hide();
+			postForm(window.location.pathname, {"email": email}).then(function (response) {
+				spinner(false);
 
 				if (response.status !== "success") {
 					return loginFormRaiseError(response.message);
 				}
 
 				loginFormRaiseSuccess('Check your inbox — we emailed you a sign-in link.');
-				$('input[name=email]').val('');
-			}).fail(function () {
-				$('.ButtonLogin .ImgLoading').hide();
+				document.querySelector('input[name=email]').value = '';
+			}).catch(function () {
+				spinner(false);
 				loginFormRaiseError('Request failed. Please try again.');
 			});
 			return false;
 		}
+
 	`
 
 	shared.PageRender(w, r, shared.PageOptions{

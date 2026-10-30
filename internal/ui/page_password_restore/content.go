@@ -40,65 +40,78 @@ func PasswordRestoreScripts(urlApiPasswordRestore, urlOnSuccess string) string {
 		var urlApiPasswordRestore = "` + urlApiPasswordRestore + `";
 		var urlOnSuccess = "` + urlOnSuccess + `";
 
-		/**
-		 * Raises an error message
-		 * @param  {String} error
-		 * @returns  {Boolean}
-		 */
-		function passwordRestoreFormRaiseError(error) {
-			$('div.alert-success').html('').hide();
-			$('div.alert-danger').html(error).show();
-			setTimeout(function () {
-				$('div.alert-danger').html('').hide();
-			}, 10000);
-			return false;
-		}
+	function alertShow(cls, message) {
+		var other = cls === 'div.alert-danger' ? 'div.alert-success' : 'div.alert-danger';
+		var o = document.querySelector(other);
+		o.innerHTML = ''; o.style.display = 'none';
+		var el = document.querySelector(cls);
+		el.innerHTML = message; el.style.display = 'block';
+		setTimeout(function () { el.innerHTML = ''; el.style.display = 'none'; }, 10000);
+		return false;
+	}
+	function loginFormRaiseError(error) { return alertShow('div.alert-danger', error); }
+	function loginFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
+	function registerFormRaiseError(error) { return alertShow('div.alert-danger', error); }
+	function registerFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
+	function resetFormRaiseError(error) { return alertShow('div.alert-danger', error); }
+	function resetFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
+	function passwordRestoreFormRaiseError(error) { return alertShow('div.alert-danger', error); }
+	function passwordRestoreFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
+	function logoutFormRaiseError(error) { return alertShow('div.alert-danger', error); }
+	function logoutFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
 
-		function passwordRestoreFormRaiseSuccess(success) {
-			$('div.alert-danger').html('').hide();
-			$('div.alert-success').html(success).show();
-			setTimeout(function () {
-				$('div.alert-success').html('').hide();
-			}, 10000);
-			return false;
+	// postForm posts url-encoded form data and parses the JSON response,
+	// mirroring the $.post behavior the pages previously relied on.
+	function postForm(url, data) {
+		return fetch(url, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+			body: new URLSearchParams(data)
+		}).then(function (response) { return response.json(); });
+	}
+	function inputVal(name) {
+		var el = document.querySelector('input[name=' + name + ']');
+		return el ? el.value.trim() : '';
+	}
+	function spinner(show) {
+		var el = document.querySelector('.ImgLoading');
+		if (el) { el.style.display = show ? 'inline-block' : 'none'; }
+	}
+	function onReady(fn) {
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', fn);
+		} else {
+			fn();
 		}
+	}
 
-		/**
-		 * Validates the Password Restore Form
-		 * and sends the request to the backend
-		 * @returns  {Boolean}
-		 */
 		function passwordRestoreFormValidate() {
-			var first_name = $.trim($('input[name=first_name]').val());
-			var last_name = $.trim($('input[name=last_name]').val());
-			var email = $.trim($('input[name=email]').val());
+			var first_name = inputVal('first_name');
+			var last_name = inputVal('last_name');
+			var email = inputVal('email');
 
-			$('.ButtonContinue .imgLoading').show();
+			spinner(true);
 
-			var data = {"first_name": first_name, "last_name": last_name, "email": email};
-
-			$.post(urlApiPasswordRestore, data).then(function (response) {
-				$('.ButtonContinue .imgLoading').hide();
+			postForm(urlApiPasswordRestore, {"first_name": first_name, "last_name": last_name, "email": email}).then(function (response) {
+				spinner(false);
 
 				if (response.status !== "success") {
 					return passwordRestoreFormRaiseError(response.message);
 				}
 
 				passwordRestoreFormRaiseSuccess('Success');
-				$('div.alert-danger').html('').hide();
-
 				setTimeout(function () {
-					window.location.href=urlOnSuccess;
+					window.location.href = urlOnSuccess;
 				}, 2000);
-				return;
-			}).fail(function (error) {
+			}).catch(function (error) {
 				console.log(error);
-				$('.ButtonContinue .imgLoading').hide();
+				spinner(false);
 				return passwordRestoreFormRaiseError('There was an error. Try again later!');
 			});
 		}
-		$(function () {
-			$("input[name=first_name").focus();
+		onReady(function () {
+			var el = document.querySelector('input[name=first_name]');
+			if (el) { el.focus(); }
 		});
 	`
 }

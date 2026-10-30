@@ -46,51 +46,68 @@ func LoginCodeVerifyScripts(urlApiLoginCodeVerify, urlOnSuccess string) string {
 	return `
 		var urlApiLoginCodeVerify = "` + urlApiLoginCodeVerify + `";
 		var urlOnSuccess = "` + urlOnSuccess + `";
-		/**
-		 * Raises an error message
-		 * @param  {String} error
-		 * @returns  {Boolean}
-		 */
-		function loginFormRaiseError(error) {
-			$('div.alert-success').html('').hide();
-			$('div.alert-danger').html(error).show();
-			setTimeout(function () {
-				$('div.alert-danger').html('').hide();
-			}, 10000);
-			return false;
-		}
 
-		function loginFormRaiseSuccess(success) {
-			$('div.alert-danger').html('').hide();
-			$('div.alert-success').html(success).show();
-			setTimeout(function () {
-				$('div.alert-success').html('').hide();
-			}, 10000);
-			return false;
-		}
+	function alertShow(cls, message) {
+		var other = cls === 'div.alert-danger' ? 'div.alert-success' : 'div.alert-danger';
+		var o = document.querySelector(other);
+		o.innerHTML = ''; o.style.display = 'none';
+		var el = document.querySelector(cls);
+		el.innerHTML = message; el.style.display = 'block';
+		setTimeout(function () { el.innerHTML = ''; el.style.display = 'none'; }, 10000);
+		return false;
+	}
+	function loginFormRaiseError(error) { return alertShow('div.alert-danger', error); }
+	function loginFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
+	function registerFormRaiseError(error) { return alertShow('div.alert-danger', error); }
+	function registerFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
+	function resetFormRaiseError(error) { return alertShow('div.alert-danger', error); }
+	function resetFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
+	function passwordRestoreFormRaiseError(error) { return alertShow('div.alert-danger', error); }
+	function passwordRestoreFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
+	function logoutFormRaiseError(error) { return alertShow('div.alert-danger', error); }
+	function logoutFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
 
-		/**
-		 * Validate Login Form
-		 * @returns  {Boolean}
-		 */
+	// postForm posts url-encoded form data and parses the JSON response,
+	// mirroring the $.post behavior the pages previously relied on.
+	function postForm(url, data) {
+		return fetch(url, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+			body: new URLSearchParams(data)
+		}).then(function (response) { return response.json(); });
+	}
+	function inputVal(name) {
+		var el = document.querySelector('input[name=' + name + ']');
+		return el ? el.value.trim() : '';
+	}
+	function spinner(show) {
+		var el = document.querySelector('.ImgLoading');
+		if (el) { el.style.display = show ? 'inline-block' : 'none'; }
+	}
+	function onReady(fn) {
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', fn);
+		} else {
+			fn();
+		}
+	}
+
 		function loginFormValidate() {
-			var verificationCode = $.trim($('input[name=verification_code]').val());
+			var verificationCode = inputVal('verification_code');
 
 			if (verificationCode === '') {
 				return loginFormRaiseError('Code is required');
 			}
 
-			$('.ButtonLogin .ImgLoading').show();
+			spinner(true);
 
 			// The nonce travels via sessionStorage (set by the login page),
 			// not the URL — keeps it out of history, logs, and Referer.
 			var nonce = sessionStorage.getItem('auth_login_nonce') || '';
 			var email = sessionStorage.getItem('auth_login_email') || '';
 
-			var data = {"verification_code": verificationCode, "nonce": nonce, "email": email};
-
-			$.post(urlApiLoginCodeVerify, data).then(function (response) {
-				$('.ButtonLogin .ImgLoading').hide();
+			postForm(urlApiLoginCodeVerify, {"verification_code": verificationCode, "nonce": nonce, "email": email}).then(function (response) {
+				spinner(false);
 
 				if (response.status !== "success") {
 					return loginFormRaiseError(response.message);
@@ -101,56 +118,56 @@ func LoginCodeVerifyScripts(urlApiLoginCodeVerify, urlOnSuccess string) string {
 				sessionStorage.removeItem('auth_login_nonce');
 				sessionStorage.removeItem('auth_login_email');
 				loginFormRaiseSuccess('Verification successful');
-				$('div.alert-danger').html('').hide();
 				setTimeout(function () {
 					$$.to(urlOnSuccess);
 				}, 2000);
-				return;
-			}).fail(function (error) {
+			}).catch(function (error) {
 				console.log(error);
-				$('.ButtonLogin .ImgLoading').hide();
+				spinner(false);
 				return loginFormRaiseError('There was an error. Try again later!');
 			});
 		}
-		$(function () {
-			var $digits = $('.otp-digit');
-			var $hidden = $('input[name=verification_code]');
+		onReady(function () {
+			var digits = Array.prototype.slice.call(document.querySelectorAll('.otp-digit'));
+			var hidden = document.querySelector('input[name=verification_code]');
 
 			function syncDigits() {
 				var code = '';
-				$digits.each(function () { code += $(this).val(); });
-				$hidden.val(code);
+				digits.forEach(function (d) { code += d.value; });
+				hidden.value = code;
 				return code;
 			}
 
-			$digits.on('input', function () {
-				var v = $(this).val().replace(/[^0-9]/g, '');
-				$(this).val(v.slice(-1));
-				syncDigits();
-				if (v && this.nextElementSibling) {
-					$(this).nextAll('.otp-digit').first().focus();
-				}
-				if (syncDigits().length === $digits.length) {
-					loginFormValidate();
-				}
+			digits.forEach(function (d, i) {
+				d.addEventListener('input', function () {
+					var v = d.value.replace(/[^0-9]/g, '');
+					d.value = v.slice(-1);
+					syncDigits();
+					if (v && digits[i + 1]) {
+						digits[i + 1].focus();
+					}
+					if (syncDigits().length === digits.length) {
+						loginFormValidate();
+					}
+				});
+				d.addEventListener('keydown', function (e) {
+					if (e.key === 'Backspace' && !d.value && digits[i - 1]) {
+						digits[i - 1].focus();
+					}
+				});
+				d.addEventListener('paste', function (e) {
+					e.preventDefault();
+					var pasted = ((e.clipboardData || window.clipboardData).getData('text'))
+						.replace(/[^0-9]/g, '').slice(0, digits.length);
+					digits.forEach(function (d2, j) { d2.value = pasted[j] || ''; });
+					syncDigits();
+					digits[Math.min(pasted.length, digits.length - 1)].focus();
+					if (pasted.length === digits.length) {
+						loginFormValidate();
+					}
+				});
 			});
-			$digits.on('keydown', function (e) {
-				if (e.key === 'Backspace' && !$(this).val()) {
-					$(this).prevAll('.otp-digit').first().focus();
-				}
-			});
-			$digits.on('paste', function (e) {
-				e.preventDefault();
-				var pasted = (e.originalEvent.clipboardData || window.clipboardData)
-					.getData('text').replace(/[^0-9]/g, '').slice(0, $digits.length);
-				$digits.each(function (i) { $(this).val(pasted[i] || ''); });
-				syncDigits();
-				$digits.eq(Math.min(pasted.length, $digits.length - 1)).focus();
-				if (pasted.length === $digits.length) {
-					loginFormValidate();
-				}
-			});
-			$digits.first().focus();
+			if (digits[0]) { digits[0].focus(); }
 		});
 	`
 }

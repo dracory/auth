@@ -58,63 +58,79 @@ func PasswordResetScripts(urlApiPasswordReset, urlOnSuccess string) string {
 	return `
 		var urlApiPasswordReset = "` + urlApiPasswordReset + `";
 		var urlOnSuccess = "` + urlOnSuccess + `";
-		/**
-		 * Raises an error message
-		 * @param  {String} error
-		 * @returns  {Boolean}
-		 */
-		function resetFormRaiseError(error) {
-			$('div.alert-success').html('').hide();
-			$('div.alert-danger').html(error).show();
-			setTimeout(function () {
-				$('div.alert-danger').html('').hide();
-			}, 10000);
-			return false;
-		}
 
-		function resetFormRaiseSuccess(success) {
-			$('div.alert-danger').html('').hide();
-			$('div.alert-success').html(success).show();
-			setTimeout(function () {
-				$('div.alert-success').html('').hide();
-			}, 10000);
-			return false;
-		}
+	function alertShow(cls, message) {
+		var other = cls === 'div.alert-danger' ? 'div.alert-success' : 'div.alert-danger';
+		var o = document.querySelector(other);
+		o.innerHTML = ''; o.style.display = 'none';
+		var el = document.querySelector(cls);
+		el.innerHTML = message; el.style.display = 'block';
+		setTimeout(function () { el.innerHTML = ''; el.style.display = 'none'; }, 10000);
+		return false;
+	}
+	function loginFormRaiseError(error) { return alertShow('div.alert-danger', error); }
+	function loginFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
+	function registerFormRaiseError(error) { return alertShow('div.alert-danger', error); }
+	function registerFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
+	function resetFormRaiseError(error) { return alertShow('div.alert-danger', error); }
+	function resetFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
+	function passwordRestoreFormRaiseError(error) { return alertShow('div.alert-danger', error); }
+	function passwordRestoreFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
+	function logoutFormRaiseError(error) { return alertShow('div.alert-danger', error); }
+	function logoutFormRaiseSuccess(success) { return alertShow('div.alert-success', success); }
 
-		/**
-		 * Validate Login Form
-		 * @returns  {Boolean}
-		 */
+	// postForm posts url-encoded form data and parses the JSON response,
+	// mirroring the $.post behavior the pages previously relied on.
+	function postForm(url, data) {
+		return fetch(url, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+			body: new URLSearchParams(data)
+		}).then(function (response) { return response.json(); });
+	}
+	function inputVal(name) {
+		var el = document.querySelector('input[name=' + name + ']');
+		return el ? el.value.trim() : '';
+	}
+	function spinner(show) {
+		var el = document.querySelector('.ImgLoading');
+		if (el) { el.style.display = show ? 'inline-block' : 'none'; }
+	}
+	function onReady(fn) {
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', fn);
+		} else {
+			fn();
+		}
+	}
+
 		function resetFormValidate() {
-			var token = $.trim($('input[name=token]').val());
-			var password = $.trim($('input[name=password]').val());
-			var passwordConfirm = $.trim($('input[name=password_confirm]').val());
+			var token = inputVal('token');
+			var password = inputVal('password');
+			var passwordConfirm = inputVal('password_confirm');
 
-			$('.ButtonContinue .imgLoading').show();
+			spinner(true);
 
-			var data = {"password": password, "password_confirm": passwordConfirm, "token": token};
-
-			$.post(urlApiPasswordReset, data).then(function (response) {
-				$('.ButtonContinue .imgLoading').hide();
+			postForm(urlApiPasswordReset, {"password": password, "password_confirm": passwordConfirm, "token": token}).then(function (response) {
+				spinner(false);
 
 				if (response.status !== "success") {
 					return resetFormRaiseError(response.message);
 				}
 
 				resetFormRaiseSuccess('Success');
-				$('div.alert-danger').html('').hide();
 				setTimeout(function () {
-					window.location.href=urlOnSuccess;
+					window.location.href = urlOnSuccess;
 				}, 2000);
-				return;
-			}).fail(function (error) {
+			}).catch(function (error) {
 				console.log(error);
-				$('.ButtonContinue .imgLoading').hide();
+				spinner(false);
 				return resetFormRaiseError('There was an error. Try again later!');
 			});
 		}
-		$(function () {
-			$("input[name=first_name").focus();
+		onReady(function () {
+			var el = document.querySelector('input[name=password]');
+			if (el) { el.focus(); }
 		});
 	`
 }
