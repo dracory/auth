@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/dracory/auth/internal/api/api_magic_link_callback"
+	"github.com/dracory/auth/internal/api/api_magic_link_send"
 	"github.com/dracory/auth/internal/testutils"
 	"github.com/dracory/auth/types"
 )
@@ -159,5 +161,210 @@ func TestMultiMethod_PostCallbackPath(t *testing.T) {
 	}
 	if rec := serve(t, mma.Router(), "GET", "/auth/oauth-callback"); rec.Code != 405 {
 		t.Fatalf("expected GET rejected, got %d", rec.Code)
+	}
+}
+
+func TestMultiMethod_HandlerAndMethods(t *testing.T) {
+	methods := []types.Method{stubMethod{name: "otp"}, stubMethod{name: "password"}}
+	mma, err := NewMultiMethodAuth("/auth", methods)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if mma.Handler() == nil {
+		t.Fatal("expected non-nil handler")
+	}
+	if len(mma.Methods()) != 2 || mma.Methods()[0].Name() != "otp" {
+		t.Fatalf("unexpected methods %+v", mma.Methods())
+	}
+}
+
+func TestMultiMethod_LoginAlternativesHTML(t *testing.T) {
+	mma, err := NewMultiMethodAuth("/auth", []types.Method{
+		stubMethod{name: "otp"},
+		stubMethod{name: "password"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	html := mma.LoginAlternativesHTML("otp")
+	if !strings.Contains(html, "/auth/login-password") {
+		t.Fatalf("expected sibling link in alternatives html, got %q", html)
+	}
+}
+
+func TestNewOTPMethodWithPage_CustomPage(t *testing.T) {
+	shared := testutils.NewAuthSharedForTest()
+	custom := func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("custom")) }
+	m := NewOTPMethodWithPage(shared.(types.AuthSharedInterface), custom)
+
+	mma, err := NewMultiMethodAuth("/auth", []types.Method{m})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rec := serve(t, mma.Router(), "GET", "/auth/login"); !strings.Contains(rec.Body.String(), "custom") {
+		t.Fatalf("expected custom page, got %d %q", rec.Code, rec.Body.String())
+	}
+}
+
+func TestOTPMethod_ExtraRoutesMountCodeVerify(t *testing.T) {
+	shared := testutils.NewAuthSharedForTest()
+	m := NewOTPMethod(shared)
+
+	mma, err := NewMultiMethodAuth("/auth", []types.Method{m})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rec := serve(t, mma.Router(), "GET", "/auth/login-code-verify"); rec.Code != 200 {
+		t.Fatalf("expected code-verify page mounted, got %d", rec.Code)
+	}
+	if path, h, ok := m.CallbackRoute(); ok || path != "" || h != nil {
+		t.Fatal("expected no callback route for otp")
+	}
+}
+
+func TestNewMagicLinkMethod_PanicsOnNilPage(t *testing.T) {
+	defer func() {
+		if recover() == nil {
+			t.Fatal("expected panic for nil page")
+		}
+	}()
+	NewMagicLinkMethod(nil, api_magic_link_send.Dependencies{}, api_magic_link_callback.Dependencies{})
+}
+
+func TestMagicLinkMethod_Adaptation(t *testing.T) {
+	page := func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("ml-page")) }
+	m := NewMagicLinkMethod(page,
+		api_magic_link_send.Dependencies{},
+		api_magic_link_callback.Dependencies{},
+	)
+
+	if m.Name() != "magiclink" {
+		t.Fatalf("unexpected name %q", m.Name())
+	}
+	if m.AlternativeLabel() == "" {
+		t.Fatal("expected alternative label")
+	}
+	if m.PageHandler() == nil || m.AjaxHandler() == nil {
+		t.Fatal("expected page and ajax handlers")
+	}
+	path, h, ok := m.CallbackRoute()
+	if !ok || path != "/magiclink-callback" || h == nil {
+		t.Fatalf("unexpected callback route %q %v", path, ok)
+	}
+}
+
+func TestNewMagicLinkMethodFromAuth_BuildsDeps(t *testing.T) {
+	shared := testutils.NewAuthSharedForTest()
+	m := NewMagicLinkMethodFromAuth(shared, nil, func(token string) string {
+		return "/auth/magiclink-callback?token=" + token
+	})
+	if m == nil || m.Name() != "magiclink" {
+		t.Fatal("expected magiclink method")
+	}
+	// nil page falls back to the package's generic magic-link page.
+	if m.PageHandler() == nil {
+		t.Fatal("expected default package page handler")
+	}
+}
+
+func TestPasswordMethod_AdaptationAndRoutes(t *testing.T) {
+	shared := testutils.NewAuthSharedForTest()
+	testutils.SetRegistrationForTest(shared, true)
+
+	m := NewPasswordMethod(shared, nil)
+	if m.Name() != "password" || m.AlternativeLabel() == "" {
+		t.Fatal("expected password method adaptation")
+	}
+	if path, _, ok := m.CallbackRoute(); ok || path != "" {
+		t.Fatal("expected no callback route for password")
+	}
+	if len(m.(types.RouteProvider).ExtraRoutes()) == 0 {
+		t.Fatal("expected recovery extra routes")
+	}
+
+	mma, err := NewMultiMethodAuth("/auth", []types.Method{m})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{"/auth/password-restore", "/auth/password-reset", "/auth/register", "/auth/logout"} {
+		if rec := serve(t, mma.Router(), "GET", path); rec.Code != 200 {
+			t.Fatalf("expected %s mounted, got %d", path, rec.Code)
+		}
+	}
+}
+
+func TestMultiMethod_NoRegistrationNoRegisterRoutes(t *testing.T) {
+	shared := testutils.NewAuthSharedForTest()
+	testutils.SetRegistrationForTest(shared, false)
+
+	mma, err := NewMultiMethodAuth("/auth", []types.Method{NewPasswordMethod(shared, nil)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rec := serve(t, mma.Router(), "GET", "/auth/register"); rec.Code != 404 {
+		t.Fatalf("expected no register route, got %d", rec.Code)
+	}
+}
+
+func TestMultiMethod_WiresSiblingAlternatives(t *testing.T) {
+	shared := testutils.NewAuthSharedForTest()
+	mma, err := NewMultiMethodAuth("/auth", []types.Method{
+		NewOTPMethod(shared),
+		NewPasswordMethod(shared, nil),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	impl := mma.Methods()[0].(implSwapper).authImpl()
+	getter, ok := impl.(interface {
+		GetLoginAlternatives() []types.LoginAlternative
+	})
+	if !ok {
+		t.Fatal("expected impl to be decorated with alternatives")
+	}
+	alts := getter.GetLoginAlternatives()
+	if len(alts) != 1 || alts[0].URL != "/auth/login-password" {
+		t.Fatalf("unexpected alternatives %+v", alts)
+	}
+
+	// The decorator must unwrap to the original impl for capability checks.
+	unwrapper, ok := impl.(interface {
+		Unwrap() types.AuthSharedInterface
+	})
+	if !ok || unwrapper.Unwrap() == nil {
+		t.Fatal("expected decorator to expose Unwrap")
+	}
+}
+
+func TestAuthKnightMethod_Adaptation(t *testing.T) {
+	a, err := NewAuthKnightAuth(newValidAuthKnightConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := NewAuthKnightMethod(a)
+
+	if m.Name() != "authknight" || m.AlternativeLabel() == "" {
+		t.Fatal("expected authknight method adaptation")
+	}
+	if m.AjaxHandler() != nil {
+		t.Fatal("expected no ajax handler for external flow")
+	}
+	if m.PageHandler() == nil {
+		t.Fatal("expected page handler")
+	}
+	path, h, ok := m.CallbackRoute()
+	if !ok || path != "/authknight-callback" || h == nil {
+		t.Fatalf("unexpected callback route %q %v", path, ok)
+	}
+
+	mma, err := NewMultiMethodAuth("/auth", []types.Method{m})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rec := serve(t, mma.Router(), "GET", "/auth/authknight-callback"); rec.Code == 404 || rec.Code == 405 {
+		t.Fatalf("expected callback route mounted, got %d", rec.Code)
 	}
 }
