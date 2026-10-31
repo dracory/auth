@@ -47,6 +47,7 @@ func PageMagicLink(w http.ResponseWriter, r *http.Request, a types.AuthSharedInt
 		Attr("required", "required")
 
 	card := shared.Card(
+		shared.PageHeader("Login to your account", "We'll email you a secure link to log in instantly — no password needed."),
 		shared.AlertGroup(),
 		shared.FieldGroup("Email", emailInput),
 		shared.PrimaryButton("ButtonLogin", "bi-envelope", "Send me a quick login link", "loginFormValidate()"),
@@ -54,7 +55,6 @@ func PageMagicLink(w http.ResponseWriter, r *http.Request, a types.AuthSharedInt
 	)
 
 	container := hb.NewDiv().Children([]hb.TagInterface{
-		shared.PageHeader("Login to your account", "We'll email you a secure link to log in instantly — no password needed."),
 		card,
 	})
 

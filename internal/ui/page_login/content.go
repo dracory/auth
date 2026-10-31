@@ -93,6 +93,7 @@ func LoginPasswordlessContentX(enableRegistration bool, urlRegister string, x Lo
 		Attr("required", "required")
 
 	card := shared.Card(
+		shared.PageHeader("Login to your account", "No password needed. We'll email you a code."),
 		shared.AlertGroup(),
 		shared.FieldGroup("Email", emailInput),
 		hb.NewHTML(rememberBlock(x)),
@@ -102,7 +103,6 @@ func LoginPasswordlessContentX(enableRegistration bool, urlRegister string, x Lo
 
 	container := hb.NewDiv().Children([]hb.TagInterface{
 		hb.NewHTML(brandBlock(x)),
-		shared.PageHeader("Login to your account", "No password needed. We'll email you a code."),
 		card,
 	})
 
@@ -147,6 +147,7 @@ func LoginContentX(enableRegistration bool, urlRegister, urlPasswordRestore stri
 		Attr("required", "required")
 
 	card := shared.Card(
+		shared.PageHeader("Login to your account", "Enter your email and password to sign in."),
 		shared.AlertGroup(),
 		shared.FieldGroup("Email", emailInput),
 		shared.FieldGroup("Password", passwordInput),
@@ -159,7 +160,6 @@ func LoginContentX(enableRegistration bool, urlRegister, urlPasswordRestore stri
 
 	container := hb.NewDiv().Children([]hb.TagInterface{
 		hb.NewHTML(brandBlock(x)),
-		shared.PageHeader("Login to your account", "Enter your email and password to sign in."),
 		card,
 	})
 

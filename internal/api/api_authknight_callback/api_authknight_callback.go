@@ -69,7 +69,6 @@ func ApiAuthKnightCallback(w http.ResponseWriter, r *http.Request, deps Dependen
 		return
 	}
 
-
 	options := types.UserAuthOptions{
 		UserIp:    req.GetIP(r),
 		UserAgent: r.UserAgent(),
@@ -265,7 +264,6 @@ func verifyOnceToken(ctx context.Context, baseURL, onceToken string, timeout tim
 	}
 	defer resp.Body.Close()
 
-
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("authknight API returned status %d", resp.StatusCode)
 	}
@@ -275,12 +273,10 @@ func verifyOnceToken(ctx context.Context, baseURL, onceToken string, timeout tim
 		return "", fmt.Errorf("failed to read response body: %w", errRead)
 	}
 
-
 	var whoResp authKnightWhoResponse
 	if errJSON := json.Unmarshal(body, &whoResp); errJSON != nil {
 		return "", fmt.Errorf("failed to parse response: %w", errJSON)
 	}
-
 
 	if whoResp.Status != "success" {
 		return "", fmt.Errorf("authknight verification failed: status=%s message=%s", whoResp.Status, whoResp.Message)

@@ -27,6 +27,7 @@ func PasswordResetContent(token, errorMessage, urlPasswordRestore, urlLogin, url
 		passwordConfirmInput := hb.NewInput().Class("form-control form-control-lg").Name("password_confirm").Type(hb.TYPE_PASSWORD).
 			Placeholder("Repeat password").Attr("autocomplete", "new-password").Attr("required", "required")
 		cardBody = shared.Card(
+			shared.PageHeader("Set a new password", "Choose a strong password for your account."),
 			alertGroup,
 			tokenInput,
 			shared.FieldGroup("New password", passwordInput),
@@ -35,6 +36,7 @@ func PasswordResetContent(token, errorMessage, urlPasswordRestore, urlLogin, url
 		)
 	} else {
 		cardBody = shared.Card(
+			shared.PageHeader("Set a new password", "Choose a strong password for your account."),
 			alertGroup,
 			hb.NewParagraph().Text("Sorry, there was an error processing your request. Please select one of the following options:"),
 			hb.NewParagraph().AddChild(hb.NewHyperlink().Href(urlPasswordRestore).Text("request a reset of your password")),
@@ -44,7 +46,6 @@ func PasswordResetContent(token, errorMessage, urlPasswordRestore, urlLogin, url
 	}
 
 	container := hb.NewDiv().Children([]hb.TagInterface{
-		shared.PageHeader("Set a new password", "Choose a strong password for your account."),
 		cardBody,
 		shared.FooterText("Remembered it?", urlLogin, "Login"),
 	})

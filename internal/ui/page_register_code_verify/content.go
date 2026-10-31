@@ -17,13 +17,13 @@ func RegisterCodeVerifyContent(urlBack string) string {
 		Attr("required", "required")
 
 	card := shared.Card(
+		shared.PageHeader("Check your email", "We sent a verification code to your email to confirm your new account."),
 		shared.AlertGroup(),
 		shared.FieldGroup("Verification code", verificationCodeInput),
 		shared.PrimaryButton("buttonVerify", "bi-check2-circle", "Verify registration", "registerCodeFormValidate()"),
 	)
 
 	return hb.NewDiv().Children([]hb.TagInterface{
-		shared.PageHeader("Check your email", "We sent a verification code to your email to confirm your new account."),
 		card,
 		shared.FooterText("Didn't get a code?", urlBack, "Resend"),
 	}).ToHTML()

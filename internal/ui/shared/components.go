@@ -31,10 +31,15 @@ func AlertGroup() hb.TagInterface {
 	})
 }
 
-// Card wraps children in the shared auth card (subtle shadow, padded body).
+// Card wraps children in the shared auth panel (subtle shadow, padded
+// body). The semantic "auth-panel" class is a stable styling hook for
+// consumers — e.g. `.auth-panel { background: ... }` — while the stock
+// Bootstrap `card`/`card-body` classes keep the default look and, via
+// Bootstrap 5.3 CSS variables, automatic dark/light mode under
+// `data-bs-theme`.
 func Card(children ...hb.TagInterface) hb.TagInterface {
-	return hb.NewDiv().Class("card shadow-sm").
-		Child(hb.NewDiv().Class("card-body p-4").Children(children))
+	return hb.NewDiv().Class("auth-panel card shadow-sm").
+		Child(hb.NewDiv().Class("auth-panel-body card-body p-4").Children(children))
 }
 
 // FieldGroup renders an uppercase small label above a form control.

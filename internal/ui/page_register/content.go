@@ -18,6 +18,7 @@ func RegisterPasswordlessContent(urlLogin string) string {
 		Attr("required", "required")
 
 	card := shared.Card(
+		shared.PageHeader("Create your account", "A few details and you're in."),
 		shared.AlertGroup(),
 		shared.NameRow(true),
 		shared.FieldGroup("Email", emailInput),
@@ -25,7 +26,6 @@ func RegisterPasswordlessContent(urlLogin string) string {
 	)
 
 	return hb.NewDiv().Children([]hb.TagInterface{
-		shared.PageHeader("Create your account", "A few details and you're in."),
 		card,
 		shared.FooterText("Already have an account?", urlLogin, "Login"),
 	}).ToHTML()
@@ -60,6 +60,7 @@ func RegisterUsernameAndPasswordContent(urlLogin, urlPasswordRestore string) str
 		Attr("required", "required")
 
 	card := shared.Card(
+		shared.PageHeader("Create your account", "A few details and you're in."),
 		shared.AlertGroup(),
 		shared.NameRow(true),
 		shared.FieldGroup("Email", emailInput),
@@ -70,7 +71,6 @@ func RegisterUsernameAndPasswordContent(urlLogin, urlPasswordRestore string) str
 	)
 
 	return hb.NewDiv().Children([]hb.TagInterface{
-		shared.PageHeader("Create your account", "A few details and you're in."),
 		card,
 		shared.FooterText("Already have an account?", urlLogin, "Login"),
 	}).ToHTML()
@@ -101,6 +101,7 @@ func RegisterAuthKnightContent(urlLogin string, verifiedEmail string, akKey stri
 	akKeyInput := hb.NewInput().Type("hidden").Name("ak_key").Value(akKey)
 
 	card := shared.Card(
+		shared.PageHeader("Create your account", "Confirm your details to finish registration."),
 		shared.AlertGroup(),
 		shared.NameRow(true),
 		emailGroup,
@@ -109,7 +110,6 @@ func RegisterAuthKnightContent(urlLogin string, verifiedEmail string, akKey stri
 	)
 
 	return hb.NewDiv().Children([]hb.TagInterface{
-		shared.PageHeader("Create your account", "Confirm your details to finish registration."),
 		card,
 		shared.FooterText("Already have an account?", urlLogin, "Login"),
 	}).ToHTML()

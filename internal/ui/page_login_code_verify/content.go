@@ -33,6 +33,7 @@ func LoginCodeVerifyContent(urlBack string) string {
 	}
 
 	card := shared.Card(
+		shared.PageHeader("Check your email", "We sent you a code by email. Enter it below to sign in."),
 		shared.AlertGroup(),
 		digitInputs,
 		verificationCodeInput,
@@ -40,7 +41,6 @@ func LoginCodeVerifyContent(urlBack string) string {
 	)
 
 	return hb.NewDiv().Children([]hb.TagInterface{
-		shared.PageHeader("Check your email", "We sent you a code by email. Enter it below to sign in."),
 		card,
 		shared.FooterText("Didn't get a code?", urlBack, "Resend"),
 	}).ToHTML()

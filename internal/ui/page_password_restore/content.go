@@ -18,6 +18,7 @@ func PasswordRestoreContent(enableRegistration bool, urlLogin, urlRegister strin
 		Attr("required", "required")
 
 	card := shared.Card(
+		shared.PageHeader("Forgot your password?", "Enter your email and we'll send you a reset link."),
 		shared.AlertGroup(),
 		shared.NameRow(false),
 		shared.FieldGroup("Email", emailInput),
@@ -25,7 +26,6 @@ func PasswordRestoreContent(enableRegistration bool, urlLogin, urlRegister strin
 	)
 
 	container := hb.NewDiv().Children([]hb.TagInterface{
-		shared.PageHeader("Forgot your password?", "Enter your email and we'll send you a reset link."),
 		card,
 		shared.FooterText("Remembered it?", urlLogin, "Login"),
 	})
