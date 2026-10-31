@@ -1,11 +1,15 @@
 package page_register
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/dracory/auth/internal/links"
+	"github.com/dracory/auth/internal/rules"
 	"github.com/dracory/auth/internal/ui/shared"
 	"github.com/dracory/auth/types"
+	authutils "github.com/dracory/auth/utils"
+	"github.com/dracory/req"
 )
 
 // PageRegister renders the register page using the provided dependencies and
@@ -33,6 +37,41 @@ func PageRegister(w http.ResponseWriter, r *http.Request, a types.AuthSharedInte
 			})
 			return
 		}
+	}
+
+	// Business rule: an authenticated session turns registration into
+	// profile completion — the email is already verified, shown
+	// read-only, and never read from the form.
+	if completion := rules.NewProfileCompletionRule(func(r *http.Request) string {
+		return authutils.ResolveCurrentUserID(r, a)
+	}, r); !completion.Fails() {
+		userID := completion.UserID()
+		email := ""
+		if provider, ok := a.(interface {
+			GetFuncUserEmailGet() func(ctx context.Context, userID string, options types.UserAuthOptions) (string, error)
+		}); ok {
+			if fn := provider.GetFuncUserEmailGet(); fn != nil {
+				email, _ = fn(r.Context(), userID, types.UserAuthOptions{
+					UserIp:    req.GetIP(r),
+					UserAgent: r.UserAgent(),
+				})
+			}
+		}
+		content := RegisterCompletionContent(links.Login(a.GetEndpoint()), email)
+		scripts := RegisterCompletionScripts(
+			links.ApiRegister(a.GetEndpoint()),
+			a.LinkRedirectOnSuccess(),
+		)
+		shared.PageRender(w, r, shared.PageOptions{
+			Title:      "Complete Registration",
+			Auth:       a,
+			Layout:     a.GetLayout(),
+			Content:    content,
+			Scripts:    scripts,
+			Logger:     a.GetLogger(),
+			LogMessage: "failed to write register page response",
+		})
+		return
 	}
 
 	if shared.RedirectAuthKnightIfActive(w, r, a) {

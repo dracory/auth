@@ -24,6 +24,70 @@ func makePostRequest(t *testing.T, path string, values url.Values) (*httptest.Re
 	return recorder, req
 }
 
+// Authenticated registration-completion tests (OTP / magic-link users
+// with an already-verified email).
+
+func TestApiRegister_AuthenticatedUpdatesExistingUser(t *testing.T) {
+	var gotUserID, gotFirst, gotLast string
+	deps := Dependencies{
+		CurrentUserID:     func(r *http.Request) string { return "user-1" },
+		RedirectOnSuccess: "/user",
+		UserProfileUpdate: func(ctx context.Context, userID, firstName, lastName string, options types.UserAuthOptions) error {
+			gotUserID, gotFirst, gotLast = userID, firstName, lastName
+			return nil
+		},
+	}
+
+	// A forged email in the form body must be ignored — the session wins.
+	values := url.Values{
+		"first_name": {"Jane"},
+		"last_name":  {"Doe"},
+		"email":      {"attacker@example.com"},
+	}
+	recorder, req := makePostRequest(t, "/api/register", values)
+	ApiRegister(recorder, req, deps)
+
+	if gotUserID != "user-1" || gotFirst != "Jane" || gotLast != "Doe" {
+		t.Fatalf("UserProfileUpdate got (%q, %q, %q)", gotUserID, gotFirst, gotLast)
+	}
+	body := recorder.Body.String()
+	if !strings.Contains(body, "\"status\":\"success\"") {
+		t.Fatalf("expected success, got %q", body)
+	}
+	if !strings.Contains(body, "\"redirect\":\"/user\"") {
+		t.Fatalf("expected redirect, got %q", body)
+	}
+}
+
+func TestApiRegister_AuthenticatedRequiresNames(t *testing.T) {
+	deps := Dependencies{
+		CurrentUserID: func(r *http.Request) string { return "user-1" },
+	}
+
+	recorder, req := makePostRequest(t, "/api/register", url.Values{})
+	ApiRegister(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "\"message\":\"First name is required field\"") {
+		t.Fatalf("expected first name required message, got %q", body)
+	}
+}
+
+func TestApiRegister_AuthenticatedMissingUpdateFn(t *testing.T) {
+	deps := Dependencies{
+		CurrentUserID: func(r *http.Request) string { return "user-1" },
+	}
+
+	values := url.Values{"first_name": {"Jane"}, "last_name": {"Doe"}}
+	recorder, req := makePostRequest(t, "/api/register", values)
+	ApiRegister(recorder, req, deps)
+
+	body := recorder.Body.String()
+	if !strings.Contains(body, "\"status\":\"error\"") {
+		t.Fatalf("expected error when UserProfileUpdate is nil, got %q", body)
+	}
+}
+
 // Username and password registration tests
 
 func TestApiRegisterUsernameAndPasswordRequiresFirstName(t *testing.T) {

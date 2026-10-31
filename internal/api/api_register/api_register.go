@@ -28,6 +28,50 @@ func ApiRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 		logger = slog.Default()
 	}
 
+	// Business rule: an authenticated session turns registration into
+	// profile completion. The email belongs to the verified session —
+	// never read from the form — so no code is generated and no user is
+	// created.
+	if completion := rules.NewProfileCompletionRule(deps.CurrentUserID, r); !completion.Fails() {
+		userID := completion.UserID()
+		firstName := html.EscapeString(req.GetStringTrimmed(r, "first_name"))
+		lastName := html.EscapeString(req.GetStringTrimmed(r, "last_name"))
+
+		for _, check := range []rule.RuleInterface{
+			rules.NewRequiredFieldRule(firstName, types.MsgFirstNameRequired),
+			rules.NewRequiredFieldRule(lastName, types.MsgLastNameRequired),
+		} {
+			if check.Fails() {
+				api.Respond(w, r, api.Error(check.FailMessageFirst()))
+				return
+			}
+		}
+
+		if deps.UserProfileUpdate == nil {
+			logger.Error("registration completion failed: UserProfileUpdate is not configured")
+			api.Respond(w, r, api.Error(types.MsgFailedToProcess))
+			return
+		}
+
+		err := deps.UserProfileUpdate(r.Context(), userID, firstName, lastName, types.UserAuthOptions{
+			UserIp:    req.GetIP(r),
+			UserAgent: r.UserAgent(),
+		})
+		if err != nil {
+			logger.Error("registration completion failed",
+				slog.String("error", err.Error()),
+				slog.String("user_id", userID),
+			)
+			api.Respond(w, r, api.Error(types.MsgFailedToProcess))
+			return
+		}
+
+		api.Respond(w, r, api.SuccessWithData(types.MsgProfileSaved, map[string]any{
+			"redirect": deps.RedirectOnSuccess,
+		}))
+		return
+	}
+
 	if deps.AuthKnight {
 		akDeps := deps.AuthKnightRegisterDependencies
 		akKey := req.GetStringTrimmed(r, "ak_key")
@@ -186,6 +230,18 @@ func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSha
 	deps := Dependencies{}
 	deps.Passwordless = a.IsPasswordless()
 	deps.Logger = a.GetLogger()
+	deps.RedirectOnSuccess = a.LinkRedirectOnSuccess()
+	deps.CurrentUserID = func(r *http.Request) string {
+		return authutils.ResolveCurrentUserID(r, a)
+	}
+
+	// Optional-hook resolution via type assertion — extending
+	// AuthSharedInterface would break external implementers.
+	if provider, ok := a.(interface {
+		GetFuncUserProfileUpdate() func(ctx context.Context, userID, firstName, lastName string, options types.UserAuthOptions) error
+	}); ok {
+		deps.UserProfileUpdate = provider.GetFuncUserProfileUpdate()
+	}
 
 	// Check if this is an AuthKnight instance
 	if akAuth, ok := a.(types.AuthAuthKnightInterface); ok && akAuth.IsAuthKnight() {

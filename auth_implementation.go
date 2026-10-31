@@ -46,6 +46,8 @@ type authImplementation struct {
 	funcUserFindByAuthToken func(ctx context.Context, token string, options types.UserAuthOptions) (userID string, err error)
 	funcUserLogout          func(ctx context.Context, userID string, options types.UserAuthOptions) (err error)
 	funcUserStoreAuthToken  func(ctx context.Context, token string, userID string, options types.UserAuthOptions) error
+	funcUserEmailGet        func(ctx context.Context, userID string, options types.UserAuthOptions) (email string, err error)
+	funcUserProfileUpdate   func(ctx context.Context, userID string, firstName string, lastName string, options types.UserAuthOptions) (err error)
 	// ===== END: shared by all implementations
 
 	// ===== START: username(email) and password options
@@ -261,6 +263,32 @@ func (a *authImplementation) SetCookieName(name string) {
 // This is useful for integrating with application authentication systems or for testing.
 func (a *authImplementation) SetFuncUserFindByAuthToken(fn func(ctx context.Context, token string, options types.UserAuthOptions) (string, error)) {
 	a.funcUserFindByAuthToken = fn
+}
+
+// GetFuncUserEmailGet returns the optional function used to resolve a
+// user's email by ID. Used to display the verified email on the
+// authenticated registration-completion form. Accessed through an
+// optional interface so AuthSharedInterface stays stable.
+func (a authImplementation) GetFuncUserEmailGet() func(ctx context.Context, userID string, options types.UserAuthOptions) (string, error) {
+	return a.funcUserEmailGet
+}
+
+// SetFuncUserEmailGet sets the optional user-email lookup function.
+func (a *authImplementation) SetFuncUserEmailGet(fn func(ctx context.Context, userID string, options types.UserAuthOptions) (string, error)) {
+	a.funcUserEmailGet = fn
+}
+
+// GetFuncUserProfileUpdate returns the optional function used to persist
+// the registration-completion form (first/last name) for an existing
+// authenticated user — e.g. one created implicitly by an OTP or
+// magic-link login whose email is already verified.
+func (a authImplementation) GetFuncUserProfileUpdate() func(ctx context.Context, userID string, firstName string, lastName string, options types.UserAuthOptions) error {
+	return a.funcUserProfileUpdate
+}
+
+// SetFuncUserProfileUpdate sets the optional profile-update function.
+func (a *authImplementation) SetFuncUserProfileUpdate(fn func(ctx context.Context, userID string, firstName string, lastName string, options types.UserAuthOptions) error) {
+	a.funcUserProfileUpdate = fn
 }
 
 // GetDisableRateLimit returns whether the Auth instance disables rate limiting.

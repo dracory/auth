@@ -24,6 +24,21 @@ type Dependencies struct {
 	// error message.
 	RegisterWithUsernameAndPassword func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (successMessage, nonce, errorMessage string)
 
+	// CurrentUserID resolves the authenticated user ID from the request
+	// (session cookie or middleware context). When it returns a non-empty
+	// ID the endpoint treats registration as profile completion: the
+	// email is already verified and the existing user is updated via
+	// UserProfileUpdate instead of a new account being created.
+	CurrentUserID func(r *http.Request) string
+
+	// UserProfileUpdate persists the completion form (first/last name)
+	// for an existing authenticated user.
+	UserProfileUpdate func(ctx context.Context, userID, firstName, lastName string, options types.UserAuthOptions) error
+
+	// RedirectOnSuccess is the URL returned to the client after a
+	// successful profile completion.
+	RedirectOnSuccess string
+
 	// AuthKnight indicates whether the registration flow is AuthKnight-based.
 	AuthKnight bool
 

@@ -126,3 +126,46 @@ func RegisterAuthKnightScripts(urlApiRegister, urlOnSuccess string) string {
 	s = strings.ReplaceAll(s, "__URL_ON_SUCCESS__", urlOnSuccess)
 	return s
 }
+
+// RegisterCompletionContent builds the HTML for the authenticated
+// registration-completion page — shown when the requester already has a
+// session (e.g. created implicitly by an OTP/magic-link login). The
+// email was already verified so it is rendered read-only and is never
+// read back from the form. verifiedEmail may be empty when the host
+// provides no FuncUserEmailGet hook — a generic label is shown then.
+func RegisterCompletionContent(urlLogin string, verifiedEmail string) string {
+	emailDisplay := verifiedEmail
+	if emailDisplay == "" {
+		emailDisplay = "Your verified email"
+	}
+
+	emailGroup := hb.NewDiv().Class("mb-3").Children([]hb.TagInterface{
+		hb.NewLabel().Class("form-label small fw-bold text-uppercase text-secondary").Text("Email (verified)"),
+		hb.NewDiv().Class("form-control-plaintext text-muted").Text(emailDisplay),
+	})
+
+	card := shared.Card(
+		shared.PageHeader("Complete your registration", "Confirm your details to finish setting up your account."),
+		shared.AlertGroup(),
+		shared.NameRow(true),
+		emailGroup,
+		shared.PrimaryButton("buttonRegister", "bi-check-circle", "Save &amp; continue", "registerFormValidate()"),
+	)
+
+	return hb.NewDiv().Children([]hb.TagInterface{
+		card,
+		shared.FooterText("Already have an account?", urlLogin, "Login"),
+	}).ToHTML()
+}
+
+// RegisterCompletionScripts builds the JS for the completion page.
+//
+//go:embed register_completion.js
+var registerCompletionJS string
+
+func RegisterCompletionScripts(urlApiRegister, urlOnSuccess string) string {
+	s := registerCompletionJS
+	s = strings.ReplaceAll(s, "__URL_API_REGISTER__", urlApiRegister)
+	s = strings.ReplaceAll(s, "__URL_ON_SUCCESS__", urlOnSuccess)
+	return s
+}
