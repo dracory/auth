@@ -3,6 +3,8 @@ package utils
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/dracory/auth/types"
@@ -46,7 +48,9 @@ func TestAuthTokenRetrieve_BearerHeaderWhenCookiesDisabled(t *testing.T) {
 }
 
 func TestAuthTokenRetrieve_ApiKeyParamWhenNoHeader(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "http://example.com/?api_key=api-key-token", nil)
+	form := url.Values{"api_key": {"api-key-token"}}
+	req := httptest.NewRequest(http.MethodPost, "http://example.com/", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	token := AuthTokenRetrieve(req, false)
 	if token != "api-key-token" {
@@ -55,11 +59,34 @@ func TestAuthTokenRetrieve_ApiKeyParamWhenNoHeader(t *testing.T) {
 }
 
 func TestAuthTokenRetrieve_TokenParamFallback(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "http://example.com/?token=param-token", nil)
+	form := url.Values{"token": {"param-token"}}
+	req := httptest.NewRequest(http.MethodPost, "http://example.com/", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	token := AuthTokenRetrieve(req, false)
 	if token != "param-token" {
 		t.Fatalf("expected token %q, got %q", "param-token", token)
+	}
+}
+
+func TestAuthTokenRetrieve_IgnoresQueryStringTokens(t *testing.T) {
+	// Tokens in URLs leak via logs, history and Referer — GET/HEAD
+	// query params must never be accepted as credentials.
+	for _, method := range []string{http.MethodGet, http.MethodHead} {
+		req := httptest.NewRequest(method, "http://example.com/?api_key=api-key-token&token=param-token", nil)
+		if token := AuthTokenRetrieve(req, false); token != "" {
+			t.Fatalf("expected empty token for %s query params, got %q", method, token)
+		}
+	}
+}
+
+func TestAuthTokenRetrieve_IgnoresQueryTokensOnPost(t *testing.T) {
+	// On a POST, a token in the URL query is still a credential in a URL —
+	// only body params may carry it.
+	req := httptest.NewRequest(http.MethodPost, "http://example.com/?api_key=api-key-token&token=param-token", nil)
+
+	if token := AuthTokenRetrieve(req, false); token != "" {
+		t.Fatalf("expected empty token for POST query params, got %q", token)
 	}
 }
 

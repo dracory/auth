@@ -22,6 +22,7 @@ type requestRecord struct {
 type InMemoryRateLimiter struct {
 	records          sync.Map // map[string]*requestRecord (key: "ip:endpoint")
 	maxAttempts      int
+	limitsMu         sync.RWMutex
 	endpointLimits   map[string]int // per-endpoint overrides (optional)
 	windowDuration   time.Duration
 	lockoutDuration  time.Duration
@@ -50,10 +51,10 @@ func NewInMemoryRateLimiter(maxAttempts int, windowDuration time.Duration, locko
 
 // SetEndpointLimit configures a per-endpoint request limit. Endpoints
 // without an explicit limit use the maxAttempts passed to
-// NewInMemoryRateLimiter. Must be called at configuration time, before the
-// limiter serves traffic — the limits map is not synchronized for runtime
-// mutation.
+// NewInMemoryRateLimiter. Safe to call concurrently with Check.
 func (r *InMemoryRateLimiter) SetEndpointLimit(endpoint string, maxAttempts int) {
+	r.limitsMu.Lock()
+	defer r.limitsMu.Unlock()
 	r.endpointLimits[endpoint] = maxAttempts
 }
 
@@ -62,10 +63,12 @@ func (r *InMemoryRateLimiter) Check(ip string, endpoint string) RateLimitResult 
 	key := ip + ":" + endpoint
 	now := time.Now()
 
+	r.limitsMu.RLock()
 	maxAttempts := r.maxAttempts
 	if v, ok := r.endpointLimits[endpoint]; ok {
 		maxAttempts = v
 	}
+	r.limitsMu.RUnlock()
 
 	// Load or create record
 	recordInterface, _ := r.records.LoadOrStore(key, &requestRecord{

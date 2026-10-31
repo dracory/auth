@@ -68,24 +68,14 @@ func CheckRateLimit(
 	return true
 }
 
-// GetClientIP extracts the client IP from the request.
-// It checks X-Forwarded-For and X-Real-IP headers first, then falls back to RemoteAddr.
+// GetClientIP returns the client IP for rate limiting.
+// It deliberately uses RemoteAddr and ignores X-Forwarded-For / X-Real-IP:
+// those headers are client-controlled and would let an attacker rotate the
+// header on each request to obtain a fresh rate-limit bucket, silently
+// disabling brute-force protection. Deployments behind a trusted proxy that
+// need XFF-aware limits should provide a custom FuncCheckRateLimit that
+// resolves the real client IP from their known proxy chain.
 func GetClientIP(r *http.Request) string {
-	// Check X-Forwarded-For header (can contain multiple IPs, use the first one)
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		// Take the first IP in the list
-		for i, c := range xff {
-			if c == ',' || c == ' ' {
-				return xff[:i]
-			}
-		}
-		return xff
-	}
-
-	// Check X-Real-IP header
-	if xri := r.Header.Get("X-Real-IP"); xri != "" {
-		return xri
-	}
 
 	// Fall back to RemoteAddr
 	// RemoteAddr is in format "IP:port", so we need to strip the port

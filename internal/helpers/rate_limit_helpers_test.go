@@ -72,24 +72,26 @@ func TestCheckRateLimit_DefaultLimiter_AllowsAndBlocks(t *testing.T) {
 	}
 }
 
-func TestGetClientIP_PrefersHeadersThenRemoteAddr(t *testing.T) {
-	// X-Forwarded-For with multiple IPs
+func TestGetClientIP_IgnoresSpoofableHeaders(t *testing.T) {
+	// X-Forwarded-For and X-Real-IP are client-controlled and must NOT be
+	// used for rate limiting — RemoteAddr always wins.
 	req1 := httptest.NewRequest(http.MethodGet, "/", nil)
+	req1.RemoteAddr = "4.4.4.4:12345"
 	req1.Header.Set("X-Forwarded-For", "1.1.1.1, 2.2.2.2")
-	if ip := GetClientIP(req1); ip != "1.1.1.1" {
-		t.Fatalf("expected first X-Forwarded-For IP, got %q", ip)
+	if ip := GetClientIP(req1); ip != "4.4.4.4" {
+		t.Fatalf("expected RemoteAddr, got %q", ip)
 	}
 
-	// X-Real-IP when X-Forwarded-For is empty
 	req2 := httptest.NewRequest(http.MethodGet, "/", nil)
+	req2.RemoteAddr = "4.4.4.4:12345"
 	req2.Header.Set("X-Real-IP", "3.3.3.3")
-	if ip := GetClientIP(req2); ip != "3.3.3.3" {
-		t.Fatalf("expected X-Real-IP, got %q", ip)
+	if ip := GetClientIP(req2); ip != "4.4.4.4" {
+		t.Fatalf("expected RemoteAddr, got %q", ip)
 	}
 
-	// RemoteAddr fallback
+	// RemoteAddr without a port is returned as-is
 	req3 := httptest.NewRequest(http.MethodGet, "/", nil)
-	req3.RemoteAddr = "4.4.4.4:12345"
+	req3.RemoteAddr = "4.4.4.4"
 	if ip := GetClientIP(req3); ip != "4.4.4.4" {
 		t.Fatalf("expected IP without port from RemoteAddr, got %q", ip)
 	}

@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -17,7 +18,24 @@ const Version = "1.0.4"
 var (
 	ErrMissingResource   = errors.New("missing resource - unable to save record")
 	ErrMissingCollection = errors.New("missing collection - no place to save record")
+	ErrInvalidName       = errors.New("invalid collection or resource name")
 )
+
+// validName reports whether a collection or resource name is safe to join
+// onto the store directory: no path separators, no traversal segments and
+// no absolute-prefix trickery.
+func validName(name string) bool {
+	if name == "" || name == "." || name == ".." {
+		return false
+	}
+	if strings.ContainsAny(name, `/\`) {
+		return false
+	}
+	if strings.Contains(name, "..") {
+		return false
+	}
+	return true
+}
 
 // Driver is what is used to interact with the scribble database. It runs
 // transactions, and provides log output
@@ -85,6 +103,10 @@ func (d *Driver) Write(collection, resource string, v interface{}) error {
 		return ErrMissingResource
 	}
 
+	if !validName(collection) || !validName(resource) {
+		return ErrInvalidName
+	}
+
 	mutex := d.getOrCreateMutex(collection)
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -132,6 +154,10 @@ func (d *Driver) Read(collection, resource string, v interface{}) error {
 		return ErrMissingResource
 	}
 
+	if !validName(collection) || !validName(resource) {
+		return ErrInvalidName
+	}
+
 	//
 	record := filepath.Join(d.dir, collection, resource)
 
@@ -157,6 +183,10 @@ func (d *Driver) ReadAll(collection string) ([][]byte, error) {
 	// ensure there is a collection to read
 	if collection == "" {
 		return nil, ErrMissingCollection
+	}
+
+	if !validName(collection) {
+		return nil, ErrInvalidName
 	}
 
 	//
@@ -197,6 +227,14 @@ func readAll(files []os.DirEntry, dir string) ([][]byte, error) {
 // Delete locks the database then attempts to remove the collection/resource
 // specified by [path]
 func (d *Driver) Delete(collection, resource string) error {
+	// An empty resource is allowed and deletes the whole collection;
+	// non-empty resources must still be safe names.
+	if collection == "" {
+		return ErrMissingCollection
+	}
+	if !validName(collection) || (resource != "" && !validName(resource)) {
+		return ErrInvalidName
+	}
 	path := filepath.Join(collection, resource)
 	//
 	mutex := d.getOrCreateMutex(collection)

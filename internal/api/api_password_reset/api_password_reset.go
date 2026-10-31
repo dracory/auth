@@ -9,6 +9,7 @@ import (
 	"github.com/dracory/api"
 	"github.com/dracory/auth/internal/rules"
 	"github.com/dracory/auth/types"
+	"github.com/dracory/auth/utils"
 	"github.com/dracory/req"
 	"github.com/dracory/rule"
 )
@@ -113,7 +114,13 @@ func ApiPasswordResetWithAuth(w http.ResponseWriter, r *http.Request, a types.Au
 	deps := Dependencies{
 		PasswordStrength: a.GetPasswordStrength(),
 		TemporaryKeyGet:  a.GetFuncTemporaryKeyGet(),
+		TemporaryKeySet:  a.GetFuncTemporaryKeySet(),
 		Logger:           a.GetLogger(),
+	}
+	if deleter, ok := a.(interface {
+		GetFuncTemporaryKeyDelete() func(key string) error
+	}); ok {
+		deps.TemporaryKeyDelete = deleter.GetFuncTemporaryKeyDelete()
 	}
 
 	if fn := a.GetFuncUserPasswordChange(); fn != nil {
@@ -171,7 +178,7 @@ func PasswordReset(ctx context.Context, r *http.Request, deps Dependencies) (*Pa
 		}
 	}
 
-	userID, errToken := deps.TemporaryKeyGet(token)
+	userID, errToken := deps.TemporaryKeyGet(utils.PasswordResetTokenKeyPrefix + token)
 	if errToken != nil {
 		return nil, &PasswordResetError{
 			Code:    PasswordResetErrorCodeTokenLookup,
@@ -201,6 +208,17 @@ func PasswordReset(ctx context.Context, r *http.Request, deps Dependencies) (*Pa
 			Err:    errChange,
 			UserID: userID,
 		}
+	}
+
+	// Single-use: invalidate the consumed reset token so it cannot be
+	// replayed within its TTL. Prefer a real delete when available.
+	if invErr := utils.InvalidateTempKey(deps.TemporaryKeyDelete, deps.TemporaryKeySet, utils.PasswordResetTokenKeyPrefix+token); invErr != nil {
+		logger := deps.Logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("password reset: failed to invalidate consumed token",
+			slog.String("error", invErr.Error()))
 	}
 
 	if deps.LogoutUser == nil {

@@ -2,36 +2,17 @@ package utils
 
 import "strings"
 
-// BearerTokenFromHeader extracts the bearer token from the
-// passed authorization header value. If a bearer token
-// is not found, an empty string is returned.
-//
-// Parameters:
-//   - authHeader: a string representing the authorization header
-//
-// Returns:
-//   - a string representing the extracted bearer token
-//
-// Example:
-//
-//		authHeader := r.Header.Get("Authorization")
-//		authTokenFromBearerToken := BearerTokenFromHeader(authHeader)
-//
-//	 or simplified
-//
-//		authTokenFromBearerToken := BearerTokenFromHeader(r.Header.Get("Authorization"))
+// BearerTokenFromHeader extracts the token from an Authorization header of
+// the form "Bearer <token>" (scheme matched case-insensitively per
+// RFC 9110 §11). Returns "" for any other scheme or malformed value.
 func BearerTokenFromHeader(authHeader string) string {
-	if authHeader == "" {
+	scheme, token, found := strings.Cut(strings.TrimSpace(authHeader), " ")
+	if !found || !strings.EqualFold(scheme, "Bearer") {
 		return ""
 	}
 
-	parts := strings.Split(authHeader, "Bearer")
-	if len(parts) != 2 {
-		return ""
-	}
-
-	token := strings.TrimSpace(parts[1])
-	if len(token) < 1 {
+	token = strings.TrimSpace(token)
+	if token == "" || strings.ContainsAny(token, " \t") {
 		return ""
 	}
 

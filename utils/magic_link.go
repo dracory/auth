@@ -28,9 +28,13 @@ type MagicLinkPayload struct {
 
 // IsSafeReturnPath reports whether p is a safe post-auth redirect target:
 // a relative path starting with "/" but not "//" (protocol-relative URLs
-// would escape the origin).
+// would escape the origin). Backslashes and control characters are
+// rejected — several browsers treat "/\evil.com" as protocol-relative.
 func IsSafeReturnPath(p string) bool {
-	return strings.HasPrefix(p, "/") && !strings.HasPrefix(p, "//")
+	if !strings.HasPrefix(p, "/") || strings.HasPrefix(p, "//") {
+		return false
+	}
+	return !strings.ContainsAny(p, "\\\r\n\t")
 }
 
 // IsSafeBackURL reports whether backURL is safe to redirect to: a relative
@@ -42,7 +46,7 @@ func IsSafeBackURL(backURL string, host string) bool {
 		return false
 	}
 	if strings.HasPrefix(backURL, "/") {
-		return !strings.HasPrefix(backURL, "//")
+		return IsSafeReturnPath(backURL)
 	}
 	u, err := url.Parse(backURL)
 	if err != nil || u.Hostname() == "" {

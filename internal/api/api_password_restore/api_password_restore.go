@@ -184,7 +184,7 @@ func passwordRestore(ctx context.Context, r *http.Request, dependencies dependen
 		expires = 3600
 	}
 
-	if err := dependencies.TemporaryKeySet(resetToken, userID, expires); err != nil {
+	if err := dependencies.TemporaryKeySet(utils.PasswordResetTokenKeyPrefix+resetToken, userID, expires); err != nil {
 		dependencies.Logger.Error(
 			"failed to store temporary key",
 			slog.String("error", err.Error()),

@@ -295,9 +295,9 @@ func TestPagePasswordReset_ValidTokenShowsForm(t *testing.T) {
 		t.Fatalf("expected *authImplementation from NewUsernameAndPasswordAuthForTest")
 	}
 
-	// Mock token lookup to succeed
+	// Mock token lookup to succeed — reset tokens are namespaced
 	authInstance.funcTemporaryKeyGet = func(key string) (value string, err error) {
-		if key == "valid-token" {
+		if key == "pwdreset:valid-token" {
 			return "user123", nil
 		}
 		return "", nil

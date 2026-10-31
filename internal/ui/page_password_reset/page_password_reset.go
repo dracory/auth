@@ -6,6 +6,7 @@ import (
 	"github.com/dracory/auth/internal/links"
 	"github.com/dracory/auth/internal/ui/shared"
 	"github.com/dracory/auth/types"
+	"github.com/dracory/auth/utils"
 	"github.com/dracory/req"
 )
 
@@ -27,7 +28,7 @@ func PagePasswordReset(w http.ResponseWriter, r *http.Request, a types.AuthShare
 		message = "Link is invalid"
 	} else {
 		if fn := a.GetFuncTemporaryKeyGet(); fn != nil {
-			if value, err := fn(token); err != nil {
+			if value, err := fn(utils.PasswordResetTokenKeyPrefix + token); err != nil {
 				message = "Link has expired"
 			} else if value == "" {
 				message = "Link is invalid or expired"

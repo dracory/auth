@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -42,13 +41,10 @@ func (a authImplementation) AuthHandler(w http.ResponseWriter, r *http.Request) 
 
 	uri = strings.TrimSuffix(uri, "/") // Remove trailing slash
 
-	originalURI := uri
-
 	if strings.Contains(uri, "?") {
 		uri = str.LeftFrom(uri, "?")
 	}
 
-	fmt.Printf("[AUTHHANDLER] originalURI='%s' uri='%s' path='%s'\n", originalURI, uri, path)
 
 	if uriHasPathSuffix(uri, PathApiLogin) {
 		path = PathApiLogin
@@ -90,7 +86,6 @@ func (a authImplementation) AuthHandler(w http.ResponseWriter, r *http.Request) 
 
 	routeFunc := a.getRoute(path)
 
-	fmt.Printf("[AUTHHANDLER] resolved path='%s' routeFunc!=nil=%v\n", path, routeFunc != nil)
 
 	routeFunc(w, r.WithContext(ctx))
 }

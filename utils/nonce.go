@@ -22,6 +22,11 @@ const LoginCodeAttemptsKeyPrefix = "logincode_attempts:"
 // counters for registration codes.
 const RegisterCodeAttemptsKeyPrefix = "registercode_attempts:"
 
+// PasswordResetTokenKeyPrefix namespaces password reset tokens in the
+// temporary key store, keeping them out of the flat keyspace shared with
+// other temp keys.
+const PasswordResetTokenKeyPrefix = "pwdreset:"
+
 // MaxCodeAttempts is the number of verification attempts allowed per nonce
 // before the code is invalidated and a new one must be requested.
 const MaxCodeAttempts = 5

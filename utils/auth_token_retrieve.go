@@ -31,18 +31,27 @@ func AuthTokenRetrieveWithName(r *http.Request, useCookies bool, cookieName stri
 		return authTokenFromBearerToken
 	}
 
-	// 3. API key
-	apiKeyFromRequest := req.GetStringTrimmed(r, "api_key")
+	// Tokens in URL query strings are not accepted: they end up in access
+	// logs, proxy logs, browser history and Referer headers. A parameter is
+	// only honoured when it comes from the request body — i.e. the request
+	// is not GET/HEAD and the name does not appear in the URL query.
+	if r.Method == http.MethodGet || r.Method == http.MethodHead {
+		return ""
+	}
+	query := r.URL.Query()
 
-	if apiKeyFromRequest != "" {
-		return apiKeyFromRequest
+	// 3. API key
+	if !query.Has("api_key") {
+		if apiKeyFromRequest := req.GetStringTrimmed(r, "api_key"); apiKeyFromRequest != "" {
+			return apiKeyFromRequest
+		}
 	}
 
 	// 4. Token
-	tokenFromRequest := req.GetStringTrimmed(r, "token")
-
-	if tokenFromRequest != "" {
-		return tokenFromRequest
+	if !query.Has("token") {
+		if tokenFromRequest := req.GetStringTrimmed(r, "token"); tokenFromRequest != "" {
+			return tokenFromRequest
+		}
 	}
 
 	return ""

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/dracory/auth/internal/testutils"
+	"github.com/dracory/auth/utils"
 )
 
 func TestPagePasswordReset_ValidTokenShowsForm(t *testing.T) {
@@ -38,6 +39,33 @@ func TestPagePasswordReset_ValidTokenShowsForm(t *testing.T) {
 		if !strings.Contains(body, v) {
 			t.Errorf("Handler returned unexpected result.\nEXPECTED: %s\nFOUND: %s", v, body)
 		}
+	}
+}
+
+func TestPagePasswordReset_LooksUpNamespacedToken(t *testing.T) {
+	a := testutils.NewAuthSharedForTest()
+
+	var lookedUpKey string
+	testutils.SetTemporaryKeyGetForTest(a, func(key string) (string, error) {
+		lookedUpKey = key
+		return "user123", nil
+	})
+
+	req, err := http.NewRequest("GET", "/?t=valid-token", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	recorder := httptest.NewRecorder()
+	PagePasswordReset(recorder, req, a)
+
+	if lookedUpKey != utils.PasswordResetTokenKeyPrefix+"valid-token" {
+		t.Fatalf("expected lookup of %q, got %q", utils.PasswordResetTokenKeyPrefix+"valid-token", lookedUpKey)
+	}
+
+	body := recorder.Body.String()
+	if strings.Contains(body, "Link is invalid") {
+		t.Errorf("expected no error message for valid token, got %s", body)
 	}
 }
 
