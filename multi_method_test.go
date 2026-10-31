@@ -368,3 +368,21 @@ func TestAuthKnightMethod_Adaptation(t *testing.T) {
 		t.Fatalf("expected callback route mounted, got %d", rec.Code)
 	}
 }
+
+func TestMagicLinkMethod_AuthImplSwap(t *testing.T) {
+	shared := testutils.NewAuthSharedForTest()
+	page := func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("ml")) }
+	m := NewMagicLinkMethod(page,
+		api_magic_link_send.Dependencies{},
+		api_magic_link_callback.Dependencies{},
+	)
+
+	sw := m.(implSwapper)
+	if sw.authImpl() != nil {
+		t.Fatal("expected nil impl before swap")
+	}
+	sw.setAuthImpl(shared)
+	if sw.authImpl() == nil {
+		t.Fatal("expected impl after swap")
+	}
+}

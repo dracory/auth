@@ -105,3 +105,17 @@ func TestPageLogin_AuthKnight(t *testing.T) {
 		t.Errorf("expected next_url to contain callback path, got: %s", location)
 	}
 }
+
+func TestLoginPasswordlessContent_Wrapper(t *testing.T) {
+	html := LoginPasswordlessContent(true, "/auth/register")
+	if !strings.Contains(html, "Send me a login code") || !strings.Contains(html, "Register") {
+		t.Fatalf("unexpected content %q", html)
+	}
+}
+
+func TestLoginContent_Wrapper(t *testing.T) {
+	html := LoginContent(true, "/auth/register", "/auth/password-restore")
+	if !strings.Contains(html, "Register") {
+		t.Fatalf("unexpected content %q", html)
+	}
+}
