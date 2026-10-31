@@ -74,12 +74,14 @@ func ApiAuthenticateViaUsername(w http.ResponseWriter, r *http.Request, username
 
 	result, aerr := AuthenticateViaUsername(r.Context(), username, firstName, lastName, deps)
 	if aerr != nil {
+		errText := aerr.Error()
 		if aerr.Err != nil {
-			logger.Error("authentication failed",
-				slog.String("error", aerr.Err.Error()),
-				slog.String("code", string(aerr.Code)),
-			)
+			errText = aerr.Err.Error()
 		}
+		logger.Error("authentication failed",
+			slog.String("error", errText),
+			slog.String("code", string(aerr.Code)),
+		)
 		// All errors map directly to their user-facing messages.
 		api.Respond(w, r, api.Error(aerr.Message))
 		return

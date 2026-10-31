@@ -54,13 +54,15 @@ func ApiLogout(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 	token := deps.AuthTokenRetrieve(r, deps.UseCookies)
 	logoutErr := logout(r.Context(), token, deps)
 	if logoutErr != nil {
+		errText := logoutErr.Error()
 		if logoutErr.Err != nil {
-			logger.Error("logout failed",
-				slog.String("error", logoutErr.Err.Error()),
-				slog.String("code", string(logoutErr.Code)),
-				slog.String("user_id", logoutErr.UserID),
-			)
+			errText = logoutErr.Err.Error()
 		}
+		logger.Error("logout failed",
+			slog.String("error", errText),
+			slog.String("code", string(logoutErr.Code)),
+			slog.String("user_id", logoutErr.UserID),
+		)
 		switch logoutErr.Code {
 		case LogoutErrorCodeTokenLookup,
 			LogoutErrorCodeUserLogout:

@@ -122,12 +122,14 @@ func ApiRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 	if deps.Passwordless {
 		result, err := RegisterPasswordlessInit(r.Context(), r, deps.RegisterPasswordlessInitDependencies)
 		if err != nil {
+			errText := err.Error()
 			if err.Err != nil {
-				logger.Error("passwordless registration failed",
-					slog.String("error", err.Err.Error()),
-					slog.String("code", string(err.Code)),
-				)
+				errText = err.Err.Error()
 			}
+			logger.Error("passwordless registration failed",
+				slog.String("error", errText),
+				slog.String("code", string(err.Code)),
+			)
 			switch err.Code {
 			case RegisterPasswordlessInitErrorCodeValidation,
 				RegisterPasswordlessInitErrorCodeTooManySends:

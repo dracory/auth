@@ -101,12 +101,14 @@ func ApiRegisterCodeVerify(w http.ResponseWriter, r *http.Request, deps Dependen
 
 	result, perr := RegisterCodeVerify(r.Context(), r, deps)
 	if perr != nil {
+		errText := perr.Error()
 		if perr.Err != nil {
-			logger.Error("register code verify failed",
-				slog.String("error", perr.Err.Error()),
-				slog.String("code", string(perr.Code)),
-			)
+			errText = perr.Err.Error()
 		}
+		logger.Error("register code verify failed",
+			slog.String("error", errText),
+			slog.String("code", string(perr.Code)),
+		)
 		switch perr.Code {
 		case RegisterCodeVerifyErrorCodeValidation,
 			RegisterCodeVerifyErrorCodeCodeExpired,

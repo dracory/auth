@@ -66,13 +66,15 @@ func ApiPasswordReset(w http.ResponseWriter, r *http.Request, deps Dependencies)
 
 	result, perr := PasswordReset(r.Context(), r, deps)
 	if perr != nil {
+		errText := perr.Error()
 		if perr.Err != nil {
-			logger.Error("password reset failed",
-				slog.String("error", perr.Err.Error()),
-				slog.String("code", string(perr.Code)),
-				slog.String("user_id", perr.UserID),
-			)
+			errText = perr.Err.Error()
 		}
+		logger.Error("password reset failed",
+			slog.String("error", errText),
+			slog.String("code", string(perr.Code)),
+			slog.String("user_id", perr.UserID),
+		)
 		switch perr.Code {
 		case PasswordResetErrorCodeValidation,
 			PasswordResetErrorCodeTokenLookup,

@@ -91,6 +91,18 @@ func ApiMagicLinkSend(w http.ResponseWriter, r *http.Request, deps Dependencies)
 
 	_, perr := MagicLinkSend(r.Context(), r, deps)
 	if perr != nil {
+		errText := perr.Error()
+		if perr.Err != nil {
+			errText = perr.Err.Error()
+		}
+		logger := deps.Logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		logger.Error("magic link send failed",
+			slog.String("error", errText),
+			slog.String("code", string(perr.Code)),
+		)
 		switch perr.Code {
 		case MagicLinkSendErrorCodeValidation,
 			MagicLinkSendErrorCodeTooManySends:

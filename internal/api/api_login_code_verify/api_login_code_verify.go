@@ -89,12 +89,14 @@ func ApiLoginCodeVerify(w http.ResponseWriter, r *http.Request, deps Dependencie
 
 	result, perr := LoginCodeVerify(r.Context(), r, deps)
 	if perr != nil {
+		errText := perr.Error()
 		if perr.Err != nil {
-			logger.Error("login code verify failed",
-				slog.String("error", perr.Err.Error()),
-				slog.String("code", string(perr.Code)),
-			)
+			errText = perr.Err.Error()
 		}
+		logger.Error("login code verify failed",
+			slog.String("error", errText),
+			slog.String("code", string(perr.Code)),
+		)
 		switch perr.Code {
 		case LoginCodeVerifyErrorCodeValidation,
 			LoginCodeVerifyErrorCodeCodeExpired,

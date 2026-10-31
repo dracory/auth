@@ -40,14 +40,21 @@ func ApiLogin(w http.ResponseWriter, r *http.Request, dependencies Dependencies)
 	if dependencies.Passwordless {
 		result, err := loginPasswordless(r.Context(), r, dependencies.PasswordlessDependencies)
 		if err != nil {
+			// Throttle/validation errors carry no wrapped Err — fall back to
+			// the message so every failure is observable, not just internal ones.
+			errText := err.Error()
 			if err.Err != nil {
-				logger.Error("passwordless login failed",
-					slog.String("error", err.Err.Error()),
-					slog.String("code", string(err.Code)),
-				)
+				errText = err.Err.Error()
 			}
+			logger.Error("passwordless login failed",
+				slog.String("error", errText),
+				slog.String("code", string(err.Code)),
+			)
 			switch err.Code {
 			case LoginPasswordlessErrorCodeValidation:
+				api.Respond(w, r, api.Error(err.Message))
+				return
+			case LoginPasswordlessErrorCodeTooManySends:
 				api.Respond(w, r, api.Error(err.Message))
 				return
 			case LoginPasswordlessErrorCodeTokenStore:
