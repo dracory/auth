@@ -237,11 +237,12 @@ func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSha
 		}
 
 		deps.RegisterPasswordlessInitDependencies = RegisterPasswordlessInitDependencies{
-			DisableRateLimit: a.GetDisableRateLimit(),
-			TemporaryKeyGet:  a.GetFuncTemporaryKeyGet(),
-			TemporaryKeySet:  a.GetFuncTemporaryKeySet(),
-			EmailEnqueue:     emailEnqueue,
-			ExpiresSeconds:   0, // let RegisterPasswordlessInit apply default
+			DisableRateLimit:  a.GetDisableRateLimit(),
+			EmailSendThrottle: authutils.EmailSendThrottleFromAuth(a),
+			TemporaryKeyGet:   a.GetFuncTemporaryKeyGet(),
+			TemporaryKeySet:   a.GetFuncTemporaryKeySet(),
+			EmailEnqueue:      emailEnqueue,
+			ExpiresSeconds:    0, // let RegisterPasswordlessInit apply default
 			EmailTemplate: func(ctx context.Context, email string, verificationCode string) string {
 				fn := a.GetPasswordlessFuncEmailTemplateRegisterCode()
 				if fn == nil {
@@ -288,6 +289,10 @@ func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSha
 // passwordless registration init (sending verification code).
 type RegisterPasswordlessInitDependencies struct {
 	DisableRateLimit bool
+
+	// EmailSendThrottle configures the per-email send quota; zero value
+	// applies the package defaults.
+	EmailSendThrottle authutils.EmailSendThrottle
 
 	TemporaryKeyGet func(key string) (string, error)
 	TemporaryKeySet func(key string, value string, expiresSeconds int) error
@@ -370,7 +375,7 @@ func RegisterPasswordlessInit(ctx context.Context, r *http.Request, deps Registe
 
 	// Per-email send throttle — prevents the endpoint being used for email
 	// bombing; enforced before code generation.
-	if check := rules.NewEmailSendThrottleRule(deps.TemporaryKeyGet, email); check.Fails() {
+	if check := rules.NewEmailSendThrottleRule(deps.TemporaryKeyGet, email, deps.EmailSendThrottle); check.Fails() {
 		return nil, &RegisterPasswordlessInitError{
 			Code:    RegisterPasswordlessInitErrorCodeTooManySends,
 			Message: check.FailMessageFirst(),
@@ -460,7 +465,7 @@ func RegisterPasswordlessInit(ctx context.Context, r *http.Request, deps Registe
 
 	// Consume send quota only after the email was handed off successfully.
 	if deps.TemporaryKeyGet != nil {
-		_ = authutils.RecordEmailSend(deps.TemporaryKeyGet, deps.TemporaryKeySet, email, expires)
+		_ = authutils.RecordEmailSend(deps.TemporaryKeyGet, deps.TemporaryKeySet, email, deps.EmailSendThrottle)
 	}
 
 	return &RegisterPasswordlessInitResult{

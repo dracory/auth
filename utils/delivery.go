@@ -6,11 +6,6 @@ import (
 	"errors"
 )
 
-// DeliveryKeyPrefix prefixes the temporary keys under which queued email
-// deliveries are stored. Queue payloads contain only the opaque key — the
-// secret (code or link) lives solely in the TTL-bound temporary-key store.
-const DeliveryKeyPrefix = "delivery:"
-
 // Delivery is the stored payload behind a delivery key. It carries the
 // full rendered message — subject and body included — so a queue worker
 // needs nothing beyond resolve + send; it does not have to know which

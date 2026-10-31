@@ -5,14 +5,6 @@ import (
 	"strings"
 )
 
-// MagicLinkKeyPrefix prefixes the temporary keys under which magic-link
-// payloads are stored. The key IS the token — it is 128+ bits of entropy,
-// single-use, and expires with the payload.
-const MagicLinkKeyPrefix = "magiclink:token:"
-
-// MagicLinkExpiresSeconds is the default magic-link TTL (15 minutes).
-const MagicLinkExpiresSeconds = 900
-
 // MagicLinkPayload is the JSON value stored under MagicLinkKeyPrefix+token.
 // Email is stored in the value (the key is the random token, not PII);
 // Token is duplicated into the value for constant-time comparison at verify

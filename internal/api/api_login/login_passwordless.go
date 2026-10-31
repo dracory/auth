@@ -68,7 +68,7 @@ func loginPasswordless(ctx context.Context, r *http.Request, deps LoginPasswordl
 	// Per-email send throttle — prevents the endpoint being used for email
 	// bombing; enforced before code generation so a blocked email never
 	// consumes a code or send quota.
-	if check := rules.NewEmailSendThrottleRule(deps.TemporaryKeyGet, email); check.Fails() {
+	if check := rules.NewEmailSendThrottleRule(deps.TemporaryKeyGet, email, deps.EmailSendThrottle); check.Fails() {
 		return nil, &LoginPasswordlessError{
 			Code:    LoginPasswordlessErrorCodeTooManySends,
 			Message: check.FailMessageFirst(),
@@ -149,7 +149,7 @@ func loginPasswordless(ctx context.Context, r *http.Request, deps LoginPasswordl
 	// Consume send quota only after the email was handed off successfully —
 	// failed sends must not count against the user.
 	if deps.TemporaryKeyGet != nil {
-		_ = utils.RecordEmailSend(deps.TemporaryKeyGet, deps.TemporaryKeySet, email, expires)
+		_ = utils.RecordEmailSend(deps.TemporaryKeyGet, deps.TemporaryKeySet, email, deps.EmailSendThrottle)
 	}
 
 	return &LoginPasswordlessResult{

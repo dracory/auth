@@ -73,6 +73,10 @@ func NewAuthKnightAuth(config types.ConfigAuthKnight) (types.AuthAuthKnightInter
 	// Rate limiting
 	a.disableRateLimit = config.DisableRateLimit
 	a.funcCheckRateLimit = config.FuncCheckRateLimit
+	a.emailSendThrottle = utils.EmailSendThrottle{
+		MaxSends:      config.MaxEmailSends,
+		WindowSeconds: int(config.EmailSendWindow.Seconds()),
+	}
 	if !a.disableRateLimit && a.funcCheckRateLimit == nil {
 		maxAttempts := config.MaxLoginAttempts
 		if maxAttempts == 0 {

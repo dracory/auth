@@ -87,6 +87,10 @@ func NewPasswordlessAuth(config types.ConfigPasswordless) (types.AuthPasswordles
 	// Initialize rate limiting
 	auth.disableRateLimit = config.DisableRateLimit
 	auth.funcCheckRateLimit = config.FuncCheckRateLimit
+	auth.emailSendThrottle = utils.EmailSendThrottle{
+		MaxSends:      config.MaxEmailSends,
+		WindowSeconds: int(config.EmailSendWindow.Seconds()),
+	}
 
 	// If rate limiting is not disabled and no custom function provided, use default in-memory rate limiter
 	if !auth.disableRateLimit && auth.funcCheckRateLimit == nil {

@@ -16,21 +16,22 @@ type EmailSendThrottleRule struct {
 
 // EmailSendThrottleContext carries the inputs to EmailSendThrottleRule.
 type EmailSendThrottleContext struct {
-	Get   func(key string) (string, error)
-	Email string
+	Get    func(key string) (string, error)
+	Email  string
+	Config utils.EmailSendThrottle
 }
 
 // NewEmailSendThrottleRule creates an EmailSendThrottleRule for the given
-// store getter and email.
-func NewEmailSendThrottleRule(get func(key string) (string, error), email string) *EmailSendThrottleRule {
+// store getter, email and throttle config (zero value = package defaults).
+func NewEmailSendThrottleRule(get func(key string) (string, error), email string, config utils.EmailSendThrottle) *EmailSendThrottleRule {
 	r := &EmailSendThrottleRule{}
-	r.Rule.SetContext(EmailSendThrottleContext{Get: get, Email: email})
+	r.Rule.SetContext(EmailSendThrottleContext{Get: get, Email: email, Config: config})
 	r.Rule.SetCondition(func(ctx any) bool {
 		c, _ := ctx.(EmailSendThrottleContext)
 		if c.Get == nil {
 			return true // unconfigured store: no throttle possible
 		}
-		if !utils.CanSendEmail(c.Get, c.Email) {
+		if !utils.CanSendEmail(c.Get, c.Email, c.Config) {
 			r.AddFailMessage(types.MsgTooManySends)
 			return false
 		}

@@ -8,6 +8,7 @@ import (
 	"github.com/dracory/api"
 	"github.com/dracory/auth/internal/core"
 	"github.com/dracory/auth/types"
+	"github.com/dracory/auth/utils"
 	"github.com/dracory/req"
 )
 
@@ -15,6 +16,10 @@ import (
 // It is intentionally decoupled from the authImplementation type to avoid import cycles.
 type LoginPasswordlessDeps struct {
 	DisableRateLimit bool
+
+	// EmailSendThrottle configures the per-email send quota; zero value
+	// applies the package defaults.
+	EmailSendThrottle utils.EmailSendThrottle
 
 	TemporaryKeyGet func(key string) (string, error)
 	TemporaryKeySet func(key string, value string, expiresSeconds int) error
@@ -130,11 +135,12 @@ func ApiLoginWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthShared
 		Passwordless: a.IsPasswordless(),
 		Logger:       a.GetLogger(),
 		PasswordlessDependencies: LoginPasswordlessDeps{
-			DisableRateLimit: a.GetDisableRateLimit(),
-			TemporaryKeyGet:  a.GetFuncTemporaryKeyGet(),
-			TemporaryKeySet:  a.GetFuncTemporaryKeySet(),
-			EmailEnqueue:     emailEnqueue,
-			ExpiresSeconds:   0, // let business logic apply default
+			DisableRateLimit:  a.GetDisableRateLimit(),
+			EmailSendThrottle: utils.EmailSendThrottleFromAuth(a),
+			TemporaryKeyGet:   a.GetFuncTemporaryKeyGet(),
+			TemporaryKeySet:   a.GetFuncTemporaryKeySet(),
+			EmailEnqueue:      emailEnqueue,
+			ExpiresSeconds:    0, // let business logic apply default
 			EmailTemplate: func(ctx context.Context, email string, verificationCode string) string {
 				fn := a.GetPasswordlessFuncEmailTemplateLoginCode()
 				if fn == nil {

@@ -27,6 +27,10 @@ type Dependencies struct {
 	// ExpiresSeconds is the link TTL; 0 defaults to utils.MagicLinkExpiresSeconds.
 	ExpiresSeconds int
 
+	// EmailSendThrottle configures the per-email send quota; zero value
+	// applies the package defaults.
+	EmailSendThrottle utils.EmailSendThrottle
+
 	// BindIP records the requester's IP in the payload; the callback then
 	// requires the same IP. Default off — proxies, corporate NATs and
 	// mobile network switches would otherwise break legitimate links.
@@ -141,7 +145,7 @@ func MagicLinkSend(ctx context.Context, r *http.Request, deps Dependencies) (boo
 	}
 
 	// Per-email send throttle (shared with the code-send paths).
-	if check := rules.NewEmailSendThrottleRule(deps.TemporaryKeyGet, email); check.Fails() {
+	if check := rules.NewEmailSendThrottleRule(deps.TemporaryKeyGet, email, deps.EmailSendThrottle); check.Fails() {
 		return false, &MagicLinkSendError{Code: MagicLinkSendErrorCodeTooManySends, Message: check.FailMessageFirst()}
 	}
 
@@ -202,7 +206,7 @@ func MagicLinkSend(ctx context.Context, r *http.Request, deps Dependencies) (boo
 
 	// Consume send quota only after the email was handed off successfully.
 	if deps.TemporaryKeyGet != nil {
-		_ = utils.RecordEmailSend(deps.TemporaryKeyGet, deps.TemporaryKeySet, email, expires)
+		_ = utils.RecordEmailSend(deps.TemporaryKeyGet, deps.TemporaryKeySet, email, deps.EmailSendThrottle)
 	}
 
 	return true, nil

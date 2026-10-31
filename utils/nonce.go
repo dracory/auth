@@ -5,32 +5,6 @@ import (
 	"encoding/hex"
 )
 
-// LoginCodeKeyPrefix prefixes the temporary keys under which passwordless
-// login codes are stored. The nonce — not the code — is the storage key so
-// that guessing a code does not reveal or consume it.
-const LoginCodeKeyPrefix = "logincode:"
-
-// RegisterCodeKeyPrefix prefixes the temporary keys under which registration
-// code payloads are stored.
-const RegisterCodeKeyPrefix = "registercode:"
-
-// LoginCodeAttemptsKeyPrefix prefixes the per-nonce failed-attempt counters
-// for passwordless login codes.
-const LoginCodeAttemptsKeyPrefix = "logincode_attempts:"
-
-// RegisterCodeAttemptsKeyPrefix prefixes the per-nonce failed-attempt
-// counters for registration codes.
-const RegisterCodeAttemptsKeyPrefix = "registercode_attempts:"
-
-// PasswordResetTokenKeyPrefix namespaces password reset tokens in the
-// temporary key store, keeping them out of the flat keyspace shared with
-// other temp keys.
-const PasswordResetTokenKeyPrefix = "pwdreset:"
-
-// MaxCodeAttempts is the number of verification attempts allowed per nonce
-// before the code is invalidated and a new one must be requested.
-const MaxCodeAttempts = 5
-
 // GenerateNonce generates a cryptographically random 128-bit hex nonce used
 // as the temporary-key under which verification secrets are stored. The
 // nonce is returned to the client and must be presented alongside the code

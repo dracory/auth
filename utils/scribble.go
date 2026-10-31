@@ -12,7 +12,8 @@ import (
 	"sync"
 )
 
-// Version is the current version of the project
+// Version is the current version of the Scribble project
+// This should stay in this file and not be moved to a global constants file
 const Version = "1.0.4"
 
 var (

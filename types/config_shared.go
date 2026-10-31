@@ -80,6 +80,17 @@ type ConfigRateLimiting struct {
 	FuncCheckRateLimit func(ip string, endpoint string) (allowed bool, retryAfter time.Duration, err error)
 	MaxLoginAttempts   int
 	LockoutDuration    time.Duration
+	// MaxEmailSends is the number of code/link sends allowed per email
+	// address within one EmailSendWindow. Shared by the login, register,
+	// magic-link and password-restore flows. <= 0 uses the package
+	// default (utils.DefaultEmailSendMaxSends); a very large value
+	// effectively disables the throttle.
+	MaxEmailSends int
+	// EmailSendWindow is the sliding-window duration for the per-email
+	// send throttle — e.g. MaxEmailSends=1 + EmailSendWindow=5m gives a
+	// 5-minute cooldown between sends. The window restarts on each
+	// successful send. <= 0 uses the package default (one hour).
+	EmailSendWindow time.Duration
 }
 
 // ConfigCSRF contains CSRF protection options.

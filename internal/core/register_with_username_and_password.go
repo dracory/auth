@@ -70,7 +70,8 @@ func RegisterWithUsernameAndPassword(
 
 	// Per-email send throttle — prevents the endpoint being used for email
 	// bombing; enforced before code generation.
-	if check := rules.NewEmailSendThrottleRule(a.GetFuncTemporaryKeyGet(), email); check.Fails() {
+	sendThrottle := authutils.EmailSendThrottleFromAuth(a)
+	if check := rules.NewEmailSendThrottleRule(a.GetFuncTemporaryKeyGet(), email, sendThrottle); check.Fails() {
 		response.ErrorMessage = check.FailMessageFirst()
 		hooks.RecordRegistrationAttempt(false, nil)
 		return response
@@ -190,7 +191,7 @@ func RegisterWithUsernameAndPassword(
 
 	// Consume send quota only after the email was handed off successfully.
 	if get := a.GetFuncTemporaryKeyGet(); get != nil {
-		_ = authutils.RecordEmailSend(get, temporaryKeySet, email, int(verificationExpiration.Seconds()))
+		_ = authutils.RecordEmailSend(get, temporaryKeySet, email, sendThrottle)
 	}
 
 	hooks.RecordRegistrationAttempt(true, nil)

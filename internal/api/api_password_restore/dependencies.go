@@ -4,12 +4,18 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+
+	"github.com/dracory/auth/utils"
 )
 
 // dependencies is the internal, fully-validated dependency set used by
 // the password-restore business logic.
 type dependencies struct {
 	UserFindByUsername func(ctx context.Context, email, firstName, lastName string) (userID string, err error)
+
+	// EmailSendThrottle configures the per-email send quota; zero value
+	// applies the package defaults.
+	EmailSendThrottle utils.EmailSendThrottle
 
 	TemporaryKeyGet func(key string) (string, error)
 	TemporaryKeySet func(key string, value string, expiresSeconds int) error

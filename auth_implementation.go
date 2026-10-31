@@ -74,6 +74,7 @@ type authImplementation struct {
 	funcCheckRateLimit func(ip string, endpoint string) (allowed bool, retryAfter time.Duration, err error)
 	rateLimiter        *utils.InMemoryRateLimiter
 	rateLimits         map[string]int
+	emailSendThrottle  utils.EmailSendThrottle
 	// ===== END: rate limiting
 
 	// ===== START: cookie config
@@ -272,6 +273,20 @@ func (a authImplementation) GetDisableRateLimit() bool {
 // This is useful for integrating with application authentication systems or for testing.
 func (a *authImplementation) SetDisableRateLimit(disable bool) {
 	a.disableRateLimit = disable
+}
+
+// GetEmailSendThrottleConfig returns the per-email send-throttle config.
+// Accessed by the send flows through an optional interface so
+// AuthSharedInterface stays stable.
+func (a authImplementation) GetEmailSendThrottleConfig() utils.EmailSendThrottle {
+	return a.emailSendThrottle
+}
+
+// SetEmailSendThrottleConfig allows overriding the per-email send-throttle
+// config (e.g. utils.EmailSendThrottle{MaxSends: 1, WindowSeconds: 300}
+// for one send per 5 minutes).
+func (a *authImplementation) SetEmailSendThrottleConfig(cfg utils.EmailSendThrottle) {
+	a.emailSendThrottle = cfg
 }
 
 // GetPasswordStrength returns the password strength configuration for the Auth instance.

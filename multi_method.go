@@ -394,6 +394,7 @@ func NewMagicLinkMethodFromAuth(
 	sendDeps := api_magic_link_send.Dependencies{
 		TemporaryKeyGet:       a.GetFuncTemporaryKeyGet(),
 		TemporaryKeySet:       a.GetFuncTemporaryKeySet(),
+		EmailSendThrottle:     utils.EmailSendThrottleFromAuth(a),
 		EmailSend:             a.GetPasswordlessFuncEmailSend(),
 		LinkMagicLinkCallback: linkCallback,
 		Logger:                a.GetLogger(),
