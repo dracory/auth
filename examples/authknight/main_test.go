@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -113,5 +114,68 @@ func TestAuthKnightDisplayName(t *testing.T) {
 	displayName := store.displayName(userID)
 	if !strings.Contains(displayName, "Bob") || !strings.Contains(displayName, "Jones") {
 		t.Fatalf("expected display name to contain Bob Jones, got %q", displayName)
+	}
+}
+
+func TestAuthKnightStoreHelpers(t *testing.T) {
+	resetAuthKnightStore()
+	ctx := context.Background()
+	opts := authtypes.UserAuthOptions{}
+
+	store.usersByEmail["noname@x.com"] = &authKnightUser{ID: "u-noname", Email: "noname@x.com"}
+
+	if got := store.displayName("u-noname"); got != "noname@x.com" {
+		t.Fatalf("expected email fallback, got %q", got)
+	}
+	if got := store.displayName("missing"); got != "missing" {
+		t.Fatalf("expected id fallback, got %q", got)
+	}
+
+	if err := store.tempKeySet("k", "v", 60); err != nil {
+		t.Fatal(err)
+	}
+	if v, err := store.tempKeyGet("k"); err != nil || v != "v" {
+		t.Fatalf("tempKeyGet failed: %v %q", err, v)
+	}
+	if _, err := store.tempKeyGet("missing"); err == nil {
+		t.Fatal("expected error for missing key")
+	}
+
+	if err := store.storeAuthToken(ctx, "tok", "u1", opts); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.logout(ctx, "u1", opts); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.findByAuthToken(ctx, "tok", opts); err == nil {
+		t.Fatal("expected revoked token")
+	}
+}
+
+func TestAuthKnightMuxServesPages(t *testing.T) {
+	resetAuthKnightStore()
+
+	authInstance, err := newAuth()
+	if err != nil {
+		t.Fatal(err)
+	}
+	mux := newMux(authInstance)
+
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest("GET", "/", nil))
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "AuthKnight") {
+		t.Fatalf("expected home page, got %d", rec.Code)
+	}
+
+	rec = httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest("GET", "/debug?x=1", nil))
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "debug") {
+		t.Fatalf("expected debug page, got %d", rec.Code)
+	}
+
+	rec = httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest("GET", "/dashboard", nil))
+	if rec.Code == 200 {
+		t.Fatal("expected redirect for unauthenticated dashboard")
 	}
 }

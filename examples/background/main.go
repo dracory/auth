@@ -202,6 +202,17 @@ func newMux(authInstance types.AuthPasswordInterface) *http.ServeMux {
 		fmt.Fprintf(w, `<h1>Dashboard</h1><p>Welcome, %s (ID: %s)</p><p><a href="/auth/logout">Logout</a></p>`, store.displayName(userID), userID)
 	})))
 
+	return mux
+}
+
+func main() {
+	authInstance, err := newAuth()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	mux := newMux(authInstance)
+
 	fmt.Println("Background example running on http://localhost:8088")
 	if err := http.ListenAndServe(":8088", mux); err != nil {
 		log.Fatal(err)

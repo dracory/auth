@@ -134,8 +134,9 @@ func (s *authKnightMemoryStore) displayName(userID string) string {
 	return userID
 }
 
-func main() {
-	authInstance, err := auth.NewAuthKnightAuth(types.ConfigAuthKnight{
+// newAuth builds the configured auth instance for the example.
+func newAuth() (types.AuthAuthKnightInterface, error) {
+	return auth.NewAuthKnightAuth(types.ConfigAuthKnight{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
 			UrlRedirectOnSuccess: "/dashboard",
@@ -159,11 +160,12 @@ func main() {
 		FuncUserFindByEmail: store.findUserByEmail,
 		FuncUserRegister:    store.registerUser,
 	})
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+}
 
+// newMux builds the example's HTTP handler tree: the auth mux under
+// /auth, a public home page, a middleware-protected dashboard, and a
+// /debug logger route.
+func newMux(authInstance types.AuthAuthKnightInterface) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	// Mount auth under /auth
@@ -193,6 +195,18 @@ func main() {
 		fmt.Printf("[DEBUG] Request URI: %s\n", r.RequestURI)
 		fmt.Fprintf(w, "Check console for debug info")
 	})
+
+	return mux
+}
+
+func main() {
+	authInstance, err := newAuth()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	mux := newMux(authInstance)
 
 	fmt.Println("AuthKnight auth example running on http://localhost:8084")
 	if err := http.ListenAndServe(":8084", mux); err != nil {
