@@ -23,7 +23,7 @@ type authKnightMemoryStore struct {
 	mu           sync.Mutex
 	usersByEmail map[string]*authKnightUser
 	sessions     map[string]string // token -> userID
-	tempKeys     map[string]string // ak_key -> email
+	tempKeys     map[string]string // verified_key -> email
 }
 
 var store = &authKnightMemoryStore{

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/dracory/auth/types"
 	"github.com/dracory/auth/utils"
 )
 
@@ -122,7 +123,7 @@ func TestMagicLinkCallbackEmailCaptured(t *testing.T) {
 	deps := Dependencies{
 		TemporaryKeyGet: get,
 		TemporaryKeySet: set,
-		EmailCaptured: func(ctx context.Context, email string, verified bool) error {
+		EmailCaptured: func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error {
 			captured = email
 			return nil
 		},
@@ -145,11 +146,11 @@ func TestMagicLinkCallbackRegisterFirstRedirect(t *testing.T) {
 	_, get, set := tokenStore(payload)
 
 	deps := Dependencies{
-		TemporaryKeyGet:     get,
-		TemporaryKeySet:     set,
+		TemporaryKeyGet:      get,
+		TemporaryKeySet:      set,
 		CreateUserOnRegister: true,
-		RegisterURL:         "/auth/register",
-		UserExists: func(ctx context.Context, email string) (bool, error) {
+		RegisterURL:          "/auth/register",
+		UserExists: func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error) {
 			return false, nil
 		},
 	}
@@ -162,8 +163,8 @@ func TestMagicLinkCallbackRegisterFirstRedirect(t *testing.T) {
 		t.Fatalf("expected redirect, got %d", rec.Code)
 	}
 	loc := rec.Header().Get("Location")
-	if !strings.Contains(loc, "/auth/register") || !strings.Contains(loc, "ak_key=") {
-		t.Fatalf("expected register redirect with ak_key, got %q", loc)
+	if !strings.Contains(loc, "/auth/register") || !strings.Contains(loc, "verified_key=") {
+		t.Fatalf("expected register redirect with verified_key, got %q", loc)
 	}
 }
 
@@ -173,10 +174,10 @@ func TestMagicLinkCallbackRegisterFirstExistingUserAuthenticates(t *testing.T) {
 
 	authed := ""
 	deps := Dependencies{
-		TemporaryKeyGet:     get,
-		TemporaryKeySet:     set,
+		TemporaryKeyGet:      get,
+		TemporaryKeySet:      set,
 		CreateUserOnRegister: true,
-		UserExists: func(ctx context.Context, email string) (bool, error) {
+		UserExists: func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error) {
 			return true, nil
 		},
 		AuthenticateViaUsername: func(w http.ResponseWriter, r *http.Request, email, first, last string) {

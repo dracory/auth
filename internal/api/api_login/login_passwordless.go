@@ -65,9 +65,13 @@ func loginPasswordless(ctx context.Context, r *http.Request, deps LoginPasswordl
 		}
 	}
 
-	// Lead capture on submission — the email is not yet verified.
+	// Lead capture on submission — the email is not yet verified. The
+	// hook is best-effort — wiring sites log failures.
 	if deps.EmailCaptured != nil {
-		_ = deps.EmailCaptured(ctx, email, false)
+		_ = deps.EmailCaptured(ctx, email, false, types.UserAuthOptions{
+			UserIp:    req.GetIP(r),
+			UserAgent: r.UserAgent(),
+		})
 	}
 
 	// Per-email send throttle — prevents the endpoint being used for email

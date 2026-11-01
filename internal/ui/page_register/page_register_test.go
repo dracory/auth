@@ -95,7 +95,7 @@ func TestPageRegister_AuthKnight(t *testing.T) {
 		return "", nil
 	})
 
-	req, err := http.NewRequest("GET", "/register?ak_key=test-ak-key", nil)
+	req, err := http.NewRequest("GET", "/register?verified_key=test-ak-key", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,7 +115,7 @@ func TestPageRegister_AuthKnight(t *testing.T) {
 		"name=\"last_name\"",
 		"name=\"email\"",
 		"verified@example.com",
-		"name=\"ak_key\"",
+		"name=\"verified_key\"",
 		"form-control-plaintext",
 		"var urlApiRegister = \"http://localhost/auth/api/register\";",
 	}
@@ -127,7 +127,7 @@ func TestPageRegister_AuthKnight(t *testing.T) {
 	}
 }
 
-// verified_key is the method-agnostic alias of ak_key — issued by
+// verified_key is the unified verified-email token — issued by
 // OTP/magic-link verifications under the register-first policy — and
 // must render the same verified-email register form.
 func TestPageRegister_VerifiedKey(t *testing.T) {
@@ -160,7 +160,7 @@ func TestPageRegister_VerifiedKey(t *testing.T) {
 		"form-control-plaintext",
 		"name=\"first_name\"",
 		"name=\"last_name\"",
-		"name=\"ak_key\"",
+		"name=\"verified_key\"",
 	}
 	for _, v := range expected {
 		if !strings.Contains(body, v) {
@@ -212,7 +212,7 @@ func TestPageRegister_Authenticated(t *testing.T) {
 	}
 
 	// The email is verified — no editable email input, no password, no code flow.
-	forbidden := []string{"name=\"email\"", "name=\"password\"", "name=\"ak_key\""}
+	forbidden := []string{"name=\"email\"", "name=\"password\"", "name=\"verified_key\""}
 	for _, v := range forbidden {
 		if strings.Contains(body, v) {
 			t.Errorf("completion form must not contain %s.\nFOUND: %s", v, body)

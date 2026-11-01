@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/dracory/auth/types"
 	"github.com/dracory/auth/utils"
 )
 
@@ -56,10 +57,10 @@ func TestApiLoginCodeVerify_RegisterFirstNewUser(t *testing.T) {
 		TemporaryKeySet:      set,
 		CreateUserOnRegister: true,
 		RegisterURL:          "/auth/register",
-		UserExists: func(ctx context.Context, email string) (bool, error) {
+		UserExists: func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error) {
 			return false, nil
 		},
-		EmailCaptured: func(ctx context.Context, email string, verified bool) error {
+		EmailCaptured: func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error {
 			capturedEmail, capturedVerified = email, verified
 			return nil
 		},
@@ -78,12 +79,12 @@ func TestApiLoginCodeVerify_RegisterFirstNewUser(t *testing.T) {
 	if !strings.Contains(body, "\"status\":\"success\"") {
 		t.Fatalf("expected success, got %q", body)
 	}
-	if !strings.Contains(body, "/auth/register?ak_key=") {
+	if !strings.Contains(body, "/auth/register?verified_key=") {
 		t.Fatalf("expected register redirect with token, got %q", body)
 	}
 
 	// The issued token resolves back to the verified email in the store.
-	if !strings.Contains(body, "ak_key=") {
+	if !strings.Contains(body, "verified_key=") {
 		t.Fatalf("missing token in response: %q", body)
 	}
 	found := false
@@ -115,7 +116,7 @@ func TestApiLoginCodeVerify_RegisterFirstExistingUser(t *testing.T) {
 		TemporaryKeySet:      set,
 		CreateUserOnRegister: true,
 		RegisterURL:          "/auth/register",
-		UserExists: func(ctx context.Context, email string) (bool, error) {
+		UserExists: func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error) {
 			return true, nil
 		},
 		AuthenticateViaUsername: func(w http.ResponseWriter, r *http.Request, email string) {
@@ -130,7 +131,7 @@ func TestApiLoginCodeVerify_RegisterFirstExistingUser(t *testing.T) {
 	if !authCalled {
 		t.Fatalf("existing user must be authenticated")
 	}
-	if strings.Contains(recorder.Body.String(), "ak_key=") {
+	if strings.Contains(recorder.Body.String(), "verified_key=") {
 		t.Fatalf("existing user must not receive a verified-email token")
 	}
 }

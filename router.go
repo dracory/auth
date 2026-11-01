@@ -45,7 +45,6 @@ func (a authImplementation) AuthHandler(w http.ResponseWriter, r *http.Request) 
 		uri = str.LeftFrom(uri, "?")
 	}
 
-
 	if uriHasPathSuffix(uri, PathApiLogin) {
 		path = PathApiLogin
 	} else if uriHasPathSuffix(uri, PathApiLoginCodeVerify) {
@@ -85,7 +84,6 @@ func (a authImplementation) AuthHandler(w http.ResponseWriter, r *http.Request) 
 	ctx := context.WithValue(r.Context(), keyEndpoint, r.URL.Path)
 
 	routeFunc := a.getRoute(path)
-
 
 	routeFunc(w, r.WithContext(ctx))
 }

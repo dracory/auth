@@ -12,7 +12,7 @@ import (
 )
 
 // TestAuthKnightFlow covers the AuthKnight registration path: the user's
-// email is already verified by the external service (carried by ak_key),
+// email is already verified by the external service (carried by verified_key),
 // shown read-only on the register page, and POST /auth/api/register
 // creates the user and issues a session token.
 func TestAuthKnightFlow(t *testing.T) {
@@ -38,10 +38,10 @@ func TestAuthKnightFlow(t *testing.T) {
 	}
 	mux := a.Router()
 
-	// 1. GET /auth/register?ak_key=… → verified email read-only.
-	page := get(mux, "/auth/register?ak_key=ak-key-1")
+	// 1. GET /auth/register?verified_key=… → verified email read-only.
+	page := get(mux, "/auth/register?verified_key=ak-key-1")
 	body := page.Body.String()
-	for _, want := range []string{"knight@example.com", "form-control-plaintext", `name="first_name"`, `name="ak_key"`} {
+	for _, want := range []string{"knight@example.com", "form-control-plaintext", `name="first_name"`, `name="verified_key"`} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("authknight register page missing %q", want)
 		}
@@ -49,9 +49,9 @@ func TestAuthKnightFlow(t *testing.T) {
 
 	// 2. POST /auth/api/register → user created, token issued, cookie set.
 	reg := postForm(mux, "/auth/api/register", url.Values{
-		"ak_key":     {"ak-key-1"},
-		"first_name": {"Jane"},
-		"last_name":  {"Doe"},
+		"verified_key": {"ak-key-1"},
+		"first_name":   {"Jane"},
+		"last_name":    {"Doe"},
 	})
 	regBody := reg.Body.String()
 	if !strings.Contains(regBody, `"status":"success"`) {

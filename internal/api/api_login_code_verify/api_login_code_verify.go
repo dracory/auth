@@ -48,7 +48,7 @@ type Dependencies struct {
 
 	// UserExists reports whether the email already has an account. Used by
 	// CreateUserOnRegister; nil falls back to AuthenticateViaUsername.
-	UserExists func(ctx context.Context, email string) (bool, error)
+	UserExists func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error)
 
 	// RegisterURL is the register page the verified-email token redirects
 	// to (e.g. "/auth/register"). Only used with CreateUserOnRegister.
@@ -56,7 +56,7 @@ type Dependencies struct {
 
 	// EmailCaptured is an optional lead-capture hook fired after the code
 	// matches, with verified=true.
-	EmailCaptured func(ctx context.Context, email string, verified bool) error
+	EmailCaptured func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error
 
 	// Logger is used to log internal errors. If nil, slog.Default() is used.
 	Logger *slog.Logger
@@ -145,7 +145,7 @@ func ApiLoginCodeVerify(w http.ResponseWriter, r *http.Request, deps Dependencie
 			separator = "&"
 		}
 		api.Respond(w, r, api.SuccessWithData(types.MsgVerificationSuccess, map[string]any{
-			"redirect": registerURL + separator + "ak_key=" + url.QueryEscape(result.VerifiedEmailToken),
+			"redirect": registerURL + separator + "verified_key=" + url.QueryEscape(result.VerifiedEmailToken),
 		}))
 		return
 	}
@@ -185,24 +185,14 @@ func ApiLoginCodeVerifyWithAuth(w http.ResponseWriter, r *http.Request, a types.
 	if exists, ok := a.(interface {
 		GetFuncUserExists() func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error)
 	}); ok {
-		if fn := exists.GetFuncUserExists(); fn != nil {
-			deps.UserExists = func(ctx context.Context, email string) (bool, error) {
-				return fn(ctx, email, types.UserAuthOptions{
-					UserIp:    req.GetIP(r),
-					UserAgent: r.UserAgent(),
-				})
-			}
-		}
+		deps.UserExists = exists.GetFuncUserExists()
 	}
 	if deps.UserExists == nil {
 		// Fall back to the passwordless lookup: a found userID means the
 		// account exists, anything else (error or empty) means it does not.
 		if fn := a.GetPasswordlessUserFindByEmail(); fn != nil {
-			deps.UserExists = func(ctx context.Context, email string) (bool, error) {
-				userID, err := fn(ctx, email, types.UserAuthOptions{
-					UserIp:    req.GetIP(r),
-					UserAgent: r.UserAgent(),
-				})
+			deps.UserExists = func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error) {
+				userID, err := fn(ctx, email, options)
 				return err == nil && userID != "", nil
 			}
 		}
@@ -211,11 +201,12 @@ func ApiLoginCodeVerifyWithAuth(w http.ResponseWriter, r *http.Request, a types.
 		GetFuncEmailCaptured() func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error
 	}); ok {
 		if fn := capt.GetFuncEmailCaptured(); fn != nil {
-			deps.EmailCaptured = func(ctx context.Context, email string, verified bool) error {
-				return fn(ctx, email, verified, types.UserAuthOptions{
-					UserIp:    req.GetIP(r),
-					UserAgent: r.UserAgent(),
-				})
+			deps.EmailCaptured = func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error {
+				if err := fn(ctx, email, verified, options); err != nil {
+					a.GetLogger().Error("email capture hook failed", slog.String("error", err.Error()))
+					return err
+				}
+				return nil
 			}
 		}
 	}
@@ -233,6 +224,10 @@ func ApiLoginCodeVerifyWithAuth(w http.ResponseWriter, r *http.Request, a types.
 // messages but does not perform authentication or write HTTP responses.
 func LoginCodeVerify(ctx context.Context, r *http.Request, deps Dependencies) (*LoginCodeVerifyResult, *LoginCodeVerifyError) {
 	verificationCode := req.GetStringTrimmed(r, "verification_code")
+	options := types.UserAuthOptions{
+		UserIp:    req.GetIP(r),
+		UserAgent: r.UserAgent(),
+	}
 	nonce := req.GetStringTrimmed(r, "nonce")
 	email := req.GetStringTrimmed(r, "email")
 
@@ -325,37 +320,44 @@ func LoginCodeVerify(ctx context.Context, r *http.Request, deps Dependencies) (*
 			slog.String("error", invalidateErr.Error()))
 	}
 
-	// Lead capture: the email just proved ownership of the inbox.
+	// Lead capture: the email just proved ownership of the inbox. The
+	// hook is best-effort — wiring sites log failures.
 	if deps.EmailCaptured != nil {
-		if err := deps.EmailCaptured(ctx, email, true); err != nil {
-			logger := deps.Logger
-			if logger == nil {
-				logger = slog.Default()
-			}
-			logger.Error("login code verify: email capture hook failed",
-				slog.String("error", err.Error()))
-		}
+		_ = deps.EmailCaptured(ctx, email, true, options)
 	}
 
 	result := &LoginCodeVerifyResult{Email: email}
 
 	// Register-first policy: accounts are created by the register form,
 	// not at verify time. Verified-but-new emails get a token instead of
-	// a session. An existence-check failure falls through to the normal
-	// authenticate path so a store hiccup cannot lock users out.
-	if deps.CreateUserOnRegister && deps.UserExists != nil && deps.TemporaryKeySet != nil {
-		exists, errExists := deps.UserExists(ctx, email)
-		if errExists == nil && !exists {
-			token, errToken := utils.IssueVerifiedEmailToken(deps.TemporaryKeySet, email, 0)
-			if errToken == nil {
-				result.VerifiedEmailToken = token
-			} else {
-				logger := deps.Logger
-				if logger == nil {
-					logger = slog.Default()
+	// a session. Misconfiguration or an existence-check failure falls
+	// through to the normal authenticate path so a store hiccup cannot
+	// lock users out — logged loudly since it also means an incomplete
+	// user row the policy exists to prevent.
+	if deps.CreateUserOnRegister {
+		logger := deps.Logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		switch {
+		case deps.UserExists == nil:
+			logger.Warn("login code verify: CreateUserOnRegister set but UserExists is not configured — falling back to session-first registration")
+		case deps.TemporaryKeySet == nil:
+			logger.Warn("login code verify: CreateUserOnRegister set but TemporaryKeySet is not configured — falling back to session-first registration")
+		default:
+			exists, errExists := deps.UserExists(ctx, email, options)
+			switch {
+			case errExists != nil:
+				logger.Warn("login code verify: UserExists failed — falling back to session-first registration",
+					slog.String("error", errExists.Error()))
+			case !exists:
+				token, errToken := utils.IssueVerifiedEmailToken(deps.TemporaryKeySet, email, 0)
+				if errToken != nil {
+					logger.Error("login code verify: verified-email token issue failed",
+						slog.String("error", errToken.Error()))
+				} else {
+					result.VerifiedEmailToken = token
 				}
-				logger.Error("login code verify: verified-email token issue failed",
-					slog.String("error", errToken.Error()))
 			}
 		}
 	}

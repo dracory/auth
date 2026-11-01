@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"regexp"
 	"strings"
@@ -415,9 +416,15 @@ func NewMagicLinkMethodFromAuth(
 	if exists, ok := a.(interface {
 		GetFuncUserExists() func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error)
 	}); ok {
-		if fn := exists.GetFuncUserExists(); fn != nil {
-			callbackDeps.UserExists = func(ctx context.Context, email string) (bool, error) {
-				return fn(ctx, email, types.UserAuthOptions{})
+		callbackDeps.UserExists = exists.GetFuncUserExists()
+	}
+	if callbackDeps.UserExists == nil {
+		// Fall back to the passwordless lookup — same convention as
+		// api_login_code_verify: a found userID means the account exists.
+		if fn := a.GetPasswordlessUserFindByEmail(); fn != nil {
+			callbackDeps.UserExists = func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error) {
+				userID, err := fn(ctx, email, options)
+				return err == nil && userID != "", nil
 			}
 		}
 	}
@@ -425,12 +432,15 @@ func NewMagicLinkMethodFromAuth(
 		GetFuncEmailCaptured() func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error
 	}); ok {
 		if fn := capt.GetFuncEmailCaptured(); fn != nil {
-			sendDeps.EmailCaptured = func(ctx context.Context, email string, verified bool) error {
-				return fn(ctx, email, verified, types.UserAuthOptions{})
+			logged := func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error {
+				if err := fn(ctx, email, verified, options); err != nil {
+					a.GetLogger().Error("email capture hook failed", slog.String("error", err.Error()))
+					return err
+				}
+				return nil
 			}
-			callbackDeps.EmailCaptured = func(ctx context.Context, email string, verified bool) error {
-				return fn(ctx, email, verified, types.UserAuthOptions{})
-			}
+			sendDeps.EmailCaptured = logged
+			callbackDeps.EmailCaptured = logged
 		}
 	}
 	// Optional hooks via type assertion (public interfaces unchanged).

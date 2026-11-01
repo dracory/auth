@@ -59,7 +59,7 @@ type Dependencies struct {
 
 	// EmailCaptured is an optional lead-capture hook fired after input
 	// validation, with verified=false (email submitted, not yet proven).
-	EmailCaptured func(ctx context.Context, email string, verified bool) error
+	EmailCaptured func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error
 
 	Logger *slog.Logger
 }
@@ -142,9 +142,13 @@ func MagicLinkSend(ctx context.Context, r *http.Request, deps Dependencies) (boo
 			return false, &MagicLinkSendError{Code: MagicLinkSendErrorCodeValidation, Message: check.FailMessageFirst()}
 		}
 	}
-	// Lead capture on submission — the email is not yet verified.
+	// Lead capture on submission — the email is not yet verified. The
+	// hook is best-effort — wiring sites log failures.
 	if deps.EmailCaptured != nil {
-		_ = deps.EmailCaptured(ctx, email, false)
+		_ = deps.EmailCaptured(ctx, email, false, types.UserAuthOptions{
+			UserIp:    req.GetIP(r),
+			UserAgent: r.UserAgent(),
+		})
 	}
 
 	// `return` must be a safe relative path or dropped entirely — never

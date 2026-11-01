@@ -35,7 +35,7 @@ type LoginPasswordlessDeps struct {
 
 	// EmailCaptured is an optional lead-capture hook fired after input
 	// validation, with verified=false (email submitted, not yet proven).
-	EmailCaptured func(ctx context.Context, email string, verified bool) error
+	EmailCaptured func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error
 }
 
 // ApiLogin is the HTTP-level handler that combines passwordless and
@@ -135,16 +135,17 @@ func ApiLoginWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthShared
 		emailEnqueue = enq.GetFuncEmailEnqueue()
 	}
 
-	var emailCaptured func(ctx context.Context, email string, verified bool) error
+	var emailCaptured func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error
 	if capt, ok := a.(interface {
 		GetFuncEmailCaptured() func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error
 	}); ok {
 		if fn := capt.GetFuncEmailCaptured(); fn != nil {
-			emailCaptured = func(ctx context.Context, email string, verified bool) error {
-				return fn(ctx, email, verified, types.UserAuthOptions{
-					UserIp:    req.GetIP(r),
-					UserAgent: r.UserAgent(),
-				})
+			emailCaptured = func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error {
+				if err := fn(ctx, email, verified, options); err != nil {
+					a.GetLogger().Error("email capture hook failed", slog.String("error", err.Error()))
+					return err
+				}
+				return nil
 			}
 		}
 	}

@@ -148,8 +148,8 @@ func TestApiAuthKnightCallback_NewUser(t *testing.T) {
 	}
 
 	location := recorder.Header().Get("Location")
-	if !strings.HasPrefix(location, "/register?ak_key=") {
-		t.Fatalf("expected redirect to /register?ak_key=..., got %s", location)
+	if !strings.HasPrefix(location, "/register?verified_key=") {
+		t.Fatalf("expected redirect to /register?verified_key=..., got %s", location)
 	}
 
 	if tempKeyStored == "" {
@@ -341,8 +341,8 @@ func TestApiAuthKnightCallback_NewUserRegisterURLWithExistingQuery(t *testing.T)
 	if parsed.Query().Get("foo") != "bar" {
 		t.Fatalf("expected foo=bar in query, got %s", parsed.Query().Get("foo"))
 	}
-	if parsed.Query().Get("ak_key") == "" {
-		t.Fatal("expected ak_key in query")
+	if parsed.Query().Get("verified_key") == "" {
+		t.Fatal("expected verified_key in query")
 	}
 }
 

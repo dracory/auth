@@ -581,7 +581,7 @@ func TestApiRegisterAuthKnight_Success(t *testing.T) {
 
 	deps := Dependencies{
 		AuthKnight: true,
-		AuthKnightRegisterDependencies: AuthKnightRegisterDependencies{
+		VerifiedEmailRegisterDependencies: VerifiedEmailRegisterDependencies{
 			TemporaryKeyGet: func(key string) (string, error) {
 				if key == "test-ak-key" {
 					return "newuser@example.com", nil
@@ -612,9 +612,9 @@ func TestApiRegisterAuthKnight_Success(t *testing.T) {
 	}
 
 	values := url.Values{
-		"ak_key":     {"test-ak-key"},
-		"first_name": {"Jane"},
-		"last_name":  {"Smith"},
+		"verified_key": {"test-ak-key"},
+		"first_name":   {"Jane"},
+		"last_name":    {"Smith"},
 	}
 	recorder, req := makePostRequest(t, "/api/register", values)
 	ApiRegister(recorder, req, deps)
@@ -638,10 +638,10 @@ func TestApiRegisterAuthKnight_Success(t *testing.T) {
 		t.Fatal("expected cookie to be set")
 	}
 	if clearedKey != "test-ak-key" {
-		t.Fatalf("expected ak_key to be cleared, got key='%s'", clearedKey)
+		t.Fatalf("expected verified key to be cleared, got key='%s'", clearedKey)
 	}
 	if clearedValue != "" {
-		t.Fatalf("expected ak_key value to be cleared to empty, got '%s'", clearedValue)
+		t.Fatalf("expected verified key value to be cleared to empty, got '%s'", clearedValue)
 	}
 }
 
@@ -651,7 +651,7 @@ func TestApiRegisterAuthKnight_AkKeyConsumedAfterRegistration(t *testing.T) {
 
 	deps := Dependencies{
 		AuthKnight: true,
-		AuthKnightRegisterDependencies: AuthKnightRegisterDependencies{
+		VerifiedEmailRegisterDependencies: VerifiedEmailRegisterDependencies{
 			TemporaryKeyGet: func(key string) (string, error) {
 				v, ok := keyStore[key]
 				if !ok {
@@ -677,9 +677,9 @@ func TestApiRegisterAuthKnight_AkKeyConsumedAfterRegistration(t *testing.T) {
 	}
 
 	values := url.Values{
-		"ak_key":     {"test-ak-key"},
-		"first_name": {"Jane"},
-		"last_name":  {"Smith"},
+		"verified_key": {"test-ak-key"},
+		"first_name":   {"Jane"},
+		"last_name":    {"Smith"},
 	}
 	recorder, req := makePostRequest(t, "/api/register", values)
 	ApiRegister(recorder, req, deps)
@@ -689,20 +689,20 @@ func TestApiRegisterAuthKnight_AkKeyConsumedAfterRegistration(t *testing.T) {
 		t.Fatalf("expected registration success, got: %s", body)
 	}
 
-	// Second attempt with the same ak_key should fail
+	// Second attempt with the same verified key should fail
 	recorder2, req2 := makePostRequest(t, "/api/register", values)
 	ApiRegister(recorder2, req2, deps)
 
 	body2 := recorder2.Body.String()
 	if !strings.Contains(body2, "Link not valid or expired") {
-		t.Fatalf("expected expired link error on second use of ak_key, got: %s", body2)
+		t.Fatalf("expected expired link error on second use of verified_key, got: %s", body2)
 	}
 }
 
 func TestApiRegisterAuthKnight_MissingAkKey(t *testing.T) {
 	deps := Dependencies{
 		AuthKnight: true,
-		AuthKnightRegisterDependencies: AuthKnightRegisterDependencies{
+		VerifiedEmailRegisterDependencies: VerifiedEmailRegisterDependencies{
 			TemporaryKeyGet: func(key string) (string, error) { return "", nil },
 			UserRegister: func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) (string, error) {
 				t.Fatal("should not call UserRegister")
@@ -730,7 +730,7 @@ func TestApiRegisterAuthKnight_MissingAkKey(t *testing.T) {
 func TestApiRegisterAuthKnight_InvalidAkKey(t *testing.T) {
 	deps := Dependencies{
 		AuthKnight: true,
-		AuthKnightRegisterDependencies: AuthKnightRegisterDependencies{
+		VerifiedEmailRegisterDependencies: VerifiedEmailRegisterDependencies{
 			TemporaryKeyGet: func(key string) (string, error) {
 				return "", errors.New("key not found")
 			},
@@ -745,9 +745,9 @@ func TestApiRegisterAuthKnight_InvalidAkKey(t *testing.T) {
 	}
 
 	values := url.Values{
-		"ak_key":     {"invalid-key"},
-		"first_name": {"Jane"},
-		"last_name":  {"Smith"},
+		"verified_key": {"invalid-key"},
+		"first_name":   {"Jane"},
+		"last_name":    {"Smith"},
 	}
 	recorder, req := makePostRequest(t, "/api/register", values)
 	ApiRegister(recorder, req, deps)
@@ -761,7 +761,7 @@ func TestApiRegisterAuthKnight_InvalidAkKey(t *testing.T) {
 func TestApiRegisterAuthKnight_MissingFirstName(t *testing.T) {
 	deps := Dependencies{
 		AuthKnight: true,
-		AuthKnightRegisterDependencies: AuthKnightRegisterDependencies{
+		VerifiedEmailRegisterDependencies: VerifiedEmailRegisterDependencies{
 			TemporaryKeyGet: func(key string) (string, error) {
 				return "test@example.com", nil
 			},
@@ -776,8 +776,8 @@ func TestApiRegisterAuthKnight_MissingFirstName(t *testing.T) {
 	}
 
 	values := url.Values{
-		"ak_key":    {"test-key"},
-		"last_name": {"Smith"},
+		"verified_key": {"test-key"},
+		"last_name":    {"Smith"},
 	}
 	recorder, req := makePostRequest(t, "/api/register", values)
 	ApiRegister(recorder, req, deps)
@@ -791,7 +791,7 @@ func TestApiRegisterAuthKnight_MissingFirstName(t *testing.T) {
 func TestApiRegisterAuthKnight_MissingLastName(t *testing.T) {
 	deps := Dependencies{
 		AuthKnight: true,
-		AuthKnightRegisterDependencies: AuthKnightRegisterDependencies{
+		VerifiedEmailRegisterDependencies: VerifiedEmailRegisterDependencies{
 			TemporaryKeyGet: func(key string) (string, error) {
 				return "test@example.com", nil
 			},
@@ -806,8 +806,8 @@ func TestApiRegisterAuthKnight_MissingLastName(t *testing.T) {
 	}
 
 	values := url.Values{
-		"ak_key":     {"test-key"},
-		"first_name": {"Jane"},
+		"verified_key": {"test-key"},
+		"first_name":   {"Jane"},
 	}
 	recorder, req := makePostRequest(t, "/api/register", values)
 	ApiRegister(recorder, req, deps)
@@ -821,7 +821,7 @@ func TestApiRegisterAuthKnight_MissingLastName(t *testing.T) {
 func TestApiRegisterAuthKnight_UserRegisterError(t *testing.T) {
 	deps := Dependencies{
 		AuthKnight: true,
-		AuthKnightRegisterDependencies: AuthKnightRegisterDependencies{
+		VerifiedEmailRegisterDependencies: VerifiedEmailRegisterDependencies{
 			TemporaryKeyGet: func(key string) (string, error) {
 				return "test@example.com", nil
 			},
@@ -835,9 +835,9 @@ func TestApiRegisterAuthKnight_UserRegisterError(t *testing.T) {
 	}
 
 	values := url.Values{
-		"ak_key":     {"test-key"},
-		"first_name": {"Jane"},
-		"last_name":  {"Smith"},
+		"verified_key": {"test-key"},
+		"first_name":   {"Jane"},
+		"last_name":    {"Smith"},
 	}
 	recorder, req := makePostRequest(t, "/api/register", values)
 	ApiRegister(recorder, req, deps)
@@ -851,7 +851,7 @@ func TestApiRegisterAuthKnight_UserRegisterError(t *testing.T) {
 func TestApiRegisterAuthKnight_NilTemporaryKeyGet(t *testing.T) {
 	deps := Dependencies{
 		AuthKnight: true,
-		AuthKnightRegisterDependencies: AuthKnightRegisterDependencies{
+		VerifiedEmailRegisterDependencies: VerifiedEmailRegisterDependencies{
 			TemporaryKeyGet: nil,
 			UserRegister: func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) (string, error) {
 				t.Fatal("should not call UserRegister")
@@ -864,9 +864,9 @@ func TestApiRegisterAuthKnight_NilTemporaryKeyGet(t *testing.T) {
 	}
 
 	values := url.Values{
-		"ak_key":     {"test-key"},
-		"first_name": {"Jane"},
-		"last_name":  {"Smith"},
+		"verified_key": {"test-key"},
+		"first_name":   {"Jane"},
+		"last_name":    {"Smith"},
 	}
 	recorder, req := makePostRequest(t, "/api/register", values)
 	ApiRegister(recorder, req, deps)
@@ -878,12 +878,12 @@ func TestApiRegisterAuthKnight_NilTemporaryKeyGet(t *testing.T) {
 }
 
 // The verified_key alias (OTP/magic-link register-first tokens) exercises
-// the same token-verified registration path as ak_key — no AuthKnight flag.
+// the verified-email token registration path — no AuthKnight flag.
 func TestApiRegisterVerifiedKey_Success(t *testing.T) {
 	var registeredEmail string
 
 	deps := Dependencies{
-		AuthKnightRegisterDependencies: AuthKnightRegisterDependencies{
+		VerifiedEmailRegisterDependencies: VerifiedEmailRegisterDependencies{
 			TemporaryKeyGet: func(key string) (string, error) {
 				if key == "test-verified-key" {
 					return "otp@example.com", nil
@@ -916,11 +916,11 @@ func TestApiRegisterVerifiedKey_Success(t *testing.T) {
 	}
 }
 
-// An invalid verified_key fails like an invalid ak_key — never creates.
+// An invalid verified_key fails like an invalid token — never creates.
 func TestApiRegisterVerifiedKey_Invalid(t *testing.T) {
 	registerCalled := false
 	deps := Dependencies{
-		AuthKnightRegisterDependencies: AuthKnightRegisterDependencies{
+		VerifiedEmailRegisterDependencies: VerifiedEmailRegisterDependencies{
 			TemporaryKeyGet: func(key string) (string, error) {
 				return "", errors.New("key not found")
 			},

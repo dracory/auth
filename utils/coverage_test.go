@@ -2,8 +2,8 @@ package utils
 
 import (
 	"context"
-	"net/http"
 	"errors"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"

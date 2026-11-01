@@ -10,7 +10,7 @@ const VerifiedEmailTokenExpiresSeconds = 900
 // IssueVerifiedEmailToken stores a fresh random token mapped to the
 // verified email in the temporary key store. The token is the unified
 // "verified-email credential" every register-first flow (OTP code verify,
-// magic link, AuthKnight ak_key) exchanges its proof for — the register
+// magic link, AuthKnight callback) exchanges its proof for — the register
 // page resolves it back to the email, renders it read-only, and the
 // register API consumes it on submit (single use).
 func IssueVerifiedEmailToken(

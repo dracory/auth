@@ -42,7 +42,7 @@ type Dependencies struct {
 
 	// UserExists reports whether the email already has an account. Used by
 	// CreateUserOnRegister; nil falls back to AuthenticateViaUsername.
-	UserExists func(ctx context.Context, email string) (bool, error)
+	UserExists func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error)
 
 	// RegisterURL is the register page the verified-email token redirects
 	// to (e.g. "/auth/register"). Only used with CreateUserOnRegister.
@@ -50,7 +50,7 @@ type Dependencies struct {
 
 	// EmailCaptured is an optional lead-capture hook fired after the token
 	// validates, with verified=true.
-	EmailCaptured func(ctx context.Context, email string, verified bool) error
+	EmailCaptured func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error
 
 	Logger *slog.Logger
 }
@@ -79,35 +79,55 @@ func ApiMagicLinkCallback(w http.ResponseWriter, r *http.Request, deps Dependenc
 		return
 	}
 
-	// Lead capture: the email just proved ownership of the inbox.
+	options := types.UserAuthOptions{
+		UserIp:    req.GetIP(r),
+		UserAgent: r.UserAgent(),
+	}
+
+	// Lead capture: the email just proved ownership of the inbox. The
+	// hook is best-effort — wiring sites log failures.
 	if deps.EmailCaptured != nil {
-		if err := deps.EmailCaptured(r.Context(), payload.Email, true); err != nil {
-			logger := deps.Logger
-			if logger == nil {
-				logger = slog.Default()
-			}
-			logger.Error("magic link callback: email capture hook failed",
-				slog.String("error", err.Error()))
-		}
+		_ = deps.EmailCaptured(r.Context(), payload.Email, true, options)
 	}
 
 	// Register-first policy: verified-but-new emails get a verified-email
 	// token and land on the register form instead of being logged in as a
-	// freshly created (incomplete) user.
-	if deps.CreateUserOnRegister && deps.UserExists != nil && deps.TemporaryKeySet != nil {
-		if exists, errExists := deps.UserExists(r.Context(), payload.Email); errExists == nil && !exists {
-			vt, errToken := utils.IssueVerifiedEmailToken(deps.TemporaryKeySet, payload.Email, 0)
-			if errToken == nil {
-				registerURL := deps.RegisterURL
-				if registerURL == "" {
-					registerURL = "/register"
+	// freshly created (incomplete) user. Misconfiguration falls through
+	// to authenticate — logged loudly since it also means an incomplete
+	// user row the policy exists to prevent.
+	if deps.CreateUserOnRegister {
+		logger := deps.Logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		switch {
+		case deps.UserExists == nil:
+			logger.Warn("magic link callback: CreateUserOnRegister set but UserExists is not configured — falling back to session-first registration")
+		case deps.TemporaryKeySet == nil:
+			logger.Warn("magic link callback: CreateUserOnRegister set but TemporaryKeySet is not configured — falling back to session-first registration")
+		default:
+			exists, errExists := deps.UserExists(r.Context(), payload.Email, options)
+			switch {
+			case errExists != nil:
+				logger.Warn("magic link callback: UserExists failed — falling back to session-first registration",
+					slog.String("error", errExists.Error()))
+			case !exists:
+				vt, errToken := utils.IssueVerifiedEmailToken(deps.TemporaryKeySet, payload.Email, 0)
+				if errToken != nil {
+					logger.Error("magic link callback: verified-email token issue failed",
+						slog.String("error", errToken.Error()))
+				} else {
+					registerURL := deps.RegisterURL
+					if registerURL == "" {
+						registerURL = "/register"
+					}
+					separator := "?"
+					if strings.Contains(registerURL, "?") {
+						separator = "&"
+					}
+					http.Redirect(w, r, registerURL+separator+"verified_key="+url.QueryEscape(vt), http.StatusTemporaryRedirect)
+					return
 				}
-				separator := "?"
-				if strings.Contains(registerURL, "?") {
-					separator = "&"
-				}
-				http.Redirect(w, r, registerURL+separator+"ak_key="+url.QueryEscape(vt), http.StatusTemporaryRedirect)
-				return
 			}
 		}
 	}
