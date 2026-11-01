@@ -42,25 +42,29 @@ type Dependencies struct {
 	// AuthKnight indicates whether the registration flow is AuthKnight-based.
 	AuthKnight bool
 
-	// AuthKnightRegisterDependencies are used when AuthKnight is true.
-	AuthKnightRegisterDependencies AuthKnightRegisterDependencies
+	// VerifiedEmailRegisterDependencies are used for the verified-email
+	// token branch — the AuthKnight callback and OTP/magic-link verifications.
+	VerifiedEmailRegisterDependencies VerifiedEmailRegisterDependencies
 
 	// Logger is used to log internal errors. If nil, slog.Default() is used.
 	Logger *slog.Logger
 }
 
-// AuthKnightRegisterDependencies defines the dependencies required for
-// the AuthKnight registration flow (creating a user from a verified email).
-type AuthKnightRegisterDependencies struct {
-	// TemporaryKeyGet retrieves the verified email by the ak_key.
+// VerifiedEmailRegisterDependencies defines the dependencies required for
+// the verified-email token registration flow (creating a user from a
+// verified email).
+type VerifiedEmailRegisterDependencies struct {
+	// TemporaryKeyGet retrieves the verified email by the token
+	// (verified_key).
 	TemporaryKeyGet func(key string) (string, error)
 
 	// TemporaryKeySet stores a temporary key-value pair with expiration.
-	// Used to clear the ak_key after successful registration.
+	// Used to clear the token after successful registration.
 	TemporaryKeySet func(key string, value string, expiresSeconds int) error
 
 	// UserRegister creates a new user with email, first name, and last name.
-	// The email is already verified by AuthKnight.
+	// The email is already verified by the issuing flow (AuthKnight, OTP,
+	// or magic link).
 	UserRegister func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) (userID string, err error)
 
 	// UserStoreAuthToken stores the auth token for the newly registered user.

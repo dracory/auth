@@ -7,6 +7,7 @@ import (
 	"html"
 	"log/slog"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/dracory/api"
@@ -18,6 +19,10 @@ import (
 	"github.com/dracory/rule"
 	"github.com/dracory/str"
 )
+
+// registerMu serializes the verified-key resolve→consume sequence in
+// ApiRegister's token branch (see comment at the lock site).
+var registerMu sync.Mutex
 
 // ApiRegister is the HTTP-level helper that routes registration requests to
 // either the passwordless or username+password flow based on the provided
@@ -72,20 +77,35 @@ func ApiRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 		return
 	}
 
-	if deps.AuthKnight {
-		akDeps := deps.AuthKnightRegisterDependencies
-		akKey := req.GetStringTrimmed(r, "ak_key")
-		if akKey == "" {
+	// Verified-email token branch: a posted verified_key (issued by an
+	// OTP/magic-link verification or the AuthKnight callback) resolves to
+	// a verified email and registers via the token — the unified
+	// register-first create path. For AuthKnight instances it also runs
+	// token-less (returning the "once required" error), preserving the
+	// original behaviour.
+	verifiedKey := req.GetStringTrimmed(r, "verified_key")
+	if deps.AuthKnight || verifiedKey != "" {
+		// Serialize token resolve → register → consume so two concurrent
+		// submits cannot both pass the lookup before either clears it
+		// (TOCTOU, best-effort within one process — same pattern as
+		// verifyMu in the code-verify flows).
+		registerMu.Lock()
+		defer registerMu.Unlock()
+
+		vDeps := deps.VerifiedEmailRegisterDependencies
+		if verifiedKey == "" {
+			// Only reachable for AuthKnight instances (the branch requires
+			// a posted key for everyone else) — hence the AK message.
 			api.Respond(w, r, api.Error(types.MsgAuthKnightOnceRequired))
 			return
 		}
 
-		if akDeps.TemporaryKeyGet == nil {
-			api.Respond(w, r, api.Error(types.MsgAuthKnightRegistrationFailed))
+		if vDeps.TemporaryKeyGet == nil {
+			api.Respond(w, r, api.Error(types.MsgRegistrationFailedGeneric))
 			return
 		}
 
-		email, errKey := akDeps.TemporaryKeyGet(akKey)
+		email, errKey := vDeps.TemporaryKeyGet(verifiedKey)
 		if errKey != nil || email == "" {
 			api.Respond(w, r, api.Error(types.MsgLinkNotValidOrExpired))
 			return
@@ -103,8 +123,8 @@ func ApiRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 			return
 		}
 
-		if akDeps.UserRegister == nil {
-			api.Respond(w, r, api.Error(types.MsgAuthKnightRegistrationFailed))
+		if vDeps.UserRegister == nil {
+			api.Respond(w, r, api.Error(types.MsgRegistrationFailedGeneric))
 			return
 		}
 
@@ -113,48 +133,48 @@ func ApiRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 			UserAgent: r.UserAgent(),
 		}
 
-		userID, errReg := akDeps.UserRegister(r.Context(), email, firstName, lastName, options)
+		userID, errReg := vDeps.UserRegister(r.Context(), email, firstName, lastName, options)
 		if errReg != nil {
-			logger.Error("authknight registration failed",
+			logger.Error("verified-email registration failed",
 				slog.String("error", errReg.Error()),
 			)
-			api.Respond(w, r, api.Error(types.MsgAuthKnightRegistrationFailed))
+			api.Respond(w, r, api.Error(types.MsgRegistrationFailedGeneric))
 			return
 		}
 		if userID == "" {
-			api.Respond(w, r, api.Error(types.MsgAuthKnightRegistrationFailed))
+			api.Respond(w, r, api.Error(types.MsgRegistrationFailedGeneric))
 			return
 		}
 
 		token, errToken := str.RandomFromGamma(32, "BCDFGHJKLMNPQRSTVXYZ")
 		if errToken != nil {
-			logger.Error("authknight registration: token generation failed",
+			logger.Error("verified-email registration: token generation failed",
 				slog.String("error", errToken.Error()),
 			)
 			api.Respond(w, r, api.Error(types.MsgFailedToGenerateCode))
 			return
 		}
 
-		if akDeps.UserStoreAuthToken == nil {
+		if vDeps.UserStoreAuthToken == nil {
 			api.Respond(w, r, api.Error(types.MsgFailedToProcess))
 			return
 		}
 
-		if errStore := akDeps.UserStoreAuthToken(r.Context(), token, userID, options); errStore != nil {
-			logger.Error("authknight registration: auth token store failed",
+		if errStore := vDeps.UserStoreAuthToken(r.Context(), token, userID, options); errStore != nil {
+			logger.Error("verified-email registration: auth token store failed",
 				slog.String("error", errStore.Error()),
 			)
 			api.Respond(w, r, api.Error(types.MsgFailedToProcess))
 			return
 		}
 
-		if akDeps.UseCookies && akDeps.SetAuthCookie != nil {
-			akDeps.SetAuthCookie(w, r, token)
+		if vDeps.UseCookies && vDeps.SetAuthCookie != nil {
+			vDeps.SetAuthCookie(w, r, token)
 		}
 
-		// Consume the ak_key so it cannot be reused
-		if akDeps.TemporaryKeySet != nil {
-			_ = akDeps.TemporaryKeySet(akKey, "", 0)
+		// Consume the verified key so it cannot be reused
+		if vDeps.TemporaryKeySet != nil {
+			_ = vDeps.TemporaryKeySet(verifiedKey, "", 0)
 		}
 
 		api.Respond(w, r, api.SuccessWithData(types.MsgRegistrationSuccess, map[string]any{
@@ -246,7 +266,7 @@ func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSha
 	// Check if this is an AuthKnight instance
 	if akAuth, ok := a.(types.AuthAuthKnightInterface); ok && akAuth.IsAuthKnight() {
 		deps.AuthKnight = true
-		deps.AuthKnightRegisterDependencies = AuthKnightRegisterDependencies{
+		deps.VerifiedEmailRegisterDependencies = VerifiedEmailRegisterDependencies{
 			TemporaryKeyGet: a.GetFuncTemporaryKeyGet(),
 			TemporaryKeySet: a.GetFuncTemporaryKeySet(),
 			UseCookies:      a.GetUseCookies(),
@@ -255,9 +275,9 @@ func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSha
 			},
 		}
 
-		deps.AuthKnightRegisterDependencies.UserRegister = akAuth.GetAuthKnightUserRegister()
+		deps.VerifiedEmailRegisterDependencies.UserRegister = akAuth.GetAuthKnightUserRegister()
 
-		deps.AuthKnightRegisterDependencies.UserStoreAuthToken = func(ctx context.Context, token, userID string, options types.UserAuthOptions) error {
+		deps.VerifiedEmailRegisterDependencies.UserStoreAuthToken = func(ctx context.Context, token, userID string, options types.UserAuthOptions) error {
 			fn := a.GetFuncUserStoreAuthToken()
 			if fn == nil {
 				return errors.New("user store auth token is not configured")
@@ -267,6 +287,40 @@ func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSha
 
 		ApiRegister(w, r, deps)
 		return
+	}
+
+	// Verified-email token support for non-AuthKnight impls (OTP /
+	// magic-link register-first): the same deps shape, with UserRegister
+	// adapted from the passwordless register + find-by-email pair since
+	// the passwordless register hook does not return a userID.
+	if a.IsPasswordless() {
+		if regFn := a.GetPasswordlessUserRegister(); regFn != nil {
+			findFn := a.GetPasswordlessUserFindByEmail()
+			deps.VerifiedEmailRegisterDependencies = VerifiedEmailRegisterDependencies{
+				TemporaryKeyGet: a.GetFuncTemporaryKeyGet(),
+				TemporaryKeySet: a.GetFuncTemporaryKeySet(),
+				UseCookies:      a.GetUseCookies(),
+				SetAuthCookie: func(w http.ResponseWriter, r *http.Request, token string) {
+					a.SetAuthCookie(w, r, token)
+				},
+				UserRegister: func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) (string, error) {
+					if err := regFn(ctx, email, firstName, lastName, options); err != nil {
+						return "", err
+					}
+					if findFn == nil {
+						return "", errors.New("user find by email is not configured")
+					}
+					return findFn(ctx, email, options)
+				},
+				UserStoreAuthToken: func(ctx context.Context, token, userID string, options types.UserAuthOptions) error {
+					fn := a.GetFuncUserStoreAuthToken()
+					if fn == nil {
+						return errors.New("user store auth token is not configured")
+					}
+					return fn(ctx, token, userID, options)
+				},
+			}
+		}
 	}
 
 	passwordAuth, ok := a.(types.AuthPasswordInterface)
@@ -317,6 +371,19 @@ func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSha
 				return fn(ctx, email, subject, body)
 			},
 		}
+		if capt, ok := a.(interface {
+			GetFuncEmailCaptured() func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error
+		}); ok {
+			if fn := capt.GetFuncEmailCaptured(); fn != nil {
+				deps.RegisterPasswordlessInitDependencies.EmailCaptured = func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error {
+					if err := fn(ctx, email, verified, options); err != nil {
+						a.GetLogger().Error("email capture hook failed", slog.String("error", err.Error()))
+						return err
+					}
+					return nil
+				}
+			}
+		}
 	}
 
 	// Configure username/password registration handler.
@@ -360,6 +427,10 @@ type RegisterPasswordlessInitDependencies struct {
 	// EmailEnqueue, when set, is preferred over EmailSend: only an opaque
 	// delivery key enters the queue (see utils.DeliverSecret).
 	EmailEnqueue func(ctx context.Context, deliveryKey string) error
+
+	// EmailCaptured is an optional lead-capture hook fired after input
+	// validation, with verified=false (email submitted, not yet proven).
+	EmailCaptured func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error
 }
 
 // RegisterPasswordlessInitErrorCode categorizes possible error sources.
@@ -427,6 +498,15 @@ func RegisterPasswordlessInit(ctx context.Context, r *http.Request, deps Registe
 				Message: check.FailMessageFirst(),
 			}
 		}
+	}
+
+	// Lead capture on submission — the email is not yet verified. The
+	// hook is best-effort — wiring sites log failures.
+	if deps.EmailCaptured != nil {
+		_ = deps.EmailCaptured(ctx, email, false, types.UserAuthOptions{
+			UserIp:    req.GetIP(r),
+			UserAgent: r.UserAgent(),
+		})
 	}
 
 	// Per-email send throttle — prevents the endpoint being used for email

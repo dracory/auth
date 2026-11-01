@@ -6,7 +6,7 @@
 			var first_name = inputVal('first_name');
 			var last_name = inputVal('last_name');
 			var email = inputVal('email');
-			var ak_key = inputVal('ak_key');
+			var verified_key = inputVal('verified_key');
 
 			if (first_name === '') {
 				return registerFormRaiseError('First name is required');
@@ -17,7 +17,7 @@
 
 			spinner(true);
 
-			postForm(urlApiRegister, {"first_name": first_name, "last_name": last_name, "email": email, "ak_key": ak_key}).then(function (response) {
+			postForm(urlApiRegister, {"first_name": first_name, "last_name": last_name, "email": email, "verified_key": verified_key}).then(function (response) {
 				spinner(false);
 
 				if (response.status !== "success") {
@@ -38,7 +38,12 @@
 			});
 		}
 		onReady(function () {
+			// Strip the verified_key bearer token from the address bar so it
+			// does not linger in browser history (the form posts the hidden
+			// field, not the URL).
+			if (window.history && history.replaceState && /[?&]verified_key=/.test(location.search)) {
+				history.replaceState(null, '', location.pathname);
+			}
 			var el = document.querySelector('input[name=first_name]');
 			if (el) { el.focus(); }
 		});
-	

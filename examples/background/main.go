@@ -153,12 +153,12 @@ body::before {
 	background-color: transparent !important;
 }`
 
-func main() {
-	// Seed demo user
+// newAuth seeds the demo user and builds the configured auth instance.
+func newAuth() (types.AuthPasswordInterface, error) {
 	demoUser := &bgUser{ID: "usr-1", Username: "user@demo.local", Password: "demopassword", FirstName: "Demo", LastName: "User"}
 	store.users[demoUser.Username] = demoUser
 
-	authInstance, err := auth.NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
+	return auth.NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
 			UrlRedirectOnSuccess: "/dashboard",
@@ -185,10 +185,11 @@ func main() {
 		FuncUserFindByUsername: store.userFindByUsername,
 		FuncUserLogin:          store.userLogin,
 	})
-	if err != nil {
-		log.Fatal(err)
-	}
+}
 
+// newMux builds the example's HTTP handler tree: the auth mux under
+// /auth, a public home page, and a middleware-protected dashboard.
+func newMux(authInstance types.AuthPasswordInterface) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/auth/", authInstance.Router().ServeHTTP)
 
@@ -200,6 +201,17 @@ func main() {
 		userID := authInstance.GetCurrentUserID(r)
 		fmt.Fprintf(w, `<h1>Dashboard</h1><p>Welcome, %s (ID: %s)</p><p><a href="/auth/logout">Logout</a></p>`, store.displayName(userID), userID)
 	})))
+
+	return mux
+}
+
+func main() {
+	authInstance, err := newAuth()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	mux := newMux(authInstance)
 
 	fmt.Println("Background example running on http://localhost:8088")
 	if err := http.ListenAndServe(":8088", mux); err != nil {

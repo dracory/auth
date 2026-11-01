@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"errors"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -253,3 +254,86 @@ func TestMemSessionAccessorsAndStore(t *testing.T) {
 }
 
 type otherSession struct{ types.SessionInterface }
+
+type currentUserAuth struct {
+	types.AuthSharedInterface
+	userID      string
+	useCookies  bool
+	cookieName  string
+	findByToken func(ctx context.Context, token string, options types.UserAuthOptions) (string, error)
+}
+
+func (a currentUserAuth) GetCurrentUserID(r *http.Request) string { return a.userID }
+func (a currentUserAuth) GetUseCookies() bool                     { return a.useCookies }
+func (a currentUserAuth) GetCookieName() string                   { return a.cookieName }
+func (a currentUserAuth) GetFuncUserFindByAuthToken() func(ctx context.Context, token string, options types.UserAuthOptions) (string, error) {
+	return a.findByToken
+}
+
+func TestResolveCurrentUserID(t *testing.T) {
+	req := httptest.NewRequest("GET", "/", nil)
+
+	// Context-provided user wins.
+	a := currentUserAuth{userID: "ctx-user"}
+	if got := ResolveCurrentUserID(req, a); got != "ctx-user" {
+		t.Fatalf("expected ctx user, got %q", got)
+	}
+
+	// No context, no cookie → empty.
+	a = currentUserAuth{useCookies: true, cookieName: "authtoken"}
+	if got := ResolveCurrentUserID(req, a); got != "" {
+		t.Fatalf("expected empty, got %q", got)
+	}
+
+	// Cookie resolves through the token lookup.
+	a = currentUserAuth{
+		useCookies: true,
+		cookieName: "authtoken",
+		findByToken: func(ctx context.Context, token string, options types.UserAuthOptions) (string, error) {
+			return "cookie-user", nil
+		},
+	}
+	reqWithCookie := httptest.NewRequest("GET", "/", nil)
+	reqWithCookie.AddCookie(&http.Cookie{Name: "authtoken", Value: "tok"})
+	if got := ResolveCurrentUserID(reqWithCookie, a); got != "cookie-user" {
+		t.Fatalf("expected cookie user, got %q", got)
+	}
+
+	// Lookup error → empty.
+	a.findByToken = func(ctx context.Context, token string, options types.UserAuthOptions) (string, error) {
+		return "", errors.New("bad token")
+	}
+	if got := ResolveCurrentUserID(reqWithCookie, a); got != "" {
+		t.Fatalf("expected empty on lookup error, got %q", got)
+	}
+}
+
+func TestIssueVerifiedEmailToken(t *testing.T) {
+	stored := map[string]string{}
+	expiry := 0
+	set := func(key string, value string, expiresSeconds int) error {
+		stored[key] = value
+		expiry = expiresSeconds
+		return nil
+	}
+
+	token, err := IssueVerifiedEmailToken(set, "a@b.com", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if token == "" || stored[token] != "a@b.com" {
+		t.Fatalf("expected token stored for email, got %q %v", token, stored)
+	}
+	if expiry != VerifiedEmailTokenExpiresSeconds {
+		t.Fatalf("expected default expiry %d, got %d", VerifiedEmailTokenExpiresSeconds, expiry)
+	}
+
+	if _, err := IssueVerifiedEmailToken(set, "a@b.com", 42); err != nil || expiry != 42 {
+		t.Fatalf("expected custom expiry, got %v %d", err, expiry)
+	}
+
+	wantErr := errors.New("store failed")
+	if _, err := IssueVerifiedEmailToken(func(k, v string, e int) error { return wantErr }, "a@b.com", 0); err != wantErr {
+		t.Fatalf("expected store error, got %v", err)
+	}
+}

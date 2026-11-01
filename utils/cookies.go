@@ -17,7 +17,7 @@ func defaultCookieConfig() types.CookieConfig {
 	}
 }
 
-func setCookieWithConfig(w http.ResponseWriter, r *http.Request, token string, cfg types.CookieConfig) {
+func setCookieWithConfig(w http.ResponseWriter, token string, cfg types.CookieConfig) {
 	sameSite := cfg.SameSite
 	if sameSite == 0 {
 		sameSite = http.SameSiteLaxMode
@@ -57,7 +57,7 @@ func setCookieWithConfig(w http.ResponseWriter, r *http.Request, token string, c
 	http.SetCookie(w, &cookie)
 }
 
-func removeCookieWithConfig(w http.ResponseWriter, r *http.Request, cfg types.CookieConfig) {
+func removeCookieWithConfig(w http.ResponseWriter, cfg types.CookieConfig) {
 	sameSite := cfg.SameSite
 	if sameSite == 0 {
 		sameSite = http.SameSiteLaxMode

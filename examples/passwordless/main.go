@@ -151,8 +151,9 @@ func passwordlessEmailSend(_ context.Context, to, subject, body string) error {
 	return e.Send("localhost:1025", nil)
 }
 
-func main() {
-	authInstance, err := auth.NewPasswordlessAuth(types.ConfigPasswordless{
+// newAuth builds the configured auth instance for the example.
+func newAuth() (types.AuthPasswordlessInterface, error) {
+	return auth.NewPasswordlessAuth(types.ConfigPasswordless{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
 			UrlRedirectOnSuccess: "/dashboard",
@@ -170,11 +171,11 @@ func main() {
 		FuncEmailSend:       passwordlessEmailSend,
 		FuncUserRegister:    passwordlessStore.registerUser,
 	})
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+}
 
+// newMux builds the example's HTTP handler tree: the auth mux under
+// /auth, a public home page, and a middleware-protected dashboard.
+func newMux(authInstance types.AuthPasswordlessInterface) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	// Mount auth under /auth
@@ -196,6 +197,18 @@ func main() {
 			log.Printf("failed to write dashboard page response: %v", err)
 		}
 	})))
+
+	return mux
+}
+
+func main() {
+	authInstance, err := newAuth()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	mux := newMux(authInstance)
 
 	fmt.Println("Passwordless auth example running on http://localhost:8083")
 	if err := http.ListenAndServe(":8083", mux); err != nil {

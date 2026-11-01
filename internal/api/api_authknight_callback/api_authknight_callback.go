@@ -136,7 +136,7 @@ func ApiAuthKnightCallback(w http.ResponseWriter, r *http.Request, deps Dependen
 	if strings.Contains(registerURL, "?") {
 		separator = "&"
 	}
-	redirectURL := fmt.Sprintf("%s%sak_key=%s", registerURL, separator, url.QueryEscape(tempKey))
+	redirectURL := fmt.Sprintf("%s%sverified_key=%s", registerURL, separator, url.QueryEscape(tempKey))
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 }
 

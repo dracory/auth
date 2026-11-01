@@ -1,12 +1,15 @@
 package api_magic_link_callback
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
+	"github.com/dracory/auth/types"
 	"github.com/dracory/auth/utils"
 )
 
@@ -109,5 +112,138 @@ func TestMagicLinkCallbackWrongMethod(t *testing.T) {
 	ApiMagicLinkCallback(rec, req, deps)
 	if rec.Code != http.StatusMethodNotAllowed {
 		t.Fatalf("expected 405, got %d", rec.Code)
+	}
+}
+
+func TestMagicLinkCallbackEmailCaptured(t *testing.T) {
+	payload := utils.MagicLinkPayload{Email: "u@x.com", Token: "tok-cap"}
+	_, get, set := tokenStore(payload)
+
+	captured := ""
+	deps := Dependencies{
+		TemporaryKeyGet: get,
+		TemporaryKeySet: set,
+		EmailCaptured: func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error {
+			captured = email
+			return nil
+		},
+		OnSuccess: func(w http.ResponseWriter, r *http.Request, email string, p utils.MagicLinkPayload) {
+			w.WriteHeader(http.StatusTeapot)
+		},
+	}
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/auth/magiclink-callback?token=tok-cap", nil)
+	ApiMagicLinkCallback(rec, req, deps)
+
+	if captured != "u@x.com" {
+		t.Fatalf("expected capture hook fired, got %q", captured)
+	}
+}
+
+func TestMagicLinkCallbackRegisterFirstRedirect(t *testing.T) {
+	payload := utils.MagicLinkPayload{Email: "new@x.com", Token: "tok-reg"}
+	_, get, set := tokenStore(payload)
+
+	deps := Dependencies{
+		TemporaryKeyGet:      get,
+		TemporaryKeySet:      set,
+		CreateUserOnRegister: true,
+		RegisterURL:          "/auth/register",
+		UserExists: func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error) {
+			return false, nil
+		},
+	}
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/auth/magiclink-callback?token=tok-reg", nil)
+	ApiMagicLinkCallback(rec, req, deps)
+
+	if rec.Code != http.StatusTemporaryRedirect {
+		t.Fatalf("expected redirect, got %d", rec.Code)
+	}
+	loc := rec.Header().Get("Location")
+	if !strings.Contains(loc, "/auth/register") || !strings.Contains(loc, "verified_key=") {
+		t.Fatalf("expected register redirect with verified_key, got %q", loc)
+	}
+}
+
+func TestMagicLinkCallbackRegisterFirstExistingUserAuthenticates(t *testing.T) {
+	payload := utils.MagicLinkPayload{Email: "old@x.com", Token: "tok-old"}
+	_, get, set := tokenStore(payload)
+
+	authed := ""
+	deps := Dependencies{
+		TemporaryKeyGet:      get,
+		TemporaryKeySet:      set,
+		CreateUserOnRegister: true,
+		UserExists: func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error) {
+			return true, nil
+		},
+		AuthenticateViaUsername: func(w http.ResponseWriter, r *http.Request, email, first, last string) {
+			authed = email
+		},
+	}
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/auth/magiclink-callback?token=tok-old", nil)
+	ApiMagicLinkCallback(rec, req, deps)
+
+	if authed != "old@x.com" {
+		t.Fatalf("expected existing user authenticated, got %q", authed)
+	}
+}
+
+func TestMagicLinkCallbackRememberForwarded(t *testing.T) {
+	payload := utils.MagicLinkPayload{Email: "u@x.com", Token: "tok-rem", Remember: true}
+	_, get, set := tokenStore(payload)
+
+	rememberForm := ""
+	deps := Dependencies{
+		TemporaryKeyGet: get,
+		TemporaryKeySet: set,
+		AuthenticateViaUsername: func(w http.ResponseWriter, r *http.Request, email, first, last string) {
+			rememberForm = r.FormValue("remember")
+		},
+	}
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/auth/magiclink-callback?token=tok-rem", nil)
+	ApiMagicLinkCallback(rec, req, deps)
+
+	if rememberForm != "true" {
+		t.Fatalf("expected remember forwarded, got %q", rememberForm)
+	}
+}
+
+func TestMagicLinkCallbackOnSuccessAndUnsafeReturn(t *testing.T) {
+	payload := utils.MagicLinkPayload{Email: "u@x.com", Token: "tok-os", Return: "//evil.com"}
+	_, get, set := tokenStore(payload)
+
+	// Unsafe return falls back to root redirect.
+	deps := Dependencies{TemporaryKeyGet: get, TemporaryKeySet: set}
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/auth/magiclink-callback?token=tok-os", nil)
+	ApiMagicLinkCallback(rec, req, deps)
+	if loc := rec.Header().Get("Location"); loc != "/" {
+		t.Fatalf("expected root redirect for unsafe return, got %q", loc)
+	}
+
+	// OnSuccess override is honoured.
+	payload2 := utils.MagicLinkPayload{Email: "u@x.com", Token: "tok-os2"}
+	_, get2, set2 := tokenStore(payload2)
+	called := false
+	deps2 := Dependencies{
+		TemporaryKeyGet: get2,
+		TemporaryKeySet: set2,
+		OnSuccess: func(w http.ResponseWriter, r *http.Request, email string, p utils.MagicLinkPayload) {
+			called = true
+		},
+	}
+	rec2 := httptest.NewRecorder()
+	req2 := httptest.NewRequest("GET", "/auth/magiclink-callback?token=tok-os2", nil)
+	ApiMagicLinkCallback(rec2, req2, deps2)
+	if !called {
+		t.Fatal("expected OnSuccess invoked")
 	}
 }

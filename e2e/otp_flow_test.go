@@ -81,7 +81,7 @@ func TestOTPLogin_Guest(t *testing.T) {
 
 // TestOTPRegister_Guest: a guest's typed email is untrusted, so
 // registration goes through a code round-trip — only then is the user
-// created (equivalent to AuthKnight's verified ak_key).
+// created (equivalent to AuthKnight's verified_key).
 //
 // A user ALREADY logged in via OTP never goes through this — their email
 // was proven at login, so /auth/register serves the completion form

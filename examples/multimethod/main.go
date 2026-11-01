@@ -187,7 +187,9 @@ func siteLayout(_ http.ResponseWriter, _ *http.Request, title, body string, opti
 </nav>` + body + scripts + `</body></html>`
 }
 
-func main() {
+// newMux seeds the demo account, wires the three login methods, and
+// builds the example's HTTP handler tree.
+func newMux() (*http.ServeMux, error) {
 	store := newMemoryStore()
 
 	// Seed a demo account.
@@ -223,7 +225,7 @@ func main() {
 		FuncUserPasswordChange: store.userPasswordChange,
 	})
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	// Passwordless impl — shared by the OTP and magic-link methods.
@@ -236,7 +238,7 @@ func main() {
 		},
 	})
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	// No alternatives wiring needed: NewMultiMethodAuth auto-links the
@@ -255,7 +257,7 @@ func main() {
 
 	multi, err := auth.NewMultiMethodAuth("/auth", methods)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	mux := http.NewServeMux()
@@ -269,6 +271,15 @@ func main() {
 		userID := passwordAuth.GetCurrentUserID(r)
 		fmt.Fprintf(w, `<h1>Dashboard</h1><p>Welcome, %s (id: %s)!</p><p><a href="/auth/logout">Logout</a></p>`, store.displayName(userID), userID)
 	})))
+
+	return mux, nil
+}
+
+func main() {
+	mux, err := newMux()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	fmt.Println("Multi-method example running on http://localhost:8084")
 	fmt.Println("  /auth/login            - password")

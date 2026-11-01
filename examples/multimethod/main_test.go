@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	authtypes "github.com/dracory/auth/types"
@@ -99,5 +101,65 @@ func TestMultiMethodTempKeyStorage(t *testing.T) {
 
 	if _, err := store.tempKeyGet("missing"); err == nil {
 		t.Fatalf("expected error for missing key")
+	}
+}
+
+func TestMultiMethodStoreDisplayNameAndEmailSend(t *testing.T) {
+	s := newMemoryStore()
+	ctx := context.Background()
+	opts := authtypes.UserAuthOptions{}
+
+	if err := s.userRegister(ctx, "n@x.com", "", "Ni", "Mo", opts); err != nil {
+		t.Fatal(err)
+	}
+	if got := s.displayName("1"); got != "Ni Mo" {
+		t.Fatalf("expected full name, got %q", got)
+	}
+	if got := s.displayName("missing"); got != "User" {
+		t.Fatalf("expected fallback name, got %q", got)
+	}
+	if err := emailSend(ctx, "a@b.com", "s", "b"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestSiteLayout(t *testing.T) {
+	html := siteLayout(nil, nil, "Title", "<p>body</p>", authtypes.LayoutOptions{
+		StyleURLs:  []string{"/a.css"},
+		Styles:     []string{"body{}"},
+		ScriptURLs: []string{"/a.js"},
+		Scripts:    []string{"console.log(1)"},
+	})
+	for _, v := range []string{"Title", "<p>body</p>", "/a.css", "body{}", "/a.js", "console.log(1)", "Acme Corp"} {
+		if !strings.Contains(html, v) {
+			t.Fatalf("expected %q in layout, got:\n%s", v, html)
+		}
+	}
+}
+
+func TestMultiMethodMuxServesPages(t *testing.T) {
+	mux, err := newMux()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest("GET", "/", nil))
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "Home") {
+		t.Fatalf("expected home page, got %d", rec.Code)
+	}
+
+	for _, path := range []string{"/auth/login", "/auth/login-otp", "/auth/login-magiclink"} {
+		rec = httptest.NewRecorder()
+		mux.ServeHTTP(rec, httptest.NewRequest("GET", path, nil))
+		if rec.Code != 200 {
+			t.Fatalf("expected %s to render, got %d", path, rec.Code)
+		}
+	}
+
+	rec = httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest("GET", "/dashboard", nil))
+	if rec.Code == 200 {
+		t.Fatal("expected redirect for unauthenticated dashboard")
 	}
 }

@@ -16,13 +16,18 @@ import (
 // writes the result to the ResponseWriter.
 
 func PageRegister(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) {
-	// With ak_key: render AuthKnight register form (check first before AuthKnight redirect guard)
-	akKey := r.URL.Query().Get("ak_key")
-	if akKey != "" {
-		email := getAuthKnightEmail(a, akKey)
+	// With a verified-email key (verified_key issued by an OTP/magic-link
+	// verification or the AuthKnight callback): render the verified-email
+	// register form. Checked first — before the AuthKnight redirect guard.
+	verifiedKey := r.URL.Query().Get("verified_key")
+	if verifiedKey != "" {
+		email := getVerifiedEmail(a, verifiedKey)
 		if email != "" {
-			content := RegisterAuthKnightContent(links.Login(a.GetEndpoint()), email, akKey)
-			scripts := RegisterAuthKnightScripts(
+			// The URL carries a bearer credential — do not leak it via
+			// Referer to any subresource on this page.
+			w.Header().Set("Referrer-Policy", "no-referrer")
+			content := RegisterVerifiedEmailContent(links.Login(a.GetEndpoint()), email, verifiedKey)
+			scripts := RegisterVerifiedEmailScripts(
 				links.ApiRegister(a.GetEndpoint()),
 				a.LinkRedirectOnSuccess(),
 			)
@@ -113,10 +118,10 @@ func PageRegister(w http.ResponseWriter, r *http.Request, a types.AuthSharedInte
 	})
 }
 
-// getAuthKnightEmail retrieves the verified email from the temporary key store
-// using the provided ak_key.
-func getAuthKnightEmail(a types.AuthSharedInterface, akKey string) string {
-	if akKey == "" {
+// getVerifiedEmail retrieves the verified email from the temporary key
+// store using the provided verified-email key.
+func getVerifiedEmail(a types.AuthSharedInterface, verifiedKey string) string {
+	if verifiedKey == "" {
 		return ""
 	}
 
@@ -125,7 +130,7 @@ func getAuthKnightEmail(a types.AuthSharedInterface, akKey string) string {
 		return ""
 	}
 
-	email, err := fn(akKey)
+	email, err := fn(verifiedKey)
 	if err != nil {
 		return ""
 	}

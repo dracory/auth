@@ -36,7 +36,7 @@ type Dependencies struct {
 	// UrlRedirectOnSuccess is the default redirect URL.
 	UrlRedirectOnSuccess string
 
-	// RegisterURL is the URL of the register page (with ?ak_key= appended).
+	// RegisterURL is the URL of the register page (with ?verified_key= appended).
 	RegisterURL string
 
 	// UseCookies controls whether the auth token should be written as a cookie.

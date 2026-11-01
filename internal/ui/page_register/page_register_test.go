@@ -95,7 +95,7 @@ func TestPageRegister_AuthKnight(t *testing.T) {
 		return "", nil
 	})
 
-	req, err := http.NewRequest("GET", "/register?ak_key=test-ak-key", nil)
+	req, err := http.NewRequest("GET", "/register?verified_key=test-ak-key", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,11 +115,53 @@ func TestPageRegister_AuthKnight(t *testing.T) {
 		"name=\"last_name\"",
 		"name=\"email\"",
 		"verified@example.com",
-		"name=\"ak_key\"",
+		"name=\"verified_key\"",
 		"form-control-plaintext",
 		"var urlApiRegister = \"http://localhost/auth/api/register\";",
 	}
 
+	for _, v := range expected {
+		if !strings.Contains(body, v) {
+			t.Errorf("Handler returned unexpected result.\nEXPECTED: %s\nFOUND: %s", v, body)
+		}
+	}
+}
+
+// verified_key is the unified verified-email token — issued by
+// OTP/magic-link verifications under the register-first policy — and
+// must render the same verified-email register form.
+func TestPageRegister_VerifiedKey(t *testing.T) {
+	a := testutils.NewAuthSharedForTest()
+	testutils.SetPasswordlessForTest(a, true)
+	testutils.SetVerificationForTest(a, true)
+	testutils.SetTemporaryKeyGetForTest(a, func(key string) (string, error) {
+		if key == "test-verified-key" {
+			return "verified@example.com", nil
+		}
+		return "", nil
+	})
+
+	req, err := http.NewRequest("GET", "/register?verified_key=test-verified-key", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	recorder := httptest.NewRecorder()
+	PageRegister(recorder, req, a)
+
+	if status := recorder.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
+
+	body := recorder.Body.String()
+
+	expected := []string{
+		"verified@example.com",
+		"form-control-plaintext",
+		"name=\"first_name\"",
+		"name=\"last_name\"",
+		"name=\"verified_key\"",
+	}
 	for _, v := range expected {
 		if !strings.Contains(body, v) {
 			t.Errorf("Handler returned unexpected result.\nEXPECTED: %s\nFOUND: %s", v, body)
@@ -170,7 +212,7 @@ func TestPageRegister_Authenticated(t *testing.T) {
 	}
 
 	// The email is verified — no editable email input, no password, no code flow.
-	forbidden := []string{"name=\"email\"", "name=\"password\"", "name=\"ak_key\""}
+	forbidden := []string{"name=\"email\"", "name=\"password\"", "name=\"verified_key\""}
 	for _, v := range forbidden {
 		if strings.Contains(body, v) {
 			t.Errorf("completion form must not contain %s.\nFOUND: %s", v, body)

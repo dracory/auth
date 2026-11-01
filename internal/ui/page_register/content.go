@@ -88,24 +88,26 @@ func RegisterUsernameAndPasswordScripts(urlApiRegister, urlOnSuccess string) str
 	return s
 }
 
-// RegisterAuthKnightContent builds the HTML for the AuthKnight registration page.
-// The email field is read-only (pre-populated from the verified AuthKnight email).
-// akKey is the temporary key that maps to the verified email in the temp key store.
-func RegisterAuthKnightContent(urlLogin string, verifiedEmail string, akKey string) string {
+// RegisterVerifiedEmailContent builds the HTML for the verified-email
+// registration page — the unified register-first form used by AuthKnight
+// OTP, magic-link, and AuthKnight flows. The email field is read-only
+// (pre-populated from the verified email); verifiedKey is the temporary
+// key that maps to that email in the temp key store.
+func RegisterVerifiedEmailContent(urlLogin string, verifiedEmail string, verifiedKey string) string {
 	emailGroup := hb.NewDiv().Class("mb-3").Children([]hb.TagInterface{
 		hb.NewLabel().Class("form-label small fw-bold text-uppercase text-secondary").Text("Email (verified)"),
 		hb.NewDiv().Class("form-control-plaintext text-muted").Text(verifiedEmail),
 		hb.NewInput().Type("hidden").Name("email").Value(verifiedEmail),
 	})
 
-	akKeyInput := hb.NewInput().Type("hidden").Name("ak_key").Value(akKey)
+	verifiedKeyInput := hb.NewInput().Type("hidden").Name("verified_key").Value(verifiedKey)
 
 	card := shared.Card(
 		shared.PageHeader("Create your account", "Confirm your details to finish registration."),
 		shared.AlertGroup(),
 		shared.NameRow(true),
 		emailGroup,
-		akKeyInput,
+		verifiedKeyInput,
 		shared.PrimaryButton("buttonRegister", "bi-person-plus", "Create account", "registerFormValidate()"),
 	)
 
@@ -115,13 +117,14 @@ func RegisterAuthKnightContent(urlLogin string, verifiedEmail string, akKey stri
 	}).ToHTML()
 }
 
-// RegisterAuthKnightScripts builds the JS for the AuthKnight registration page.
+// RegisterVerifiedEmailScripts builds the JS for the verified-email
+// registration page.
 //
-//go:embed register_authknight.js
-var registerAuthKnightJS string
+//go:embed register_verified_email.js
+var registerVerifiedEmailJS string
 
-func RegisterAuthKnightScripts(urlApiRegister, urlOnSuccess string) string {
-	s := registerAuthKnightJS
+func RegisterVerifiedEmailScripts(urlApiRegister, urlOnSuccess string) string {
+	s := registerVerifiedEmailJS
 	s = strings.ReplaceAll(s, "__URL_API_REGISTER__", urlApiRegister)
 	s = strings.ReplaceAll(s, "__URL_ON_SUCCESS__", urlOnSuccess)
 	return s

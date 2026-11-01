@@ -2,6 +2,8 @@ package core_test
 
 import (
 	"context"
+	"errors"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -116,5 +118,127 @@ func TestIsSafeBackURL(t *testing.T) {
 	}
 	if !utils.IsSafeBackURL("https://app.test/x", "app.test") {
 		t.Fatal("same-origin absolute URL should be safe")
+	}
+}
+
+func TestPostAuth_IncompleteRegistrationRedirectsToRegister(t *testing.T) {
+	req := httptest.NewRequest("POST", "/x", nil)
+	rec := httptest.NewRecorder()
+	res, err := core.PostAuth(context.Background(), rec, req, "u@x.com", "", core.PostAuthDeps{
+		Endpoint: "/auth",
+		Hooks: types.PostAuthHooks{
+			UserFindByEmailOrCreate: func(ctx context.Context, e string, o types.UserAuthOptions) (string, error) {
+				return "u1", nil
+			},
+			RegistrationComplete: func(ctx context.Context, userID string) (bool, error) {
+				return false, nil
+			},
+		},
+	})
+	if err != nil || res.Redirect != "/auth/register" {
+		t.Fatalf("expected register redirect, got %v %+v", err, res)
+	}
+}
+
+func TestPostAuth_CompleteRegistrationUsesRedirectURL(t *testing.T) {
+	req := httptest.NewRequest("POST", "/x", nil)
+	rec := httptest.NewRecorder()
+	res, err := core.PostAuth(context.Background(), rec, req, "u@x.com", "", core.PostAuthDeps{
+		Endpoint: "/auth",
+		Hooks: types.PostAuthHooks{
+			UserFindByEmailOrCreate: func(ctx context.Context, e string, o types.UserAuthOptions) (string, error) {
+				return "u1", nil
+			},
+			RegistrationComplete: func(ctx context.Context, userID string) (bool, error) {
+				return true, nil
+			},
+			RedirectURL: func(ctx context.Context, u string) string { return "/dashboard" },
+		},
+	})
+	if err != nil || res.Redirect != "/dashboard" {
+		t.Fatalf("expected dashboard redirect, got %v %+v", err, res)
+	}
+}
+
+func TestPostAuth_RegistrationCompleteErrorFails(t *testing.T) {
+	req := httptest.NewRequest("POST", "/x", nil)
+	rec := httptest.NewRecorder()
+	_, err := core.PostAuth(context.Background(), rec, req, "u@x.com", "", core.PostAuthDeps{
+		Endpoint: "/auth",
+		Hooks: types.PostAuthHooks{
+			UserFindByEmailOrCreate: func(ctx context.Context, e string, o types.UserAuthOptions) (string, error) {
+				return "u1", nil
+			},
+			RegistrationComplete: func(ctx context.Context, userID string) (bool, error) {
+				return false, errors.New("db down")
+			},
+		},
+	})
+	if err == nil {
+		t.Fatal("expected error when registration check fails")
+	}
+}
+
+func TestPostAuth_RememberMeOptInSetsCookie(t *testing.T) {
+	session := utils.NewMemSession()
+	session.SetKey("sess-key")
+	rememberSession := utils.NewMemSession()
+	rememberSession.SetKey("remember-key")
+
+	req := httptest.NewRequest("POST", "/x?remember=true", nil)
+	rec := httptest.NewRecorder()
+	_, err := core.PostAuth(context.Background(), rec, req, "u@x.com", "", core.PostAuthDeps{
+		RememberMeEnabled: true,
+		Hooks: types.PostAuthHooks{
+			UserFindByEmailOrCreate: func(ctx context.Context, e string, o types.UserAuthOptions) (string, error) {
+				return "u1", nil
+			},
+			SessionCreate: func(ctx context.Context, u string, o types.UserAuthOptions) (types.SessionInterface, error) {
+				return session, nil
+			},
+			IssueRememberSession: func(ctx context.Context, u string, o types.UserAuthOptions) (types.SessionInterface, error) {
+				return rememberSession, nil
+			},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, c := range rec.Result().Cookies() {
+		if c.Name == utils.DefaultRememberCookieName && c.Value == "remember-key" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected remember cookie, got %v", rec.Result().Cookies())
+	}
+}
+
+func TestPostAuth_SetAuthCookieHookUsed(t *testing.T) {
+	session := utils.NewMemSession()
+	session.SetKey("sess-key")
+
+	cookieToken := ""
+	req := httptest.NewRequest("POST", "/x", nil)
+	rec := httptest.NewRecorder()
+	res, err := core.PostAuth(context.Background(), rec, req, "u@x.com", "", core.PostAuthDeps{
+		Hooks: types.PostAuthHooks{
+			UserFindByEmailOrCreate: func(ctx context.Context, e string, o types.UserAuthOptions) (string, error) {
+				return "u1", nil
+			},
+			SessionCreate: func(ctx context.Context, u string, o types.UserAuthOptions) (types.SessionInterface, error) {
+				return session, nil
+			},
+			SetAuthCookie: func(w http.ResponseWriter, r *http.Request, token string) {
+				cookieToken = token
+			},
+		},
+	})
+	if err != nil || cookieToken != "sess-key" {
+		t.Fatalf("expected auth cookie set with session key, got %v %q", err, cookieToken)
+	}
+	if res.Token != "sess-key" {
+		t.Fatalf("unexpected token %q", res.Token)
 	}
 }

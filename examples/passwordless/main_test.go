@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -146,5 +147,70 @@ func TestPasswordlessDisplayNameUsesRegisteredName(t *testing.T) {
 	display := passwordlessStore.displayName(userID)
 	if !strings.Contains(display, firstName) || !strings.Contains(display, lastName) {
 		t.Fatalf("expected display name to contain first and last name, got %q", display)
+	}
+}
+
+func TestPasswordlessDisplayNameFallbacks(t *testing.T) {
+	resetPasswordlessStore()
+	ctx := context.Background()
+	opts := authtypes.UserAuthOptions{}
+
+	// User with no names falls back to email.
+	passwordlessStore.mu.Lock()
+	passwordlessStore.usersByEmail["noname@example.com"] = &passwordlessUser{ID: "u-noname", Email: "noname@example.com"}
+	passwordlessStore.mu.Unlock()
+
+	if got := passwordlessStore.displayName("u-noname"); got != "noname@example.com" {
+		t.Fatalf("expected email fallback, got %q", got)
+	}
+	if got := passwordlessStore.displayName("missing"); got != "missing" {
+		t.Fatalf("expected id fallback, got %q", got)
+	}
+
+	if err := passwordlessStore.registerUser(ctx, "named@example.com", "Jane", "Roe", opts); err != nil {
+		t.Fatal(err)
+	}
+	id, err := passwordlessStore.findUserByEmail(ctx, "named@example.com", opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := passwordlessStore.displayName(id); got != "Jane Roe" {
+		t.Fatalf("expected full name, got %q", got)
+	}
+}
+
+func TestPasswordlessEmailSend(t *testing.T) {
+	// No local mail server — expect a dial error, not a panic.
+	err := passwordlessEmailSend(context.Background(), "a@b.com", "subj", "body")
+	if err == nil {
+		t.Skip("local mail server is running; send succeeded")
+	}
+}
+
+func TestPasswordlessMuxServesPages(t *testing.T) {
+	resetPasswordlessStore()
+
+	authInstance, err := newAuth()
+	if err != nil {
+		t.Fatal(err)
+	}
+	mux := newMux(authInstance)
+
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest("GET", "/", nil))
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "Login") {
+		t.Fatalf("expected home page, got %d", rec.Code)
+	}
+
+	rec = httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest("GET", "/auth/login", nil))
+	if rec.Code != 200 {
+		t.Fatalf("expected login page, got %d", rec.Code)
+	}
+
+	rec = httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest("GET", "/dashboard", nil))
+	if rec.Code == 200 {
+		t.Fatal("expected redirect for unauthenticated dashboard")
 	}
 }

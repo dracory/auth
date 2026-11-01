@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"regexp"
 	"strings"
@@ -403,7 +404,44 @@ func NewMagicLinkMethodFromAuth(
 		TemporaryKeyGet:         a.GetFuncTemporaryKeyGet(),
 		TemporaryKeySet:         a.GetFuncTemporaryKeySet(),
 		AuthenticateViaUsername: a.AuthenticateViaUsername,
+		RegisterURL:             a.LinkRegister(),
 		Logger:                  a.GetLogger(),
+	}
+	// Register-first + lead-capture wiring — all optional interfaces.
+	if pol, ok := a.(interface {
+		GetUserCreationPolicy() types.UserCreationPolicy
+	}); ok {
+		callbackDeps.CreateUserOnRegister = pol.GetUserCreationPolicy() == types.CreateUserOnRegister
+	}
+	if exists, ok := a.(interface {
+		GetFuncUserExists() func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error)
+	}); ok {
+		callbackDeps.UserExists = exists.GetFuncUserExists()
+	}
+	if callbackDeps.UserExists == nil {
+		// Fall back to the passwordless lookup — same convention as
+		// api_login_code_verify: a found userID means the account exists.
+		if fn := a.GetPasswordlessUserFindByEmail(); fn != nil {
+			callbackDeps.UserExists = func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error) {
+				userID, err := fn(ctx, email, options)
+				return err == nil && userID != "", nil
+			}
+		}
+	}
+	if capt, ok := a.(interface {
+		GetFuncEmailCaptured() func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error
+	}); ok {
+		if fn := capt.GetFuncEmailCaptured(); fn != nil {
+			logged := func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error {
+				if err := fn(ctx, email, verified, options); err != nil {
+					a.GetLogger().Error("email capture hook failed", slog.String("error", err.Error()))
+					return err
+				}
+				return nil
+			}
+			sendDeps.EmailCaptured = logged
+			callbackDeps.EmailCaptured = logged
+		}
 	}
 	// Optional hooks via type assertion (public interfaces unchanged).
 	if d, ok := a.(interface{ GetFuncTemporaryKeyDelete() func(string) error }); ok {

@@ -134,7 +134,9 @@ func emailSend(_ context.Context, email, subject, body string) error {
 	return nil
 }
 
-func main() {
+// newMux seeds the demo user, wires the magic-link method, and builds
+// the example's HTTP handler tree.
+func newMux() (*http.ServeMux, error) {
 	// Seed demo user
 	_ = store.registerUser(context.Background(), "user@example.com", "Magic", "User", types.UserAuthOptions{})
 
@@ -165,7 +167,7 @@ func main() {
 		FuncUserRegister:    store.registerUser,
 	})
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	magicLinkMethod := auth.NewMagicLinkMethodFromAuth(passwordlessAuth, nil, func(token string) string {
@@ -174,7 +176,7 @@ func main() {
 
 	multi, err := auth.NewMultiMethodAuth("/auth", []types.Method{magicLinkMethod})
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	mux := http.NewServeMux()
@@ -188,6 +190,15 @@ func main() {
 		userID := passwordlessAuth.GetCurrentUserID(r)
 		fmt.Fprintf(w, `<h1>Dashboard</h1><p>Welcome, %s (id: %s)!</p><p><a href="/auth/logout">Logout</a></p>`, store.displayName(userID), userID)
 	})))
+
+	return mux, nil
+}
+
+func main() {
+	mux, err := newMux()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	fmt.Println("Magic Link auth example running on http://localhost:8085")
 	if err := http.ListenAndServe(":8085", mux); err != nil {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -165,5 +166,103 @@ func TestPasswordStoreDisplayNameUsesRegisteredName(t *testing.T) {
 	display := passwordStore.displayName(userID)
 	if !strings.Contains(display, firstName) || !strings.Contains(display, lastName) {
 		t.Fatalf("expected display name to contain first and last name, got %q", display)
+	}
+}
+
+func TestDisplayNameVariants(t *testing.T) {
+	resetPasswordStore()
+
+	ctx := context.Background()
+	opts := authtypes.UserAuthOptions{}
+
+	if err := passwordStore.userRegister(ctx, "named@example.com", "pass", "John", "Doe", opts); err != nil {
+		t.Fatal(err)
+	}
+	if err := passwordStore.userRegister(ctx, "unnamed@example.com", "pass", "", "", opts); err != nil {
+		t.Fatal(err)
+	}
+
+	namedID, err := passwordStore.userLogin(ctx, "named@example.com", "pass", opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unnamedID, err := passwordStore.userLogin(ctx, "unnamed@example.com", "pass", opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got := passwordStore.displayName(namedID); got != "John Doe" {
+		t.Fatalf("expected full name, got %q", got)
+	}
+	if got := passwordStore.displayName(unnamedID); got != "unnamed@example.com" {
+		t.Fatalf("expected username fallback, got %q", got)
+	}
+	if got := passwordStore.displayName("missing"); got != "missing" {
+		t.Fatalf("expected id fallback, got %q", got)
+	}
+}
+
+func TestTempKeyRoundTripAndLogout(t *testing.T) {
+	resetPasswordStore()
+	ctx := context.Background()
+	opts := authtypes.UserAuthOptions{}
+
+	if err := passwordStore.tempKeySet("k1", "v1", 60); err != nil {
+		t.Fatal(err)
+	}
+	if v, err := passwordStore.tempKeyGet("k1"); err != nil || v != "v1" {
+		t.Fatalf("expected v1, got %q %v", v, err)
+	}
+	if _, err := passwordStore.tempKeyGet("missing"); err == nil {
+		t.Fatal("expected error for missing key")
+	}
+
+	if err := passwordStore.userRegister(ctx, "u@x.com", "pass", "A", "B", opts); err != nil {
+		t.Fatal(err)
+	}
+	userID, _ := passwordStore.userLogin(ctx, "u@x.com", "pass", opts)
+	if err := passwordStore.storeAuthToken(ctx, "tok1", userID, opts); err != nil {
+		t.Fatal(err)
+	}
+	if err := passwordStore.logout(ctx, userID, opts); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := passwordStore.findByAuthToken(ctx, "tok1", opts); err == nil {
+		t.Fatal("expected token revoked after logout")
+	}
+}
+
+func TestExampleEmailSend(t *testing.T) {
+	if err := exampleEmailSend(context.Background(), "a@b.com", "subj", "body"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestNewMuxServesPages(t *testing.T) {
+	resetPasswordStore()
+
+	authInstance, err := newAuth()
+	if err != nil {
+		t.Fatal(err)
+	}
+	mux := newMux(authInstance)
+
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest("GET", "/", nil))
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "Username") {
+		t.Fatalf("expected home page, got %d", rec.Code)
+	}
+
+	rec = httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest("GET", "/auth/login", nil))
+	if rec.Code != 200 {
+		t.Fatalf("expected login page, got %d", rec.Code)
+	}
+
+	// Dashboard requires auth — expect a redirect to login.
+	rec = httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest("GET", "/dashboard", nil))
+	if rec.Code == 200 {
+		t.Fatal("expected redirect for unauthenticated dashboard")
 	}
 }

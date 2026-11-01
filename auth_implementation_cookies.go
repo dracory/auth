@@ -15,7 +15,7 @@ func (a authImplementation) setAuthCookie(w http.ResponseWriter, r *http.Request
 	if cfg.Name == "" && a.cookieName != "" {
 		cfg.Name = a.cookieName
 	}
-	setCookieWithConfig(w, r, token, cfg)
+	setCookieWithConfig(w, token, cfg)
 }
 
 func (a authImplementation) removeAuthCookie(w http.ResponseWriter, r *http.Request) {
@@ -26,7 +26,7 @@ func (a authImplementation) removeAuthCookie(w http.ResponseWriter, r *http.Requ
 	if cfg.Name == "" && a.cookieName != "" {
 		cfg.Name = a.cookieName
 	}
-	removeCookieWithConfig(w, r, cfg)
+	removeCookieWithConfig(w, cfg)
 }
 
 func defaultCookieConfig() CookieConfig {
@@ -39,7 +39,7 @@ func defaultCookieConfig() CookieConfig {
 	}
 }
 
-func setCookieWithConfig(w http.ResponseWriter, r *http.Request, token string, cfg CookieConfig) {
+func setCookieWithConfig(w http.ResponseWriter, token string, cfg CookieConfig) {
 	sameSite := cfg.SameSite
 	if sameSite == 0 {
 		sameSite = http.SameSiteLaxMode
@@ -79,7 +79,7 @@ func setCookieWithConfig(w http.ResponseWriter, r *http.Request, token string, c
 	http.SetCookie(w, &cookie)
 }
 
-func removeCookieWithConfig(w http.ResponseWriter, r *http.Request, cfg CookieConfig) {
+func removeCookieWithConfig(w http.ResponseWriter, cfg CookieConfig) {
 	sameSite := cfg.SameSite
 	if sameSite == 0 {
 		sameSite = http.SameSiteLaxMode

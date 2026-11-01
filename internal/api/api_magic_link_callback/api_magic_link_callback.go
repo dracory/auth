@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"strings"
 	"sync"
 
 	"github.com/dracory/auth/types"
@@ -31,6 +33,24 @@ type Dependencies struct {
 	// OnSuccess redirect override; when nil the request's `return` payload
 	// (safe-relative only) is used, else the referrer/root.
 	OnSuccess func(w http.ResponseWriter, r *http.Request, email string, payload utils.MagicLinkPayload)
+
+	// CreateUserOnRegister defers user creation to the register form: when
+	// the verified email has no account, the callback redirects to
+	// RegisterURL with a verified-email token instead of calling
+	// AuthenticateViaUsername (which would create a session-first user).
+	CreateUserOnRegister bool
+
+	// UserExists reports whether the email already has an account. Used by
+	// CreateUserOnRegister; nil falls back to AuthenticateViaUsername.
+	UserExists func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error)
+
+	// RegisterURL is the register page the verified-email token redirects
+	// to (e.g. "/auth/register"). Only used with CreateUserOnRegister.
+	RegisterURL string
+
+	// EmailCaptured is an optional lead-capture hook fired after the token
+	// validates, with verified=true.
+	EmailCaptured func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error
 
 	Logger *slog.Logger
 }
@@ -59,14 +79,70 @@ func ApiMagicLinkCallback(w http.ResponseWriter, r *http.Request, deps Dependenc
 		return
 	}
 
+	options := types.UserAuthOptions{
+		UserIp:    req.GetIP(r),
+		UserAgent: r.UserAgent(),
+	}
+
+	// Lead capture: the email just proved ownership of the inbox. The
+	// hook is best-effort — wiring sites log failures.
+	if deps.EmailCaptured != nil {
+		_ = deps.EmailCaptured(r.Context(), payload.Email, true, options)
+	}
+
+	// Register-first policy: verified-but-new emails get a verified-email
+	// token and land on the register form instead of being logged in as a
+	// freshly created (incomplete) user. Misconfiguration falls through
+	// to authenticate — logged loudly since it also means an incomplete
+	// user row the policy exists to prevent.
+	if deps.CreateUserOnRegister {
+		logger := deps.Logger
+		if logger == nil {
+			logger = slog.Default()
+		}
+		switch {
+		case deps.UserExists == nil:
+			logger.Warn("magic link callback: CreateUserOnRegister set but UserExists is not configured — falling back to session-first registration")
+		case deps.TemporaryKeySet == nil:
+			logger.Warn("magic link callback: CreateUserOnRegister set but TemporaryKeySet is not configured — falling back to session-first registration")
+		default:
+			exists, errExists := deps.UserExists(r.Context(), payload.Email, options)
+			switch {
+			case errExists != nil:
+				logger.Warn("magic link callback: UserExists failed — falling back to session-first registration",
+					slog.String("error", errExists.Error()))
+			case !exists:
+				vt, errToken := utils.IssueVerifiedEmailToken(deps.TemporaryKeySet, payload.Email, 0)
+				if errToken != nil {
+					logger.Error("magic link callback: verified-email token issue failed",
+						slog.String("error", errToken.Error()))
+				} else {
+					registerURL := deps.RegisterURL
+					if registerURL == "" {
+						registerURL = "/register"
+					}
+					separator := "?"
+					if strings.Contains(registerURL, "?") {
+						separator = "&"
+					}
+					http.Redirect(w, r, registerURL+separator+"verified_key="+url.QueryEscape(vt), http.StatusTemporaryRedirect)
+					return
+				}
+			}
+		}
+	}
+
 	if deps.AuthenticateViaUsername != nil {
 		// Forward the remember-me choice captured at send time: the
 		// post-auth pipeline reads r.FormValue("remember"), and for a GET
 		// callback that resolves to the URL query.
 		if payload.Remember {
-			q := r.URL.Query()
-			q.Set("remember", "true")
-			r.URL.RawQuery = q.Encode()
+			// The form was already parsed when "token" was read above —
+			// rewriting RawQuery now would leave r.Form stale, so the
+			// value is injected into the parsed form instead.
+			if err := r.ParseForm(); err == nil {
+				r.Form.Set("remember", "true")
+			}
 		}
 		deps.AuthenticateViaUsername(w, r, payload.Email, "", "")
 		return

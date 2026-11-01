@@ -1,7 +1,7 @@
 # Proposal: Authenticated Register = Profile Completion (verified email, read-only)
 
 **Date:** 2026-10-31
-**Status:** Draft — pending review
+**Status:** Implemented — `feature/unified-verified-registration` (verified-email token uses the `verified_key` param; `ak_key` removed)
 **Scope:** `internal/ui/page_register`, `internal/api/api_register`, `auth_implementation.go`, `types/`. Deliberately smaller than `2026-10-31-extensible-registration-and-profile-fields.md` — no custom field system.
 
 ## Motivation
@@ -29,7 +29,7 @@ this proposal generalises it to any authenticated session.
 
 Resolution order in `PageRegister` (before the current branches):
 
-1. `ak_key` present → existing AuthKnight verified-email form (unchanged).
+1. `verified_key` present → verified-email register form (read-only email).
 2. `a.GetCurrentUserID(r) != ""` → **completion form** (new):
    - email rendered as read-only plaintext, same markup as
      `RegisterAuthKnightContent` (`form-control-plaintext` + label
@@ -48,7 +48,7 @@ func RegisterCompletionContent(urlLogin, email string) string
 ```
 
 Largely a call into the same markup `RegisterAuthKnightContent` uses
-(minus `ak_key` hidden input). New `register_completion.js` — posts only
+(minus `verified_key` hidden input). New `register_completion.js` — posts only
 `first_name`/`last_name` to `__URL_API_REGISTER__` then redirects to
 `__URL_ON_SUCCESS__`.
 
@@ -108,8 +108,133 @@ register-with-names". After this change the semantics are uniform:
 |---|---|---|---|
 | Anonymous, password method | typed input | editable | create user (+code verify) |
 | Anonymous, passwordless | typed input | editable | code → create on verify |
-| `ak_key` (AuthKnight) | temp key | read-only | create via `UserRegister` |
+| `verified_key` (AuthKnight) | temp key | read-only | create via `UserRegister` |
 | **Authenticated (OTP/magic-link)** | session | read-only | **`FuncUserProfileUpdate`** |
+
+## Follow-up: user-creation policy + email capture
+
+Discussion surfaced a design axis the package should expose rather than
+hardcode: **when is the user record created relative to registration?**
+Hosts disagree — some want every verified email captured even if the
+user abandons registration; others do not want incomplete rows
+polluting `users`.
+
+The naive two-policy framing has a downside either way:
+
+| Policy | Downside |
+|---|---|
+| Session-first (current OTP: verify → create row → collect details) | Row is **verified but incomplete** — ghost users in `users` |
+| Register-first (current AuthKnight: collect details → create row) | If the email was captured before verification, the row is **complete but unverified** — a second verification email is needed |
+
+Both downsides disappear with a two-step registration — verify the
+email first, then collect details:
+
+```
+1. enter email → send code
+2. verify code → issue short-lived verified-email token
+3. full registration form (email read-only) → submit → single INSERT
+```
+
+Step 2's token is the same artifact previously known as AuthKnight's `ak_key`: a
+verified-email credential that authorizes the final create. The proof
+is not consumed at verify time — it is *exchanged* for the token
+carried to the register submit.
+
+- Nothing is written to `users` before the form submits → clean DB,
+  no ghost rows.
+- No pending data rides inside the proof — names are collected by the
+  post-verify form, not pre-verify.
+- The single insert is both verified and complete — no
+  "verified-but-empty" state, no post-hoc verification email.
+- The "registration form" and the authenticated "completion form"
+  (§1) become the **same** form — read-only verified email + names —
+  differing only in the server action: `UserRegister` (token path,
+  create) vs `FuncUserProfileUpdate` (session path, update).
+
+The only thing register-first loses is the email of users who abandon
+mid-flow. That is a separate concern — *lead capture*, not account
+creation — and belongs in an optional hook:
+
+```go
+// FuncEmailCaptured fires when an email is submitted and again when it
+// is verified. The verified flag distinguishes the two events;
+// capturing unverified emails is a spam/abuse vector, so hosts decide.
+funcEmailCaptured func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error
+```
+
+- Hosts wanting leads implement it (leads table, CRM, re-engagement).
+- Hosts wanting a clean DB leave it nil — nothing extra is persisted.
+- Neither policy forces the other's trade-off.
+
+Resulting matrix:
+
+| Flow | Capture | Insert | Result |
+|---|---|---|---|
+| Session-first (OTP login) | verified email → user row | details update later | verified-but-incomplete rows |
+| Register-first (details → verify → insert) | optional `FuncEmailCaptured` | one verified + complete insert | clean; abandoned emails kept only if host opts in |
+
+Register-first is strictly better for DB hygiene; the capture hook is
+strictly better for lead retention.
+
+### Unification goal — one pipeline, three front doors
+
+OTP, magic link, and AuthKnight are the same flow with different proof
+delivery, and the package **must unify them** on register-first
+ordering:
+
+```
+enter email → issue proof → verify → verified-email token → form → single INSERT
+```
+
+| Method | Proof | Delivery |
+|---|---|---|
+| OTP | short code in temp store | email |
+| Magic link | signed token in URL | email |
+| AuthKnight | `verified_key` temp key | cross-app redirect |
+
+All three are "issue a proof, verify it, carry the verified-email
+token to the form, then create". Today's divergence is accidental:
+OTP/magic-link shortcut via `UserFindByEmailOrCreate` at verify time
+(session → incomplete row), while AuthKnight carries the `verified_key`
+token forward to the register submit. Once OTP/magic-link issue a
+verified-email token on successful verification — the way `verified_key`
+already works — there is **one** verify → form → create pipeline and
+the method-specific branches (including the `verified_key` register branch)
+collapse into it.
+
+`RegistrationComplete` gating + `FuncUserProfileUpdate` remain as the
+session-first variant for hosts that deliberately choose
+`CreateUserOnAuth`, but it is the opt-in exception — not three parallel
+implementations.
+
+### Password method stays orthogonal
+
+Password registration does not fit the verified-first shape and is a
+**host choice**, not a pipeline branch: developers who want passwords
+enable the password method (verify-after-create as today, or a future
+email+password → verify → names → insert variant); developers who do
+not simply leave it disabled. The unified flow is unaffected either
+way.
+
+### Caveat: user enumeration
+
+One downside of the unified entry point: differing behaviour for
+"email already registered" vs "new email" leaks account existence
+(user enumeration). Mitigation — identical external responses
+pre-verify:
+
+- Request side: always return "if this address is eligible, we sent
+  you a code" — same status, same timing.
+- Email side: always send *something* — existing users get a
+  login/verify email; the already-registered case may get a "someone
+  tried to register" notice instead of failing silently.
+- Post-verify divergence is safe: the requester has proved inbox
+  ownership, so "existing → log in (+ `RegistrationComplete` gate)" vs
+  "new → collect details → insert" reveals nothing to anyone but the
+  mailbox owner.
+
+Enumeration resistance is therefore a requirement on the pre-verify
+response surface, not a reason to keep the flows separate.
 
 ## Explicitly Out of Scope
 
@@ -140,7 +265,7 @@ both get deleted; only `links.Auth().Register()` redirects remain.
 
 | Area | Cases |
 |---|---|
-| `PageRegister` | unauthenticated → public form; authenticated → email read-only, no password inputs; `FuncUserEmailGet` nil → generic label; `ak_key` still wins |
+| `PageRegister` | unauthenticated → public form; authenticated → email read-only, no password inputs; `FuncUserEmailGet` nil → generic label; `verified_key` still wins |
 | `ApiRegister` | authenticated → calls `UserProfileUpdate` with session userID (form `email` field ignored/forged → still uses session); missing fn → error; required names enforced; unauthenticated → unchanged flows |
 | hooks | getter/setter round-trip |
 

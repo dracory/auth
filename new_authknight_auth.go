@@ -69,6 +69,8 @@ func NewAuthKnightAuth(config types.ConfigAuthKnight) (types.AuthAuthKnightInter
 	a.funcUserStoreAuthToken = config.FuncUserStoreAuthToken
 	a.funcTemporaryKeyGet = config.FuncTemporaryKeyGet
 	a.funcTemporaryKeySet = config.FuncTemporaryKeySet
+	a.userCreationPolicy = config.UserCreationPolicy
+	a.funcEmailCaptured = config.FuncEmailCaptured
 
 	// Rate limiting
 	a.disableRateLimit = config.DisableRateLimit

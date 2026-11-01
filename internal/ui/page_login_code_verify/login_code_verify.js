@@ -31,7 +31,7 @@
 				sessionStorage.removeItem('auth_login_remember');
 				loginFormRaiseSuccess('Verification successful');
 				setTimeout(function () {
-					authTo(urlOnSuccess);
+					authTo(response.data.redirect || urlOnSuccess);
 				}, 2000);
 			}).catch(function (error) {
 				console.log(error);

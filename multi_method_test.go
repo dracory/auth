@@ -124,7 +124,7 @@ func TestMultiMethod_EmptyMethodsError(t *testing.T) {
 
 func TestMultiMethod_BuiltInOTPAdapts(t *testing.T) {
 	shared := testutils.NewAuthSharedForTest()
-	m := NewOTPMethod(shared.(types.AuthSharedInterface))
+	m := NewOTPMethod(shared)
 	if m.Name() != "otp" || m.PageHandler() == nil || m.AjaxHandler() == nil {
 		t.Fatal("expected otp method to expose name, page, ajax")
 	}
@@ -197,7 +197,7 @@ func TestMultiMethod_LoginAlternativesHTML(t *testing.T) {
 func TestNewOTPMethodWithPage_CustomPage(t *testing.T) {
 	shared := testutils.NewAuthSharedForTest()
 	custom := func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("custom")) }
-	m := NewOTPMethodWithPage(shared.(types.AuthSharedInterface), custom)
+	m := NewOTPMethodWithPage(shared, custom)
 
 	mma, err := NewMultiMethodAuth("/auth", []types.Method{m})
 	if err != nil {
