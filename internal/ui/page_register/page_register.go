@@ -16,8 +16,14 @@ import (
 // writes the result to the ResponseWriter.
 
 func PageRegister(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) {
-	// With ak_key: render AuthKnight register form (check first before AuthKnight redirect guard)
+	// With a verified-email key (ak_key from AuthKnight, or verified_key
+	// issued by an OTP/magic-link verification under register-first):
+	// render the verified-email register form. Checked first — before the
+	// AuthKnight redirect guard.
 	akKey := r.URL.Query().Get("ak_key")
+	if akKey == "" {
+		akKey = r.URL.Query().Get("verified_key")
+	}
 	if akKey != "" {
 		email := getAuthKnightEmail(a, akKey)
 		if email != "" {

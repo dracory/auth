@@ -56,11 +56,19 @@ type ConfigShared struct {
 	FuncUserFindByAuthToken func(ctx context.Context, sessionID string, options UserAuthOptions) (userID string, err error)
 	FuncUserLogout          func(ctx context.Context, userID string, options UserAuthOptions) (err error)
 	UrlRedirectOnSuccess    string
-	UseCookies              bool
-	UseLocalStorage         bool
-	CookieConfig            *CookieConfig
-	Logger                  *slog.Logger
-	ObservabilityHooks      ObservabilityHooks
+	// UserCreationPolicy selects when verified-email flows (OTP, magic
+	// link, AuthKnight) create the user record — see UserCreationPolicy.
+	// Empty defaults to CreateUserOnAuth.
+	UserCreationPolicy UserCreationPolicy
+	// FuncEmailCaptured, when set, is called when an email is submitted
+	// (verified=false) and again when it is verified (verified=true).
+	// Hosts use it for lead capture without polluting the users table.
+	FuncEmailCaptured  func(ctx context.Context, email string, verified bool, options UserAuthOptions) error
+	UseCookies         bool
+	UseLocalStorage    bool
+	CookieConfig       *CookieConfig
+	Logger             *slog.Logger
+	ObservabilityHooks ObservabilityHooks
 }
 
 // LoginAlternative is a cross-link to another login method rendered on

@@ -403,7 +403,35 @@ func NewMagicLinkMethodFromAuth(
 		TemporaryKeyGet:         a.GetFuncTemporaryKeyGet(),
 		TemporaryKeySet:         a.GetFuncTemporaryKeySet(),
 		AuthenticateViaUsername: a.AuthenticateViaUsername,
+		RegisterURL:             a.LinkRegister(),
 		Logger:                  a.GetLogger(),
+	}
+	// Register-first + lead-capture wiring — all optional interfaces.
+	if pol, ok := a.(interface {
+		GetUserCreationPolicy() types.UserCreationPolicy
+	}); ok {
+		callbackDeps.CreateUserOnRegister = pol.GetUserCreationPolicy() == types.CreateUserOnRegister
+	}
+	if exists, ok := a.(interface {
+		GetFuncUserExists() func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error)
+	}); ok {
+		if fn := exists.GetFuncUserExists(); fn != nil {
+			callbackDeps.UserExists = func(ctx context.Context, email string) (bool, error) {
+				return fn(ctx, email, types.UserAuthOptions{})
+			}
+		}
+	}
+	if capt, ok := a.(interface {
+		GetFuncEmailCaptured() func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error
+	}); ok {
+		if fn := capt.GetFuncEmailCaptured(); fn != nil {
+			sendDeps.EmailCaptured = func(ctx context.Context, email string, verified bool) error {
+				return fn(ctx, email, verified, types.UserAuthOptions{})
+			}
+			callbackDeps.EmailCaptured = func(ctx context.Context, email string, verified bool) error {
+				return fn(ctx, email, verified, types.UserAuthOptions{})
+			}
+		}
 	}
 	// Optional hooks via type assertion (public interfaces unchanged).
 	if d, ok := a.(interface{ GetFuncTemporaryKeyDelete() func(string) error }); ok {

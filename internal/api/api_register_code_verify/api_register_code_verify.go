@@ -45,6 +45,10 @@ type Dependencies struct {
 	// authenticate the user and produce the final HTTP response.
 	AuthenticateViaUsername func(w http.ResponseWriter, r *http.Request, email, firstName, lastName string)
 
+	// EmailCaptured is an optional lead-capture hook fired after the code
+	// matches, with verified=true.
+	EmailCaptured func(ctx context.Context, email string, verified bool) error
+
 	// Logger is used to log internal errors. If nil, slog.Default() is used.
 	Logger *slog.Logger
 }
@@ -183,6 +187,19 @@ func ApiRegisterCodeVerifyWithAuth(w http.ResponseWriter, r *http.Request, a typ
 		}
 	}
 
+	if capt, ok := a.(interface {
+		GetFuncEmailCaptured() func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error
+	}); ok {
+		if fn := capt.GetFuncEmailCaptured(); fn != nil {
+			deps.EmailCaptured = func(ctx context.Context, email string, verified bool) error {
+				return fn(ctx, email, verified, types.UserAuthOptions{
+					UserIp:    req.GetIP(r),
+					UserAgent: r.UserAgent(),
+				})
+			}
+		}
+	}
+
 	deps.AuthenticateViaUsername = func(w http.ResponseWriter, r *http.Request, email, firstName, lastName string) {
 		a.AuthenticateViaUsername(w, r, email, firstName, lastName)
 	}
@@ -316,6 +333,11 @@ func RegisterCodeVerify(ctx context.Context, r *http.Request, deps Dependencies)
 		if s, ok := val.(string); ok {
 			password = s
 		}
+	}
+
+	// Lead capture: the email just proved ownership of the inbox.
+	if deps.EmailCaptured != nil && email != "" {
+		_ = deps.EmailCaptured(ctx, email, true)
 	}
 
 	// Perform registration

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"strings"
 	"sync"
 
 	"github.com/dracory/api"
@@ -37,6 +39,24 @@ type Dependencies struct {
 	// to perform authentication (token generation, cookies, etc.) and send
 	// the final HTTP response.
 	AuthenticateViaUsername func(w http.ResponseWriter, r *http.Request, email string)
+
+	// CreateUserOnRegister defers user creation to the register form: when
+	// the verified email has no account, the flow issues a verified-email
+	// token and the handler redirects to RegisterURL instead of calling
+	// AuthenticateViaUsername (which would create a session-first user).
+	CreateUserOnRegister bool
+
+	// UserExists reports whether the email already has an account. Used by
+	// CreateUserOnRegister; nil falls back to AuthenticateViaUsername.
+	UserExists func(ctx context.Context, email string) (bool, error)
+
+	// RegisterURL is the register page the verified-email token redirects
+	// to (e.g. "/auth/register"). Only used with CreateUserOnRegister.
+	RegisterURL string
+
+	// EmailCaptured is an optional lead-capture hook fired after the code
+	// matches, with verified=true.
+	EmailCaptured func(ctx context.Context, email string, verified bool) error
 
 	// Logger is used to log internal errors. If nil, slog.Default() is used.
 	Logger *slog.Logger
@@ -76,6 +96,10 @@ func (e *LoginCodeVerifyError) Error() string {
 // LoginCodeVerifyResult represents a successful verification.
 type LoginCodeVerifyResult struct {
 	Email string
+	// VerifiedEmailToken is set under CreateUserOnRegister when the email
+	// has no account — the handler redirects to the register form with it
+	// instead of authenticating. Empty means proceed to authentication.
+	VerifiedEmailToken string
 }
 
 // ApiLoginCodeVerify is the HTTP-level helper that wires request/response
@@ -109,6 +133,23 @@ func ApiLoginCodeVerify(w http.ResponseWriter, r *http.Request, deps Dependencie
 		}
 	}
 
+	// Register-first: no account for this verified email — hand the client
+	// the verified-email token and the register URL instead of logging in.
+	if result.VerifiedEmailToken != "" {
+		registerURL := deps.RegisterURL
+		if registerURL == "" {
+			registerURL = "/register"
+		}
+		separator := "?"
+		if strings.Contains(registerURL, "?") {
+			separator = "&"
+		}
+		api.Respond(w, r, api.SuccessWithData(types.MsgVerificationSuccess, map[string]any{
+			"redirect": registerURL + separator + "ak_key=" + url.QueryEscape(result.VerifiedEmailToken),
+		}))
+		return
+	}
+
 	if deps.AuthenticateViaUsername == nil {
 		api.Respond(w, r, api.Error(types.MsgFailedToProcess))
 		return
@@ -133,6 +174,52 @@ func ApiLoginCodeVerifyWithAuth(w http.ResponseWriter, r *http.Request, a types.
 	}); ok {
 		deps.TemporaryKeyDelete = deleter.GetFuncTemporaryKeyDelete()
 	}
+
+	// Register-first wiring — all via optional interfaces so
+	// AuthSharedInterface stays stable.
+	if pol, ok := a.(interface {
+		GetUserCreationPolicy() types.UserCreationPolicy
+	}); ok {
+		deps.CreateUserOnRegister = pol.GetUserCreationPolicy() == types.CreateUserOnRegister
+	}
+	if exists, ok := a.(interface {
+		GetFuncUserExists() func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error)
+	}); ok {
+		if fn := exists.GetFuncUserExists(); fn != nil {
+			deps.UserExists = func(ctx context.Context, email string) (bool, error) {
+				return fn(ctx, email, types.UserAuthOptions{
+					UserIp:    req.GetIP(r),
+					UserAgent: r.UserAgent(),
+				})
+			}
+		}
+	}
+	if deps.UserExists == nil {
+		// Fall back to the passwordless lookup: a found userID means the
+		// account exists, anything else (error or empty) means it does not.
+		if fn := a.GetPasswordlessUserFindByEmail(); fn != nil {
+			deps.UserExists = func(ctx context.Context, email string) (bool, error) {
+				userID, err := fn(ctx, email, types.UserAuthOptions{
+					UserIp:    req.GetIP(r),
+					UserAgent: r.UserAgent(),
+				})
+				return err == nil && userID != "", nil
+			}
+		}
+	}
+	if capt, ok := a.(interface {
+		GetFuncEmailCaptured() func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error
+	}); ok {
+		if fn := capt.GetFuncEmailCaptured(); fn != nil {
+			deps.EmailCaptured = func(ctx context.Context, email string, verified bool) error {
+				return fn(ctx, email, verified, types.UserAuthOptions{
+					UserIp:    req.GetIP(r),
+					UserAgent: r.UserAgent(),
+				})
+			}
+		}
+	}
+	deps.RegisterURL = a.LinkRegister()
 
 	deps.AuthenticateViaUsername = func(w http.ResponseWriter, r *http.Request, email string) {
 		a.AuthenticateViaUsername(w, r, email, "", "")
@@ -238,7 +325,42 @@ func LoginCodeVerify(ctx context.Context, r *http.Request, deps Dependencies) (*
 			slog.String("error", invalidateErr.Error()))
 	}
 
-	return &LoginCodeVerifyResult{Email: email}, nil
+	// Lead capture: the email just proved ownership of the inbox.
+	if deps.EmailCaptured != nil {
+		if err := deps.EmailCaptured(ctx, email, true); err != nil {
+			logger := deps.Logger
+			if logger == nil {
+				logger = slog.Default()
+			}
+			logger.Error("login code verify: email capture hook failed",
+				slog.String("error", err.Error()))
+		}
+	}
+
+	result := &LoginCodeVerifyResult{Email: email}
+
+	// Register-first policy: accounts are created by the register form,
+	// not at verify time. Verified-but-new emails get a token instead of
+	// a session. An existence-check failure falls through to the normal
+	// authenticate path so a store hiccup cannot lock users out.
+	if deps.CreateUserOnRegister && deps.UserExists != nil && deps.TemporaryKeySet != nil {
+		exists, errExists := deps.UserExists(ctx, email)
+		if errExists == nil && !exists {
+			token, errToken := utils.IssueVerifiedEmailToken(deps.TemporaryKeySet, email, 0)
+			if errToken == nil {
+				result.VerifiedEmailToken = token
+			} else {
+				logger := deps.Logger
+				if logger == nil {
+					logger = slog.Default()
+				}
+				logger.Error("login code verify: verified-email token issue failed",
+					slog.String("error", errToken.Error()))
+			}
+		}
+	}
+
+	return result, nil
 }
 
 // verifyMu serializes the get-compare-invalidate sequence in

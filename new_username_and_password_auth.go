@@ -72,6 +72,8 @@ func NewUsernameAndPasswordAuth(config types.ConfigUsernameAndPassword) (types.A
 	auth.funcUserFindByAuthToken = config.FuncUserFindByAuthToken
 	auth.funcUserFindByUsername = config.FuncUserFindByUsername
 	auth.funcUserStoreAuthToken = config.FuncUserStoreAuthToken
+	auth.userCreationPolicy = config.UserCreationPolicy
+	auth.funcEmailCaptured = config.FuncEmailCaptured
 	auth.passwordStrength = config.PasswordStrength
 	if auth.passwordStrength == nil {
 		auth.passwordStrength = &types.PasswordStrengthConfig{

@@ -32,6 +32,10 @@ type LoginPasswordlessDeps struct {
 	// EmailEnqueue, when set, is preferred over EmailSend: only an opaque
 	// delivery key enters the queue (see utils.DeliverSecret).
 	EmailEnqueue func(ctx context.Context, deliveryKey string) error
+
+	// EmailCaptured is an optional lead-capture hook fired after input
+	// validation, with verified=false (email submitted, not yet proven).
+	EmailCaptured func(ctx context.Context, email string, verified bool) error
 }
 
 // ApiLogin is the HTTP-level handler that combines passwordless and
@@ -131,6 +135,20 @@ func ApiLoginWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthShared
 		emailEnqueue = enq.GetFuncEmailEnqueue()
 	}
 
+	var emailCaptured func(ctx context.Context, email string, verified bool) error
+	if capt, ok := a.(interface {
+		GetFuncEmailCaptured() func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error
+	}); ok {
+		if fn := capt.GetFuncEmailCaptured(); fn != nil {
+			emailCaptured = func(ctx context.Context, email string, verified bool) error {
+				return fn(ctx, email, verified, types.UserAuthOptions{
+					UserIp:    req.GetIP(r),
+					UserAgent: r.UserAgent(),
+				})
+			}
+		}
+	}
+
 	deps := Dependencies{
 		Passwordless: a.IsPasswordless(),
 		Logger:       a.GetLogger(),
@@ -140,6 +158,7 @@ func ApiLoginWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthShared
 			TemporaryKeyGet:   a.GetFuncTemporaryKeyGet(),
 			TemporaryKeySet:   a.GetFuncTemporaryKeySet(),
 			EmailEnqueue:      emailEnqueue,
+			EmailCaptured:     emailCaptured,
 			ExpiresSeconds:    0, // let business logic apply default
 			EmailTemplate: func(ctx context.Context, email string, verificationCode string) string {
 				fn := a.GetPasswordlessFuncEmailTemplateLoginCode()

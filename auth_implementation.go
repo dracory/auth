@@ -48,6 +48,8 @@ type authImplementation struct {
 	funcUserStoreAuthToken  func(ctx context.Context, token string, userID string, options types.UserAuthOptions) error
 	funcUserEmailGet        func(ctx context.Context, userID string, options types.UserAuthOptions) (email string, err error)
 	funcUserProfileUpdate   func(ctx context.Context, userID string, firstName string, lastName string, options types.UserAuthOptions) (err error)
+	userCreationPolicy      types.UserCreationPolicy
+	funcEmailCaptured       func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) (err error)
 	// ===== END: shared by all implementations
 
 	// ===== START: username(email) and password options
@@ -289,6 +291,30 @@ func (a authImplementation) GetFuncUserProfileUpdate() func(ctx context.Context,
 // SetFuncUserProfileUpdate sets the optional profile-update function.
 func (a *authImplementation) SetFuncUserProfileUpdate(fn func(ctx context.Context, userID string, firstName string, lastName string, options types.UserAuthOptions) error) {
 	a.funcUserProfileUpdate = fn
+}
+
+// GetUserCreationPolicy returns when verified-email flows create the user
+// record — CreateUserOnAuth (default) or CreateUserOnRegister. Accessed
+// through an optional interface so AuthSharedInterface stays stable.
+func (a authImplementation) GetUserCreationPolicy() types.UserCreationPolicy {
+	return a.userCreationPolicy
+}
+
+// SetUserCreationPolicy sets the user-creation policy.
+func (a *authImplementation) SetUserCreationPolicy(p types.UserCreationPolicy) {
+	a.userCreationPolicy = p
+}
+
+// GetFuncEmailCaptured returns the optional hook called when an email is
+// submitted (verified=false) and again when it is verified (verified=true) —
+// the package's lead-capture hook that does not require a users-table row.
+func (a authImplementation) GetFuncEmailCaptured() func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error {
+	return a.funcEmailCaptured
+}
+
+// SetFuncEmailCaptured sets the optional email-capture hook.
+func (a *authImplementation) SetFuncEmailCaptured(fn func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error) {
+	a.funcEmailCaptured = fn
 }
 
 // GetDisableRateLimit returns whether the Auth instance disables rate limiting.

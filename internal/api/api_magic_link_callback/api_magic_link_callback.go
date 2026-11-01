@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"strings"
 	"sync"
 
 	"github.com/dracory/auth/types"
@@ -31,6 +33,24 @@ type Dependencies struct {
 	// OnSuccess redirect override; when nil the request's `return` payload
 	// (safe-relative only) is used, else the referrer/root.
 	OnSuccess func(w http.ResponseWriter, r *http.Request, email string, payload utils.MagicLinkPayload)
+
+	// CreateUserOnRegister defers user creation to the register form: when
+	// the verified email has no account, the callback redirects to
+	// RegisterURL with a verified-email token instead of calling
+	// AuthenticateViaUsername (which would create a session-first user).
+	CreateUserOnRegister bool
+
+	// UserExists reports whether the email already has an account. Used by
+	// CreateUserOnRegister; nil falls back to AuthenticateViaUsername.
+	UserExists func(ctx context.Context, email string) (bool, error)
+
+	// RegisterURL is the register page the verified-email token redirects
+	// to (e.g. "/auth/register"). Only used with CreateUserOnRegister.
+	RegisterURL string
+
+	// EmailCaptured is an optional lead-capture hook fired after the token
+	// validates, with verified=true.
+	EmailCaptured func(ctx context.Context, email string, verified bool) error
 
 	Logger *slog.Logger
 }
@@ -57,6 +77,39 @@ func ApiMagicLinkCallback(w http.ResponseWriter, r *http.Request, deps Dependenc
 		// Single generic error for unknown/expired/used/mismatched tokens.
 		http.Error(w, types.MsgLinkNotValidOrExpired, http.StatusBadRequest)
 		return
+	}
+
+	// Lead capture: the email just proved ownership of the inbox.
+	if deps.EmailCaptured != nil {
+		if err := deps.EmailCaptured(r.Context(), payload.Email, true); err != nil {
+			logger := deps.Logger
+			if logger == nil {
+				logger = slog.Default()
+			}
+			logger.Error("magic link callback: email capture hook failed",
+				slog.String("error", err.Error()))
+		}
+	}
+
+	// Register-first policy: verified-but-new emails get a verified-email
+	// token and land on the register form instead of being logged in as a
+	// freshly created (incomplete) user.
+	if deps.CreateUserOnRegister && deps.UserExists != nil && deps.TemporaryKeySet != nil {
+		if exists, errExists := deps.UserExists(r.Context(), payload.Email); errExists == nil && !exists {
+			vt, errToken := utils.IssueVerifiedEmailToken(deps.TemporaryKeySet, payload.Email, 0)
+			if errToken == nil {
+				registerURL := deps.RegisterURL
+				if registerURL == "" {
+					registerURL = "/register"
+				}
+				separator := "?"
+				if strings.Contains(registerURL, "?") {
+					separator = "&"
+				}
+				http.Redirect(w, r, registerURL+separator+"ak_key="+url.QueryEscape(vt), http.StatusTemporaryRedirect)
+				return
+			}
+		}
 	}
 
 	if deps.AuthenticateViaUsername != nil {

@@ -876,3 +876,70 @@ func TestApiRegisterAuthKnight_NilTemporaryKeyGet(t *testing.T) {
 		t.Fatalf("expected registration failed error, got: %s", body)
 	}
 }
+
+// The verified_key alias (OTP/magic-link register-first tokens) exercises
+// the same token-verified registration path as ak_key — no AuthKnight flag.
+func TestApiRegisterVerifiedKey_Success(t *testing.T) {
+	var registeredEmail string
+
+	deps := Dependencies{
+		AuthKnightRegisterDependencies: AuthKnightRegisterDependencies{
+			TemporaryKeyGet: func(key string) (string, error) {
+				if key == "test-verified-key" {
+					return "otp@example.com", nil
+				}
+				return "", errors.New("key not found")
+			},
+			UserRegister: func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) (string, error) {
+				registeredEmail = email
+				return "user-1", nil
+			},
+			UserStoreAuthToken: func(ctx context.Context, token, userID string, options types.UserAuthOptions) error {
+				return nil
+			},
+		},
+	}
+
+	values := url.Values{
+		"verified_key": {"test-verified-key"},
+		"first_name":   {"Jane"},
+		"last_name":    {"Smith"},
+	}
+	recorder, req := makePostRequest(t, "/api/register", values)
+	ApiRegister(recorder, req, deps)
+
+	if registeredEmail != "otp@example.com" {
+		t.Fatalf("expected registered email 'otp@example.com', got '%s'", registeredEmail)
+	}
+	if !strings.Contains(recorder.Body.String(), "\"status\":\"success\"") {
+		t.Fatalf("expected success, got: %s", recorder.Body.String())
+	}
+}
+
+// An invalid verified_key fails like an invalid ak_key — never creates.
+func TestApiRegisterVerifiedKey_Invalid(t *testing.T) {
+	registerCalled := false
+	deps := Dependencies{
+		AuthKnightRegisterDependencies: AuthKnightRegisterDependencies{
+			TemporaryKeyGet: func(key string) (string, error) {
+				return "", errors.New("key not found")
+			},
+			UserRegister: func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) (string, error) {
+				registerCalled = true
+				return "user-1", nil
+			},
+		},
+	}
+
+	values := url.Values{
+		"verified_key": {"bogus"},
+		"first_name":   {"Jane"},
+		"last_name":    {"Smith"},
+	}
+	recorder, req := makePostRequest(t, "/api/register", values)
+	ApiRegister(recorder, req, deps)
+
+	if registerCalled {
+		t.Fatalf("invalid token must not register a user")
+	}
+}

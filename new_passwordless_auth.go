@@ -69,6 +69,8 @@ func NewPasswordlessAuth(config types.ConfigPasswordless) (types.AuthPasswordles
 	auth.passwordlessFuncEmailSend = config.FuncEmailSend
 	auth.passwordlessFuncUserFindByEmail = config.FuncUserFindByEmail
 	auth.passwordlessFuncUserRegister = config.FuncUserRegister
+	auth.userCreationPolicy = config.UserCreationPolicy
+	auth.funcEmailCaptured = config.FuncEmailCaptured
 
 	// If no user defined email template is set, use default
 	if auth.passwordlessFuncEmailTemplateLoginCode == nil {

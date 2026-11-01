@@ -72,9 +72,19 @@ func ApiRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 		return
 	}
 
-	if deps.AuthKnight {
+	// Verified-email token branch: a posted token (verified_key issued by
+	// an OTP/magic-link verification, or ak_key from AuthKnight) resolves
+	// to a verified email and registers via the token — the unified
+	// register-first create path. For AuthKnight instances it also runs
+	// token-less (returning the "once required" error), preserving the
+	// original behaviour.
+	verifiedKey := req.GetStringTrimmed(r, "verified_key")
+	if verifiedKey == "" {
+		verifiedKey = req.GetStringTrimmed(r, "ak_key")
+	}
+	if deps.AuthKnight || verifiedKey != "" {
 		akDeps := deps.AuthKnightRegisterDependencies
-		akKey := req.GetStringTrimmed(r, "ak_key")
+		akKey := verifiedKey
 		if akKey == "" {
 			api.Respond(w, r, api.Error(types.MsgAuthKnightOnceRequired))
 			return
@@ -269,6 +279,40 @@ func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSha
 		return
 	}
 
+	// Verified-email token support for non-AuthKnight impls (OTP /
+	// magic-link register-first): the same deps shape, with UserRegister
+	// adapted from the passwordless register + find-by-email pair since
+	// the passwordless register hook does not return a userID.
+	if a.IsPasswordless() {
+		if regFn := a.GetPasswordlessUserRegister(); regFn != nil {
+			findFn := a.GetPasswordlessUserFindByEmail()
+			deps.AuthKnightRegisterDependencies = AuthKnightRegisterDependencies{
+				TemporaryKeyGet: a.GetFuncTemporaryKeyGet(),
+				TemporaryKeySet: a.GetFuncTemporaryKeySet(),
+				UseCookies:      a.GetUseCookies(),
+				SetAuthCookie: func(w http.ResponseWriter, r *http.Request, token string) {
+					a.SetAuthCookie(w, r, token)
+				},
+				UserRegister: func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) (string, error) {
+					if err := regFn(ctx, email, firstName, lastName, options); err != nil {
+						return "", err
+					}
+					if findFn == nil {
+						return "", errors.New("user find by email is not configured")
+					}
+					return findFn(ctx, email, options)
+				},
+				UserStoreAuthToken: func(ctx context.Context, token, userID string, options types.UserAuthOptions) error {
+					fn := a.GetFuncUserStoreAuthToken()
+					if fn == nil {
+						return errors.New("user store auth token is not configured")
+					}
+					return fn(ctx, token, userID, options)
+				},
+			}
+		}
+	}
+
 	passwordAuth, ok := a.(types.AuthPasswordInterface)
 	if !ok {
 		if logger := a.GetLogger(); logger != nil {
@@ -317,6 +361,18 @@ func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSha
 				return fn(ctx, email, subject, body)
 			},
 		}
+		if capt, ok := a.(interface {
+			GetFuncEmailCaptured() func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error
+		}); ok {
+			if fn := capt.GetFuncEmailCaptured(); fn != nil {
+				deps.RegisterPasswordlessInitDependencies.EmailCaptured = func(ctx context.Context, email string, verified bool) error {
+					return fn(ctx, email, verified, types.UserAuthOptions{
+						UserIp:    req.GetIP(r),
+						UserAgent: r.UserAgent(),
+					})
+				}
+			}
+		}
 	}
 
 	// Configure username/password registration handler.
@@ -360,6 +416,10 @@ type RegisterPasswordlessInitDependencies struct {
 	// EmailEnqueue, when set, is preferred over EmailSend: only an opaque
 	// delivery key enters the queue (see utils.DeliverSecret).
 	EmailEnqueue func(ctx context.Context, deliveryKey string) error
+
+	// EmailCaptured is an optional lead-capture hook fired after input
+	// validation, with verified=false (email submitted, not yet proven).
+	EmailCaptured func(ctx context.Context, email string, verified bool) error
 }
 
 // RegisterPasswordlessInitErrorCode categorizes possible error sources.
@@ -427,6 +487,11 @@ func RegisterPasswordlessInit(ctx context.Context, r *http.Request, deps Registe
 				Message: check.FailMessageFirst(),
 			}
 		}
+	}
+
+	// Lead capture on submission — the email is not yet verified.
+	if deps.EmailCaptured != nil {
+		_ = deps.EmailCaptured(ctx, email, false)
 	}
 
 	// Per-email send throttle — prevents the endpoint being used for email

@@ -57,6 +57,10 @@ type Dependencies struct {
 	// resolves email+link via utils.ResolveDeliveryKey.
 	EmailEnqueue func(ctx context.Context, deliveryKey string) error
 
+	// EmailCaptured is an optional lead-capture hook fired after input
+	// validation, with verified=false (email submitted, not yet proven).
+	EmailCaptured func(ctx context.Context, email string, verified bool) error
+
 	Logger *slog.Logger
 }
 
@@ -138,6 +142,11 @@ func MagicLinkSend(ctx context.Context, r *http.Request, deps Dependencies) (boo
 			return false, &MagicLinkSendError{Code: MagicLinkSendErrorCodeValidation, Message: check.FailMessageFirst()}
 		}
 	}
+	// Lead capture on submission — the email is not yet verified.
+	if deps.EmailCaptured != nil {
+		_ = deps.EmailCaptured(ctx, email, false)
+	}
+
 	// `return` must be a safe relative path or dropped entirely — never
 	// propagate an external URL into the emailed link.
 	if rules.NewSafeReturnPathRule(returnPath).Fails() {
