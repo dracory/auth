@@ -25,6 +25,16 @@ type Dependencies struct {
 		email, password, ip, userAgent string,
 	) (successMessage, token, errorMessage string)
 
+	// LoginWithUsernameAndPasswordPostAuth, when set, replaces both
+	// LoginWithUsernameAndPassword and SetAuthCookie: it runs the shared
+	// post-auth pipeline (session create, auth cookie, remember-me,
+	// redirect) and returns the resolved redirect alongside the token.
+	LoginWithUsernameAndPasswordPostAuth func(
+		ctx context.Context,
+		w http.ResponseWriter, r *http.Request,
+		email, password, ip, userAgent string,
+	) (successMessage, token, redirect, errorMessage string)
+
 	// UseCookies controls whether the auth token should be written as a cookie
 	// when the username+password flow succeeds.
 	UseCookies bool

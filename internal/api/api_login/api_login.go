@@ -84,15 +84,32 @@ func ApiLogin(w http.ResponseWriter, r *http.Request, dependencies Dependencies)
 		return
 	}
 
-	if dependencies.LoginWithUsernameAndPassword == nil {
-		api.Respond(w, r, api.Error(types.MsgInternalServer))
-		return
-	}
-
 	email := req.GetStringTrimmed(r, "email")
 	password := req.GetStringTrimmed(r, "password")
 	ip := req.GetIP(r)
 	userAgent := r.UserAgent()
+
+	// Post-auth pipeline preferred: the shared hooks own session create,
+	// auth cookie, remember-me, and the redirect — one cookie/session
+	// writer for every login method, same as the OTP verify path.
+	if dependencies.LoginWithUsernameAndPasswordPostAuth != nil {
+		successMessage, token, redirect, errMessage := dependencies.LoginWithUsernameAndPasswordPostAuth(
+			r.Context(), w, r, email, password, ip, userAgent)
+		if errMessage != "" {
+			api.Respond(w, r, api.Error(errMessage))
+			return
+		}
+		api.Respond(w, r, api.SuccessWithData(successMessage, map[string]any{
+			"token":    token,
+			"redirect": redirect,
+		}))
+		return
+	}
+
+	if dependencies.LoginWithUsernameAndPassword == nil {
+		api.Respond(w, r, api.Error(types.MsgInternalServer))
+		return
+	}
 
 	successMessage, token, errMessage := dependencies.LoginWithUsernameAndPassword(r.Context(), email, password, ip, userAgent)
 	if errMessage != "" {
@@ -190,6 +207,108 @@ func ApiLoginWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthShared
 		SetAuthCookie: func(w http.ResponseWriter, r *http.Request, token string) {
 			a.SetAuthCookie(w, r, token)
 		},
+	}
+
+	// When ANY PostAuthHook is configured, route password login through the
+	// shared post-auth pipeline so session create, auth cookie, remember-me
+	// and redirect behave identically to the OTP verify path. Same
+	// any-hook trigger as authenticateViaUsername; the getter ships as an
+	// optional interface (adding it to AuthSharedInterface would break
+	// external implementers). IssueRememberSession is intentionally not a
+	// trigger — alone it produces a tokenless session, and it only makes
+	// sense once SessionCreate is present.
+	var postAuthHooks types.PostAuthHooks
+	if g, ok := a.(interface{ GetPostAuthHooks() types.PostAuthHooks }); ok {
+		postAuthHooks = g.GetPostAuthHooks()
+	}
+	if hooks := postAuthHooks; hooks.EmailAllowed != nil ||
+		hooks.UserFindByEmailOrCreate != nil || hooks.UserIsActive != nil ||
+		hooks.SessionCreate != nil || hooks.SetAuthCookie != nil ||
+		hooks.RedirectURL != nil || hooks.RegisterRules != nil ||
+		hooks.RegistrationComplete != nil {
+		deps.LoginWithUsernameAndPasswordPostAuth = func(
+			ctx context.Context,
+			w http.ResponseWriter, r *http.Request,
+			email, password, ip, userAgent string,
+		) (string, string, string, string) {
+			obsHooks := a.GetObservabilityHooks()
+
+			// Allowlist first — cheap gate that should not wait behind a
+			// bcrypt compare, matching where it sits in the OTP pipeline.
+			if postAuthHooks.EmailAllowed != nil {
+				if allowed, denyMsg := postAuthHooks.EmailAllowed(ctx, email); !allowed {
+					if denyMsg == "" {
+						denyMsg = types.MsgInvalidCredentials
+					}
+					return "", "", "", denyMsg
+				}
+			}
+
+			userID, errMessage := core.VerifyUsernameAndPassword(ctx, passwordAuth, email, password, types.UserAuthOptions{
+				UserIp:    ip,
+				UserAgent: userAgent,
+			})
+			if errMessage != "" {
+				return "", "", "", errMessage
+			}
+
+			// Pin user resolution to the just-verified account: credential
+			// login must never create users, so find-or-create is bypassed.
+			// EmailAllowed is cleared too — it already ran above (before the
+			// password check) so the pipeline would only re-run it.
+			pwHooks := postAuthHooks
+			pwHooks.EmailAllowed = nil
+			pwHooks.UserFindByEmailOrCreate = func(ctx context.Context, _ string, _ types.UserAuthOptions) (string, error) {
+				return userID, nil
+			}
+
+			// Honor UseCookies=false (token-only API hosts): suppress the
+			// auth-cookie and remember-cookie writes entirely rather than
+			// letting the pipeline emit cookies the host opted out of.
+			if !a.GetUseCookies() {
+				pwHooks.SetAuthCookie = nil
+				pwHooks.IssueRememberSession = nil
+			}
+
+			paDeps := core.PostAuthDeps{
+				Hooks:    pwHooks,
+				Endpoint: a.GetEndpoint(),
+				Options:  types.UserAuthOptions{UserIp: ip, UserAgent: userAgent},
+				Logger:   a.GetLogger(),
+				AuthCookieSet: func(w http.ResponseWriter, r *http.Request, token string) {
+					if a.GetUseCookies() {
+						a.SetAuthCookie(w, r, token)
+					}
+				},
+			}
+			if g, ok := a.(interface{ GetRememberMeEnabled() bool }); ok {
+				paDeps.RememberMeEnabled = g.GetRememberMeEnabled()
+			}
+			if g, ok := a.(interface{ GetRememberMeDays() int }); ok {
+				paDeps.RememberMeDays = g.GetRememberMeDays()
+			}
+			if g, ok := a.(interface{ GetRememberCookieName() string }); ok {
+				paDeps.RememberCookieName = g.GetRememberCookieName()
+			}
+			if g, ok := a.(interface{ GetSecureCookies() bool }); ok {
+				paDeps.SecureCookies = g.GetSecureCookies()
+			}
+
+			result, err := core.PostAuth(ctx, w, r, email, "", paDeps)
+			if err != nil {
+				// Legacy recorded session-create failures as failed attempts;
+				// keep the symmetry for inactive/denied/pipeline errors too.
+				obsHooks.RecordLoginAttempt(types.LoginMethodPassword, false, err)
+				return "", "", "", err.Error()
+			}
+
+			obsHooks.RecordLoginAttempt(types.LoginMethodPassword, true, nil)
+			if result.Session != nil {
+				obsHooks.RecordSessionCreated(userID)
+			}
+
+			return types.MsgLoginSuccess, result.Token, result.Redirect, ""
+		}
 	}
 
 	ApiLogin(w, r, deps)

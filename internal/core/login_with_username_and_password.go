@@ -16,28 +16,32 @@ type LoginWithUsernameAndPasswordResult struct {
 	Token          string
 }
 
-func LoginWithUsernameAndPassword(
+// VerifyUsernameAndPassword runs the credential half of the login flow —
+// input validation, anti-enumeration existence check, and the host's
+// FuncUserLogin — and returns the authenticated user ID. It NEVER creates
+// users; credential login requires the account to already exist.
+//
+// Failure paths log and record a failed login attempt via the
+// observability hooks; success recording is left to the caller, which
+// knows whether a session was actually issued.
+func VerifyUsernameAndPassword(
 	ctx context.Context,
 	a types.AuthPasswordInterface,
 	email string,
 	password string,
 	options types.UserAuthOptions,
-) LoginWithUsernameAndPasswordResult {
-	var response LoginWithUsernameAndPasswordResult
-
+) (userID string, errorMessage string) {
 	for _, check := range []rule.RuleInterface{
 		rules.NewRequiredFieldRule(email, types.MsgEmailRequired),
 		rules.NewRequiredFieldRule(password, types.MsgPasswordRequired),
 		rules.NewEmailFormatRule(email),
 	} {
 		if check.Fails() {
-			response.ErrorMessage = check.FailMessageFirst()
-			return response
+			return "", check.FailMessageFirst()
 		}
 	}
 
 	loginFn := a.GetFuncUserLogin()
-	storeFn := a.GetFuncUserStoreAuthToken()
 	logger := a.GetLogger()
 	hooks := a.GetObservabilityHooks()
 
@@ -60,9 +64,8 @@ func LoginWithUsernameAndPassword(
 			}
 			if existsErr == nil && !exists {
 				authutils.DummyPasswordCompare(password)
-				response.ErrorMessage = types.MsgInvalidCredentials
 				hooks.RecordLoginAttempt(types.LoginMethodPassword, false, nil)
-				return response
+				return "", types.MsgInvalidCredentials
 			}
 		}
 	}
@@ -70,7 +73,6 @@ func LoginWithUsernameAndPassword(
 	userID, err := loginFn(ctx, email, password, options)
 
 	if err != nil {
-		response.ErrorMessage = types.MsgInvalidCredentials
 		if logger != nil {
 			logger.Error("login with username and password failed",
 				"error", err,
@@ -80,12 +82,38 @@ func LoginWithUsernameAndPassword(
 			)
 		}
 		hooks.RecordLoginAttempt(types.LoginMethodPassword, false, err)
-		return response
+		return "", types.MsgInvalidCredentials
 	}
 
 	if userID == "" {
-		response.ErrorMessage = types.MsgInvalidCredentials
 		hooks.RecordLoginAttempt(types.LoginMethodPassword, false, nil)
+		return "", types.MsgInvalidCredentials
+	}
+
+	return userID, ""
+}
+
+// LoginWithUsernameAndPassword verifies credentials and, on success,
+// issues the auth credential (session key via FuncSessionCreate, or a
+// legacy stored token). When PostAuthHooks are configured callers should
+// prefer VerifyUsernameAndPassword + PostAuth so every login method
+// shares one session/cookie pipeline.
+func LoginWithUsernameAndPassword(
+	ctx context.Context,
+	a types.AuthPasswordInterface,
+	email string,
+	password string,
+	options types.UserAuthOptions,
+) LoginWithUsernameAndPasswordResult {
+	var response LoginWithUsernameAndPasswordResult
+
+	logger := a.GetLogger()
+	hooks := a.GetObservabilityHooks()
+	storeFn := a.GetFuncUserStoreAuthToken()
+
+	userID, errMessage := VerifyUsernameAndPassword(ctx, a, email, password, options)
+	if errMessage != "" {
+		response.ErrorMessage = errMessage
 		return response
 	}
 

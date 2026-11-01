@@ -35,6 +35,12 @@ type authSharedTest struct {
 	useCookies                            bool
 	disableRateLimit                      bool
 	passwordStrength                      *types.PasswordStrengthConfig
+	postAuthHooks                         types.PostAuthHooks
+	observabilityHooks                    types.ObservabilityHooks
+	rememberMeEnabled                     bool
+	rememberMeDays                        int
+	rememberCookieName                    string
+	secureCookies                         bool
 	funcUserLogin                         func(ctx context.Context, username, password string, options types.UserAuthOptions) (string, error)
 	passwordlessUserRegister              func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) error
 	funcUserRegister                      func(ctx context.Context, username, password, firstName, lastName string, options types.UserAuthOptions) error
@@ -364,10 +370,27 @@ func (a *authSharedTest) GetLogger() *slog.Logger {
 func (a *authSharedTest) SetLogger(logger *slog.Logger) { a.logger = logger }
 
 func (a *authSharedTest) GetObservabilityHooks() types.ObservabilityHooks {
+	if a.observabilityHooks != nil {
+		return a.observabilityHooks
+	}
 	return types.NoopObservabilityHooks{}
 }
 
-func (a *authSharedTest) SetObservabilityHooks(hooks types.ObservabilityHooks) {}
+func (a *authSharedTest) SetObservabilityHooks(hooks types.ObservabilityHooks) {
+	a.observabilityHooks = hooks
+}
+
+// GetPostAuthHooks exposes the optional post-auth pipeline hooks — the
+// type-assertion surface ApiLoginWithAuth and the verify paths resolve.
+func (a *authSharedTest) GetPostAuthHooks() types.PostAuthHooks { return a.postAuthHooks }
+
+// GetRememberMeEnabled / GetRememberMeDays / GetRememberCookieName /
+// GetSecureCookies expose the remember-me + cookie flags the post-auth
+// pipeline reads via optional-interface assertions.
+func (a *authSharedTest) GetRememberMeEnabled() bool    { return a.rememberMeEnabled }
+func (a *authSharedTest) GetRememberMeDays() int        { return a.rememberMeDays }
+func (a *authSharedTest) GetRememberCookieName() string { return a.rememberCookieName }
+func (a *authSharedTest) GetSecureCookies() bool        { return a.secureCookies }
 
 func (a *authSharedTest) GetLayout() shared.LayoutFunc {
 	return a.layout
@@ -428,5 +451,27 @@ func SetAuthKnightForTest(a types.AuthSharedInterface, authKnight bool) {
 func SetTemporaryKeyGetForTest(a types.AuthSharedInterface, fn func(key string) (string, error)) {
 	if v, ok := a.(*authSharedTest); ok {
 		v.temporaryKeyGet = fn
+	}
+}
+
+// SetPostAuthHooksForTest allows tests to configure the post-auth pipeline hooks.
+func SetPostAuthHooksForTest(a types.AuthSharedInterface, hooks types.PostAuthHooks) {
+	if v, ok := a.(*authSharedTest); ok {
+		v.postAuthHooks = hooks
+	}
+}
+
+// SetObservabilityHooksForTest allows tests to install a recording
+// ObservabilityHooks implementation.
+func SetObservabilityHooksForTest(a types.AuthSharedInterface, hooks types.ObservabilityHooks) {
+	if v, ok := a.(*authSharedTest); ok {
+		v.observabilityHooks = hooks
+	}
+}
+
+// SetFuncUserLoginForTest allows tests to control password verification.
+func SetFuncUserLoginForTest(a types.AuthSharedInterface, fn func(ctx context.Context, username, password string, options types.UserAuthOptions) (string, error)) {
+	if v, ok := a.(*authSharedTest); ok {
+		v.funcUserLogin = fn
 	}
 }

@@ -28,7 +28,7 @@
 				authStore('AuthUser', response.data.user);
 				loginFormRaiseSuccess('Success');
 				setTimeout(function () {
-					authTo(urlOnSuccess);
+					authTo(response.data.redirect || urlOnSuccess);
 				}, 2000);
 			}).catch(function (error) {
 				console.log(error);
