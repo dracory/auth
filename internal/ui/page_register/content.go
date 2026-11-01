@@ -149,7 +149,7 @@ func RegisterCompletionContent(urlLogin string, verifiedEmail string) string {
 		shared.AlertGroup(),
 		shared.NameRow(true),
 		emailGroup,
-		shared.PrimaryButton("buttonRegister", "bi-check-circle", "Save &amp; continue", "registerFormValidate()"),
+		shared.PrimaryButton("buttonRegister", "bi-check-circle", "Save & continue", "registerFormValidate()"),
 	)
 
 	return hb.NewDiv().Children([]hb.TagInterface{
