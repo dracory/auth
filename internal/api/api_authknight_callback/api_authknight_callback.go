@@ -210,9 +210,10 @@ func apiAuthKnightCallbackPostAuth(w http.ResponseWriter, r *http.Request, a typ
 	}
 
 	deps := core.PostAuthDeps{
-		Hooks:   hooks,
-		Options: types.UserAuthOptions{UserIp: req.GetIP(r), UserAgent: r.UserAgent()},
-		Logger:  logger,
+		Hooks:    hooks,
+		Endpoint: a.GetEndpoint(),
+		Options:  types.UserAuthOptions{UserIp: req.GetIP(r), UserAgent: r.UserAgent()},
+		Logger:   logger,
 	}
 	if g, ok := any(a).(interface{ GetRememberMeEnabled() bool }); ok {
 		deps.RememberMeEnabled = g.GetRememberMeEnabled()

@@ -32,6 +32,13 @@ type PostAuthHooks struct {
 	// RedirectURL computes the post-login destination (role-aware).
 	RedirectURL func(ctx context.Context, userID string) string
 
+	// RegistrationComplete reports whether the user's registration is
+	// finished. When set and it returns false, the pipeline redirects to
+	// {endpoint}/register — the package's completion form — instead of
+	// consulting RedirectURL. This is the package-owned counterpart of
+	// "OTP-created users must complete their profile".
+	RegistrationComplete func(ctx context.Context, userID string) (completed bool, err error)
+
 	// RegisterRules returns arbitrary rules that must all pass for the
 	// flow to continue (covers project-specific rules without a closed
 	// enum). First failure short-circuits.

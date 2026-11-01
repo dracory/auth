@@ -61,9 +61,11 @@ func (a authImplementation) authenticateViaUsername(w http.ResponseWriter, r *ht
 	if hooks := a.GetPostAuthHooks(); hooks.EmailAllowed != nil ||
 		hooks.UserFindByEmailOrCreate != nil || hooks.UserIsActive != nil ||
 		hooks.SessionCreate != nil || hooks.SetAuthCookie != nil ||
-		hooks.RedirectURL != nil || hooks.RegisterRules != nil {
+		hooks.RedirectURL != nil || hooks.RegisterRules != nil ||
+		hooks.RegistrationComplete != nil {
 		result, err := core.PostAuth(r.Context(), w, r, username, "", core.PostAuthDeps{
 			Hooks:              hooks,
+			Endpoint:           a.GetEndpoint(),
 			Options:            types.UserAuthOptions{UserIp: req.GetIP(r), UserAgent: r.UserAgent()},
 			Logger:             a.GetLogger(),
 			RememberMeEnabled:  a.GetRememberMeEnabled(),

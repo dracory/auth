@@ -26,6 +26,11 @@ type PostAuthDeps struct {
 	RememberMeDays     int
 	RememberCookieName string
 	SecureCookies      bool
+
+	// Endpoint is the auth mount point (e.g. "/auth") — used to build the
+	// registration-completion redirect when hooks.RegistrationComplete
+	// reports an incomplete profile.
+	Endpoint string
 }
 
 // PostAuthResult is what the caller hands back to the client.
@@ -134,10 +139,24 @@ func PostAuth(ctx context.Context, w http.ResponseWriter, r *http.Request, email
 		}
 	}
 
-	// 7. Redirect: safe backURL first, else hook, else root.
+	// 7. Redirect: safe backURL first; then incomplete registration wins
+	// over the custom redirect (the completion form is the package's own
+	// page); then hook; else root.
 	redirect := "/"
 	if utils.IsSafeBackURL(backURL, r.Host) {
 		redirect = backURL
+	} else if hooks.RegistrationComplete != nil && userID != "" {
+		completed, err := hooks.RegistrationComplete(ctx, userID)
+		if err != nil {
+			return nil, errors.New(types.MsgFailedToProcess)
+		}
+		if !completed {
+			redirect = deps.Endpoint + "/register"
+		} else if hooks.RedirectURL != nil {
+			if u := hooks.RedirectURL(ctx, userID); u != "" {
+				redirect = u
+			}
+		}
 	} else if hooks.RedirectURL != nil {
 		if u := hooks.RedirectURL(ctx, userID); u != "" {
 			redirect = u
