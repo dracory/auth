@@ -161,7 +161,7 @@ func TestPageRegister_Authenticated(t *testing.T) {
 		"form-control-plaintext",
 		"name=\"first_name\"",
 		"name=\"last_name\"",
-		"var urlApiRegister = \"http://localhost/auth/api/register\";",
+		"const urlApiRegister = \"http://localhost/auth/api/register\";",
 	}
 	for _, v := range expected {
 		if !strings.Contains(body, v) {
