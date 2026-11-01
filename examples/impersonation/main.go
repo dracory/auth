@@ -148,8 +148,8 @@ func emailSend(_ context.Context, userID, subject, body string) error {
 	return nil
 }
 
-func main() {
-	// Seed admin and normal user
+// newAuth seeds the demo users and builds the configured auth instance.
+func newAuth() (types.AuthPasswordInterface, error) {
 	adminUser := &userAccount{ID: "admin-1", Username: "admin@example.com", Password: "adminpassword", FirstName: "Admin", LastName: "User", IsAdmin: true}
 	targetUser := &userAccount{ID: "user-2", Username: "john@example.com", Password: "userpassword", FirstName: "John", LastName: "Doe", IsAdmin: false}
 
@@ -158,7 +158,7 @@ func main() {
 	store.users[targetUser.Username] = targetUser
 	store.usersByID[targetUser.ID] = targetUser
 
-	authInstance, err := auth.NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
+	return auth.NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
 			UrlRedirectOnSuccess: "/dashboard",
@@ -189,10 +189,11 @@ func main() {
 		FuncUserFindByUsername: store.userFindByUsername,
 		FuncUserLogin:          store.userLogin,
 	})
-	if err != nil {
-		log.Fatal(err)
-	}
+}
 
+// newMux builds the example's HTTP handler tree: the auth mux under
+// /auth, a public home page, and a middleware-protected dashboard.
+func newMux(authInstance types.AuthPasswordInterface) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/auth/", authInstance.Router().ServeHTTP)
 
@@ -218,6 +219,17 @@ func main() {
 
 		fmt.Fprintf(w, `<p><a href="%s">Logout</a></p>`, authInstance.LinkLogout())
 	})))
+
+	return mux
+}
+
+func main() {
+	authInstance, err := newAuth()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	mux := newMux(authInstance)
 
 	fmt.Println("Impersonation auth example running on http://localhost:8086")
 	if err := http.ListenAndServe(":8086", mux); err != nil {

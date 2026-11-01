@@ -191,8 +191,9 @@ func exampleEmailSend(_ context.Context, email, subject, body string) error {
 	return nil
 }
 
-func main() {
-	authInstance, err := auth.NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
+// newAuth builds the configured auth instance for the example.
+func newAuth() (types.AuthPasswordInterface, error) {
+	return auth.NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
 			UrlRedirectOnSuccess: "/dashboard",
@@ -212,11 +213,11 @@ func main() {
 		FuncUserRegister:       passwordStore.userRegister,
 		FuncUserPasswordChange: passwordStore.userPasswordChange,
 	})
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+}
 
+// newMux builds the example's HTTP handler tree: the auth mux under
+// /auth, a public home page, and a middleware-protected dashboard.
+func newMux(authInstance types.AuthPasswordInterface) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	// Mount auth under /auth
@@ -280,6 +281,18 @@ func main() {
 			log.Printf("failed to write dashboard page response: %v", err)
 		}
 	})))
+
+	return mux
+}
+
+func main() {
+	authInstance, err := newAuth()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	mux := newMux(authInstance)
 
 	fmt.Println("Username/password auth example running on http://localhost:8082")
 	if err := http.ListenAndServe(":8082", mux); err != nil {

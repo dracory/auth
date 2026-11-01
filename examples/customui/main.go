@@ -180,12 +180,12 @@ func customLayout(_ http.ResponseWriter, _ *http.Request, title, body string, op
 </html>`, title, styles.String(), body, scripts.String())
 }
 
-func main() {
-	// Seed demo user
+// newAuth seeds the demo user and builds the configured auth instance.
+func newAuth() (types.AuthPasswordInterface, error) {
 	demoUser := &customUIUser{ID: "usr-1", Username: "user@aura.local", Password: "aurapassword", FirstName: "Aura", LastName: "Member"}
 	store.users[demoUser.Username] = demoUser
 
-	authInstance, err := auth.NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
+	return auth.NewUsernameAndPasswordAuth(types.ConfigUsernameAndPassword{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
 			UrlRedirectOnSuccess: "/dashboard",
@@ -214,10 +214,11 @@ func main() {
 		FuncUserFindByUsername: store.userFindByUsername,
 		FuncUserLogin:          store.userLogin,
 	})
-	if err != nil {
-		log.Fatal(err)
-	}
+}
 
+// newMux builds the example's HTTP handler tree: the auth mux under
+// /auth, a public home page, and a middleware-protected dashboard.
+func newMux(authInstance types.AuthPasswordInterface) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/auth/", authInstance.Router().ServeHTTP)
 
@@ -229,6 +230,17 @@ func main() {
 		userID := authInstance.GetCurrentUserID(r)
 		fmt.Fprintf(w, `<h1>Aura Dashboard</h1><p>Welcome, %s (ID: %s)</p><p><a href="/auth/logout">Logout</a></p>`, store.displayName(userID), userID)
 	})))
+
+	return mux
+}
+
+func main() {
+	authInstance, err := newAuth()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	mux := newMux(authInstance)
 
 	fmt.Println("Custom UI example running on http://localhost:8087")
 	if err := http.ListenAndServe(":8087", mux); err != nil {

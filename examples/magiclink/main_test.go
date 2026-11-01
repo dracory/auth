@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -81,5 +82,38 @@ func TestMagicLinkTempKeys(t *testing.T) {
 	got, err := store.tempKeyGet(key)
 	if err != nil || got != val {
 		t.Fatalf("tempKeyGet failed, got %q (err: %v)", got, err)
+	}
+}
+
+func TestMagicLinkEmailSend(t *testing.T) {
+	if err := emailSend(context.Background(), "a@b.com", "s", "b"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestMagicLinkMuxServesPages(t *testing.T) {
+	resetMagicLinkStore()
+
+	mux, err := newMux()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest("GET", "/", nil))
+	if rec.Code != 200 || !strings.Contains(rec.Body.String(), "Magic Link") {
+		t.Fatalf("expected home page, got %d", rec.Code)
+	}
+
+	rec = httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest("GET", "/auth/login", nil))
+	if rec.Code != 200 {
+		t.Fatalf("expected login page, got %d", rec.Code)
+	}
+
+	rec = httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest("GET", "/dashboard", nil))
+	if rec.Code == 200 {
+		t.Fatal("expected redirect for unauthenticated dashboard")
 	}
 }
