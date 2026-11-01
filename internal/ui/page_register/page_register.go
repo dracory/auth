@@ -118,21 +118,15 @@ func PageRegister(w http.ResponseWriter, r *http.Request, a types.AuthSharedInte
 	})
 }
 
-// getVerifiedEmail retrieves the verified email from the temporary key
-// store using the provided verified-email key.
+// getVerifiedEmail resolves the verified email from the temporary key
+// store via the shared VerifiedEmailKeyRule (empty string on failure).
 func getVerifiedEmail(a types.AuthSharedInterface, verifiedKey string) string {
 	if verifiedKey == "" {
 		return ""
 	}
-
-	fn := a.GetFuncTemporaryKeyGet()
-	if fn == nil {
+	keyRule := rules.NewVerifiedEmailKeyRule(a.GetFuncTemporaryKeyGet(), verifiedKey)
+	if keyRule.Fails() {
 		return ""
 	}
-
-	email, err := fn(verifiedKey)
-	if err != nil {
-		return ""
-	}
-	return email
+	return keyRule.Email()
 }

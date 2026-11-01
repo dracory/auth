@@ -105,11 +105,13 @@ func ApiRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 			return
 		}
 
-		email, errKey := vDeps.TemporaryKeyGet(verifiedKey)
-		if errKey != nil || email == "" {
-			api.Respond(w, r, api.Error(types.MsgLinkNotValidOrExpired))
+		// Business rule: the token must resolve to a verified email.
+		keyRule := rules.NewVerifiedEmailKeyRule(vDeps.TemporaryKeyGet, verifiedKey)
+		if keyRule.Fails() {
+			api.Respond(w, r, api.Error(keyRule.FailMessageFirst()))
 			return
 		}
+		email := keyRule.Email()
 
 		firstName := html.EscapeString(req.GetStringTrimmed(r, "first_name"))
 		lastName := html.EscapeString(req.GetStringTrimmed(r, "last_name"))

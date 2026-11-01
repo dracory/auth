@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/dracory/auth/internal/rules"
 	"github.com/dracory/auth/types"
 	"github.com/dracory/auth/utils"
 	"github.com/dracory/req"
@@ -92,44 +93,37 @@ func ApiMagicLinkCallback(w http.ResponseWriter, r *http.Request, deps Dependenc
 
 	// Register-first policy: verified-but-new emails get a verified-email
 	// token and land on the register form instead of being logged in as a
-	// freshly created (incomplete) user. Misconfiguration falls through
-	// to authenticate — logged loudly since it also means an incomplete
-	// user row the policy exists to prevent.
-	if deps.CreateUserOnRegister {
+	// freshly created (incomplete) user; degraded fallbacks log loudly
+	// (see RegisterFirstRule).
+	if rf := rules.NewRegisterFirstRule(
+		deps.CreateUserOnRegister, deps.UserExists, deps.TemporaryKeySet,
+		r.Context(), payload.Email, options); !rf.Fails() {
+		vt, errToken := utils.IssueVerifiedEmailToken(deps.TemporaryKeySet, payload.Email, 0)
+		if errToken != nil {
+			logger := deps.Logger
+			if logger == nil {
+				logger = slog.Default()
+			}
+			logger.Error("magic link callback: verified-email token issue failed",
+				slog.String("error", errToken.Error()))
+		} else {
+			registerURL := deps.RegisterURL
+			if registerURL == "" {
+				registerURL = "/register"
+			}
+			separator := "?"
+			if strings.Contains(registerURL, "?") {
+				separator = "&"
+			}
+			http.Redirect(w, r, registerURL+separator+"verified_key="+url.QueryEscape(vt), http.StatusTemporaryRedirect)
+			return
+		}
+	} else if rf.Degraded() {
 		logger := deps.Logger
 		if logger == nil {
 			logger = slog.Default()
 		}
-		switch {
-		case deps.UserExists == nil:
-			logger.Warn("magic link callback: CreateUserOnRegister set but UserExists is not configured — falling back to session-first registration")
-		case deps.TemporaryKeySet == nil:
-			logger.Warn("magic link callback: CreateUserOnRegister set but TemporaryKeySet is not configured — falling back to session-first registration")
-		default:
-			exists, errExists := deps.UserExists(r.Context(), payload.Email, options)
-			switch {
-			case errExists != nil:
-				logger.Warn("magic link callback: UserExists failed — falling back to session-first registration",
-					slog.String("error", errExists.Error()))
-			case !exists:
-				vt, errToken := utils.IssueVerifiedEmailToken(deps.TemporaryKeySet, payload.Email, 0)
-				if errToken != nil {
-					logger.Error("magic link callback: verified-email token issue failed",
-						slog.String("error", errToken.Error()))
-				} else {
-					registerURL := deps.RegisterURL
-					if registerURL == "" {
-						registerURL = "/register"
-					}
-					separator := "?"
-					if strings.Contains(registerURL, "?") {
-						separator = "&"
-					}
-					http.Redirect(w, r, registerURL+separator+"verified_key="+url.QueryEscape(vt), http.StatusTemporaryRedirect)
-					return
-				}
-			}
-		}
+		logger.Warn("magic link callback: " + rf.Reason())
 	}
 
 	if deps.AuthenticateViaUsername != nil {

@@ -330,36 +330,27 @@ func LoginCodeVerify(ctx context.Context, r *http.Request, deps Dependencies) (*
 
 	// Register-first policy: accounts are created by the register form,
 	// not at verify time. Verified-but-new emails get a token instead of
-	// a session. Misconfiguration or an existence-check failure falls
-	// through to the normal authenticate path so a store hiccup cannot
-	// lock users out — logged loudly since it also means an incomplete
-	// user row the policy exists to prevent.
-	if deps.CreateUserOnRegister {
+	// a session; degraded fallbacks log loudly (see RegisterFirstRule).
+	if rf := rules.NewRegisterFirstRule(
+		deps.CreateUserOnRegister, deps.UserExists, deps.TemporaryKeySet,
+		ctx, email, options); !rf.Fails() {
+		token, errToken := utils.IssueVerifiedEmailToken(deps.TemporaryKeySet, email, 0)
+		if errToken != nil {
+			logger := deps.Logger
+			if logger == nil {
+				logger = slog.Default()
+			}
+			logger.Error("login code verify: verified-email token issue failed",
+				slog.String("error", errToken.Error()))
+		} else {
+			result.VerifiedEmailToken = token
+		}
+	} else if rf.Degraded() {
 		logger := deps.Logger
 		if logger == nil {
 			logger = slog.Default()
 		}
-		switch {
-		case deps.UserExists == nil:
-			logger.Warn("login code verify: CreateUserOnRegister set but UserExists is not configured — falling back to session-first registration")
-		case deps.TemporaryKeySet == nil:
-			logger.Warn("login code verify: CreateUserOnRegister set but TemporaryKeySet is not configured — falling back to session-first registration")
-		default:
-			exists, errExists := deps.UserExists(ctx, email, options)
-			switch {
-			case errExists != nil:
-				logger.Warn("login code verify: UserExists failed — falling back to session-first registration",
-					slog.String("error", errExists.Error()))
-			case !exists:
-				token, errToken := utils.IssueVerifiedEmailToken(deps.TemporaryKeySet, email, 0)
-				if errToken != nil {
-					logger.Error("login code verify: verified-email token issue failed",
-						slog.String("error", errToken.Error()))
-				} else {
-					result.VerifiedEmailToken = token
-				}
-			}
-		}
+		logger.Warn("login code verify: " + rf.Reason())
 	}
 
 	return result, nil
