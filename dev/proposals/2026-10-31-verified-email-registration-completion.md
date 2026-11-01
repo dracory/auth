@@ -1,7 +1,7 @@
 # Proposal: Authenticated Register = Profile Completion (verified email, read-only)
 
 **Date:** 2026-10-31
-**Status:** Draft — pending review
+**Status:** Implemented — `feature/unified-verified-registration` (verified-email token uses the `verified_key` param; `ak_key` removed)
 **Scope:** `internal/ui/page_register`, `internal/api/api_register`, `auth_implementation.go`, `types/`. Deliberately smaller than `2026-10-31-extensible-registration-and-profile-fields.md` — no custom field system.
 
 ## Motivation
@@ -29,7 +29,7 @@ this proposal generalises it to any authenticated session.
 
 Resolution order in `PageRegister` (before the current branches):
 
-1. `ak_key` present → existing AuthKnight verified-email form (unchanged).
+1. `verified_key` present → verified-email register form (read-only email).
 2. `a.GetCurrentUserID(r) != ""` → **completion form** (new):
    - email rendered as read-only plaintext, same markup as
      `RegisterAuthKnightContent` (`form-control-plaintext` + label
@@ -48,7 +48,7 @@ func RegisterCompletionContent(urlLogin, email string) string
 ```
 
 Largely a call into the same markup `RegisterAuthKnightContent` uses
-(minus `ak_key` hidden input). New `register_completion.js` — posts only
+(minus `verified_key` hidden input). New `register_completion.js` — posts only
 `first_name`/`last_name` to `__URL_API_REGISTER__` then redirects to
 `__URL_ON_SUCCESS__`.
 
@@ -108,7 +108,7 @@ register-with-names". After this change the semantics are uniform:
 |---|---|---|---|
 | Anonymous, password method | typed input | editable | create user (+code verify) |
 | Anonymous, passwordless | typed input | editable | code → create on verify |
-| `ak_key` (AuthKnight) | temp key | read-only | create via `UserRegister` |
+| `verified_key` (AuthKnight) | temp key | read-only | create via `UserRegister` |
 | **Authenticated (OTP/magic-link)** | session | read-only | **`FuncUserProfileUpdate`** |
 
 ## Follow-up: user-creation policy + email capture
@@ -135,7 +135,7 @@ email first, then collect details:
 3. full registration form (email read-only) → submit → single INSERT
 ```
 
-Step 2's token is the same artifact as AuthKnight's `ak_key`: a
+Step 2's token is the same artifact previously known as AuthKnight's `ak_key`: a
 verified-email credential that authorizes the final create. The proof
 is not consumed at verify time — it is *exchanged* for the token
 carried to the register submit.
@@ -190,16 +190,16 @@ enter email → issue proof → verify → verified-email token → form → sin
 |---|---|---|
 | OTP | short code in temp store | email |
 | Magic link | signed token in URL | email |
-| AuthKnight | `ak_key` temp key | cross-app redirect |
+| AuthKnight | `verified_key` temp key | cross-app redirect |
 
 All three are "issue a proof, verify it, carry the verified-email
 token to the form, then create". Today's divergence is accidental:
 OTP/magic-link shortcut via `UserFindByEmailOrCreate` at verify time
-(session → incomplete row), while AuthKnight carries the `ak_key`
+(session → incomplete row), while AuthKnight carries the `verified_key`
 token forward to the register submit. Once OTP/magic-link issue a
-verified-email token on successful verification — the way `ak_key`
+verified-email token on successful verification — the way `verified_key`
 already works — there is **one** verify → form → create pipeline and
-the method-specific branches (including the `ak_key` register branch)
+the method-specific branches (including the `verified_key` register branch)
 collapse into it.
 
 `RegistrationComplete` gating + `FuncUserProfileUpdate` remain as the
@@ -265,7 +265,7 @@ both get deleted; only `links.Auth().Register()` redirects remain.
 
 | Area | Cases |
 |---|---|
-| `PageRegister` | unauthenticated → public form; authenticated → email read-only, no password inputs; `FuncUserEmailGet` nil → generic label; `ak_key` still wins |
+| `PageRegister` | unauthenticated → public form; authenticated → email read-only, no password inputs; `FuncUserEmailGet` nil → generic label; `verified_key` still wins |
 | `ApiRegister` | authenticated → calls `UserProfileUpdate` with session userID (form `email` field ignored/forged → still uses session); missing fn → error; required names enforced; unauthenticated → unchanged flows |
 | hooks | getter/setter round-trip |
 

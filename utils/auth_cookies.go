@@ -12,7 +12,7 @@ func AuthCookieSet(w http.ResponseWriter, r *http.Request, token string, opts ..
 	for _, opt := range opts {
 		opt(&c)
 	}
-	setCookieWithConfig(w, r, token, c)
+	setCookieWithConfig(w, token, c)
 }
 
 func AuthCookieRemove(w http.ResponseWriter, r *http.Request, opts ...types.CookieOption) {
@@ -20,7 +20,7 @@ func AuthCookieRemove(w http.ResponseWriter, r *http.Request, opts ...types.Cook
 	for _, opt := range opts {
 		opt(&c)
 	}
-	removeCookieWithConfig(w, r, c)
+	removeCookieWithConfig(w, c)
 }
 
 func AuthCookieGet(r *http.Request) string {
