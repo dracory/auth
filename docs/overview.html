@@ -10,8 +10,8 @@
  body{padding-top:4.5rem}
  .doc{max-width:960px;margin:0 auto}
  pre{background:var(--bs-tertiary-bg);padding:1rem;border-radius:.375rem;overflow-x:auto}
- code{font-size:.875em}
- table{font-size:.9rem}
+ code{font-size:.95em}
+ table{font-size:.95rem}
  .navbar-brand{font-weight:700}
 </style>
 <link href="assets/docs.css?v=2" rel="stylesheet">
@@ -167,6 +167,25 @@ mux.Handle(&quot;/auth/&quot;, http.StripPrefix(&quot;&quot;, mma.Router()))</co
 <p><code>POST /auth/api/login</code> → <code>FuncUserLogin(username, password)</code> → post-auth → token + cookie. Recovery via <code>/password-restore</code> + <code>/password-reset</code> (session invalidation built in).</p>
 <h3>AuthKnight</h3>
 <p>Login page redirects to the hosted AuthKnight flow → <code>GET /auth/authknight-callback?once=</code> → verify <code>once</code> with AuthKnight's <code>/api/who</code> → post-auth (existing users) or register-redirect with a verified-email temp key (new users).</p>
+<h3>Verified-email registration (unified)</h3>
+<p>OTP, magic link, and AuthKnight share one register-first pipeline:</p>
+<pre><code class="language-text">enter email → issue proof (code / link / once) → verify
+  → verified-email token (verified_key, 15 min, single-use)
+  → /register form (email read-only) → single INSERT</code></pre>
+<p>The token resolves to the verified email server-side — the form never
+trusts a posted email. Existing accounts authenticate normally.</p>
+<p><code>ConfigShared.UserCreationPolicy</code> selects when the user row
+is created: <code>CreateUserOnAuth</code> (default — created at verify
+time, incomplete profiles gated to the completion form by
+<code>PostAuthHooks.RegistrationComplete</code>) vs
+<code>CreateUserOnRegister</code> (deferred — no row until the form
+submits; requires a <code>FuncUserExists</code> or passwordless
+find-by-email hook to distinguish accounts). Degraded configurations
+fall back to session-first with a <code>Warn</code> log.</p>
+<p><code>ConfigShared.FuncEmailCaptured(ctx, email, verified, options)</code>
+is an optional lead-capture hook fired on submit (<code>verified=false</code>
+— unverified, attacker-controllable) and on successful verification
+(<code>verified=true</code>) across login, register, and magic-link paths.</p>
 <hr>
 <h2>🔒 Middleware</h2>
 <ul><li><code>WebAuthOrRedirectMiddleware</code> — resolves token → userID into context; redirects to login on failure</li><li><code>ApiAuthOrErrorMiddleware</code> — same check, JSON error on failure</li><li><code>WebAppendUserIdIfExistsMiddleware</code> — optional auth, never blocks</li><li><code>auth.GetCurrentUserID(r)</code> — retrieve the authenticated user ID</li></ul>

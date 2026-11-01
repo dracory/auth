@@ -70,13 +70,20 @@
       pages: [
         ['index.html', 'Home'],
         ['overview.html', 'Overview'],
-        ['project-structure.html', 'Project Structure'],
+      ],
+    },
+    {
+      section: 'Login Methods',
+      pages: [
+        ['otp.html', 'Email OTP'],
+        ['magiclink.html', 'Magic Link'],
+        ['password.html', 'Username and Password'],
+        ['authknight.html', 'AuthKnight'],
       ],
     },
     {
       section: 'Features',
       pages: [
-        ['authknight.html', 'AuthKnight'],
         ['impersonation.html', 'Impersonation'],
         ['rate_limit.html', 'Rate Limiting'],
         ['ui-patterns.html', 'UI Patterns'],
@@ -99,6 +106,12 @@
         ['peers/supertokens.html', 'vs SuperTokens'],
         ['peers/workos.html', 'vs WorkOS'],
         ['peers/zitadel.html', 'vs Zitadel'],
+      ],
+    },
+    {
+      section: 'Developer',
+      pages: [
+        ['project-structure.html', 'Project Structure'],
       ],
     },
   ];
@@ -260,4 +273,34 @@
     });
     wrap.appendChild(btn);
   });
+
+  /* --- Text size selector (accessibility) --------------------------------- */
+  var FONT_SIZES = { 'Standard': '', 'Large': '118%', 'Extra large': '140%' };
+  var sizeKey = 'docs-fontsize';
+  var applyFontSize = function (label) {
+    // Scale the root font size so every rem-based element — content,
+    // sidebar, TOC, navbar — grows uniformly.
+    document.documentElement.style.fontSize = FONT_SIZES[label] || '';
+  };
+  applyFontSize(localStorage.getItem(sizeKey) || 'Standard');
+  var navBar = document.querySelector('.navbar .d-flex');
+  if (navBar) {
+    var sizeSel = document.createElement('select');
+    sizeSel.id = 'fontSizeSel';
+    sizeSel.className = 'form-select form-select-sm';
+    sizeSel.style.width = 'auto';
+    sizeSel.title = 'Text size';
+    Object.keys(FONT_SIZES).forEach(function (label) {
+      var o = document.createElement('option');
+      o.value = label;
+      o.textContent = label === 'Standard' ? 'Aa' : 'Aa ' + label;
+      sizeSel.appendChild(o);
+    });
+    sizeSel.value = localStorage.getItem(sizeKey) || 'Standard';
+    sizeSel.addEventListener('change', function () {
+      localStorage.setItem(sizeKey, this.value);
+      applyFontSize(this.value);
+    });
+    navBar.insertBefore(sizeSel, navBar.firstChild);
+  }
 })();

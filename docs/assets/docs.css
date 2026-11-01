@@ -112,7 +112,7 @@
 .docs-toc a.lvl-3 { padding-left: 1.5rem; }
 
 /* --- Main content ------------------------------------------------------- */
-.docs-main { min-width: 0; }
+.docs-main { min-width: 0; font-size: 1.1rem; }
 .docs-main h1 { font-weight: 800; letter-spacing: -.01em; margin-bottom: 1rem; }
 .docs-main h2 { margin-top: 2.5rem; padding-top: .5rem; border-top: 1px solid var(--bs-border-color); }
 .docs-main h2:first-of-type { border-top: 0; margin-top: 1.5rem; }
@@ -134,7 +134,7 @@ h4:hover .anchor-link, .anchor-link:hover { opacity: 1; }
   margin: 0; padding: 1rem 3.25rem 1rem 1rem;
   border-radius: .5rem; border: 1px solid var(--bs-border-color);
   background: #0d1117; color: #e6edf3;
-  overflow-x: auto; font-size: .85rem; line-height: 1.55;
+  overflow-x: auto; font-size: 1.05rem; line-height: 1.6;
 }
 [data-bs-theme="light"] .codeblock pre { background: #f6f8fa; color: #1f2328; }
 .codeblock .copy-btn {

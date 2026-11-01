@@ -10,8 +10,8 @@
  body{padding-top:4.5rem}
  .doc{max-width:960px;margin:0 auto}
  pre{background:var(--bs-tertiary-bg);padding:1rem;border-radius:.375rem;overflow-x:auto}
- code{font-size:.875em}
- table{font-size:.9rem}
+ code{font-size:.95em}
+ table{font-size:.95rem}
  .navbar-brand{font-weight:700}
 </style>
 <link href="assets/docs.css?v=2" rel="stylesheet">
@@ -215,17 +215,17 @@ callbackPath := authInstance.LinkAuthKnightCallback()</code></pre>
 <p><code>LinkAuthKnightRedirect(r)</code> derives both automatically from the request:</p>
 <ul><li><code>back_url</code> = <code>scheme://host</code> + endpoint (e.g. <code>http://localhost:8084/auth</code>)</li><li><code>next_url</code> = <code>scheme://host</code> + callback path (e.g. <code>http://localhost:8084/auth/api/authknight/callback</code>)</li></ul>
 <h2>Page Behavior in AuthKnight Mode</h2>
-<table class="table table-striped table-sm"><thead><tr><th>Route</th><th>Behavior</th></tr></thead><tbody><tr><td><code>/auth/login</code></td><td>Redirects to AuthKnight's hosted login page</td></tr><tr><td><code>/auth/register</code> (without <code>ak_key</code>)</td><td>Redirects to AuthKnight's hosted login page</td></tr><tr><td><code>/auth/register?ak_key=xxx</code></td><td>Shows registration form with verified email as static text</td></tr><tr><td><code>/auth/password-restore</code></td><td>Redirects to AuthKnight login</td></tr><tr><td><code>/auth/password-reset</code></td><td>Redirects to AuthKnight login</td></tr><tr><td><code>/auth/login-code-verify</code></td><td>Redirects to AuthKnight login</td></tr><tr><td><code>/auth/register-code-verify</code></td><td>Redirects to AuthKnight login</td></tr><tr><td><code>/auth/api/authknight/callback</code></td><td>Internal endpoint that AuthKnight redirects to after auth</td></tr></tbody></table>
+<table class="table table-striped table-sm"><thead><tr><th>Route</th><th>Behavior</th></tr></thead><tbody><tr><td><code>/auth/login</code></td><td>Redirects to AuthKnight's hosted login page</td></tr><tr><td><code>/auth/register</code> (without <code>verified_key</code>)</td><td>Redirects to AuthKnight's hosted login page</td></tr><tr><td><code>/auth/register?verified_key=xxx</code></td><td>Shows registration form with verified email as static text</td></tr><tr><td><code>/auth/password-restore</code></td><td>Redirects to AuthKnight login</td></tr><tr><td><code>/auth/password-reset</code></td><td>Redirects to AuthKnight login</td></tr><tr><td><code>/auth/login-code-verify</code></td><td>Redirects to AuthKnight login</td></tr><tr><td><code>/auth/register-code-verify</code></td><td>Redirects to AuthKnight login</td></tr><tr><td><code>/auth/api/authknight/callback</code></td><td>Internal endpoint that AuthKnight redirects to after auth</td></tr></tbody></table>
 <h2>Security: Verified Email Protection</h2>
 <p>The verified email on the registration page is displayed as <strong>static text</strong> (not an input field) to prevent browser extensions like LastPass from modifying it. The email used for registration is always retrieved from the secure temporary key store, not from the form submission.</p>
 <h3>How it works:</h3>
-<ol><li>AuthKnight verifies the email and sends it to your callback</li><li>Your server stores the email in a temporary key (<code>ak_key</code> → email)</li><li>User is redirected to <code>/auth/register?ak_key=xxx</code></li><li>The register page retrieves the email from the temporary key store (server-side)</li><li>The email is displayed as static text with a hidden input for form submission</li><li>The register API handler also retrieves the email from the temporary key store, not from the form</li></ol>
+<ol><li>AuthKnight verifies the email and sends it to your callback</li><li>Your server stores the email in a temporary key (<code>verified_key</code> → email)</li><li>User is redirected to <code>/auth/register?verified_key=xxx</code></li><li>The register page retrieves the email from the temporary key store (server-side)</li><li>The email is displayed as static text with a hidden input for form submission</li><li>The register API handler also retrieves the email from the temporary key store, not from the form</li></ol>
 <p>This means even if a browser extension or manual manipulation changes the form's <code>email</code> field, the actual email used for registration comes from the server-side temporary key store.</p>
 <h2>Endpoints</h2>
 <h3>API Endpoint</h3>
 <table class="table table-striped table-sm"><thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/auth/api/authknight/callback</code></td><td>AuthKnight redirect endpoint (receives <code>once</code> token)</td></tr></tbody></table>
 <h3>Page Endpoints</h3>
-<table class="table table-striped table-sm"><thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/auth/login</code></td><td>Redirects to AuthKnight login</td></tr><tr><td>GET</td><td><code>/auth/register</code></td><td>Registration page (redirects without <code>ak_key</code>)</td></tr><tr><td>GET</td><td><code>/auth/logout</code></td><td>Logout page</td></tr></tbody></table>
+<table class="table table-striped table-sm"><thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/auth/login</code></td><td>Redirects to AuthKnight login</td></tr><tr><td>GET</td><td><code>/auth/register</code></td><td>Registration page (redirects without <code>verified_key</code>)</td></tr><tr><td>GET</td><td><code>/auth/logout</code></td><td>Logout page</td></tr></tbody></table>
 <h2>Multi-Method Usage</h2>
 <p>AuthKnight can run alongside other login methods via <code>NewMultiMethodAuth</code>:</p>
 <pre><code class="language-go">knight, _ := auth.NewAuthKnightAuth(cfgKnight)
