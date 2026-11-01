@@ -117,9 +117,12 @@ func ApiMagicLinkCallback(w http.ResponseWriter, r *http.Request, deps Dependenc
 		// post-auth pipeline reads r.FormValue("remember"), and for a GET
 		// callback that resolves to the URL query.
 		if payload.Remember {
-			q := r.URL.Query()
-			q.Set("remember", "true")
-			r.URL.RawQuery = q.Encode()
+			// The form was already parsed when "token" was read above —
+			// rewriting RawQuery now would leave r.Form stale, so the
+			// value is injected into the parsed form instead.
+			if err := r.ParseForm(); err == nil {
+				r.Form.Set("remember", "true")
+			}
 		}
 		deps.AuthenticateViaUsername(w, r, payload.Email, "", "")
 		return

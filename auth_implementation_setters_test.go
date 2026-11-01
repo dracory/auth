@@ -322,3 +322,61 @@ func TestHandler_ServesAuthRoutes(t *testing.T) {
 		t.Fatalf("expected a response, got %d", rec.Code)
 	}
 }
+
+func TestSetters_UserEmailGet(t *testing.T) {
+	a := &authImplementation{}
+	if a.GetFuncUserEmailGet() != nil {
+		t.Fatal("expected nil by default")
+	}
+
+	a.SetFuncUserEmailGet(func(ctx context.Context, userID string, options types.UserAuthOptions) (string, error) {
+		return userID + "@example.com", nil
+	})
+	got, err := a.GetFuncUserEmailGet()(context.Background(), "u1", types.UserAuthOptions{})
+	if err != nil || got != "u1@example.com" {
+		t.Fatalf("unexpected email get: %q %v", got, err)
+	}
+}
+
+func TestSetters_UserProfileUpdate(t *testing.T) {
+	a := &authImplementation{}
+
+	called := ""
+	a.SetFuncUserProfileUpdate(func(ctx context.Context, userID string, firstName string, lastName string, options types.UserAuthOptions) error {
+		called = userID + ":" + firstName + ":" + lastName
+		return nil
+	})
+	if err := a.GetFuncUserProfileUpdate()(context.Background(), "u1", "A", "B", types.UserAuthOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	if called != "u1:A:B" {
+		t.Fatalf("expected profile update invoked, got %q", called)
+	}
+}
+
+func TestSetters_UserCreationPolicy(t *testing.T) {
+	a := &authImplementation{}
+	if a.GetUserCreationPolicy() != "" {
+		t.Fatalf("expected empty default, got %q", a.GetUserCreationPolicy())
+	}
+	a.SetUserCreationPolicy(types.CreateUserOnRegister)
+	if a.GetUserCreationPolicy() != types.CreateUserOnRegister {
+		t.Fatalf("unexpected policy %q", a.GetUserCreationPolicy())
+	}
+}
+
+func TestSetters_EmailCaptured(t *testing.T) {
+	a := &authImplementation{}
+
+	captured := false
+	a.SetFuncEmailCaptured(func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error {
+		captured = verified
+		return nil
+	})
+	if err := a.GetFuncEmailCaptured()(context.Background(), "a@b.com", true, types.UserAuthOptions{}); err != nil {
+		t.Fatal(err)
+	}
+	if !captured {
+		t.Fatal("expected capture hook invoked with verified=true")
+	}
+}
