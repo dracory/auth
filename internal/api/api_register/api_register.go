@@ -7,6 +7,7 @@ import (
 	"html"
 	"log/slog"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/dracory/api"
@@ -18,6 +19,10 @@ import (
 	"github.com/dracory/rule"
 	"github.com/dracory/str"
 )
+
+// registerMu serializes the verified-key resolve→consume sequence in
+// ApiRegister's token branch (see comment at the lock site).
+var registerMu sync.Mutex
 
 // ApiRegister is the HTTP-level helper that routes registration requests to
 // either the passwordless or username+password flow based on the provided
@@ -80,6 +85,13 @@ func ApiRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 	// original behaviour.
 	verifiedKey := req.GetStringTrimmed(r, "verified_key")
 	if deps.AuthKnight || verifiedKey != "" {
+		// Serialize token resolve → register → consume so two concurrent
+		// submits cannot both pass the lookup before either clears it
+		// (TOCTOU, best-effort within one process — same pattern as
+		// verifyMu in the code-verify flows).
+		registerMu.Lock()
+		defer registerMu.Unlock()
+
 		vDeps := deps.VerifiedEmailRegisterDependencies
 		if verifiedKey == "" {
 			// Only reachable for AuthKnight instances (the branch requires

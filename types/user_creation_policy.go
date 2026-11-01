@@ -16,5 +16,12 @@ const (
 	// the register form renders the email read-only, and a single insert
 	// creates a verified + complete user. No rows exist before the form
 	// submits.
+	//
+	// Fail-open note: when the policy cannot be enforced (no UserExists
+	// hook configured, existence check error, or token store missing) the
+	// flows fall back to session-first behavior — availability over
+	// strictness — and log a Warn. Hosts whose threat model requires
+	// fail-closed should ensure GetFuncUserExists (or the passwordless
+	// find-by-email fallback) is configured and monitor the warnings.
 	CreateUserOnRegister UserCreationPolicy = "on_register"
 )

@@ -38,7 +38,12 @@
 			});
 		}
 		onReady(function () {
+			// Strip the verified_key bearer token from the address bar so it
+			// does not linger in browser history (the form posts the hidden
+			// field, not the URL).
+			if (window.history && history.replaceState && /[?&]verified_key=/.test(location.search)) {
+				history.replaceState(null, '', location.pathname);
+			}
 			var el = document.querySelector('input[name=first_name]');
 			if (el) { el.focus(); }
 		});
-	

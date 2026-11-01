@@ -139,27 +139,28 @@ func PostAuth(ctx context.Context, w http.ResponseWriter, r *http.Request, email
 		}
 	}
 
-	// 7. Redirect: safe backURL first; then incomplete registration wins
-	// over the custom redirect (the completion form is the package's own
-	// page); then hook; else root.
+	// 7. Redirect: the incomplete-registration gate is mandatory — it
+	// runs first so a user-supplied backURL cannot bypass required
+	// profile completion. Then safe backURL; then hook; else root.
 	redirect := "/"
-	if utils.IsSafeBackURL(backURL, r.Host) {
-		redirect = backURL
-	} else if hooks.RegistrationComplete != nil && userID != "" {
+	gated := false
+	if hooks.RegistrationComplete != nil && userID != "" {
 		completed, err := hooks.RegistrationComplete(ctx, userID)
 		if err != nil {
 			return nil, errors.New(types.MsgFailedToProcess)
 		}
 		if !completed {
 			redirect = deps.Endpoint + "/register"
+			gated = true
+		}
+	}
+	if !gated {
+		if utils.IsSafeBackURL(backURL, r.Host) {
+			redirect = backURL
 		} else if hooks.RedirectURL != nil {
 			if u := hooks.RedirectURL(ctx, userID); u != "" {
 				redirect = u
 			}
-		}
-	} else if hooks.RedirectURL != nil {
-		if u := hooks.RedirectURL(ctx, userID); u != "" {
-			redirect = u
 		}
 	}
 

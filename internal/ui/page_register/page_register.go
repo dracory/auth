@@ -23,6 +23,9 @@ func PageRegister(w http.ResponseWriter, r *http.Request, a types.AuthSharedInte
 	if verifiedKey != "" {
 		email := getVerifiedEmail(a, verifiedKey)
 		if email != "" {
+			// The URL carries a bearer credential — do not leak it via
+			// Referer to any subresource on this page.
+			w.Header().Set("Referrer-Policy", "no-referrer")
 			content := RegisterVerifiedEmailContent(links.Login(a.GetEndpoint()), email, verifiedKey)
 			scripts := RegisterVerifiedEmailScripts(
 				links.ApiRegister(a.GetEndpoint()),

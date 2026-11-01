@@ -63,6 +63,10 @@ type ConfigShared struct {
 	// FuncEmailCaptured, when set, is called when an email is submitted
 	// (verified=false) and again when it is verified (verified=true).
 	// Hosts use it for lead capture without polluting the users table.
+	// SECURITY: verified=false captures are attacker-controllable input —
+	// the address has not proven inbox ownership and may be a stranger's
+	// email. Never treat them as confirmed leads, and do not send
+	// marketing mail to them (PII handling + spam risk).
 	FuncEmailCaptured  func(ctx context.Context, email string, verified bool, options UserAuthOptions) error
 	UseCookies         bool
 	UseLocalStorage    bool
