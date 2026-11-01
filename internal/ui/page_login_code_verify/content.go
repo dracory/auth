@@ -23,6 +23,7 @@ func LoginCodeVerifyContent(urlBack string) string {
 	for i := 0; i < 8; i++ {
 		digit := hb.NewInput().
 			Class("otp-digit form-control form-control-lg text-center fw-bold").
+			Style("padding-left:0;padding-right:0;").
 			Attr("maxlength", "1").
 			Attr("inputmode", "text").
 			Attr("data-index", fmt.Sprint(i))
