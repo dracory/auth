@@ -123,10 +123,10 @@
 <hr>
 <h2>Design Improvements</h2>
 <h3>AuthKnight Register Page</h3>
-<p>The AuthKnight register page (<code>/auth/register?ak_key=xxx</code>) uses a distinct pattern for the email field:</p>
-<ul><li><strong>Static text display</strong>: The verified email is rendered as a <code>&lt;div class="form-control-plaintext text-muted"&gt;</code> element, not an <code>&lt;input&gt;</code>. This prevents browser extensions (e.g., LastPass) from modifying the email value.</li><li><strong>Hidden input</strong>: A <code>&lt;input type="hidden" name="email"&gt;</code> carries the verified email for form submission.</li><li><strong>Server-side retrieval</strong>: The email is always retrieved from the temporary key store via <code>ak_key</code>, never trusted from the form submission.</li></ul>
+<p>The AuthKnight register page (<code>/auth/register?verified_key=xxx</code>) uses a distinct pattern for the email field:</p>
+<ul><li><strong>Static text display</strong>: The verified email is rendered as a <code>&lt;div class="form-control-plaintext text-muted"&gt;</code> element, not an <code>&lt;input&gt;</code>. This prevents browser extensions (e.g., LastPass) from modifying the email value.</li><li><strong>Hidden input</strong>: A <code>&lt;input type="hidden" name="email"&gt;</code> carries the verified email for form submission.</li><li><strong>Server-side retrieval</strong>: The email is always retrieved from the temporary key store via <code>verified_key</code>, never trusted from the form submission.</li></ul>
 <h3>AuthKnight Redirect Guard</h3>
-<p>All page handlers that are irrelevant in AuthKnight mode (login, register without <code>ak_key</code>, password-restore, password-reset, login-code-verify, register-code-verify) use a shared helper <code>shared.RedirectAuthKnightIfActive()</code> to redirect to AuthKnight's hosted login. This eliminates duplicated guard blocks across handlers.</p>
+<p>All page handlers that are irrelevant in AuthKnight mode (login, register without <code>verified_key</code>, password-restore, password-reset, login-code-verify, register-code-verify) use a shared helper <code>shared.RedirectAuthKnightIfActive()</code> to redirect to AuthKnight's hosted login. This eliminates duplicated guard blocks across handlers.</p>
 <h3>The following improvements are recommended to enhance consistency, maintainability, and user experience.</h3>
 <h3>1. Unify Typography</h3>
 <p><strong>Current State</strong>: <code>layout.go</code> imports "Nunito", while <code>shared/webpage.go</code> sets <code>font-family: Ubuntu, sans-serif</code> on <code>html,body</code> and then overrides <code>body</code> with <code>Nunito</code>. <strong>Proposal</strong>:</p>

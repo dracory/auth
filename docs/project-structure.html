@@ -115,7 +115,7 @@
 │   ├── helpers/       # Internal helpers
 │   ├── links/         # Route path helpers
 │   ├── middlewares/   # Internal middleware (CSRF, rate limit)
-│   ├── rules/         # Reusable rule checks (throttles, validation)
+│   ├── rules/         # Reusable rule checks (throttles, validation, registration policy)
 │   ├── testutils/     # Shared test fixtures
 │   └── ui/            # Server-rendered pages (one dir per page)
 ├── examples/           # Runnable example apps
@@ -136,7 +136,7 @@
 <p><code>page_login</code> · <code>page_magic_link</code> · <code>page_login_code_verify</code> · <code>page_register</code> · <code>page_register_code_verify</code> · <code>page_logout</code> · <code>page_password_restore</code> · <code>page_password_reset</code> · <code>shared</code> (page scaffold, <code>RedirectAuthKnightIfActive</code>)</p>
 <p>Pages are built with <code>github.com/dracory/hb</code>, styled with Bootstrap, and take the auth interface so <code>FuncLayout</code> and page hooks apply consistently.</p>
 <h2><code>internal/</code> support packages</h2>
-<ul><li><code>core/</code> — <code>PostAuth</code>: the shared post-authentication pipeline all methods funnel through when hooks are configured</li><li><code>rules/</code> — reusable checks (per-email send throttle, validation)</li><li><code>links/</code> — endpoint path helpers</li><li><code>emails/</code> — default plain email bodies</li><li><code>middlewares/</code>, <code>helpers/</code>, <code>testutils/</code></li></ul>
+<ul><li><code>core/</code> — <code>PostAuth</code>: the shared post-authentication pipeline all methods funnel through when hooks are configured</li><li><code>rules/</code> — reusable checks (per-email send throttle, validation, registration policy: <code>ProfileCompletionRule</code>, <code>RegisterFirstRule</code>, <code>VerifiedEmailKeyRule</code>)</li><li><code>links/</code> — endpoint path helpers</li><li><code>emails/</code> — default plain email bodies</li><li><code>middlewares/</code>, <code>helpers/</code>, <code>testutils/</code></li></ul>
 <h2>Root package</h2>
 <ul><li><code>new_passwordless_auth.go</code>, <code>new_username_and_password_auth.go</code>, <code>new_authknight_auth.go</code> — constructors (validate config, wire defaults)</li><li><code>multi_method.go</code> — <code>MultiMethodAuth</code>, <code>NewMultiMethodAuth</code>, and the built-in <code>types.Method</code> adapters (<code>otpMethod</code>, <code>magicLinkMethod</code>, <code>passwordMethod</code>, <code>authKnightMethod</code>)</li><li><code>auth_implementation*.go</code> — the implementation struct: getters/setters, API/page delegation, cookies</li><li>Middleware + cookie helpers (<code>AuthCookieSet</code>, <code>CookieName</code>, …)</li></ul>
 <h2>Design Principles</h2>

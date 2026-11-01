@@ -7,7 +7,6 @@
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr) 200px;
   gap: 2.25rem;
-  max-width: 1440px;
   margin: 0 auto;
   padding: 0 1.5rem 5rem;
 }
