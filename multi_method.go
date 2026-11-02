@@ -527,3 +527,15 @@ func (m *authKnightMethod) CallbackRoute() (string, http.HandlerFunc, bool) {
 		api_authknight_callback.ApiAuthKnightCallbackWithAuth(w, r, m.a)
 	}, true
 }
+
+// ExtraRoutes also mounts the callback under the standalone router's
+// API path. LinkAuthKnightCallback advertises
+// <endpoint>/api/authknight/callback to AuthKnight as next_url — without
+// this route the multi-method mux 404s every hosted-flow return.
+func (m *authKnightMethod) ExtraRoutes() map[string]http.HandlerFunc {
+	return map[string]http.HandlerFunc{
+		"GET /api/authknight/callback": func(w http.ResponseWriter, r *http.Request) {
+			api_authknight_callback.ApiAuthKnightCallbackWithAuth(w, r, m.a)
+		},
+	}
+}
