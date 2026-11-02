@@ -151,7 +151,7 @@ func TestNewInternalError(t *testing.T) {
 func TestNewErrors_WithNilInternalErr(t *testing.T) {
 	tests := []struct {
 		name string
-		fn   func(error) AuthError
+		fn   func(error) *AuthError
 		code string
 	}{
 		{"EmailSend", NewEmailSendError, ErrCodeEmailSendFailed},
