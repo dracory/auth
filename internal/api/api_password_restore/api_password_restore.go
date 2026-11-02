@@ -3,7 +3,6 @@ package api_password_restore
 import (
 	"context"
 	"errors"
-	"html"
 	"log/slog"
 	"net/http"
 
@@ -131,8 +130,8 @@ func ApiPasswordRestoreWithAuth(w http.ResponseWriter, r *http.Request, a types.
 // or perform dependency validation; dependencies are assumed to be valid.
 func passwordRestore(ctx context.Context, r *http.Request, dependencies dependencies) (successMessage string, errorMessage string) {
 	email := req.GetStringTrimmed(r, "email")
-	firstName := html.EscapeString(req.GetStringTrimmed(r, "first_name"))
-	lastName := html.EscapeString(req.GetStringTrimmed(r, "last_name"))
+	firstName := req.GetStringTrimmed(r, "first_name")
+	lastName := req.GetStringTrimmed(r, "last_name")
 
 	for _, check := range []rule.RuleInterface{
 		rules.NewRequiredFieldRule(email, types.MsgEmailRequired),

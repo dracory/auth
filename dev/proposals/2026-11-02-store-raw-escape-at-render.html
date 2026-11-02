@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proposal: Store Raw, Escape at Render — dracory/auth</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+ html{font-size:112.5%}
+ body{padding-top:4.5rem;font-size:1.125rem}
+ .doc{max-width:1040px;margin:0 auto}
+ pre{background:var(--bs-tertiary-bg);padding:1rem;border-radius:.375rem;overflow-x:auto;font-size:1rem}
+ code{font-size:1em}
+ table{font-size:1.05rem}
+ .navbar-brand{font-weight:700}
+ h2{margin-top:2.5rem;border-bottom:1px solid var(--bs-border-color);padding-bottom:.4rem}
+ h3{margin-top:1.6rem}
+</style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-md fixed-top border-bottom bg-body-tertiary">
+ <div class="container-fluid px-3">
+  <a class="navbar-brand" href="#">dracory/auth — proposal</a>
+  <div class="d-flex align-items-center gap-2">
+   <div class="btn-group btn-group-sm" role="group">
+    <button type="button" class="btn btn-outline-secondary" id="modeLight" title="Light">&#9728;</button>
+    <button type="button" class="btn btn-outline-secondary" id="modeDark" title="Dark">&#9790;</button>
+   </div>
+  </div>
+ </div>
+</nav>
+
+<div class="doc">
+
+<div class="card mb-4">
+ <div class="card-body">
+  <h1 class="card-title h3 mb-3">Store Raw, Escape at Render</h1>
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+   <span class="badge text-bg-success">Status: Implemented</span>
+   <span class="badge text-bg-light border">Date: 2026-11-02</span>
+   <span class="badge text-bg-light border">Scope: <code>internal/api/api_register</code>, <code>internal/api/api_password_restore</code>, release notes</span>
+   <span class="badge text-bg-light border">Blocks/relates: extensible-registration-fields proposal</span>
+  </div>
+ </div>
+</div>
+
+<h2>Motivation</h2>
+
+<p>The register and password-restore APIs HTML-escape <code>first_name</code> /
+<code>last_name</code> <strong>at collection time</strong> — before validation, before
+the temp-key payload, before host callbacks see them:</p>
+
+<pre><code class="language-go">// internal/api/api_register.go — 4 separate blocks, same pattern
+firstName := html.EscapeString(req.GetStringTrimmed(r, "first_name"))
+lastName  := html.EscapeString(req.GetStringTrimmed(r, "last_name"))
+
+// internal/api/api_password_restore.go:134-135 — same pattern</code></pre>
+
+<p>Escaping is a <strong>presentation</strong> concern. Applying it at the boundary
+corrupts the data itself:</p>
+
+<ol>
+<li><strong>Stored data is no longer the user's name.</strong> <code>O'Brien</code>
+   becomes <code>O&#39;Brien</code> in the temp-key payload, in the host's user
+   table, forever. Every non-HTML consumer — JSON APIs, CSV exports,
+   search indexes, mail-merge plain text, mobile clients — receives
+   mangled data.</li>
+<li><strong>Double-escaping downstream.</strong> Any consumer that correctly
+   escapes at render (Go templates, hb, React) renders
+   <code>O&amp;#39;Brien</code>. The escaped-at-origin value is broken in
+   <em>both</em> directions — raw consumers see entities, safe consumers
+   see double entities.</li>
+<li><strong>It generalises badly.</strong> The extensible-fields proposal
+   (<code>2026-10-31</code>) carried this pattern into <code>CollectFields</code>.
+   Escaping must never run on arbitrary declared fields — a
+   <code>password</code> key or any value with <code>&lt;&gt;&amp;</code> would be
+   silently corrupted. This is the blocker for treating credentials as
+   ordinary map values.</li>
+<li><strong>The safety it pretends to give doesn't exist.</strong> The package
+   cannot guarantee host-side XSS safety — hosts render these values in
+   templates the package never sees. Escaping at origin only corrupts
+   data while leaving the actual responsibility where it always was:
+   with whoever renders.</li>
+</ol>
+
+<h2>Design Principle</h2>
+
+<ul>
+<li><strong>Store raw.</strong> API handlers pass the submitted value through
+  <code>req.GetStringTrimmed</code> and onward unmodified — to the temp-key
+  payload, to <code>FuncUserRegister</code>, to <code>FuncUserProfileUpdate</code>, to
+  <code>options.Fields</code>.</li>
+<li><strong>Escape at render.</strong> The package's own pages already escape via
+  <code>hb</code> (<code>.Text()</code>/<code>.Value()</code> escape by default). Any future
+  prefill of submitted values (e.g. completion form <code>FuncUserProfile</code>
+  values) renders raw → hb escapes — correct, no double-escape.</li>
+<li><strong>Display-time escaping stays.</strong>
+  <code>utils/login_alternatives.go</code> escapes strings it builds into
+  markup — that's render context, and it stays untouched. The rule is
+  positional: escape where markup is produced, never where data is
+  collected or transported.</li>
+<li><strong>Breaking behaviour change — accepted.</strong> Hosts that relied on
+  pre-escaped names and render them raw become XSS-exposed. Documented
+  in release notes; correct data integrity outweighs preserving a
+  defensive crutch that never actually transferred the responsibility.</li>
+</ul>
+
+<h2>Proposed Changes</h2>
+
+<h3>1. Remove escape-at-collection (10 lines, 5 blocks)</h3>
+
+<table class="table table-striped align-middle">
+<thead class="table-light"><tr><th>Site</th><th>Lines</th><th>Change</th></tr></thead>
+<tbody>
+<tr><td><code>api_register.go</code> — completion branch</td><td>~42–43</td><td>drop <code>html.EscapeString</code></td></tr>
+<tr><td><code>api_register.go</code> — verified-key branch</td><td>~116–117</td><td>drop <code>html.EscapeString</code></td></tr>
+<tr><td><code>api_register.go</code> — passwordless init</td><td>~230–231</td><td>drop <code>html.EscapeString</code></td></tr>
+<tr><td><code>api_register.go</code> — password branch</td><td>~488–489</td><td>drop <code>html.EscapeString</code></td></tr>
+<tr><td><code>api_password_restore.go</code></td><td>~134–135</td><td>drop <code>html.EscapeString</code></td></tr>
+</tbody>
+</table>
+
+<p>Remove the now-unused <code>html</code> import in both files.</p>
+
+<h3>2. <code>CollectFields</code> (extensible-fields proposal) inherits the rule</h3>
+
+<p>The shared collector in the sibling proposal is amended:
+<strong>no escaping</strong> — raw trimmed values into the fields map. This
+makes <code>fields["password"]</code>-style credential keys safe and unblocks
+the flat <code>FuncUserRegister(ctx, fields, options)</code> signature
+discussed there.</p>
+
+<h3>3. Verification that render-side escaping holds</h3>
+
+<ul>
+<li>Audit every place the package renders user-supplied values into markup
+  (<code>page_register</code> verified-email display, future prefill paths):
+  must go through <code>hb</code> text/attribute builders, never string
+  concatenation into HTML.</li>
+<li><code>shared.FieldInput</code> (sibling proposal) sets values via
+  <code>.Value()</code>/<code>.Text()</code> — escaped by default.</li>
+</ul>
+
+<h3>4. Release-note / docs entry</h3>
+
+<p>CHANGELOG + README migration note: "Registration and password-restore
+callbacks now receive <em>raw</em> first/last names. If your templates render
+these values without escaping, add escaping — or validate/reject markup
+characters in <code>FuncUserRegister</code>."</p>
+
+<h2>Explicitly Out of Scope</h2>
+
+<ul>
+<li>Retroactively un-escaping already-stored host data — hosts' problem.</li>
+<li>Input <em>validation</em> (rejecting <code>&lt;script&gt;</code> in names) —
+  orthogonal; hosts can add a <code>Validate</code> func per the fields
+  proposal, but the package does not impose a name-character policy.</li>
+<li>Changing <code>utils/login_alternatives.go</code> — its escaping is
+  render-context and correct.</li>
+</ul>
+
+<h2>Test Matrix</h2>
+
+<table class="table table-striped table-hover align-middle">
+<thead class="table-light"><tr><th>Area</th><th>Cases</th></tr></thead>
+<tbody>
+<tr><td><code>api_register</code> all branches</td><td><code>O'Brien &lt;b&gt;</code> submitted → host hook + temp-key payload receive the raw string</td></tr>
+<tr><td><code>api_register_code_verify</code></td><td>payload round-trips the raw value into <code>FuncUserRegister</code></td></tr>
+<tr><td><code>api_password_restore</code></td><td>raw names passed through</td></tr>
+<tr><td>package-rendered pages</td><td>verified-email/prefill values with <code>&lt;&gt;&amp;</code> render escaped (single, not double) via hb</td></tr>
+<tr><td><code>CollectFields</code> (sibling proposal)</td><td>no escaping; password-like values unmodified</td></tr>
+</tbody>
+</table>
+
+<h2>Suggested Order</h2>
+
+<ol class="list-group list-group-numbered mb-3">
+<li class="list-group-item">Remove <code>html.EscapeString</code> at the 5 collection blocks + drop unused imports.</li>
+<li class="list-group-item">Render-side audit (page_register + any prefill) — confirm hb escaping everywhere.</li>
+<li class="list-group-item">Tests: raw round-trip assertions replacing any escaped-value expectations.</li>
+<li class="list-group-item">Amend sibling proposal: <code>CollectFields</code> stores raw.</li>
+<li class="list-group-item">CHANGELOG/README migration note.</li>
+</ol>
+
+<h2>Risks / Open Questions</h2>
+
+<ul>
+<li><strong>Host XSS regression:</strong> any host rendering <code>firstName</code> raw
+  (trusting package escaping) becomes exposed — the reason this is a
+  documented breaking change, not a silent fix.</li>
+<li><strong>Should the package also sanitise?</strong> No — sanitisation is a
+  data-policy decision (some hosts want <code>O'Brien</code>, some want to
+  reject <code>&lt;&gt;</code>); the fields proposal's <code>Validate</code> hook is
+  the right extension point.</li>
+<li><strong>Email templates:</strong> host templates injecting names into HTML
+  emails must escape — same rule, stated in the migration note.</li>
+</ul>
+
+</div>
+
+<script>
+(function(){
+  var root=document.documentElement;
+  function set(m){root.setAttribute('data-bs-theme',m);try{localStorage.setItem('theme',m)}catch(e){}}
+  document.getElementById('modeLight').onclick=function(){set('light')};
+  document.getElementById('modeDark').onclick=function(){set('dark')};
+  try{var s=localStorage.getItem('theme');if(s)set(s)}catch(e){}
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

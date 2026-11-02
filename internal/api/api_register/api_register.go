@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"html"
 	"log/slog"
 	"net/http"
 	"sync"
@@ -39,8 +38,8 @@ func ApiRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 	// created.
 	if completion := rules.NewProfileCompletionRule(deps.CurrentUserID, r); !completion.Fails() {
 		userID := completion.UserID()
-		firstName := html.EscapeString(req.GetStringTrimmed(r, "first_name"))
-		lastName := html.EscapeString(req.GetStringTrimmed(r, "last_name"))
+		firstName := req.GetStringTrimmed(r, "first_name")
+		lastName := req.GetStringTrimmed(r, "last_name")
 
 		for _, check := range []rule.RuleInterface{
 			rules.NewRequiredFieldRule(firstName, types.MsgFirstNameRequired),
@@ -113,8 +112,8 @@ func ApiRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 		}
 		email := keyRule.Email()
 
-		firstName := html.EscapeString(req.GetStringTrimmed(r, "first_name"))
-		lastName := html.EscapeString(req.GetStringTrimmed(r, "last_name"))
+		firstName := req.GetStringTrimmed(r, "first_name")
+		lastName := req.GetStringTrimmed(r, "last_name")
 
 		if firstName == "" {
 			api.Respond(w, r, api.Error(types.MsgFirstNameRequired))
@@ -227,8 +226,8 @@ func ApiRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 
 	email := req.GetStringTrimmed(r, "email")
 	password := req.GetStringTrimmed(r, "password")
-	firstName := html.EscapeString(req.GetStringTrimmed(r, "first_name"))
-	lastName := html.EscapeString(req.GetStringTrimmed(r, "last_name"))
+	firstName := req.GetStringTrimmed(r, "first_name")
+	lastName := req.GetStringTrimmed(r, "last_name")
 	ip := req.GetIP(r)
 	userAgent := r.UserAgent()
 
@@ -485,8 +484,8 @@ type RegisterPasswordlessInitResult struct {
 // errors to their own logging and HTTP responses.
 func RegisterPasswordlessInit(ctx context.Context, r *http.Request, deps RegisterPasswordlessInitDependencies) (*RegisterPasswordlessInitResult, *RegisterPasswordlessInitError) {
 	email := req.GetStringTrimmed(r, "email")
-	firstName := html.EscapeString(req.GetStringTrimmed(r, "first_name"))
-	lastName := html.EscapeString(req.GetStringTrimmed(r, "last_name"))
+	firstName := req.GetStringTrimmed(r, "first_name")
+	lastName := req.GetStringTrimmed(r, "last_name")
 
 	for _, check := range []rule.RuleInterface{
 		rules.NewRequiredFieldRule(firstName, types.MsgFirstNameRequired),

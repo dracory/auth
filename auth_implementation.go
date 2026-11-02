@@ -283,7 +283,8 @@ func (a *authImplementation) SetFuncUserEmailGet(fn func(ctx context.Context, us
 // GetFuncUserProfileUpdate returns the optional function used to persist
 // the registration-completion form (first/last name) for an existing
 // authenticated user — e.g. one created implicitly by an OTP or
-// magic-link login whose email is already verified.
+// magic-link login whose email is already verified. Names arrive raw —
+// escape at render.
 func (a authImplementation) GetFuncUserProfileUpdate() func(ctx context.Context, userID string, firstName string, lastName string, options types.UserAuthOptions) error {
 	return a.funcUserProfileUpdate
 }

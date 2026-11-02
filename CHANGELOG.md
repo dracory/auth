@@ -37,6 +37,16 @@
   real code could never be entered. Now 8 alphanumeric boxes
   (auto-uppercased), matching `utils.LoginCodeLength`.
 
+### Changed
+- **Breaking:** registration and password-restore callbacks now receive
+  *raw* `first_name`/`last_name` — the APIs no longer apply
+  `html.EscapeString` at collection time. Escaping is a presentation
+  concern and corrupted stored data for non-HTML consumers (JSON, CSV,
+  plain-text email). The package's own pages already escape at render
+  via `hb`. **Migration:** if your templates or email bodies render
+  these values without escaping, add escaping — or validate/reject
+  markup characters in `FuncUserRegister`.
+
 ## v0.40.0 — 2026-10-30
 
 ### Breaking

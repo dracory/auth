@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proposal: Extensible Registration &amp; Profile-Completion Fields — dracory/auth</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+ html{font-size:112.5%}
+ body{padding-top:4.5rem;font-size:1.125rem}
+ .doc{max-width:1040px;margin:0 auto}
+ pre{background:var(--bs-tertiary-bg);padding:1rem;border-radius:.375rem;overflow-x:auto;font-size:1rem}
+ code{font-size:1em}
+ table{font-size:1.05rem}
+ .navbar-brand{font-weight:700}
+ h2{margin-top:2.5rem;border-bottom:1px solid var(--bs-border-color);padding-bottom:.4rem}
+ h3{margin-top:1.6rem}
+</style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-md fixed-top border-bottom bg-body-tertiary">
+ <div class="container-fluid px-3">
+  <a class="navbar-brand" href="#">dracory/auth — proposal</a>
+  <div class="d-flex align-items-center gap-2">
+   <div class="btn-group btn-group-sm" role="group">
+    <button type="button" class="btn btn-outline-secondary" id="modeLight" title="Light">&#9728;</button>
+    <button type="button" class="btn btn-outline-secondary" id="modeDark" title="Dark">&#9790;</button>
+   </div>
+  </div>
+ </div>
+</nav>
+
+<div class="doc">
+
+<div class="card mb-4">
+ <div class="card-body">
+  <h1 class="card-title h3 mb-3">Extensible Registration &amp; Profile-Completion Fields</h1>
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+   <span class="badge text-bg-warning">Status: Draft — revised to match current code</span>
+   <span class="badge text-bg-light border">Date: 2026-10-31, revised 2026-11-02</span>
+   <span class="badge text-bg-light border">Scope: <code>types/</code>, <code>auth_implementation.go</code>, <code>internal/ui/page_register</code> (+ <code>shared</code>), <code>internal/api/api_register</code>, <code>internal/api/api_register_code_verify</code>, <code>internal/core</code>, <code>internal/rules</code>, <code>utils/</code></span>
+  </div>
+ </div>
+</div>
+
+<h2>Motivation</h2>
+
+<p>Two gaps force host projects to shadow <code>/auth/register</code> with their own
+controllers (dogpace.com-golang does exactly this — <code>internal/controllers/auth/register_password</code>
+and <code>internal/controllers/auth/register</code>):</p>
+
+<ol>
+<li><strong>Fixed field set.</strong> The built-in register forms only collect
+   <code>first_name</code>, <code>last_name</code>, <code>email</code>, <code>password</code>. Hosts commonly need
+   country, timezone, phone, business name, birthday, etc. Peers solve
+   this with declared field schemas (better-auth <code>additionalFields</code>,
+   SuperTokens form fields, Keycloak declarative user profile). Our
+   callback-driven storage model fits the same approach — the host
+   already persists whatever it wants inside <code>FuncUserRegister</code>; it just
+   never receives the values.</li>
+
+<li><strong>Fixed field set <em>in profile completion too</em>.</strong>
+   <em>Update 2026-11-02:</em> the completion half of this gap is now solved —
+   <code>rules.NewProfileCompletionRule</code> detects an authenticated session on
+   the register request, <code>page_register</code> renders
+   <code>RegisterCompletionContent</code> (read-only verified email), and
+   <code>api_register</code> routes to <code>FuncUserProfileUpdate(ctx, userID,
+   firstName, lastName, options)</code> instead of creating a user.
+   <code>PostAuthHooks.RegistrationComplete</code> already lets the package
+   redirect incomplete users to <code>/auth/register</code>. Additionally
+   <code>ConfigShared.UserCreationPolicy</code> now offers
+   <code>CreateUserOnRegister</code>: verified-but-unknown emails get a token and
+   register by <em>creation</em> — no row, no session — via
+   <code>RegisterFirstRule</code>. What remains is that the completion form is
+   <em>hardcoded to first/last name</em> — the same fixed-field-set problem
+   as registration, on the update path.</li>
+
+<li><strong>No registration-time allowlist hook.</strong> <code>PostAuthHooks.EmailAllowed</code>
+   runs only inside the post-auth pipeline (<code>internal/core/post_auth.go</code>)
+   and in <code>api_magic_link_send</code>; <code>PostAuthHooks.RegisterRules</code> also
+   fires post-auth, too late. Nothing stops a disallowed email from hitting
+   <code>POST /auth/api/register</code> before a verification code is generated.
+   Hosts enforcing an allowlist must still shadow the endpoint.</li>
+</ol>
+
+<h2>Design Principles</h2>
+
+<ul>
+<li><strong>One consistent break — flat map.</strong> All user-write hooks take
+  the fields map, credentials included: <code>FuncUserRegister</code>
+  collapses to a single <code>(ctx, fields, options)</code> signature across
+  all three methods, and <code>FuncUserProfileUpdate</code> becomes
+  <code>(ctx, userID, fields, options)</code> (<code>userID</code> stays positional —
+  it's the row identity, never a form field). Breaking, deliberately
+  (decision 2026-11-02): a uniform data contract outweighs a mechanical
+  host migration. Reserved keys <code>email</code>, <code>password</code>,
+  <code>first_name</code>, <code>last_name</code> are always populated — by the form
+  or injected server-side (verified-token/completion flows) — and raw
+  storage (see escaping proposal) is what makes <code>password</code> safe in
+  the map.</li>
+<li><strong>Host-declared, package-rendered.</strong> Hosts describe fields in config;
+  the built-in pages render Bootstrap markup matching the existing
+  <code>FieldGroup</code>/<code>NameRow</code> style.</li>
+<li><strong>Server-side truth.</strong> Client-side validation is UX only; every field
+  is re-validated (required + custom <code>Validate</code>) in the API before the
+  values reach host code or the temp-key payload.</li>
+<li><strong>Minimal v1.</strong> Static select options only — no dynamic option
+  providers, no conditional fields, no JSON-schema engine.</li>
+</ul>
+
+<h2>Proposed Changes</h2>
+
+<h3>1. Field schema — new <code>types/fields.go</code></h3>
+
+<pre><code class="language-go">package types
+
+// FieldType enumerates the HTML input kinds the built-in pages can render.
+type FieldType string
+
+const (
+    FieldTypeText     FieldType = "text"
+    FieldTypeEmail    FieldType = "email"
+    FieldTypeTel      FieldType = "tel"
+    FieldTypeDate     FieldType = "date"
+    FieldTypeNumber   FieldType = "number"
+    FieldTypeSelect   FieldType = "select"
+    FieldTypeCheckbox FieldType = "checkbox"
+)
+
+// FieldOption is one &lt;option&gt; in a FieldTypeSelect field.
+type FieldOption struct {
+    Value string
+    Label string
+}
+
+// RegistrationField declares one extra input rendered on the built-in
+// register / profile-completion pages and validated server-side.
+type RegistrationField struct {
+    Name         string        // form field name, e.g. "country"
+    Label        string        // rendered above the input, e.g. "Country"
+    Type         FieldType     // empty =&gt; FieldTypeText
+    Required     bool
+    Placeholder  string
+    Options      []FieldOption // FieldTypeSelect only
+    Autocomplete string        // e.g. "tel", "bday", "country-name"
+    // Validate optionally inspects the submitted value and returns an
+    // error message; "" means valid.
+    Validate func(value string) string
+}</code></pre>
+
+<p><strong>Predefined-field catalog + name shorthand.</strong> The full struct is
+the maximum-flexibility path, but the common case is "pick known fields by
+name". The package ships a small registry (<em>added 2026-11-02</em>):</p>
+
+<pre><code class="language-go">// DefaultFields maps well-known field names to ready-made
+// RegistrationField declarations (labels, types, autocomplete, options).
+// v1 catalog: first_name, last_name, country, timezone, phone, birthday.
+var DefaultFields = map[string]RegistrationField{ /* ... */ }
+
+// Fields resolves names through DefaultFields in argument order.
+// Unknown names panic at config time — fail fast, not at request time.
+func Fields(names ...string) []RegistrationField</code></pre>
+
+<p>Usage:</p>
+
+<pre><code class="language-go">RegistrationFields: types.Fields("first_name", "last_name", "country"),</code></pre>
+
+<ul>
+<li>Ordering = argument order; results are mutable — hosts needing a
+  custom label or <code>Validate</code> post-process the returned slice
+  (<code>fs[0].Label = "Country of residence"</code>) or write the full struct
+  for that field.</li>
+<li>Selects ship static <code>Options</code> (country/timezone lists live in
+  <code>types</code>, reused by hosts' own needs).</li>
+<li>With no args <code>Fields()</code> can return the completion default
+  <code>{first_name*, last_name*}</code>, so <code>ProfileFields:
+  types.Fields()</code> spells today's behaviour explicitly.</li>
+<li>Non-goal: the catalog stays small and English; i18n was already the
+  host's problem (labels are strings).</li>
+</ul>
+
+<p><code>ConfigShared</code> gains:</p>
+
+<pre><code class="language-go">// RegistrationFields are extra inputs rendered on the public sign-up
+// form (all methods) after the built-in fields. Collected values are
+// delivered to FuncUserRegister via UserAuthOptions.Fields.
+RegistrationFields []RegistrationField
+
+// ProfileFields are inputs on the profile-completion form — the
+// existing ProfileCompletionRule branch in page_register /
+// api_register for authenticated users with incomplete profiles
+// (CreateUserOnAuth sessions, legacy rows) whose email is already
+// verified and shown read-only. Under CreateUserOnRegister the
+// same-looking form is registration-by-creation and uses
+// RegistrationFields instead. Values are delivered to
+// FuncUserProfileUpdate.
+ProfileFields []RegistrationField
+
+// FuncRegistrationAllowed optionally gates registration before any
+// code is generated or email sent — e.g. an email allowlist.
+FuncRegistrationAllowed func(email string) (allowed bool, message string)
+
+// FuncUserProfileUpdate persists completion-form values for an
+// existing authenticated user. BREAKING: signature changes from
+//   (ctx, userID, firstName, lastName string, options)
+FuncUserProfileUpdate func(ctx context.Context, userID string, fields map[string]string, options UserAuthOptions) error
+
+// FuncUserProfile optionally returns current values to prefill the
+// completion form; missing keys render empty inputs.
+FuncUserProfile func(ctx context.Context, userID string, options UserAuthOptions) (map[string]string, error)</code></pre>
+
+<h3>2. <code>UserAuthOptions</code> carries field values</h3>
+
+<pre><code class="language-go">type UserAuthOptions struct {
+    UserIp    string
+    UserAgent string
+    // Fields holds values for the declared RegistrationFields /
+    // ProfileFields plus reserved keys populated by the built-in
+    // inputs or injected server-side (see FieldName constants).
+    // nil when no fields exist.
+    Fields map[string]string
+}
+
+// Reserved field names — populated and REQUIRED by the package.
+// They are internally modelled as required built-in fields: the API
+// validates their presence before any host hook is invoked, so a
+// missing key is a rejected request, not a silent empty lookup.
+// They may never be declared as RegistrationField.Name — collisions
+// are rejected at config time.
+const (
+    FieldEmail     = "email"      // required on every register path;
+                                  // on the token branch it is injected
+                                  // from the resolved verified_key
+    FieldUsername  = "username"   // required on the username+password method
+    FieldPassword  = "password"   // required on the username+password method
+    FieldFirstName = "first_name" // required built-in input
+    FieldLastName  = "last_name"  // required built-in input
+)</code></pre>
+
+<p><strong>Hook signatures flattened — breaking (decision 2026-11-02).</strong>
+All <code>FuncUserRegister</code> variants collapse to one signature:</p>
+
+<pre><code class="language-go">// ConfigPasswordless — was: (ctx, email, firstName, lastName, options) (err)
+// ConfigUsernameAndPassword — was: (ctx, username, password, firstName, lastName, options) (err)
+// ConfigAuthKnight — was: (ctx, email, firstName, lastName, options) (userID, err)
+FuncUserRegister func(ctx context.Context, fields map[string]string, options UserAuthOptions) (userID string, err error)</code></pre>
+
+<ul>
+<li><strong>Key taxonomy</strong> (documented + enforced contract):
+  <em>reserved keys</em> (<code>Field*</code> constants) are package-populated
+  and <strong>required</strong> — modelled internally as required built-in
+  fields so the API rejects a request missing
+  <code>email</code>/<code>password</code>/<code>first_name</code>/etc. <em>before</em>
+  the host hook runs (missing key = error response, never an empty
+  lookup in host code). On the verified-token branch <code>email</code> is
+  <em>injected</em> from the resolved token rather than read from the form.
+  <em>Declared keys</em> come from host
+  <code>RegistrationFields</code>/<code>ProfileFields</code> validated by
+  <code>CollectFields</code>; declared names colliding with reserved keys are
+  rejected at config time.</li>
+<li><code>password</code> travels raw (no escaping — see escaping proposal),
+  never prefills, never logs.</li>
+<li>Uniformity pays off: one signature serves all three methods;
+  <code>fields["username"]</code> is set only on the username+password method,
+  <code>fields["password"]</code> only where a password was collected.</li>
+<li>Migration is one mechanical edit per host implementation:
+  <code>fields[types.FieldEmail]</code> for <code>email</code>, etc.</li>
+</ul>
+
+<h3>3. Field validation helper — <code>internal/rules</code> or <code>utils</code></h3>
+
+<pre><code class="language-go">// utils/collect_fields.go (shared by api_register branches and core)
+func CollectFields(r *http.Request, fields []types.RegistrationField) (map[string]string, *FieldError)</code></pre>
+
+<ul>
+<li>Reads <code>req.GetStringTrimmed(r, f.Name)</code> for <strong>declared names only</strong> —
+  undeclared form keys are ignored (no injection vector).</li>
+<li><strong>Reserved keys are required built-ins:</strong> callers prepend the
+  method's reserved field set (email, password, first/last name per the
+  active branch) to the declared list, so the same required-check path
+  enforces presence — a missing reserved key fails validation before any
+  host hook runs.</li>
+<li>Stores <strong>raw</strong> trimmed values — no escaping at collection
+  (escape-at-render only; see
+  <code>2026-11-02-store-raw-escape-at-render.html</code>). This is what makes
+  credential keys like <code>password</code> safe in the map.</li>
+<li><code>Required</code> → non-empty; <code>Validate</code> → must return <code>""</code>; <code>select</code> →
+  value must be in <code>Options</code> (prevents forged values).</li>
+<li>Returns first failure as a user-facing message.</li>
+</ul>
+
+<h3>4. Page rendering — <code>internal/ui/shared/components.go</code> + <code>page_register</code></h3>
+
+<p>New component:</p>
+
+<pre><code class="language-go">// shared/components.go
+func FieldInput(f types.RegistrationField, value string) hb.TagInterface</code></pre>
+
+<ul>
+<li>maps <code>FieldType</code> → <code>hb.NewInput().Type(...)</code> or <code>hb.NewSelect()</code> with
+  <code>Options</code>; applies <code>required</code>, <code>placeholder</code>, <code>autocomplete</code>,
+  <code>form-control form-control-lg</code>; pre-selects <code>value</code> for prefill.</li>
+</ul>
+
+<p><code>page_register</code> — <em>update 2026-11-02:</em> the page now has four content
+builders (<code>RegisterAuthKnightContent</code> was superseded by
+<code>RegisterVerifiedEmailContent</code>, and <code>RegisterCompletionContent</code> was
+added). Each gains a <code>fields</code> parameter and renders
+<code>shared.FieldInput(f, value)</code> after <code>NameRow</code>/email and before
+<code>PrimaryButton</code>:</p>
+
+<ul>
+<li><code>RegisterPasswordlessContent(urlLogin, fields)</code> — <code>RegistrationFields</code></li>
+<li><code>RegisterUsernameAndPasswordContent(urlLogin, urlPasswordRestore, fields)</code> — <code>RegistrationFields</code></li>
+<li><code>RegisterVerifiedEmailContent(urlLogin, verifiedEmail, verifiedKey, fields)</code> — <code>RegistrationFields</code></li>
+<li><code>RegisterCompletionContent(urlLogin, verifiedEmail, fields, prefill)</code> — <code>ProfileFields</code> + <code>FuncUserProfile</code> values (see §7)</li>
+</ul>
+
+<p><code>PageRegister</code> passes <code>a.GetRegistrationFields()</code> /
+<code>a.GetProfileFields()</code> (optional-interface resolution, see §8).</p>
+
+<h3>5. JS serialization — <code>register_*.js</code></h3>
+
+<p>Each register page embeds the declared field names via a template
+placeholder injected next to the existing <code>__URL_API_REGISTER__</code> ones:</p>
+
+<pre><code class="language-js">var extraFieldNames = __EXTRA_FIELD_NAMES__; // e.g. ["country","phone"]</code></pre>
+
+<p>In <code>registerFormValidate()</code>: after built-in validation, loop
+<code>extraFieldNames</code>, <code>inputVal(name)</code> (checkbox → checked flag as
+<code>"true"</code>/<code>""</code>), client-side required check, then merge into the
+<code>postForm</code> body. Names arrive JSON-encoded so markup stays safe.</p>
+
+<h3>6. API + payload flow</h3>
+
+<p><strong><code>api_register.go</code> — profile-completion branch (first, unchanged
+ordering):</strong> the existing <code>ProfileCompletionRule</code> block collects
+<code>ProfileFields</code> via <code>CollectFields</code> (instead of hardcoding
+first/last name) and calls <code>deps.UserProfileUpdate(ctx, userID, fields,
+options)</code>. Default <code>ProfileFields</code> when unset: first/last name
+required — today's behaviour preserved verbatim.</p>
+
+<p><strong><code>api_register.go</code> (<code>RegisterPasswordlessInit</code> + password branch):</strong>
+collect &amp; validate fields via <code>CollectFields</code>; merge the reserved
+keys (<code>email</code>, <code>password</code>, <code>first_name</code>,
+<code>last_name</code>) into the same map; add <code>"fields":
+map[string]string</code> to the <code>registercode:</code> JSON payload
+(passwordless) or pass straight into <code>options.Fields</code> (password,
+no-verification branch via core). Invoke
+<code>FuncRegistrationAllowed(fields["email"])</code> before code generation —
+failure returns <code>api.Error(message)</code>. Host call becomes
+<code>FuncUserRegister(ctx, fields, options)</code> per §2.</p>
+
+<p><strong><code>core/register_with_username_and_password.go</code>:</strong> signature unchanged;
+fields arrive inside <code>options.Fields</code> (the caller
+<code>deps.RegisterWithUsernameAndPassword</code> in <code>api_register.go</code> collects
+them). Validation + <code>FuncRegistrationAllowed</code> run there too; <code>"fields"</code>
+added to the verify-enabled JSON payload (line ~112).</p>
+
+<p><strong><code>api_register_code_verify.go</code>:</strong> extract <code>registerMap["fields"]</code>
+(<code>map[string]any</code> → <code>map[string]string</code>) — now carrying
+first/last name inside the map, so the separate first_name/last_name
+payload keys are kept only for old-payload fallback (merged into the
+map when <code>"fields"</code> is absent); the deps wrappers
+(<code>PasswordlessUserRegister</code>, <code>UserRegister</code>) adopt the flat
+<code>(ctx, fields, options)</code> host signature, and
+<code>ApiRegisterCodeVerifyWithAuth</code> sets <code>options.Fields = fields</code> when
+invoking them.</p>
+
+<p><strong>Verified-email / AuthKnight register (<code>api_register.go</code> token
+branch):</strong> <em>update 2026-11-02:</em> the AK branch was generalised — a posted
+<code>verified_key</code> now resolves via <code>VerifiedEmailKeyRule</code> under
+<code>registerMu</code>. Same treatment: collect + validate fields, inject the
+token-resolved <code>email</code> into the map, pass via
+<code>options.Fields</code> into <code>vDeps.UserRegister(ctx, fields, options)</code>.</p>
+
+<p>Backward compatibility: old payloads without <code>"fields"</code> unmarshal to
+<code>nil</code> map — hosts see <code>options.Fields == nil</code>.</p>
+
+<h3>7. Profile-completion flow (the OTP case) — <em>already landed, needs generalising</em></h3>
+
+<p><em>Update 2026-11-02:</em> the separate <code>page_profile_completion</code> +
+<code>api_profile_completion</code> + <code>multi_method.go</code> mounts originally
+proposed here are <strong>no longer needed</strong>. The flow now exists inline:</p>
+
+<ul>
+<li><code>rules.NewProfileCompletionRule(resolveUserID, r)</code>
+  (<code>internal/rules/profile_completion_rule.go</code>) — an authenticated
+  session on the register request means "update, don't create".</li>
+<li><code>page_register</code> → <code>RegisterCompletionContent(urlLogin, verifiedEmail)</code>
+  renders the read-only email (<code>form-control-plaintext</code>, never read
+  back from the form) + hardcoded first/last name.</li>
+<li><code>api_register</code> → the same rule routes to
+  <code>deps.UserProfileUpdate(ctx, userID, firstName, lastName, options)</code>
+  and returns <code>MsgProfileSaved</code> + <code>{redirect: deps.RedirectOnSuccess}</code>.</li>
+<li><code>PostAuthHooks.RegistrationComplete(ctx, userID)</code>
+  (<code>types/post_auth.go</code>) — the package already gates: incomplete users
+  are bounced back to <code>/auth/register</code> before
+  <code>RedirectURL</code> is consulted. This is exactly the
+  <code>FuncProfileComplete</code> "future iteration" floated in the original
+  draft — it landed first.</li>
+</ul>
+
+<p><strong>Policy caveat (revised 2026-11-02):</strong> completion only exists under
+<code>CreateUserOnAuth</code> (the default), where verify-time
+<code>UserFindByEmailOrCreate</code> can leave incomplete rows. Under
+<code>CreateUserOnRegister</code>, <code>RegisterFirstRule</code> gives
+verified-but-unknown emails a token and sends them to the
+<em>verified-email register form</em> — a create path using
+<code>RegistrationFields</code>, no session, no row. The completion branch stays
+relevant for <code>on_auth</code> hosts and any incomplete accounts that already
+exist.</p>
+
+<p><strong>What this proposal now adds on top:</strong></p>
+
+<ul>
+<li><code>RegisterCompletionContent</code> gains <code>fields</code> + <code>prefill</code>
+  parameters; renders <code>ProfileFields</code> via <code>shared.FieldInput(f,
+  prefill[f.Name])</code>, prefill from <code>FuncUserProfile</code> when set.</li>
+<li>The API branch swaps the hardcoded first/last validation for
+  <code>CollectFields(r, profileFields)</code> and calls the new
+  <code>FuncUserProfileUpdate(ctx, userID, fields, options)</code> signature
+  (§1). When <code>ProfileFields</code> is unset the package defaults to
+  <code>{first_name*, last_name*}</code> so existing behaviour and the current
+  form markup are preserved.</li>
+<li><code>register_completion.js</code> gains the same
+  <code>__EXTRA_FIELD_NAMES__</code> serialization as the other register
+  scripts.</li>
+<li>No new routes, no <code>multi_method.go</code> changes — the trigger stays
+  <code>RegistrationComplete</code> → <code>/auth/register</code>, already wired.</li>
+</ul>
+
+<h3>8. Implementation storage + optional getters/setters</h3>
+
+<p><code>authImplementation</code> gains fields:</p>
+
+<pre><code class="language-go">registrationFields    []types.RegistrationField   // new
+profileFields         []types.RegistrationField   // new
+funcRegistrationAllowed func(email string) (bool, string) // new
+// funcUserProfileUpdate + all funcUserRegister variants — signatures
+// change to the fields-map form (§2); Get/Set updated in place.
+funcUserProfileUpdate func(ctx context.Context, userID string, fields map[string]string, options types.UserAuthOptions) error
+funcUserProfile       func(ctx context.Context, userID string, options types.UserAuthOptions) (map[string]string, error) // new</code></pre>
+
+<p>Each gets <code>GetX</code>/<code>SetX</code> on <code>auth_implementation.go</code> +
+<code>auth_implementation_setters.go</code> (the setter-file pattern already in
+use). <code>ConfigShared</code> values are copied in <code>new_passwordless_auth.go</code>,
+<code>new_username_and_password_auth.go</code>, <code>new_authknight_auth.go</code>.</p>
+
+<p><code>AuthSharedInterface</code> is not extended (would break external
+implementers — the documented reason <code>FuncEmailEnqueue</code>/<code>PostAuthHooks</code>
+use optional interfaces). Consumers resolve via type assertion after
+<code>types.UnwrapAuth(a)</code>:</p>
+
+<pre><code class="language-go">type registrationFieldsProvider interface {
+    GetRegistrationFields() []types.RegistrationField
+}</code></pre>
+
+<h3>9. Dogpace-side follow-up (documented, not part of this package change)</h3>
+
+<p>Once this lands, <code>dogpace.com-golang</code>:</p>
+
+<ul>
+<li>deletes <code>internal/controllers/auth/register_password</code> entirely</li>
+<li>replaces <code>internal/controllers/auth/register</code> with <code>ProfileFields</code> +
+  <code>FuncUserProfileUpdate</code> (vault-tokenizing) config; completion
+  redirects already work via the existing
+  <code>PostAuthHooks.RegistrationComplete</code> → <code>/auth/register</code> path —
+  dogpace just backs it with its <code>IsRegistrationCompleted</code> check</li>
+<li>wires <code>FuncRegistrationAllowed</code> to <code>authrules.NewEmailAllowedRule</code></li>
+<li>migrates <code>FuncUserRegister</code> (passwordless) to the fields-map
+  signature and fixes it to persist <code>fields["first_name"]</code>/
+  <code>fields["last_name"]</code> — currently ignored, producing incomplete
+  users who bounce back to register</li>
+<li>timezone-by-country AJAX stays a small host-side <code>Validate</code>/JS
+  concern (options are static in v1; timezone list can be static too —
+  ~400 entries — or deferred)</li>
+</ul>
+
+<h2>Explicitly Out of Scope</h2>
+
+<ul>
+<li>Dynamic option providers (<code>OptionsFunc</code>), cascading selects, conditional fields.</li>
+<li>JSON-Schema identity traits (Kratos-style).</li>
+<li>Profile <em>editing</em> after completion (settings page) — same machinery, later.</li>
+<li>Field ordering beyond declaration order; field grouping/rows.</li>
+<li>Translatable labels (labels are host-supplied strings — already the host's problem).</li>
+</ul>
+
+<h2>Test Matrix</h2>
+
+<table class="table table-striped table-hover align-middle">
+<thead class="table-light"><tr><th>Area</th><th>Cases</th></tr></thead>
+<tbody>
+<tr><td><code>Fields()</code> / <code>DefaultFields</code></td><td>names resolve in order, unknown name panics, returned slice mutable, no-args returns completion default</td></tr>
+<tr><td><code>CollectFields</code></td><td>required missing, validate error, select value not in options, undeclared key ignored, HTML escaping, checkbox true/empty</td></tr>
+<tr><td><code>shared.FieldInput</code></td><td>each FieldType renders; required/autocomplete/placeholder attrs; select options + preselected value</td></tr>
+<tr><td><code>page_register</code></td><td>fields appear in all 4 forms (passwordless, username+password, verified-email, completion); verified-email and completion keep read-only email</td></tr>
+<tr><td><code>api_register</code></td><td>fields validated before code gen; <code>FuncRegistrationAllowed</code> blocks; <code>fields</code> in temp-key payload</td></tr>
+<tr><td><code>register_code_verify</code></td><td>fields round-trip: stored at init → delivered in <code>options.Fields</code>; old payloads → nil Fields</td></tr>
+<tr><td><code>core</code></td><td>fields included in verify payload; allowed-check invoked</td></tr>
+<tr><td>completion in <code>page_register</code></td><td>authenticated → email read-only + <code>ProfileFields</code> prefilled via <code>FuncUserProfile</code>; <code>ProfileFields</code> unset → today's first/last-name form unchanged</td></tr>
+<tr><td>completion in <code>api_register</code></td><td><code>CollectFields</code> on <code>ProfileFields</code>; <code>FuncUserProfileUpdate</code> called with userID + fields map; invalid → error message; unset <code>ProfileFields</code> → current first/last behaviour</td></tr>
+<tr><td>hook signatures</td><td><code>FuncUserRegister</code> = <code>(ctx, fields, options)</code> on all 3 variants; <code>FuncUserProfileUpdate</code> = <code>(ctx, userID, fields, options)</code>; old positional calls no longer compile; missing reserved key → request rejected (required-field enforcement); token branch injects <code>email</code>; declared-name collision with reserved keys rejected at config</td></tr>
+</tbody>
+</table>
+
+<h2>Suggested Order</h2>
+
+<ol class="list-group list-group-numbered mb-3">
+<li class="list-group-item"><code>types/fields.go</code> (+ <code>DefaultFields</code> catalog, <code>Fields()</code>) + <code>UserAuthOptions.Fields</code> + <code>ConfigShared</code> fields.</li>
+<li class="list-group-item"><code>authImplementation</code> storage, getters/setters, config wiring (×3 constructors) + <code>FuncUserRegister</code>/<code>FuncUserProfileUpdate</code> signature normalisation across config types, deps wrappers, and call sites.</li>
+<li class="list-group-item"><code>utils.CollectFields</code> + tests.</li>
+<li class="list-group-item"><code>shared.FieldInput</code> + <code>page_register</code> rendering + JS (<code>__EXTRA_FIELD_NAMES__</code>).</li>
+<li class="list-group-item"><code>api_register</code> + <code>core</code> collection/validation/payload + allowlist hook.</li>
+<li class="list-group-item"><code>api_register_code_verify</code> field extraction → <code>options.Fields</code>.</li>
+<li class="list-group-item">Generalise the existing <code>ProfileCompletionRule</code> branch: <code>FuncUserProfileUpdate</code> signature → fields map, <code>RegisterCompletionContent</code> fields/prefill, <code>register_completion.js</code> serialization, <code>FuncUserProfile</code> wiring.</li>
+<li class="list-group-item">Docs (register page section, README example, <code>docs/authknight.html</code> table row).</li>
+</ol>
+
+<h2>Risks / Open Questions</h2>
+
+<ul>
+<li><strong>Escaping direction — decided:</strong> store raw, escape at render
+  (<code>2026-11-02-store-raw-escape-at-render.html</code>). The existing
+  escape-at-collection sites get fixed there; this proposal inherits raw
+  storage so prefill never double-escapes.</li>
+<li><strong>Checkbox semantics:</strong> <code>"true"</code>/<code>""</code> string encoding documented for hosts.</li>
+<li><strong>Select with 400+ options</strong> (timezones): acceptable statically; flag that a
+  <code>SelectMultiple</code> or AJAX provider is future work if UX suffers.</li>
+<li><strong>Breaking hook signatures — accepted:</strong>
+  <code>FuncUserRegister</code> flattens to <code>(ctx, fields, options)</code> for
+  all variants and <code>FuncUserProfileUpdate</code> to
+  <code>(ctx, userID, fields, options)</code> — credentials and profile data
+  all travel in the map, discriminated by the reserved-key taxonomy
+  (<code>Field*</code> constants). Done once, correctly, rather than a
+  split-parameter API or parallel <code>*Fields</code> hooks forever.
+  Migration is mechanical (<code>fields[types.FieldEmail]</code>,
+  <code>fields[types.FieldPassword]</code>, …). Presence is enforced, not
+  conventional: reserved keys are required fields — requests missing
+  them are rejected before the host hook runs, so host code can rely on
+  non-empty lookups.</li>
+<li><strong>Register vs completion field overlap:</strong> first/last name are
+  built-in inputs on the register form (delivered as reserved map keys)
+  but declared <code>ProfileFields</code> defaults on the completion form —
+  acceptable asymmetry, documented.</li>
+</ul>
+
+</div>
+
+<script>
+(function(){
+  var root=document.documentElement;
+  function set(m){root.setAttribute('data-bs-theme',m);try{localStorage.setItem('theme',m)}catch(e){}}
+  document.getElementById('modeLight').onclick=function(){set('light')};
+  document.getElementById('modeDark').onclick=function(){set('dark')};
+  try{var s=localStorage.getItem('theme');if(s)set(s)}catch(e){}
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

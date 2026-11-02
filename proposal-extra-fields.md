@@ -192,7 +192,7 @@ extraFields := &types.RegistrationExtraFields{}
 hasExtra := false
 
 if v := req.GetStringTrimmed(r, "business_name"); v != "" {
-    extraFields.BusinessName = html.EscapeString(v)
+    extraFields.BusinessName = v
     hasExtra = true
 }
 if v := req.GetStringTrimmed(r, "phone"); v != "" {

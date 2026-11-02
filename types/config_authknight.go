@@ -20,7 +20,7 @@ type ConfigAuthKnight struct {
 	// FuncUserRegister creates a new user with email, first name, and last name.
 	// The email is already verified by AuthKnight — no verification step needed.
 	// Called when the user submits the register form (first name + last name).
-	// Required.
+	// Names arrive raw — escape at render. Required.
 	FuncUserRegister func(ctx context.Context, email string, firstName string, lastName string, options UserAuthOptions) (userID string, err error)
 
 	// FuncRedirectURL calculates the redirect URL after successful auth.
