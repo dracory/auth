@@ -30,7 +30,7 @@ func makePostRequest(t *testing.T, path string, values url.Values) (*httptest.Re
 
 func TestApiLoginUsernameAndPasswordRequiresEmail(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: false,
+		Otp: false,
 		LoginWithUsernameAndPassword: func(ctx context.Context, email, password, ip, userAgent string) (string, string, string) {
 			if email == "" {
 				return "", "", "Email is required field"
@@ -53,7 +53,7 @@ func TestApiLoginUsernameAndPasswordRequiresEmail(t *testing.T) {
 
 func TestApiLoginUsernameAndPasswordRequiresPassword(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: false,
+		Otp: false,
 		LoginWithUsernameAndPassword: func(ctx context.Context, email, password, ip, userAgent string) (string, string, string) {
 			if password == "" {
 				return "", "", "Password is required field"
@@ -76,7 +76,7 @@ func TestApiLoginUsernameAndPasswordRequiresPassword(t *testing.T) {
 
 func TestApiLoginUsernameAndPasswordUserLoginError(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: false,
+		Otp: false,
 		LoginWithUsernameAndPassword: func(ctx context.Context, email, password, ip, userAgent string) (string, string, string) {
 			return "", "", "Invalid credentials"
 		},
@@ -97,7 +97,7 @@ func TestApiLoginUsernameAndPasswordUserLoginError(t *testing.T) {
 
 func TestApiLoginUsernameAndPasswordUserNotFound(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: false,
+		Otp: false,
 		LoginWithUsernameAndPassword: func(ctx context.Context, email, password, ip, userAgent string) (string, string, string) {
 			// Simulate user not found by returning empty token and error message
 			return "", "", "Invalid credentials"
@@ -119,7 +119,7 @@ func TestApiLoginUsernameAndPasswordUserNotFound(t *testing.T) {
 
 func TestApiLoginUsernameAndPasswordTokenStoreError(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: false,
+		Otp: false,
 		LoginWithUsernameAndPassword: func(ctx context.Context, email, password, ip, userAgent string) (string, string, string) {
 			return "", "", "Failed to process request. Please try again later"
 		},
@@ -140,7 +140,7 @@ func TestApiLoginUsernameAndPasswordTokenStoreError(t *testing.T) {
 
 func TestApiLoginUsernameAndPasswordSuccess(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: false,
+		Otp: false,
 		UseCookies:   false,
 		LoginWithUsernameAndPassword: func(ctx context.Context, email, password, ip, userAgent string) (string, string, string) {
 			return "login success", "token-123", ""
@@ -166,12 +166,12 @@ func TestApiLoginUsernameAndPasswordSuccess(t *testing.T) {
 	}
 }
 
-// Passwordless login tests
+// Otp login tests
 
-func TestApiLoginPasswordlessRequiresEmail(t *testing.T) {
+func TestApiLoginOtpRequiresEmail(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: true,
-		PasswordlessDependencies: LoginPasswordlessDeps{
+		Otp: true,
+		OtpDependencies: LoginOtpDeps{
 			DisableRateLimit: false,
 			TemporaryKeySet: func(key string, value string, expiresSeconds int) error {
 				return nil
@@ -195,10 +195,10 @@ func TestApiLoginPasswordlessRequiresEmail(t *testing.T) {
 	}
 }
 
-func TestApiLoginPasswordlessInvalidEmail(t *testing.T) {
+func TestApiLoginOtpInvalidEmail(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: true,
-		PasswordlessDependencies: LoginPasswordlessDeps{
+		Otp: true,
+		OtpDependencies: LoginOtpDeps{
 			DisableRateLimit: false,
 			TemporaryKeySet: func(key string, value string, expiresSeconds int) error {
 				return nil
@@ -225,10 +225,10 @@ func TestApiLoginPasswordlessInvalidEmail(t *testing.T) {
 	}
 }
 
-func TestApiLoginPasswordlessTokenStoreError(t *testing.T) {
+func TestApiLoginOtpTokenStoreError(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: true,
-		PasswordlessDependencies: LoginPasswordlessDeps{
+		Otp: true,
+		OtpDependencies: LoginOtpDeps{
 			DisableRateLimit: false,
 			TemporaryKeySet: func(key string, value string, expiresSeconds int) error {
 				return errors.New("db error")
@@ -255,10 +255,10 @@ func TestApiLoginPasswordlessTokenStoreError(t *testing.T) {
 	}
 }
 
-func TestApiLoginPasswordlessEmailSendError(t *testing.T) {
+func TestApiLoginOtpEmailSendError(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: true,
-		PasswordlessDependencies: LoginPasswordlessDeps{
+		Otp: true,
+		OtpDependencies: LoginOtpDeps{
 			DisableRateLimit: false,
 			TemporaryKeySet: func(key string, value string, expiresSeconds int) error {
 				return nil
@@ -285,10 +285,10 @@ func TestApiLoginPasswordlessEmailSendError(t *testing.T) {
 	}
 }
 
-func TestApiLoginPasswordlessSuccess(t *testing.T) {
+func TestApiLoginOtpSuccess(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: true,
-		PasswordlessDependencies: LoginPasswordlessDeps{
+		Otp: true,
+		OtpDependencies: LoginOtpDeps{
 			DisableRateLimit: false,
 			TemporaryKeySet: func(key string, value string, expiresSeconds int) error {
 				return nil
@@ -318,14 +318,14 @@ func TestApiLoginPasswordlessSuccess(t *testing.T) {
 	}
 }
 
-// TestApiLoginPasswordlessStoresNonceBoundCode verifies the OTP key model:
+// TestApiLoginOtpStoresNonceBoundCode verifies the OTP key model:
 // the nonce — not the code — is the temporary-key, the value is
 // "email:code", and the nonce is returned to the client in the response.
-func TestApiLoginPasswordlessStoresNonceBoundCode(t *testing.T) {
+func TestApiLoginOtpStoresNonceBoundCode(t *testing.T) {
 	stored := map[string]string{}
 	deps := Dependencies{
-		Passwordless: true,
-		PasswordlessDependencies: LoginPasswordlessDeps{
+		Otp: true,
+		OtpDependencies: LoginOtpDeps{
 			DisableRateLimit: false,
 			TemporaryKeySet: func(key string, value string, expiresSeconds int) error {
 				stored[key] = value
@@ -384,23 +384,23 @@ func TestApiLoginPasswordlessStoresNonceBoundCode(t *testing.T) {
 	}
 }
 
-func TestLoginPasswordlessError_Error(t *testing.T) {
-	var e *LoginPasswordlessError
+func TestLoginOtpError_Error(t *testing.T) {
+	var e *LoginOtpError
 	if e.Error() != "" {
 		t.Fatalf("expected empty string for nil receiver, got %q", e.Error())
 	}
 
-	e = &LoginPasswordlessError{Message: "custom message"}
+	e = &LoginOtpError{Message: "custom message"}
 	if e.Error() != "custom message" {
 		t.Fatalf("expected 'custom message', got %q", e.Error())
 	}
 
-	e = &LoginPasswordlessError{Err: errors.New("inner error")}
+	e = &LoginOtpError{Err: errors.New("inner error")}
 	if e.Error() != "inner error" {
 		t.Fatalf("expected 'inner error', got %q", e.Error())
 	}
 
-	e = &LoginPasswordlessError{Code: "some_code"}
+	e = &LoginOtpError{Code: "some_code"}
 	if e.Error() != "some_code" {
 		t.Fatalf("expected 'some_code', got %q", e.Error())
 	}
@@ -408,7 +408,7 @@ func TestLoginPasswordlessError_Error(t *testing.T) {
 
 func TestApiLoginNilLoginWithUsernameAndPassword(t *testing.T) {
 	deps := Dependencies{
-		Passwordless:                 false,
+		Otp:                 false,
 		LoginWithUsernameAndPassword: nil,
 	}
 
@@ -428,7 +428,7 @@ func TestApiLoginNilLoginWithUsernameAndPassword(t *testing.T) {
 func TestApiLoginSuccessWithCookies(t *testing.T) {
 	cookieSet := false
 	deps := Dependencies{
-		Passwordless: false,
+		Otp: false,
 		UseCookies:   true,
 		LoginWithUsernameAndPassword: func(ctx context.Context, email, password, ip, userAgent string) (string, string, string) {
 			return "login success", "token-123", ""
@@ -457,10 +457,10 @@ func TestApiLoginSuccessWithCookies(t *testing.T) {
 	}
 }
 
-func TestApiLoginPasswordlessNilEmailTemplateAndSend(t *testing.T) {
+func TestApiLoginOtpNilEmailTemplateAndSend(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: true,
-		PasswordlessDependencies: LoginPasswordlessDeps{
+		Otp: true,
+		OtpDependencies: LoginOtpDeps{
 			DisableRateLimit: false,
 			TemporaryKeySet: func(key string, value string, expiresSeconds int) error {
 				return nil
@@ -483,10 +483,10 @@ func TestApiLoginPasswordlessNilEmailTemplateAndSend(t *testing.T) {
 	}
 }
 
-func TestApiLoginPasswordlessNilTemporaryKeySet(t *testing.T) {
+func TestApiLoginOtpNilTemporaryKeySet(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: true,
-		PasswordlessDependencies: LoginPasswordlessDeps{
+		Otp: true,
+		OtpDependencies: LoginOtpDeps{
 			DisableRateLimit: false,
 			TemporaryKeySet:  nil,
 			ExpiresSeconds:   3600,
@@ -511,11 +511,11 @@ func TestApiLoginPasswordlessNilTemporaryKeySet(t *testing.T) {
 	}
 }
 
-func TestApiLoginPasswordlessDefaultExpiration(t *testing.T) {
+func TestApiLoginOtpDefaultExpiration(t *testing.T) {
 	keySetExpires := 0
 	deps := Dependencies{
-		Passwordless: true,
-		PasswordlessDependencies: LoginPasswordlessDeps{
+		Otp: true,
+		OtpDependencies: LoginOtpDeps{
 			DisableRateLimit: false,
 			TemporaryKeySet: func(key string, value string, expiresSeconds int) error {
 				keySetExpires = expiresSeconds

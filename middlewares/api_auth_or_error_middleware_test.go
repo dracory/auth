@@ -20,7 +20,7 @@ type mockAuthSharedForAPI struct {
 
 func (m *mockAuthSharedForAPI) Router() *http.ServeMux      { return http.NewServeMux() }
 func (m *mockAuthSharedForAPI) IsRegistrationEnabled() bool { return false }
-func (m *mockAuthSharedForAPI) IsPasswordless() bool        { return false }
+func (m *mockAuthSharedForAPI) IsOtp() bool        { return false }
 func (m *mockAuthSharedForAPI) IsVerificationEnabled() bool { return false }
 func (m *mockAuthSharedForAPI) WebAuthOrRedirectMiddleware(next http.Handler) http.Handler {
 	return next
@@ -76,10 +76,10 @@ func (m *mockAuthSharedForAPI) GetFuncUserLogin() func(context.Context, string, 
 }
 func (m *mockAuthSharedForAPI) SetFuncUserLogin(func(context.Context, string, string, types.UserAuthOptions) (string, error)) {
 }
-func (m *mockAuthSharedForAPI) GetPasswordlessUserRegister() func(context.Context, string, string, string, types.UserAuthOptions) error {
+func (m *mockAuthSharedForAPI) GetOtpUserRegister() func(context.Context, string, string, string, types.UserAuthOptions) error {
 	return nil
 }
-func (m *mockAuthSharedForAPI) SetPasswordlessUserRegister(func(context.Context, string, string, string, types.UserAuthOptions) error) {
+func (m *mockAuthSharedForAPI) SetOtpUserRegister(func(context.Context, string, string, string, types.UserAuthOptions) error) {
 }
 func (m *mockAuthSharedForAPI) GetFuncUserRegister() func(context.Context, string, string, string, string, types.UserAuthOptions) error {
 	return nil
@@ -96,10 +96,10 @@ func (m *mockAuthSharedForAPI) GetFuncUserLogout() func(context.Context, string,
 }
 func (m *mockAuthSharedForAPI) SetFuncUserLogout(func(context.Context, string, types.UserAuthOptions) error) {
 }
-func (m *mockAuthSharedForAPI) GetPasswordlessUserFindByEmail() func(context.Context, string, types.UserAuthOptions) (string, error) {
+func (m *mockAuthSharedForAPI) GetOtpUserFindByEmail() func(context.Context, string, types.UserAuthOptions) (string, error) {
 	return nil
 }
-func (m *mockAuthSharedForAPI) SetPasswordlessUserFindByEmail(func(context.Context, string, types.UserAuthOptions) (string, error)) {
+func (m *mockAuthSharedForAPI) SetOtpUserFindByEmail(func(context.Context, string, types.UserAuthOptions) (string, error)) {
 }
 func (m *mockAuthSharedForAPI) GetFuncUserFindByUsername() func(context.Context, string, string, string, types.UserAuthOptions) (string, error) {
 	return nil
@@ -121,20 +121,20 @@ func (m *mockAuthSharedForAPI) GetFuncEmailSend() func(context.Context, string, 
 }
 func (m *mockAuthSharedForAPI) SetFuncEmailSend(func(context.Context, string, string, string) error) {
 }
-func (m *mockAuthSharedForAPI) GetPasswordlessFuncEmailTemplateLoginCode() func(context.Context, string, string, types.UserAuthOptions) string {
+func (m *mockAuthSharedForAPI) GetOtpFuncEmailTemplateLoginCode() func(context.Context, string, string, types.UserAuthOptions) string {
 	return nil
 }
-func (m *mockAuthSharedForAPI) SetPasswordlessFuncEmailTemplateLoginCode(func(context.Context, string, string, types.UserAuthOptions) string) {
+func (m *mockAuthSharedForAPI) SetOtpFuncEmailTemplateLoginCode(func(context.Context, string, string, types.UserAuthOptions) string) {
 }
-func (m *mockAuthSharedForAPI) GetPasswordlessFuncEmailTemplateRegisterCode() func(context.Context, string, string, types.UserAuthOptions) string {
+func (m *mockAuthSharedForAPI) GetOtpFuncEmailTemplateRegisterCode() func(context.Context, string, string, types.UserAuthOptions) string {
 	return nil
 }
-func (m *mockAuthSharedForAPI) SetPasswordlessFuncEmailTemplateRegisterCode(func(context.Context, string, string, types.UserAuthOptions) string) {
+func (m *mockAuthSharedForAPI) SetOtpFuncEmailTemplateRegisterCode(func(context.Context, string, string, types.UserAuthOptions) string) {
 }
-func (m *mockAuthSharedForAPI) GetPasswordlessFuncEmailSend() func(context.Context, string, string, string) error {
+func (m *mockAuthSharedForAPI) GetOtpFuncEmailSend() func(context.Context, string, string, string) error {
 	return nil
 }
-func (m *mockAuthSharedForAPI) SetPasswordlessFuncEmailSend(func(context.Context, string, string, string) error) {
+func (m *mockAuthSharedForAPI) SetOtpFuncEmailSend(func(context.Context, string, string, string) error) {
 }
 func (m *mockAuthSharedForAPI) GetFuncUserStoreAuthToken() func(context.Context, string, string, types.UserAuthOptions) error {
 	return nil

@@ -12,7 +12,7 @@ import (
 
 func TestApiLoginCodeVerifyWithAuth(t *testing.T) {
 	a := testutils.NewAuthSharedForTest()
-	testutils.SetPasswordlessForTest(a, true)
+	testutils.SetOtpForTest(a, true)
 
 	body := strings.NewReader(url.Values{}.Encode())
 	req := httptest.NewRequest(http.MethodPost, "/api/login-code-verify", body)

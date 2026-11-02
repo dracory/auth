@@ -15,27 +15,27 @@ import (
 	"github.com/jordan-wright/email"
 )
 
-type passwordlessUser struct {
+type otpUser struct {
 	ID        string
 	Email     string
 	FirstName string
 	LastName  string
 }
 
-type passwordlessMemoryStore struct {
+type otpMemoryStore struct {
 	mu           sync.Mutex
-	usersByEmail map[string]*passwordlessUser
+	usersByEmail map[string]*otpUser
 	sessions     map[string]string // token -> userID
 	tempKeys     map[string]string // code -> email
 }
 
-var passwordlessStore = &passwordlessMemoryStore{
-	usersByEmail: make(map[string]*passwordlessUser),
+var otpStore = &otpMemoryStore{
+	usersByEmail: make(map[string]*otpUser),
 	sessions:     make(map[string]string),
 	tempKeys:     make(map[string]string),
 }
 
-func (s *passwordlessMemoryStore) findUserByEmail(_ context.Context, email string, _ authtypes.UserAuthOptions) (string, error) {
+func (s *otpMemoryStore) findUserByEmail(_ context.Context, email string, _ authtypes.UserAuthOptions) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -46,7 +46,7 @@ func (s *passwordlessMemoryStore) findUserByEmail(_ context.Context, email strin
 	return "", fmt.Errorf("user with email %s not found", email)
 }
 
-func (s *passwordlessMemoryStore) registerUser(_ context.Context, email, firstName, lastName string, _ authtypes.UserAuthOptions) error {
+func (s *otpMemoryStore) registerUser(_ context.Context, email, firstName, lastName string, _ authtypes.UserAuthOptions) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -55,7 +55,7 @@ func (s *passwordlessMemoryStore) registerUser(_ context.Context, email, firstNa
 	}
 
 	id := fmt.Sprintf("user-%d", len(s.usersByEmail)+1)
-	s.usersByEmail[email] = &passwordlessUser{
+	s.usersByEmail[email] = &otpUser{
 		ID:        id,
 		Email:     email,
 		FirstName: firstName,
@@ -65,7 +65,7 @@ func (s *passwordlessMemoryStore) registerUser(_ context.Context, email, firstNa
 	return nil
 }
 
-func (s *passwordlessMemoryStore) logout(_ context.Context, userID string, _ authtypes.UserAuthOptions) error {
+func (s *otpMemoryStore) logout(_ context.Context, userID string, _ authtypes.UserAuthOptions) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -78,7 +78,7 @@ func (s *passwordlessMemoryStore) logout(_ context.Context, userID string, _ aut
 	return nil
 }
 
-func (s *passwordlessMemoryStore) storeAuthToken(_ context.Context, token, userID string, _ authtypes.UserAuthOptions) error {
+func (s *otpMemoryStore) storeAuthToken(_ context.Context, token, userID string, _ authtypes.UserAuthOptions) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -86,7 +86,7 @@ func (s *passwordlessMemoryStore) storeAuthToken(_ context.Context, token, userI
 	return nil
 }
 
-func (s *passwordlessMemoryStore) findByAuthToken(_ context.Context, token string, _ authtypes.UserAuthOptions) (string, error) {
+func (s *otpMemoryStore) findByAuthToken(_ context.Context, token string, _ authtypes.UserAuthOptions) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -97,7 +97,7 @@ func (s *passwordlessMemoryStore) findByAuthToken(_ context.Context, token strin
 	return id, nil
 }
 
-func (s *passwordlessMemoryStore) tempKeySet(key, value string, expiresSeconds int) error {
+func (s *otpMemoryStore) tempKeySet(key, value string, expiresSeconds int) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -107,7 +107,7 @@ func (s *passwordlessMemoryStore) tempKeySet(key, value string, expiresSeconds i
 	return nil
 }
 
-func (s *passwordlessMemoryStore) tempKeyGet(key string) (string, error) {
+func (s *otpMemoryStore) tempKeyGet(key string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -118,7 +118,7 @@ func (s *passwordlessMemoryStore) tempKeyGet(key string) (string, error) {
 	return v, nil
 }
 
-func (s *passwordlessMemoryStore) displayName(userID string) string {
+func (s *otpMemoryStore) displayName(userID string) string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -138,8 +138,8 @@ func (s *passwordlessMemoryStore) displayName(userID string) string {
 	return userID
 }
 
-func passwordlessEmailSend(_ context.Context, to, subject, body string) error {
-	log.Printf("[passwordless] Sending email to %s via localhost:1025: %s", to, subject)
+func otpEmailSend(_ context.Context, to, subject, body string) error {
+	log.Printf("[otp] Sending email to %s via localhost:1025: %s", to, subject)
 
 	e := email.NewEmail()
 	e.From = "no-reply@example.com"
@@ -160,16 +160,16 @@ func newAuth() (types.AuthOtpInterface, error) {
 			UseCookies:           true,
 			EnableRegistration:   true,
 
-			FuncUserFindByAuthToken: passwordlessStore.findByAuthToken,
-			FuncUserLogout:          passwordlessStore.logout,
-			FuncUserStoreAuthToken:  passwordlessStore.storeAuthToken,
-			FuncTemporaryKeyGet:     passwordlessStore.tempKeyGet,
-			FuncTemporaryKeySet:     passwordlessStore.tempKeySet,
+			FuncUserFindByAuthToken: otpStore.findByAuthToken,
+			FuncUserLogout:          otpStore.logout,
+			FuncUserStoreAuthToken:  otpStore.storeAuthToken,
+			FuncTemporaryKeyGet:     otpStore.tempKeyGet,
+			FuncTemporaryKeySet:     otpStore.tempKeySet,
 		},
 
-		FuncUserFindByEmail: passwordlessStore.findUserByEmail,
-		FuncEmailSend:       passwordlessEmailSend,
-		FuncUserRegister:    passwordlessStore.registerUser,
+		FuncUserFindByEmail: otpStore.findUserByEmail,
+		FuncEmailSend:       otpEmailSend,
+		FuncUserRegister:    otpStore.registerUser,
 	})
 }
 
@@ -192,7 +192,7 @@ func newMux(authInstance types.AuthOtpInterface) *http.ServeMux {
 	// Protected dashboard page
 	mux.Handle("/dashboard", authInstance.WebAuthOrRedirectMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userID := authInstance.GetCurrentUserID(r)
-		displayName := passwordlessStore.displayName(userID)
+		displayName := otpStore.displayName(userID)
 		if _, err := fmt.Fprintf(w, "<h1>Dashboard</h1><p>Welcome, %s (id: %s)!</p><p><a href='%s'>Logout</a></p>", displayName, userID, authInstance.LinkLogout()); err != nil {
 			log.Printf("failed to write dashboard page response: %v", err)
 		}
@@ -210,7 +210,7 @@ func main() {
 
 	mux := newMux(authInstance)
 
-	fmt.Println("Passwordless auth example running on http://localhost:8083")
+	fmt.Println("Otp auth example running on http://localhost:8083")
 	if err := http.ListenAndServe(":8083", mux); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

@@ -17,7 +17,7 @@ import (
 	"github.com/dracory/rule"
 )
 
-// Dependencies defines dependencies for verifying a passwordless
+// Dependencies defines dependencies for verifying a otp
 // login code and authenticating the user.
 type Dependencies struct {
 	DisableRateLimit bool
@@ -188,9 +188,9 @@ func ApiLoginCodeVerifyWithAuth(w http.ResponseWriter, r *http.Request, a types.
 		deps.UserExists = exists.GetFuncUserExists()
 	}
 	if deps.UserExists == nil {
-		// Fall back to the passwordless lookup: a found userID means the
+		// Fall back to the otp lookup: a found userID means the
 		// account exists, anything else (error or empty) means it does not.
-		if fn := a.GetPasswordlessUserFindByEmail(); fn != nil {
+		if fn := a.GetOtpUserFindByEmail(); fn != nil {
 			deps.UserExists = func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error) {
 				userID, err := fn(ctx, email, options)
 				return err == nil && userID != "", nil
@@ -220,7 +220,7 @@ func ApiLoginCodeVerifyWithAuth(w http.ResponseWriter, r *http.Request, a types.
 }
 
 // LoginCodeVerify encapsulates the core business logic for verifying a
-// passwordless login code. It mirrors the original validation rules and error
+// otp login code. It mirrors the original validation rules and error
 // messages but does not perform authentication or write HTTP responses.
 func LoginCodeVerify(ctx context.Context, r *http.Request, deps Dependencies) (*LoginCodeVerifyResult, *LoginCodeVerifyError) {
 	verificationCode := req.GetStringTrimmed(r, "verification_code")

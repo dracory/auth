@@ -12,9 +12,9 @@ import (
 	"github.com/dracory/req"
 )
 
-// LoginPasswordlessDeps defines the dependencies required for the passwordless login flow.
+// LoginOtpDeps defines the dependencies required for the otp login flow.
 // It is intentionally decoupled from the authImplementation type to avoid import cycles.
-type LoginPasswordlessDeps struct {
+type LoginOtpDeps struct {
 	DisableRateLimit bool
 
 	// EmailSendThrottle configures the per-email send quota; zero value
@@ -38,7 +38,7 @@ type LoginPasswordlessDeps struct {
 	EmailCaptured func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error
 }
 
-// ApiLogin is the HTTP-level handler that combines passwordless and
+// ApiLogin is the HTTP-level handler that combines otp and
 // username+password login flows behind a shared interface.
 func ApiLogin(w http.ResponseWriter, r *http.Request, dependencies Dependencies) {
 	logger := dependencies.Logger
@@ -46,8 +46,8 @@ func ApiLogin(w http.ResponseWriter, r *http.Request, dependencies Dependencies)
 		logger = slog.Default()
 	}
 
-	if dependencies.Passwordless {
-		result, err := loginPasswordless(r.Context(), r, dependencies.PasswordlessDependencies)
+	if dependencies.Otp {
+		result, err := loginOtp(r.Context(), r, dependencies.OtpDependencies)
 		if err != nil {
 			// Throttle/validation errors carry no wrapped Err — fall back to
 			// the message so every failure is observable, not just internal ones.
@@ -55,21 +55,21 @@ func ApiLogin(w http.ResponseWriter, r *http.Request, dependencies Dependencies)
 			if err.Err != nil {
 				errText = err.Err.Error()
 			}
-			logger.Error("passwordless login failed",
+			logger.Error("otp login failed",
 				slog.String("error", errText),
 				slog.String("code", string(err.Code)),
 			)
 			switch err.Code {
-			case LoginPasswordlessErrorCodeValidation:
+			case LoginOtpErrorCodeValidation:
 				api.Respond(w, r, api.Error(err.Message))
 				return
-			case LoginPasswordlessErrorCodeTooManySends:
+			case LoginOtpErrorCodeTooManySends:
 				api.Respond(w, r, api.Error(err.Message))
 				return
-			case LoginPasswordlessErrorCodeTokenStore:
+			case LoginOtpErrorCodeTokenStore:
 				api.Respond(w, r, api.Error(types.MsgFailedToProcess))
 				return
-			case LoginPasswordlessErrorCodeEmailSend:
+			case LoginOtpErrorCodeEmailSend:
 				api.Respond(w, r, api.Error(types.MsgFailedToSendEmail))
 				return
 			default:
@@ -168,9 +168,9 @@ func ApiLoginWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthShared
 	}
 
 	deps := Dependencies{
-		Passwordless: a.IsPasswordless(),
+		Otp: a.IsOtp(),
 		Logger:       a.GetLogger(),
-		PasswordlessDependencies: LoginPasswordlessDeps{
+		OtpDependencies: LoginOtpDeps{
 			DisableRateLimit:  a.GetDisableRateLimit(),
 			EmailSendThrottle: utils.EmailSendThrottleFromAuth(a),
 			TemporaryKeyGet:   a.GetFuncTemporaryKeyGet(),
@@ -179,7 +179,7 @@ func ApiLoginWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthShared
 			EmailCaptured:     emailCaptured,
 			ExpiresSeconds:    0, // let business logic apply default
 			EmailTemplate: func(ctx context.Context, email string, verificationCode string) string {
-				fn := a.GetPasswordlessFuncEmailTemplateLoginCode()
+				fn := a.GetOtpFuncEmailTemplateLoginCode()
 				if fn == nil {
 					return ""
 				}
@@ -189,7 +189,7 @@ func ApiLoginWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthShared
 				})
 			},
 			EmailSend: func(ctx context.Context, email string, subject string, body string) error {
-				fn := a.GetPasswordlessFuncEmailSend()
+				fn := a.GetOtpFuncEmailSend()
 				if fn == nil {
 					return nil
 				}

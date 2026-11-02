@@ -197,7 +197,7 @@ funcUserRegister func(ctx context.Context, userID string, fields map[string]stri
 <pre><code class="language-go">GetFuncUserRegister() func(ctx context.Context, userID string, fields map[string]string, options types.UserAuthOptions) (string, error)
 SetFuncUserRegister(fn ...)</code></pre>
 
-<p><code>GetPasswordlessUserRegister</code>/<code>SetPasswordlessUserRegister</code>,
+<p><code>GetOtpUserRegister</code>/<code>SetOtpUserRegister</code>,
 <code>GetAuthKnightUserRegister</code>/<code>SetAuthKnightUserRegister</code>,
 <code>GetFuncUserProfileUpdate</code>/<code>SetFuncUserProfileUpdate</code> are removed.
 Callers that resolved them via optional interface assertions

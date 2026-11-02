@@ -228,8 +228,8 @@ func newMux() (*http.ServeMux, error) {
 		return nil, err
 	}
 
-	// Passwordless impl — shared by the OTP and magic-link methods.
-	passwordlessAuth, err := auth.NewOtpAuth(types.ConfigOtp{
+	// Otp impl — shared by the OTP and magic-link methods.
+	otpAuth, err := auth.NewOtpAuth(types.ConfigOtp{
 		ConfigShared:        shared,
 		FuncUserFindByEmail: store.userFindByEmail,
 		FuncEmailSend:       emailSend,
@@ -248,8 +248,8 @@ func newMux() (*http.ServeMux, error) {
 
 	methods := []types.Method{
 		auth.NewPasswordMethod(passwordAuth, nil),
-		auth.NewOTPMethod(passwordlessAuth),
-		auth.NewMagicLinkMethodFromAuth(passwordlessAuth, nil,
+		auth.NewOTPMethod(otpAuth),
+		auth.NewMagicLinkMethodFromAuth(otpAuth, nil,
 			func(token string) string {
 				return "/auth/magiclink-callback?token=" + token
 			}),

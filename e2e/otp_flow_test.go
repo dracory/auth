@@ -13,7 +13,7 @@ import (
 	"github.com/dracory/auth/utils"
 )
 
-// newOTPAuth builds a passwordless auth impl backed by the given
+// newOTPAuth builds a otp auth impl backed by the given
 // temp-key store and returns its mux. registerCalls, when non-nil,
 // collects each FuncUserRegister invocation.
 func newOTPAuth(t *testing.T, store *tempKeyStore, registerCalls *[]struct {
@@ -22,7 +22,7 @@ func newOTPAuth(t *testing.T, store *tempKeyStore, registerCalls *[]struct {
 ) *http.ServeMux {
 	t.Helper()
 
-	cfg := testutils.NewPasswordlessConfigForTest()
+	cfg := testutils.NewOtpConfigForTest()
 	cfg.FuncTemporaryKeyGet = store.get
 	cfg.FuncTemporaryKeySet = store.set
 	cfg.FuncUserRegister = func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) error {
@@ -36,7 +36,7 @@ func newOTPAuth(t *testing.T, store *tempKeyStore, registerCalls *[]struct {
 
 	a, err := auth.NewOtpAuth(cfg)
 	if err != nil {
-		t.Fatalf("NewPasswordlessAuth: %v", err)
+		t.Fatalf("NewOtpAuth: %v", err)
 	}
 	return a.Router()
 }

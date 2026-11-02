@@ -78,13 +78,13 @@ func alternativesBlock(x LoginExtras) string {
 	return shared.OrDivider().ToHTML() + btns
 }
 
-// LoginPasswordlessContent builds the HTML content for the passwordless login page.
-func LoginPasswordlessContent(enableRegistration bool, urlRegister string) string {
-	return LoginPasswordlessContentX(enableRegistration, urlRegister, LoginExtras{})
+// LoginOtpContent builds the HTML content for the otp login page.
+func LoginOtpContent(enableRegistration bool, urlRegister string) string {
+	return LoginOtpContentX(enableRegistration, urlRegister, LoginExtras{})
 }
 
-// LoginPasswordlessContentX builds the passwordless login page with extras.
-func LoginPasswordlessContentX(enableRegistration bool, urlRegister string, x LoginExtras) string {
+// LoginOtpContentX builds the otp login page with extras.
+func LoginOtpContentX(enableRegistration bool, urlRegister string, x LoginExtras) string {
 	emailInput := hb.NewInput().
 		Class("form-control form-control-lg").
 		Name("email").
@@ -113,13 +113,13 @@ func LoginPasswordlessContentX(enableRegistration bool, urlRegister string, x Lo
 	return container.ToHTML()
 }
 
-// LoginPasswordlessScripts builds the JavaScript for the passwordless login page.
+// LoginOtpScripts builds the JavaScript for the otp login page.
 //
-//go:embed login_passwordless.js
-var loginPasswordlessJS string
+//go:embed login_otp.js
+var loginOtpJS string
 
-func LoginPasswordlessScripts(urlApiLogin, urlSuccess string) string {
-	s := loginPasswordlessJS
+func LoginOtpScripts(urlApiLogin, urlSuccess string) string {
+	s := loginOtpJS
 	s = strings.ReplaceAll(s, "__URL_API_LOGIN__", urlApiLogin)
 	s = strings.ReplaceAll(s, "__URL_ON_SUCCESS__", urlSuccess)
 	return s

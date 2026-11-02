@@ -17,7 +17,7 @@ import (
 func TestLogoutFlow(t *testing.T) {
 	var loggedOutUser string
 
-	cfg := testutils.NewPasswordlessConfigForTest()
+	cfg := testutils.NewOtpConfigForTest()
 	cfg.FuncUserFindByAuthToken = func(ctx context.Context, token string, options types.UserAuthOptions) (string, error) {
 		if token == "session-abc" {
 			return "user-1", nil
@@ -31,7 +31,7 @@ func TestLogoutFlow(t *testing.T) {
 
 	a, err := auth.NewOtpAuth(cfg)
 	if err != nil {
-		t.Fatalf("NewPasswordlessAuth: %v", err)
+		t.Fatalf("NewOtpAuth: %v", err)
 	}
 	mux := a.Router()
 

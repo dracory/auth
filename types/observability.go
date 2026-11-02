@@ -11,7 +11,7 @@ package types
 // A nil ObservabilityHooks is valid and means no metrics are recorded.
 type ObservabilityHooks interface {
 	// RecordLoginAttempt is called after every login attempt (success or
-	// failure). method is "password" or "passwordless". err is nil on
+	// failure). method is "password" or "otp". err is nil on
 	// success.
 	RecordLoginAttempt(method string, success bool, err error)
 
@@ -43,7 +43,7 @@ type ObservabilityHooks interface {
 // Login method identifiers used by RecordLoginAttempt.
 const (
 	LoginMethodPassword     = "password"
-	LoginMethodPasswordless = "passwordless"
+	LoginMethodOtp = "otp"
 )
 
 // NoopObservabilityHooks is a no-op implementation of ObservabilityHooks.

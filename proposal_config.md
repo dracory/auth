@@ -80,7 +80,7 @@ type ConfigOtp struct {
     ConfigCSRF
     ConfigImpersonation
 
-    // Passwordless-specific
+    // Otp-specific
     FuncUserFindByEmail           func(ctx context.Context, email string, options UserAuthOptions) (userID string, err error)
     FuncEmailTemplateLoginCode    func(ctx context.Context, email string, logingLink string, options UserAuthOptions) string
     FuncEmailTemplateRegisterCode func(ctx context.Context, email string, registerLink string, options UserAuthOptions) string
@@ -114,7 +114,7 @@ type ConfigUsernameAndPassword struct {
 
 Go struct embedding promotes fields, so `config.Endpoint`, `config.CSRFSecret`, `config.FuncUserLogout`, etc. all continue to work without any changes to existing user code.
 
-No changes to constructors (`NewPasswordlessAuth`, `NewUsernameAndPasswordAuth`), interfaces, or any other code. Only the config struct definitions change.
+No changes to constructors (`NewOtpAuth`, `NewUsernameAndPasswordAuth`), interfaces, or any other code. Only the config struct definitions change.
 
 ---
 
@@ -140,7 +140,7 @@ No changes to constructors (`NewPasswordlessAuth`, `NewUsernameAndPasswordAuth`)
 
 - **Shared config structs**: `ConfigShared`, `ConfigRateLimiting`, `ConfigCSRF`, `ConfigImpersonation` in `types/config_shared_test.go`
 - **Existing configs**: Verify `ConfigOtp` and `ConfigUsernameAndPassword` still compile and all existing tests pass unchanged (field promotion means `config.Endpoint` etc. still works)
-- **Constructors**: `NewPasswordlessAuth` and `NewUsernameAndPasswordAuth` must still work without changes
+- **Constructors**: `NewOtpAuth` and `NewUsernameAndPasswordAuth` must still work without changes
 - Run full test suite: `go test -v ./...`
 - Check coverage: `go test -cover ./...`
 

@@ -22,7 +22,7 @@ type authSharedTest struct {
 	layout                                shared.LayoutFunc
 	logger                                *slog.Logger
 	registration                          bool
-	passwordless                          bool
+	otp                          bool
 	verification                          bool
 	authKnight                            bool
 	temporaryKeyGet                       func(key string) (string, error)
@@ -42,26 +42,26 @@ type authSharedTest struct {
 	rememberCookieName                    string
 	secureCookies                         bool
 	funcUserLogin                         func(ctx context.Context, username, password string, options types.UserAuthOptions) (string, error)
-	passwordlessUserRegister              func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) error
+	otpUserRegister              func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) error
 	funcUserRegister                      func(ctx context.Context, username, password, firstName, lastName string, options types.UserAuthOptions) error
 	funcUserPasswordChange                func(ctx context.Context, userID, password string, options types.UserAuthOptions) error
 	funcUserLogout                        func(ctx context.Context, userID string, options types.UserAuthOptions) error
-	passwordlessUserFindByEmail           func(ctx context.Context, email string, options types.UserAuthOptions) (string, error)
+	otpUserFindByEmail           func(ctx context.Context, email string, options types.UserAuthOptions) (string, error)
 	funcUserFindByUsername                func(ctx context.Context, username, firstName, lastName string, options types.UserAuthOptions) (string, error)
 	funcUserStoreAuthToken                func(ctx context.Context, token, userID string, options types.UserAuthOptions) error
 	emailTemplatePasswordRestore          func(ctx context.Context, userID string, passwordRestoreLink string, options types.UserAuthOptions) string
 	emailTemplateRegisterCode             func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string
 	emailSend                             func(ctx context.Context, userID, emailSubject, emailBody string) error
-	passwordlessEmailTemplateLoginCode    func(ctx context.Context, email string, loginLink string, options types.UserAuthOptions) string
-	passwordlessEmailTemplateRegisterCode func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string
-	passwordlessEmailSend                 func(ctx context.Context, email string, emailSubject, emailBody string) error
+	otpEmailTemplateLoginCode    func(ctx context.Context, email string, loginLink string, options types.UserAuthOptions) string
+	otpEmailTemplateRegisterCode func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string
+	otpEmailSend                 func(ctx context.Context, email string, emailSubject, emailBody string) error
 }
 
 func (a *authSharedTest) Router() *http.ServeMux { return http.NewServeMux() }
 
 func (a *authSharedTest) IsRegistrationEnabled() bool { return a.registration }
 
-func (a *authSharedTest) IsPasswordless() bool { return a.passwordless }
+func (a *authSharedTest) IsOtp() bool { return a.otp }
 
 func (a *authSharedTest) IsAuthKnight() bool { return a.authKnight }
 
@@ -173,36 +173,36 @@ func (a *authSharedTest) SetFuncUserLogin(fn func(ctx context.Context, username,
 	a.funcUserLogin = fn
 }
 
-func (a *authSharedTest) GetPasswordlessUserRegister() func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) error {
-	return a.passwordlessUserRegister
+func (a *authSharedTest) GetOtpUserRegister() func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) error {
+	return a.otpUserRegister
 }
 
-func (a *authSharedTest) SetPasswordlessUserRegister(fn func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) error) {
-	a.passwordlessUserRegister = fn
+func (a *authSharedTest) SetOtpUserRegister(fn func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) error) {
+	a.otpUserRegister = fn
 }
 
-func (a *authSharedTest) GetPasswordlessFuncEmailTemplateLoginCode() func(ctx context.Context, email string, loginLink string, options types.UserAuthOptions) string {
-	return a.passwordlessEmailTemplateLoginCode
+func (a *authSharedTest) GetOtpFuncEmailTemplateLoginCode() func(ctx context.Context, email string, loginLink string, options types.UserAuthOptions) string {
+	return a.otpEmailTemplateLoginCode
 }
 
-func (a *authSharedTest) SetPasswordlessFuncEmailTemplateLoginCode(fn func(ctx context.Context, email string, loginLink string, options types.UserAuthOptions) string) {
-	a.passwordlessEmailTemplateLoginCode = fn
+func (a *authSharedTest) SetOtpFuncEmailTemplateLoginCode(fn func(ctx context.Context, email string, loginLink string, options types.UserAuthOptions) string) {
+	a.otpEmailTemplateLoginCode = fn
 }
 
-func (a *authSharedTest) GetPasswordlessFuncEmailTemplateRegisterCode() func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string {
-	return a.passwordlessEmailTemplateRegisterCode
+func (a *authSharedTest) GetOtpFuncEmailTemplateRegisterCode() func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string {
+	return a.otpEmailTemplateRegisterCode
 }
 
-func (a *authSharedTest) SetPasswordlessFuncEmailTemplateRegisterCode(fn func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string) {
-	a.passwordlessEmailTemplateRegisterCode = fn
+func (a *authSharedTest) SetOtpFuncEmailTemplateRegisterCode(fn func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string) {
+	a.otpEmailTemplateRegisterCode = fn
 }
 
-func (a *authSharedTest) GetPasswordlessFuncEmailSend() func(ctx context.Context, email string, emailSubject, emailBody string) error {
-	return a.passwordlessEmailSend
+func (a *authSharedTest) GetOtpFuncEmailSend() func(ctx context.Context, email string, emailSubject, emailBody string) error {
+	return a.otpEmailSend
 }
 
-func (a *authSharedTest) SetPasswordlessFuncEmailSend(fn func(ctx context.Context, email string, emailSubject, emailBody string) error) {
-	a.passwordlessEmailSend = fn
+func (a *authSharedTest) SetOtpFuncEmailSend(fn func(ctx context.Context, email string, emailSubject, emailBody string) error) {
+	a.otpEmailSend = fn
 }
 
 func (a *authSharedTest) RegisterUserWithPassword(ctx context.Context, email, password, firstName, lastName string, options types.UserAuthOptions) (string, string, string) {
@@ -239,12 +239,12 @@ func (a *authSharedTest) SetFuncUserLogout(fn func(ctx context.Context, userID s
 	a.funcUserLogout = fn
 }
 
-func (a *authSharedTest) GetPasswordlessUserFindByEmail() func(ctx context.Context, email string, options types.UserAuthOptions) (string, error) {
-	return a.passwordlessUserFindByEmail
+func (a *authSharedTest) GetOtpUserFindByEmail() func(ctx context.Context, email string, options types.UserAuthOptions) (string, error) {
+	return a.otpUserFindByEmail
 }
 
-func (a *authSharedTest) SetPasswordlessUserFindByEmail(fn func(ctx context.Context, email string, options types.UserAuthOptions) (string, error)) {
-	a.passwordlessUserFindByEmail = fn
+func (a *authSharedTest) SetOtpUserFindByEmail(fn func(ctx context.Context, email string, options types.UserAuthOptions) (string, error)) {
+	a.otpUserFindByEmail = fn
 }
 
 func (a *authSharedTest) GetFuncEmailTemplatePasswordRestore() func(ctx context.Context, userID string, passwordRestoreLink string, options types.UserAuthOptions) string {
@@ -407,9 +407,9 @@ func SetRegistrationForTest(a types.AuthSharedInterface, registration bool) {
 	}
 }
 
-func SetPasswordlessForTest(a types.AuthSharedInterface, passwordless bool) {
+func SetOtpForTest(a types.AuthSharedInterface, otp bool) {
 	if v, ok := a.(*authSharedTest); ok {
-		v.passwordless = passwordless
+		v.otp = otp
 	}
 }
 

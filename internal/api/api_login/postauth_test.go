@@ -40,7 +40,7 @@ func postFormValues() url.Values {
 // host's find-or-create is bypassed (credential login never creates).
 func TestApiLoginWithAuth_PostAuth_SessionCookieAndRedirect(t *testing.T) {
 	a := testutils.NewAuthSharedForTest()
-	testutils.SetPasswordlessForTest(a, false)
+	testutils.SetOtpForTest(a, false)
 	testutils.SetUseCookiesForTest(a, true)
 
 	cookieToken := ""
@@ -101,7 +101,7 @@ func TestApiLoginWithAuth_PostAuth_SessionCookieAndRedirect(t *testing.T) {
 // token-only API hosts must not receive auth cookies.
 func TestApiLoginWithAuth_PostAuth_NoCookieWhenUseCookiesFalse(t *testing.T) {
 	a := testutils.NewAuthSharedForTest()
-	testutils.SetPasswordlessForTest(a, false)
+	testutils.SetOtpForTest(a, false)
 	testutils.SetUseCookiesForTest(a, false)
 
 	cookieSet := false
@@ -140,7 +140,7 @@ func TestApiLoginWithAuth_PostAuth_NoCookieWhenUseCookiesFalse(t *testing.T) {
 // email never reaches FuncUserLogin.
 func TestApiLoginWithAuth_PostAuth_EmailAllowedGatesBeforeCredentials(t *testing.T) {
 	a := testutils.NewAuthSharedForTest()
-	testutils.SetPasswordlessForTest(a, false)
+	testutils.SetOtpForTest(a, false)
 
 	loginCalled := false
 	testutils.SetFuncUserLoginForTest(a, func(ctx context.Context, username, password string, options types.UserAuthOptions) (string, error) {
@@ -168,7 +168,7 @@ func TestApiLoginWithAuth_PostAuth_EmailAllowedGatesBeforeCredentials(t *testing
 // active check rejects the login and records a failed attempt.
 func TestApiLoginWithAuth_PostAuth_UserInactive(t *testing.T) {
 	a := testutils.NewAuthSharedForTest()
-	testutils.SetPasswordlessForTest(a, false)
+	testutils.SetOtpForTest(a, false)
 
 	testutils.SetFuncUserLoginForTest(a, func(ctx context.Context, username, password string, options types.UserAuthOptions) (string, error) {
 		return "u1", nil

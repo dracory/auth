@@ -9,17 +9,17 @@ import (
 )
 
 // Dependencies defines the dependencies required for handling the registration
-// API endpoint. It combines passwordless, username+password, and AuthKnight flows
+// API endpoint. It combines otp, username+password, and AuthKnight flows
 // behind a shared interface.
 type Dependencies struct {
-	// Passwordless indicates whether the registration flow is passwordless.
-	Passwordless bool
+	// Otp indicates whether the registration flow is otp.
+	Otp bool
 
-	// RegisterPasswordlessInitDependencies are used when Passwordless is true.
-	RegisterPasswordlessInitDependencies RegisterPasswordlessInitDependencies
+	// RegisterOtpInitDependencies are used when Otp is true.
+	RegisterOtpInitDependencies RegisterOtpInitDependencies
 
 	// RegisterWithUsernameAndPassword performs the username+password
-	// registration when Passwordless is false. It is responsible for all
+	// registration when Otp is false. It is responsible for all
 	// validation and business rules, and returns a user-facing success or
 	// error message.
 	RegisterWithUsernameAndPassword func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (successMessage, nonce, errorMessage string)

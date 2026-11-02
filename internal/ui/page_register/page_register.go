@@ -86,9 +86,9 @@ func PageRegister(w http.ResponseWriter, r *http.Request, a types.AuthSharedInte
 	content := ""
 	scripts := ""
 
-	if a.IsPasswordless() {
-		content = RegisterPasswordlessContent(links.Login(a.GetEndpoint()))
-		scripts = RegisterPasswordlessScripts(
+	if a.IsOtp() {
+		content = RegisterOtpContent(links.Login(a.GetEndpoint()))
+		scripts = RegisterOtpScripts(
 			links.ApiRegister(a.GetEndpoint()),
 			links.RegisterCodeVerify(a.GetEndpoint()),
 		)

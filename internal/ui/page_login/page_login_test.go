@@ -40,10 +40,10 @@ func TestPageLogin_UsernameAndPassword(t *testing.T) {
 	}
 }
 
-func TestPageLogin_Passwordless(t *testing.T) {
+func TestPageLogin_Otp(t *testing.T) {
 	a := testutils.NewAuthSharedForTest()
 	testutils.SetRegistrationForTest(a, true)
-	testutils.SetPasswordlessForTest(a, true)
+	testutils.SetOtpForTest(a, true)
 
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
@@ -74,7 +74,7 @@ func TestPageLogin_Passwordless(t *testing.T) {
 
 func TestPageLogin_AuthKnight(t *testing.T) {
 	a := testutils.NewAuthSharedForTest()
-	testutils.SetPasswordlessForTest(a, false)
+	testutils.SetOtpForTest(a, false)
 	testutils.SetVerificationForTest(a, false)
 	testutils.SetAuthKnightForTest(a, true)
 
@@ -106,8 +106,8 @@ func TestPageLogin_AuthKnight(t *testing.T) {
 	}
 }
 
-func TestLoginPasswordlessContent_Wrapper(t *testing.T) {
-	html := LoginPasswordlessContent(true, "/auth/register")
+func TestLoginOtpContent_Wrapper(t *testing.T) {
+	html := LoginOtpContent(true, "/auth/register")
 	if !strings.Contains(html, "Send me a login code") || !strings.Contains(html, "Register") {
 		t.Fatalf("unexpected content %q", html)
 	}

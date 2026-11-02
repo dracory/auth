@@ -311,7 +311,7 @@ added). Each gains a <code>fields</code> parameter and renders
 <code>PrimaryButton</code>:</p>
 
 <ul>
-<li><code>RegisterPasswordlessContent(urlLogin, fields)</code> — <code>RegistrationFields</code></li>
+<li><code>RegisterOtpContent(urlLogin, fields)</code> — <code>RegistrationFields</code></li>
 <li><code>RegisterUsernameAndPasswordContent(urlLogin, urlPasswordRestore, fields)</code> — <code>RegistrationFields</code></li>
 <li><code>RegisterVerifiedEmailContent(urlLogin, verifiedEmail, verifiedKey, fields)</code> — <code>RegistrationFields</code></li>
 <li><code>RegisterCompletionContent(urlLogin, verifiedEmail, fields, prefill)</code> — <code>ProfileFields</code> + <code>FuncUserProfile</code> values (see §7)</li>
@@ -341,7 +341,7 @@ first/last name) and calls <code>deps.UserProfileUpdate(ctx, userID, fields,
 options)</code>. Default <code>ProfileFields</code> when unset: first/last name
 required — today's behaviour preserved verbatim.</p>
 
-<p><strong><code>api_register.go</code> (<code>RegisterPasswordlessInit</code> + password branch):</strong>
+<p><strong><code>api_register.go</code> (<code>RegisterOtpInit</code> + password branch):</strong>
 collect &amp; validate fields via <code>CollectFields</code>; merge the reserved
 keys (<code>email</code>, <code>password</code>, <code>first_name</code>,
 <code>last_name</code>) into the same map; add <code>"fields":
@@ -363,7 +363,7 @@ added to the verify-enabled JSON payload (line ~112).</p>
 first/last name inside the map, so the separate first_name/last_name
 payload keys are kept only for old-payload fallback (merged into the
 map when <code>"fields"</code> is absent); the deps wrappers
-(<code>PasswordlessUserRegister</code>, <code>UserRegister</code>) adopt the flat
+(<code>OtpUserRegister</code>, <code>UserRegister</code>) adopt the flat
 <code>(ctx, fields, options)</code> host signature, and
 <code>ApiRegisterCodeVerifyWithAuth</code> sets <code>options.Fields = fields</code> when
 invoking them.</p>

@@ -64,14 +64,14 @@ type authImplementation struct {
 	passwordStrength                 *types.PasswordStrengthConfig
 	// ===== END: username(email) and password options
 
-	// ===== START: passwordless options
-	passwordless                              bool
-	passwordlessFuncUserFindByEmail           func(ctx context.Context, email string, options types.UserAuthOptions) (userID string, err error)
-	passwordlessFuncEmailTemplateLoginCode    func(ctx context.Context, email string, loginLink string, options types.UserAuthOptions) string    // optional
-	passwordlessFuncEmailTemplateRegisterCode func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string // optional
-	passwordlessFuncEmailSend                 func(ctx context.Context, email string, emailSubject string, emailBody string) (err error)
-	passwordlessFuncUserRegister              func(ctx context.Context, email string, firstName string, lastName string, options types.UserAuthOptions) (err error)
-	// ===== END: passwordless options
+	// ===== START: otp options
+	otp                              bool
+	otpFuncUserFindByEmail           func(ctx context.Context, email string, options types.UserAuthOptions) (userID string, err error)
+	otpFuncEmailTemplateLoginCode    func(ctx context.Context, email string, loginLink string, options types.UserAuthOptions) string    // optional
+	otpFuncEmailTemplateRegisterCode func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string // optional
+	otpFuncEmailSend                 func(ctx context.Context, email string, emailSubject string, emailBody string) (err error)
+	otpFuncUserRegister              func(ctx context.Context, email string, firstName string, lastName string, options types.UserAuthOptions) (err error)
+	// ===== END: otp options
 
 	// ===== START: rate limiting
 	disableRateLimit   bool
@@ -178,8 +178,8 @@ func (a authImplementation) IsRegistrationEnabled() bool {
 	return a.enableRegistration
 }
 
-func (a authImplementation) IsPasswordless() bool {
-	return a.passwordless
+func (a authImplementation) IsOtp() bool {
+	return a.otp
 }
 
 func (a authImplementation) IsVerificationEnabled() bool {
@@ -368,16 +368,16 @@ func (a *authImplementation) SetFuncUserLogin(fn func(ctx context.Context, usern
 	a.funcUserLogin = fn
 }
 
-// GetPasswordlessUserRegister returns the function used to register a user without a password.
+// GetOtpUserRegister returns the function used to register a user without a password.
 // This is useful for integrating with application authentication systems or for testing.
-func (a authImplementation) GetPasswordlessUserRegister() func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) error {
-	return a.passwordlessFuncUserRegister
+func (a authImplementation) GetOtpUserRegister() func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) error {
+	return a.otpFuncUserRegister
 }
 
-// SetPasswordlessUserRegister allows overriding the function used to register a user without a password.
+// SetOtpUserRegister allows overriding the function used to register a user without a password.
 // This is useful for integrating with application authentication systems or for testing.
-func (a *authImplementation) SetPasswordlessUserRegister(fn func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) error) {
-	a.passwordlessFuncUserRegister = fn
+func (a *authImplementation) SetOtpUserRegister(fn func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) error) {
+	a.otpFuncUserRegister = fn
 }
 
 // GetFuncUserRegister returns the function used to register a user.
@@ -416,52 +416,52 @@ func (a *authImplementation) SetFuncUserLogout(fn func(ctx context.Context, user
 	a.funcUserLogout = fn
 }
 
-// GetPasswordlessUserFindByEmail returns the function used to find a user by email for passwordless authentication.
+// GetOtpUserFindByEmail returns the function used to find a user by email for otp authentication.
 // This is useful for integrating with application authentication systems or for testing.
-func (a authImplementation) GetPasswordlessUserFindByEmail() func(ctx context.Context, email string, options types.UserAuthOptions) (string, error) {
-	return a.passwordlessFuncUserFindByEmail
+func (a authImplementation) GetOtpUserFindByEmail() func(ctx context.Context, email string, options types.UserAuthOptions) (string, error) {
+	return a.otpFuncUserFindByEmail
 }
 
-// SetPasswordlessUserFindByEmail allows overriding the function used to find a user by email for passwordless authentication.
+// SetOtpUserFindByEmail allows overriding the function used to find a user by email for otp authentication.
 // This is useful for integrating with application authentication systems or for testing.
-func (a *authImplementation) SetPasswordlessUserFindByEmail(fn func(ctx context.Context, email string, options types.UserAuthOptions) (string, error)) {
-	a.passwordlessFuncUserFindByEmail = fn
+func (a *authImplementation) SetOtpUserFindByEmail(fn func(ctx context.Context, email string, options types.UserAuthOptions) (string, error)) {
+	a.otpFuncUserFindByEmail = fn
 }
 
-// GetPasswordlessFuncEmailTemplateLoginCode returns the function used to generate the email template for login code.
+// GetOtpFuncEmailTemplateLoginCode returns the function used to generate the email template for login code.
 // This is useful for integrating with application authentication systems or for testing.
-func (a authImplementation) GetPasswordlessFuncEmailTemplateLoginCode() func(ctx context.Context, email string, loginLink string, options types.UserAuthOptions) string {
-	return a.passwordlessFuncEmailTemplateLoginCode
+func (a authImplementation) GetOtpFuncEmailTemplateLoginCode() func(ctx context.Context, email string, loginLink string, options types.UserAuthOptions) string {
+	return a.otpFuncEmailTemplateLoginCode
 }
 
-// SetPasswordlessFuncEmailTemplateLoginCode allows overriding the function used to generate the email template for login code.
+// SetOtpFuncEmailTemplateLoginCode allows overriding the function used to generate the email template for login code.
 // This is useful for integrating with application authentication systems or for testing.
-func (a *authImplementation) SetPasswordlessFuncEmailTemplateLoginCode(fn func(ctx context.Context, email string, loginLink string, options types.UserAuthOptions) string) {
-	a.passwordlessFuncEmailTemplateLoginCode = fn
+func (a *authImplementation) SetOtpFuncEmailTemplateLoginCode(fn func(ctx context.Context, email string, loginLink string, options types.UserAuthOptions) string) {
+	a.otpFuncEmailTemplateLoginCode = fn
 }
 
-// GetPasswordlessFuncEmailTemplateRegisterCode returns the function used to generate the email template for register code.
+// GetOtpFuncEmailTemplateRegisterCode returns the function used to generate the email template for register code.
 // This is useful for integrating with application authentication systems or for testing.
-func (a authImplementation) GetPasswordlessFuncEmailTemplateRegisterCode() func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string {
-	return a.passwordlessFuncEmailTemplateRegisterCode
+func (a authImplementation) GetOtpFuncEmailTemplateRegisterCode() func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string {
+	return a.otpFuncEmailTemplateRegisterCode
 }
 
-// SetPasswordlessFuncEmailTemplateRegisterCode allows overriding the function used to generate the email template for register code.
+// SetOtpFuncEmailTemplateRegisterCode allows overriding the function used to generate the email template for register code.
 // This is useful for integrating with application authentication systems or for testing.
-func (a *authImplementation) SetPasswordlessFuncEmailTemplateRegisterCode(fn func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string) {
-	a.passwordlessFuncEmailTemplateRegisterCode = fn
+func (a *authImplementation) SetOtpFuncEmailTemplateRegisterCode(fn func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string) {
+	a.otpFuncEmailTemplateRegisterCode = fn
 }
 
-// GetPasswordlessFuncEmailSend returns the function used to send an email.
+// GetOtpFuncEmailSend returns the function used to send an email.
 // This is useful for integrating with application authentication systems or for testing.
-func (a authImplementation) GetPasswordlessFuncEmailSend() func(ctx context.Context, email string, emailSubject string, emailBody string) error {
-	return a.passwordlessFuncEmailSend
+func (a authImplementation) GetOtpFuncEmailSend() func(ctx context.Context, email string, emailSubject string, emailBody string) error {
+	return a.otpFuncEmailSend
 }
 
-// SetPasswordlessFuncEmailSend allows overriding the function used to send an email.
+// SetOtpFuncEmailSend allows overriding the function used to send an email.
 // This is useful for integrating with application authentication systems or for testing.
-func (a *authImplementation) SetPasswordlessFuncEmailSend(fn func(ctx context.Context, email string, emailSubject string, emailBody string) error) {
-	a.passwordlessFuncEmailSend = fn
+func (a *authImplementation) SetOtpFuncEmailSend(fn func(ctx context.Context, email string, emailSubject string, emailBody string) error) {
+	a.otpFuncEmailSend = fn
 }
 
 // GetFuncUserFindByUsername returns the function used to find a user by username.

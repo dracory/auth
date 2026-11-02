@@ -17,8 +17,8 @@ type AuthSharedInterface interface {
 	// IsRegistrationEnabled returns true if registration is enabled.
 	IsRegistrationEnabled() bool
 
-	// IsPasswordless returns true if passwordless login is enabled.
-	IsPasswordless() bool
+	// IsOtp returns true if otp login is enabled.
+	IsOtp() bool
 
 	// IsVerificationEnabled returns true if email verification is enabled.
 	IsVerificationEnabled() bool
@@ -84,8 +84,8 @@ type AuthSharedInterface interface {
 	GetFuncUserLogin() func(ctx context.Context, username, password string, options UserAuthOptions) (string, error)
 	SetFuncUserLogin(fn func(ctx context.Context, username, password string, options UserAuthOptions) (string, error))
 
-	GetPasswordlessUserRegister() func(ctx context.Context, email, firstName, lastName string, options UserAuthOptions) error
-	SetPasswordlessUserRegister(fn func(ctx context.Context, email, firstName, lastName string, options UserAuthOptions) error)
+	GetOtpUserRegister() func(ctx context.Context, email, firstName, lastName string, options UserAuthOptions) error
+	SetOtpUserRegister(fn func(ctx context.Context, email, firstName, lastName string, options UserAuthOptions) error)
 
 	GetFuncUserRegister() func(ctx context.Context, username, password, firstName, lastName string, options UserAuthOptions) error
 	SetFuncUserRegister(fn func(ctx context.Context, username, password, firstName, lastName string, options UserAuthOptions) error)
@@ -96,8 +96,8 @@ type AuthSharedInterface interface {
 	GetFuncUserLogout() func(ctx context.Context, userID string, options UserAuthOptions) error
 	SetFuncUserLogout(fn func(ctx context.Context, userID string, options UserAuthOptions) error)
 
-	GetPasswordlessUserFindByEmail() func(ctx context.Context, email string, options UserAuthOptions) (string, error)
-	SetPasswordlessUserFindByEmail(fn func(ctx context.Context, email string, options UserAuthOptions) (string, error))
+	GetOtpUserFindByEmail() func(ctx context.Context, email string, options UserAuthOptions) (string, error)
+	SetOtpUserFindByEmail(fn func(ctx context.Context, email string, options UserAuthOptions) (string, error))
 
 	GetFuncUserFindByUsername() func(ctx context.Context, username, firstName, lastName string, options UserAuthOptions) (string, error)
 	SetFuncUserFindByUsername(fn func(ctx context.Context, username, firstName, lastName string, options UserAuthOptions) (string, error))
@@ -111,14 +111,14 @@ type AuthSharedInterface interface {
 	GetFuncEmailSend() func(ctx context.Context, userID, emailSubject, emailBody string) error
 	SetFuncEmailSend(fn func(ctx context.Context, userID, emailSubject, emailBody string) error)
 
-	GetPasswordlessFuncEmailTemplateLoginCode() func(ctx context.Context, email string, loginLink string, options UserAuthOptions) string
-	SetPasswordlessFuncEmailTemplateLoginCode(fn func(ctx context.Context, email string, loginLink string, options UserAuthOptions) string)
+	GetOtpFuncEmailTemplateLoginCode() func(ctx context.Context, email string, loginLink string, options UserAuthOptions) string
+	SetOtpFuncEmailTemplateLoginCode(fn func(ctx context.Context, email string, loginLink string, options UserAuthOptions) string)
 
-	GetPasswordlessFuncEmailTemplateRegisterCode() func(ctx context.Context, email string, registerLink string, options UserAuthOptions) string
-	SetPasswordlessFuncEmailTemplateRegisterCode(fn func(ctx context.Context, email string, registerLink string, options UserAuthOptions) string)
+	GetOtpFuncEmailTemplateRegisterCode() func(ctx context.Context, email string, registerLink string, options UserAuthOptions) string
+	SetOtpFuncEmailTemplateRegisterCode(fn func(ctx context.Context, email string, registerLink string, options UserAuthOptions) string)
 
-	GetPasswordlessFuncEmailSend() func(ctx context.Context, email string, emailSubject, emailBody string) error
-	SetPasswordlessFuncEmailSend(fn func(ctx context.Context, email string, emailSubject, emailBody string) error)
+	GetOtpFuncEmailSend() func(ctx context.Context, email string, emailSubject, emailBody string) error
+	SetOtpFuncEmailSend(fn func(ctx context.Context, email string, emailSubject, emailBody string) error)
 
 	GetFuncUserStoreAuthToken() func(ctx context.Context, token, userID string, options UserAuthOptions) error
 	SetFuncUserStoreAuthToken(fn func(ctx context.Context, token, userID string, options UserAuthOptions) error)

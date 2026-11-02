@@ -24,7 +24,7 @@ import (
 var registerMu sync.Mutex
 
 // ApiRegister is the HTTP-level helper that routes registration requests to
-// either the passwordless or username+password flow based on the provided
+// either the otp or username+password flow based on the provided
 // dependencies.
 func ApiRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 	logger := deps.Logger
@@ -184,27 +184,27 @@ func ApiRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 		return
 	}
 
-	if deps.Passwordless {
-		result, err := RegisterPasswordlessInit(r.Context(), r, deps.RegisterPasswordlessInitDependencies)
+	if deps.Otp {
+		result, err := RegisterOtpInit(r.Context(), r, deps.RegisterOtpInitDependencies)
 		if err != nil {
 			errText := err.Error()
 			if err.Err != nil {
 				errText = err.Err.Error()
 			}
-			logger.Error("passwordless registration failed",
+			logger.Error("otp registration failed",
 				slog.String("error", errText),
 				slog.String("code", string(err.Code)),
 			)
 			switch err.Code {
-			case RegisterPasswordlessInitErrorCodeValidation,
-				RegisterPasswordlessInitErrorCodeTooManySends:
+			case RegisterOtpInitErrorCodeValidation,
+				RegisterOtpInitErrorCodeTooManySends:
 				api.Respond(w, r, api.Error(err.Message))
 				return
-			case RegisterPasswordlessInitErrorCodeTokenStore,
-				RegisterPasswordlessInitErrorCodeSerialization:
+			case RegisterOtpInitErrorCodeTokenStore,
+				RegisterOtpInitErrorCodeSerialization:
 				api.Respond(w, r, api.Error(types.MsgFailedToProcess))
 				return
-			case RegisterPasswordlessInitErrorCodeEmailSend:
+			case RegisterOtpInitErrorCodeEmailSend:
 				api.Respond(w, r, api.Error(types.MsgFailedToSendEmail))
 				return
 			default:
@@ -249,7 +249,7 @@ func ApiRegister(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) {
 	a = types.UnwrapAuth(a)
 	deps := Dependencies{}
-	deps.Passwordless = a.IsPasswordless()
+	deps.Otp = a.IsOtp()
 	deps.Logger = a.GetLogger()
 	deps.RedirectOnSuccess = a.LinkRedirectOnSuccess()
 	deps.CurrentUserID = func(r *http.Request) string {
@@ -292,11 +292,11 @@ func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSha
 
 	// Verified-email token support for non-AuthKnight impls (OTP /
 	// magic-link register-first): the same deps shape, with UserRegister
-	// adapted from the passwordless register + find-by-email pair since
-	// the passwordless register hook does not return a userID.
-	if a.IsPasswordless() {
-		if regFn := a.GetPasswordlessUserRegister(); regFn != nil {
-			findFn := a.GetPasswordlessUserFindByEmail()
+	// adapted from the otp register + find-by-email pair since
+	// the otp register hook does not return a userID.
+	if a.IsOtp() {
+		if regFn := a.GetOtpUserRegister(); regFn != nil {
+			findFn := a.GetOtpUserFindByEmail()
 			deps.VerifiedEmailRegisterDependencies = VerifiedEmailRegisterDependencies{
 				TemporaryKeyGet: a.GetFuncTemporaryKeyGet(),
 				TemporaryKeySet: a.GetFuncTemporaryKeySet(),
@@ -333,11 +333,11 @@ func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSha
 		return
 	}
 
-	deps.Passwordless = a.IsPasswordless()
+	deps.Otp = a.IsOtp()
 	deps.Logger = a.GetLogger()
 
-	// Configure passwordless branch dependencies if enabled.
-	if deps.Passwordless {
+	// Configure otp branch dependencies if enabled.
+	if deps.Otp {
 		// Optional-hook resolution via type assertion — extending
 		// AuthSharedInterface would break external implementers.
 		var emailEnqueue func(ctx context.Context, deliveryKey string) error
@@ -347,15 +347,15 @@ func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSha
 			emailEnqueue = enq.GetFuncEmailEnqueue()
 		}
 
-		deps.RegisterPasswordlessInitDependencies = RegisterPasswordlessInitDependencies{
+		deps.RegisterOtpInitDependencies = RegisterOtpInitDependencies{
 			DisableRateLimit:  a.GetDisableRateLimit(),
 			EmailSendThrottle: authutils.EmailSendThrottleFromAuth(a),
 			TemporaryKeyGet:   a.GetFuncTemporaryKeyGet(),
 			TemporaryKeySet:   a.GetFuncTemporaryKeySet(),
 			EmailEnqueue:      emailEnqueue,
-			ExpiresSeconds:    0, // let RegisterPasswordlessInit apply default
+			ExpiresSeconds:    0, // let RegisterOtpInit apply default
 			EmailTemplate: func(ctx context.Context, email string, verificationCode string) string {
-				fn := a.GetPasswordlessFuncEmailTemplateRegisterCode()
+				fn := a.GetOtpFuncEmailTemplateRegisterCode()
 				if fn == nil {
 					return ""
 				}
@@ -365,9 +365,9 @@ func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSha
 				})
 			},
 			EmailSend: func(ctx context.Context, email string, subject string, body string) error {
-				fn := a.GetPasswordlessFuncEmailSend()
+				fn := a.GetOtpFuncEmailSend()
 				if fn == nil {
-					return errors.New("Passwordless email sender is not configured")
+					return errors.New("Otp email sender is not configured")
 				}
 				return fn(ctx, email, subject, body)
 			},
@@ -376,7 +376,7 @@ func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSha
 			GetFuncEmailCaptured() func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error
 		}); ok {
 			if fn := capt.GetFuncEmailCaptured(); fn != nil {
-				deps.RegisterPasswordlessInitDependencies.EmailCaptured = func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error {
+				deps.RegisterOtpInitDependencies.EmailCaptured = func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error {
 					if err := fn(ctx, email, verified, options); err != nil {
 						a.GetLogger().Error("email capture hook failed", slog.String("error", err.Error()))
 						return err
@@ -409,9 +409,9 @@ func ApiRegisterWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthSha
 	ApiRegister(w, r, deps)
 }
 
-// RegisterPasswordlessInitDeps defines the dependencies required for the
-// passwordless registration init (sending verification code).
-type RegisterPasswordlessInitDependencies struct {
+// RegisterOtpInitDeps defines the dependencies required for the
+// otp registration init (sending verification code).
+type RegisterOtpInitDependencies struct {
 	DisableRateLimit bool
 
 	// EmailSendThrottle configures the per-email send quota; zero value
@@ -434,28 +434,28 @@ type RegisterPasswordlessInitDependencies struct {
 	EmailCaptured func(ctx context.Context, email string, verified bool, options types.UserAuthOptions) error
 }
 
-// RegisterPasswordlessInitErrorCode categorizes possible error sources.
-type RegisterPasswordlessInitErrorCode string
+// RegisterOtpInitErrorCode categorizes possible error sources.
+type RegisterOtpInitErrorCode string
 
 const (
-	RegisterPasswordlessInitErrorCodeNone           RegisterPasswordlessInitErrorCode = ""
-	RegisterPasswordlessInitErrorCodeValidation     RegisterPasswordlessInitErrorCode = "validation"
-	RegisterPasswordlessInitErrorCodeCodeGeneration RegisterPasswordlessInitErrorCode = "code_generation"
-	RegisterPasswordlessInitErrorCodeSerialization  RegisterPasswordlessInitErrorCode = "serialization"
-	RegisterPasswordlessInitErrorCodeTokenStore     RegisterPasswordlessInitErrorCode = "token_store"
-	RegisterPasswordlessInitErrorCodeEmailSend      RegisterPasswordlessInitErrorCode = "email_send"
-	RegisterPasswordlessInitErrorCodeInternal       RegisterPasswordlessInitErrorCode = "internal"
-	RegisterPasswordlessInitErrorCodeTooManySends   RegisterPasswordlessInitErrorCode = "too_many_sends"
+	RegisterOtpInitErrorCodeNone           RegisterOtpInitErrorCode = ""
+	RegisterOtpInitErrorCodeValidation     RegisterOtpInitErrorCode = "validation"
+	RegisterOtpInitErrorCodeCodeGeneration RegisterOtpInitErrorCode = "code_generation"
+	RegisterOtpInitErrorCodeSerialization  RegisterOtpInitErrorCode = "serialization"
+	RegisterOtpInitErrorCodeTokenStore     RegisterOtpInitErrorCode = "token_store"
+	RegisterOtpInitErrorCodeEmailSend      RegisterOtpInitErrorCode = "email_send"
+	RegisterOtpInitErrorCodeInternal       RegisterOtpInitErrorCode = "internal"
+	RegisterOtpInitErrorCodeTooManySends   RegisterOtpInitErrorCode = "too_many_sends"
 )
 
-// RegisterPasswordlessInitError is a structured error for the registration init flow.
-type RegisterPasswordlessInitError struct {
-	Code    RegisterPasswordlessInitErrorCode
+// RegisterOtpInitError is a structured error for the registration init flow.
+type RegisterOtpInitError struct {
+	Code    RegisterOtpInitErrorCode
 	Message string
 	Err     error
 }
 
-func (e *RegisterPasswordlessInitError) Error() string {
+func (e *RegisterOtpInitError) Error() string {
 	if e == nil {
 		return ""
 	}
@@ -468,8 +468,8 @@ func (e *RegisterPasswordlessInitError) Error() string {
 	return string(e.Code)
 }
 
-// RegisterPasswordlessInitResult represents a successful registration init.
-type RegisterPasswordlessInitResult struct {
+// RegisterOtpInitResult represents a successful registration init.
+type RegisterOtpInitResult struct {
 	SuccessMessage string
 	// Nonce identifies the temporary-key under which the registration
 	// payload (including the code) is stored. The client must present it
@@ -477,12 +477,12 @@ type RegisterPasswordlessInitResult struct {
 	Nonce string
 }
 
-// RegisterPasswordlessInit contains the core business logic of the passwordless
+// RegisterOtpInit contains the core business logic of the otp
 // registration init API. It validates input, generates the verification code,
 // stores a temporary JSON payload and sends the email. It intentionally does
 // not perform any logging; callers are responsible for mapping structured
 // errors to their own logging and HTTP responses.
-func RegisterPasswordlessInit(ctx context.Context, r *http.Request, deps RegisterPasswordlessInitDependencies) (*RegisterPasswordlessInitResult, *RegisterPasswordlessInitError) {
+func RegisterOtpInit(ctx context.Context, r *http.Request, deps RegisterOtpInitDependencies) (*RegisterOtpInitResult, *RegisterOtpInitError) {
 	email := req.GetStringTrimmed(r, "email")
 	firstName := req.GetStringTrimmed(r, "first_name")
 	lastName := req.GetStringTrimmed(r, "last_name")
@@ -494,8 +494,8 @@ func RegisterPasswordlessInit(ctx context.Context, r *http.Request, deps Registe
 		rules.NewEmailFormatRule(email),
 	} {
 		if check.Fails() {
-			return nil, &RegisterPasswordlessInitError{
-				Code:    RegisterPasswordlessInitErrorCodeValidation,
+			return nil, &RegisterOtpInitError{
+				Code:    RegisterOtpInitErrorCodeValidation,
 				Message: check.FailMessageFirst(),
 			}
 		}
@@ -513,24 +513,24 @@ func RegisterPasswordlessInit(ctx context.Context, r *http.Request, deps Registe
 	// Per-email send throttle — prevents the endpoint being used for email
 	// bombing; enforced before code generation.
 	if check := rules.NewEmailSendThrottleRule(deps.TemporaryKeyGet, email, deps.EmailSendThrottle); check.Fails() {
-		return nil, &RegisterPasswordlessInitError{
-			Code:    RegisterPasswordlessInitErrorCodeTooManySends,
+		return nil, &RegisterOtpInitError{
+			Code:    RegisterOtpInitErrorCodeTooManySends,
 			Message: check.FailMessageFirst(),
 		}
 	}
 
 	verificationCode, err := authutils.GenerateVerificationCode(deps.DisableRateLimit)
 	if err != nil {
-		return nil, &RegisterPasswordlessInitError{
-			Code: RegisterPasswordlessInitErrorCodeCodeGeneration,
+		return nil, &RegisterOtpInitError{
+			Code: RegisterOtpInitErrorCodeCodeGeneration,
 			Err:  err,
 		}
 	}
 
 	nonce, err := authutils.GenerateNonce()
 	if err != nil {
-		return nil, &RegisterPasswordlessInitError{
-			Code: RegisterPasswordlessInitErrorCodeCodeGeneration,
+		return nil, &RegisterOtpInitError{
+			Code: RegisterOtpInitErrorCodeCodeGeneration,
 			Err:  err,
 		}
 	}
@@ -542,15 +542,15 @@ func RegisterPasswordlessInit(ctx context.Context, r *http.Request, deps Registe
 		"code":       verificationCode,
 	})
 	if errJSON != nil {
-		return nil, &RegisterPasswordlessInitError{
-			Code: RegisterPasswordlessInitErrorCodeSerialization,
+		return nil, &RegisterOtpInitError{
+			Code: RegisterOtpInitErrorCodeSerialization,
 			Err:  errJSON,
 		}
 	}
 
 	if deps.TemporaryKeySet == nil {
-		return nil, &RegisterPasswordlessInitError{
-			Code: RegisterPasswordlessInitErrorCodeTokenStore,
+		return nil, &RegisterOtpInitError{
+			Code: RegisterOtpInitErrorCodeTokenStore,
 			Err:  errors.New("temporary key store is not configured"),
 		}
 	}
@@ -564,23 +564,23 @@ func RegisterPasswordlessInit(ctx context.Context, r *http.Request, deps Registe
 	// The nonce — not the code — is the storage key; the payload carries the
 	// code for constant-time comparison at verify time.
 	if errTemp := deps.TemporaryKeySet(authutils.RegisterCodeKeyPrefix+nonce, string(payload), expires); errTemp != nil {
-		return nil, &RegisterPasswordlessInitError{
-			Code: RegisterPasswordlessInitErrorCodeTokenStore,
+		return nil, &RegisterOtpInitError{
+			Code: RegisterOtpInitErrorCodeTokenStore,
 			Err:  errTemp,
 		}
 	}
 
 	// Seed the per-nonce attempt counter alongside the payload.
 	if errTemp := deps.TemporaryKeySet(authutils.RegisterCodeAttemptsKeyPrefix+nonce, "0", expires); errTemp != nil {
-		return nil, &RegisterPasswordlessInitError{
-			Code: RegisterPasswordlessInitErrorCodeTokenStore,
+		return nil, &RegisterOtpInitError{
+			Code: RegisterOtpInitErrorCodeTokenStore,
 			Err:  errTemp,
 		}
 	}
 
 	if deps.EmailTemplate == nil || deps.EmailSend == nil {
-		return nil, &RegisterPasswordlessInitError{
-			Code: RegisterPasswordlessInitErrorCodeInternal,
+		return nil, &RegisterOtpInitError{
+			Code: RegisterOtpInitErrorCodeInternal,
 			Err:  errors.New("email template or sender is not configured"),
 		}
 	}
@@ -594,8 +594,8 @@ func RegisterPasswordlessInit(ctx context.Context, r *http.Request, deps Registe
 		deps.EmailEnqueue, deps.EmailSend, email, verificationCode,
 		types.EmailSubjectRegistrationCode, emailContent, expires)
 	if errEmail != nil {
-		return nil, &RegisterPasswordlessInitError{
-			Code: RegisterPasswordlessInitErrorCodeEmailSend,
+		return nil, &RegisterOtpInitError{
+			Code: RegisterOtpInitErrorCodeEmailSend,
 			Err:  errEmail,
 		}
 	}
@@ -605,7 +605,7 @@ func RegisterPasswordlessInit(ctx context.Context, r *http.Request, deps Registe
 		_ = authutils.RecordEmailSend(deps.TemporaryKeyGet, deps.TemporaryKeySet, email, deps.EmailSendThrottle)
 	}
 
-	return &RegisterPasswordlessInitResult{
+	return &RegisterOtpInitResult{
 		SuccessMessage: types.MsgRegistrationCodeSent,
 		Nonce:          nonce,
 	}, nil

@@ -9,12 +9,12 @@ import (
 	"testing"
 )
 
-// TestAuthenticateViaUsername_Passwordless_MissingDependency tests that when
-// passwordless mode is enabled but the required dependency is nil, an error is returned.
-func TestAuthenticateViaUsername_Passwordless_MissingDependency(t *testing.T) {
+// TestAuthenticateViaUsername_Otp_MissingDependency tests that when
+// otp mode is enabled but the required dependency is nil, an error is returned.
+func TestAuthenticateViaUsername_Otp_MissingDependency(t *testing.T) {
 	deps := Dependencies{
-		Passwordless:                true,
-		PasswordlessUserFindByEmail: nil, // Missing required dependency
+		Otp:                true,
+		OtpUserFindByEmail: nil, // Missing required dependency
 	}
 
 	result, aerr := AuthenticateViaUsername(context.Background(), "test@example.com", "", "", deps)
@@ -33,12 +33,12 @@ func TestAuthenticateViaUsername_Passwordless_MissingDependency(t *testing.T) {
 	}
 }
 
-// TestAuthenticateViaUsername_Passwordless_UserLookupError tests that when
+// TestAuthenticateViaUsername_Otp_UserLookupError tests that when
 // the user lookup function returns an error, it's properly handled.
-func TestAuthenticateViaUsername_Passwordless_UserLookupError(t *testing.T) {
+func TestAuthenticateViaUsername_Otp_UserLookupError(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: true,
-		PasswordlessUserFindByEmail: func(ctx context.Context, email string) (string, error) {
+		Otp: true,
+		OtpUserFindByEmail: func(ctx context.Context, email string) (string, error) {
 			return "", errors.New("database error")
 		},
 	}
@@ -62,12 +62,12 @@ func TestAuthenticateViaUsername_Passwordless_UserLookupError(t *testing.T) {
 	}
 }
 
-// TestAuthenticateViaUsername_Passwordless_UserNotFound tests that when
+// TestAuthenticateViaUsername_Otp_UserNotFound tests that when
 // the user lookup returns an empty userID, an error is returned.
-func TestAuthenticateViaUsername_Passwordless_UserNotFound(t *testing.T) {
+func TestAuthenticateViaUsername_Otp_UserNotFound(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: true,
-		PasswordlessUserFindByEmail: func(ctx context.Context, email string) (string, error) {
+		Otp: true,
+		OtpUserFindByEmail: func(ctx context.Context, email string) (string, error) {
 			return "", nil // Empty userID indicates user not found
 		},
 	}
@@ -88,12 +88,12 @@ func TestAuthenticateViaUsername_Passwordless_UserNotFound(t *testing.T) {
 	}
 }
 
-// TestAuthenticateViaUsername_Passwordless_TokenStoreMissing tests that when
+// TestAuthenticateViaUsername_Otp_TokenStoreMissing tests that when
 // the token store dependency is nil, an error is returned.
-func TestAuthenticateViaUsername_Passwordless_TokenStoreMissing(t *testing.T) {
+func TestAuthenticateViaUsername_Otp_TokenStoreMissing(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: true,
-		PasswordlessUserFindByEmail: func(ctx context.Context, email string) (string, error) {
+		Otp: true,
+		OtpUserFindByEmail: func(ctx context.Context, email string) (string, error) {
 			return "user-123", nil
 		},
 		UserStoreAuthToken: nil, // Missing required dependency
@@ -115,12 +115,12 @@ func TestAuthenticateViaUsername_Passwordless_TokenStoreMissing(t *testing.T) {
 	}
 }
 
-// TestAuthenticateViaUsername_Passwordless_TokenStoreError tests that when
+// TestAuthenticateViaUsername_Otp_TokenStoreError tests that when
 // storing the auth token fails, an error is returned.
-func TestAuthenticateViaUsername_Passwordless_TokenStoreError(t *testing.T) {
+func TestAuthenticateViaUsername_Otp_TokenStoreError(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: true,
-		PasswordlessUserFindByEmail: func(ctx context.Context, email string) (string, error) {
+		Otp: true,
+		OtpUserFindByEmail: func(ctx context.Context, email string) (string, error) {
 			return "user-123", nil
 		},
 		UserStoreAuthToken: func(ctx context.Context, token, userID string) error {
@@ -147,15 +147,15 @@ func TestAuthenticateViaUsername_Passwordless_TokenStoreError(t *testing.T) {
 	}
 }
 
-// TestAuthenticateViaUsername_Passwordless_Success tests a successful
-// passwordless authentication flow.
-func TestAuthenticateViaUsername_Passwordless_Success(t *testing.T) {
+// TestAuthenticateViaUsername_Otp_Success tests a successful
+// otp authentication flow.
+func TestAuthenticateViaUsername_Otp_Success(t *testing.T) {
 	var storedToken string
 	var storedUserID string
 
 	deps := Dependencies{
-		Passwordless: true,
-		PasswordlessUserFindByEmail: func(ctx context.Context, email string) (string, error) {
+		Otp: true,
+		OtpUserFindByEmail: func(ctx context.Context, email string) (string, error) {
 			if email == "test@example.com" {
 				return "user-123", nil
 			}
@@ -191,7 +191,7 @@ func TestAuthenticateViaUsername_Passwordless_Success(t *testing.T) {
 // username/password mode is enabled but the required dependency is nil, an error is returned.
 func TestAuthenticateViaUsername_UsernamePassword_MissingDependency(t *testing.T) {
 	deps := Dependencies{
-		Passwordless:       false,
+		Otp:       false,
 		UserFindByUsername: nil, // Missing required dependency
 	}
 
@@ -215,7 +215,7 @@ func TestAuthenticateViaUsername_UsernamePassword_MissingDependency(t *testing.T
 // the user lookup function returns an error, it's properly handled.
 func TestAuthenticateViaUsername_UsernamePassword_UserLookupError(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: false,
+		Otp: false,
 		UserFindByUsername: func(ctx context.Context, username, firstName, lastName string) (string, error) {
 			return "", errors.New("database error")
 		},
@@ -244,7 +244,7 @@ func TestAuthenticateViaUsername_UsernamePassword_UserLookupError(t *testing.T) 
 // the user lookup returns an empty userID, an error is returned.
 func TestAuthenticateViaUsername_UsernamePassword_UserNotFound(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: false,
+		Otp: false,
 		UserFindByUsername: func(ctx context.Context, username, firstName, lastName string) (string, error) {
 			return "", nil // Empty userID indicates user not found
 		},
@@ -270,7 +270,7 @@ func TestAuthenticateViaUsername_UsernamePassword_UserNotFound(t *testing.T) {
 // the token store dependency is nil, an error is returned.
 func TestAuthenticateViaUsername_UsernamePassword_TokenStoreMissing(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: false,
+		Otp: false,
 		UserFindByUsername: func(ctx context.Context, username, firstName, lastName string) (string, error) {
 			return "user-456", nil
 		},
@@ -297,7 +297,7 @@ func TestAuthenticateViaUsername_UsernamePassword_TokenStoreMissing(t *testing.T
 // storing the auth token fails, an error is returned.
 func TestAuthenticateViaUsername_UsernamePassword_TokenStoreError(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: false,
+		Otp: false,
 		UserFindByUsername: func(ctx context.Context, username, firstName, lastName string) (string, error) {
 			return "user-456", nil
 		},
@@ -332,7 +332,7 @@ func TestAuthenticateViaUsername_UsernamePassword_Success(t *testing.T) {
 	var storedUserID string
 
 	deps := Dependencies{
-		Passwordless: false,
+		Otp: false,
 		UserFindByUsername: func(ctx context.Context, username, firstName, lastName string) (string, error) {
 			if username == "testuser" && firstName == "John" && lastName == "Doe" {
 				return "user-456", nil
@@ -365,12 +365,12 @@ func TestAuthenticateViaUsername_UsernamePassword_Success(t *testing.T) {
 	}
 }
 
-// TestApiAuthenticateViaUsername_Passwordless_Success tests the HTTP handler
-// for a successful passwordless authentication.
-func TestApiAuthenticateViaUsername_Passwordless_Success(t *testing.T) {
+// TestApiAuthenticateViaUsername_Otp_Success tests the HTTP handler
+// for a successful otp authentication.
+func TestApiAuthenticateViaUsername_Otp_Success(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: true,
-		PasswordlessUserFindByEmail: func(ctx context.Context, email string) (string, error) {
+		Otp: true,
+		OtpUserFindByEmail: func(ctx context.Context, email string) (string, error) {
 			return "user-123", nil
 		},
 		UserStoreAuthToken: func(ctx context.Context, token, userID string) error {
@@ -400,7 +400,7 @@ func TestApiAuthenticateViaUsername_Passwordless_Success(t *testing.T) {
 // for a successful username/password authentication.
 func TestApiAuthenticateViaUsername_UsernamePassword_Success(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: false,
+		Otp: false,
 		UserFindByUsername: func(ctx context.Context, username, firstName, lastName string) (string, error) {
 			return "user-456", nil
 		},
@@ -434,7 +434,7 @@ func TestApiAuthenticateViaUsername_WithCookies(t *testing.T) {
 	var cookieToken string
 
 	deps := Dependencies{
-		Passwordless: false,
+		Otp: false,
 		UserFindByUsername: func(ctx context.Context, username, firstName, lastName string) (string, error) {
 			return "user-456", nil
 		},
@@ -470,7 +470,7 @@ func TestApiAuthenticateViaUsername_WithCookies(t *testing.T) {
 // returned in the HTTP response.
 func TestApiAuthenticateViaUsername_Error(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: false,
+		Otp: false,
 		UserFindByUsername: func(ctx context.Context, username, firstName, lastName string) (string, error) {
 			return "", errors.New("database error")
 		},

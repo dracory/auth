@@ -9,27 +9,27 @@ import (
 	authtypes "github.com/dracory/auth/types"
 )
 
-// resetPasswordlessStore is a helper to reset the global store between tests.
-func resetPasswordlessStore() {
-	passwordlessStore = &passwordlessMemoryStore{
-		usersByEmail: make(map[string]*passwordlessUser),
+// resetOtpStore is a helper to reset the global store between tests.
+func resetOtpStore() {
+	otpStore = &otpMemoryStore{
+		usersByEmail: make(map[string]*otpUser),
 		sessions:     make(map[string]string),
 		tempKeys:     make(map[string]string),
 	}
 }
 
-func TestPasswordlessRegisterAndFindUser(t *testing.T) {
-	resetPasswordlessStore()
+func TestOtpRegisterAndFindUser(t *testing.T) {
+	resetOtpStore()
 
 	ctx := context.Background()
 	opts := authtypes.UserAuthOptions{}
 
 	email := "user@example.com"
-	if err := passwordlessStore.registerUser(ctx, email, "John", "Doe", opts); err != nil {
+	if err := otpStore.registerUser(ctx, email, "John", "Doe", opts); err != nil {
 		t.Fatalf("registerUser unexpected error: %v", err)
 	}
 
-	id, err := passwordlessStore.findUserByEmail(ctx, email, opts)
+	id, err := otpStore.findUserByEmail(ctx, email, opts)
 	if err != nil {
 		t.Fatalf("findUserByEmail unexpected error: %v", err)
 	}
@@ -38,13 +38,13 @@ func TestPasswordlessRegisterAndFindUser(t *testing.T) {
 	}
 
 	// Registering the same email again should fail
-	if err := passwordlessStore.registerUser(ctx, email, "John", "Doe", opts); err == nil {
+	if err := otpStore.registerUser(ctx, email, "John", "Doe", opts); err == nil {
 		t.Fatalf("expected error when registering duplicate email, got nil")
 	}
 }
 
-func TestPasswordlessAuthTokenLifecycle(t *testing.T) {
-	resetPasswordlessStore()
+func TestOtpAuthTokenLifecycle(t *testing.T) {
+	resetOtpStore()
 
 	ctx := context.Background()
 	opts := authtypes.UserAuthOptions{}
@@ -52,11 +52,11 @@ func TestPasswordlessAuthTokenLifecycle(t *testing.T) {
 	userID := "user-1"
 	token := "token-123"
 
-	if err := passwordlessStore.storeAuthToken(ctx, token, userID, opts); err != nil {
+	if err := otpStore.storeAuthToken(ctx, token, userID, opts); err != nil {
 		t.Fatalf("storeAuthToken unexpected error: %v", err)
 	}
 
-	gotID, err := passwordlessStore.findByAuthToken(ctx, token, opts)
+	gotID, err := otpStore.findByAuthToken(ctx, token, opts)
 	if err != nil {
 		t.Fatalf("findByAuthToken unexpected error: %v", err)
 	}
@@ -65,22 +65,22 @@ func TestPasswordlessAuthTokenLifecycle(t *testing.T) {
 	}
 
 	// Invalid token should return an error
-	if _, err := passwordlessStore.findByAuthToken(ctx, "invalid", opts); err == nil {
+	if _, err := otpStore.findByAuthToken(ctx, "invalid", opts); err == nil {
 		t.Fatalf("expected error for invalid token, got nil")
 	}
 }
 
-func TestPasswordlessTempKeys(t *testing.T) {
-	resetPasswordlessStore()
+func TestOtpTempKeys(t *testing.T) {
+	resetOtpStore()
 
 	key := "code-123"
 	value := "user@example.com"
 
-	if err := passwordlessStore.tempKeySet(key, value, 60); err != nil {
+	if err := otpStore.tempKeySet(key, value, 60); err != nil {
 		t.Fatalf("tempKeySet unexpected error: %v", err)
 	}
 
-	got, err := passwordlessStore.tempKeyGet(key)
+	got, err := otpStore.tempKeyGet(key)
 	if err != nil {
 		t.Fatalf("tempKeyGet unexpected error: %v", err)
 	}
@@ -89,13 +89,13 @@ func TestPasswordlessTempKeys(t *testing.T) {
 	}
 
 	// Unknown key should return an error
-	if _, err := passwordlessStore.tempKeyGet("missing"); err == nil {
+	if _, err := otpStore.tempKeyGet("missing"); err == nil {
 		t.Fatalf("expected error for missing key, got nil")
 	}
 }
 
-func TestPasswordlessLogoutClearsSessionsForUser(t *testing.T) {
-	resetPasswordlessStore()
+func TestOtpLogoutClearsSessionsForUser(t *testing.T) {
+	resetOtpStore()
 
 	ctx := context.Background()
 	opts := authtypes.UserAuthOptions{}
@@ -104,29 +104,29 @@ func TestPasswordlessLogoutClearsSessionsForUser(t *testing.T) {
 	userID2 := "user-2"
 
 	// two tokens for user1, one for user2
-	_ = passwordlessStore.storeAuthToken(ctx, "t1", userID1, opts)
-	_ = passwordlessStore.storeAuthToken(ctx, "t2", userID1, opts)
-	_ = passwordlessStore.storeAuthToken(ctx, "t3", userID2, opts)
+	_ = otpStore.storeAuthToken(ctx, "t1", userID1, opts)
+	_ = otpStore.storeAuthToken(ctx, "t2", userID1, opts)
+	_ = otpStore.storeAuthToken(ctx, "t3", userID2, opts)
 
-	if err := passwordlessStore.logout(ctx, userID1, opts); err != nil {
+	if err := otpStore.logout(ctx, userID1, opts); err != nil {
 		t.Fatalf("logout unexpected error: %v", err)
 	}
 
-	if _, err := passwordlessStore.findByAuthToken(ctx, "t1", opts); err == nil {
+	if _, err := otpStore.findByAuthToken(ctx, "t1", opts); err == nil {
 		t.Fatalf("expected error for token t1 after logout, got nil")
 	}
-	if _, err := passwordlessStore.findByAuthToken(ctx, "t2", opts); err == nil {
+	if _, err := otpStore.findByAuthToken(ctx, "t2", opts); err == nil {
 		t.Fatalf("expected error for token t2 after logout, got nil")
 	}
 
 	// Token for user2 should still be valid
-	if _, err := passwordlessStore.findByAuthToken(ctx, "t3", opts); err != nil {
+	if _, err := otpStore.findByAuthToken(ctx, "t3", opts); err != nil {
 		t.Fatalf("expected token t3 to remain valid, got error: %v", err)
 	}
 }
 
-func TestPasswordlessDisplayNameUsesRegisteredName(t *testing.T) {
-	resetPasswordlessStore()
+func TestOtpDisplayNameUsesRegisteredName(t *testing.T) {
+	resetOtpStore()
 
 	ctx := context.Background()
 	opts := authtypes.UserAuthOptions{}
@@ -135,60 +135,60 @@ func TestPasswordlessDisplayNameUsesRegisteredName(t *testing.T) {
 	firstName := "Alice"
 	lastName := "Smith"
 
-	if err := passwordlessStore.registerUser(ctx, email, firstName, lastName, opts); err != nil {
+	if err := otpStore.registerUser(ctx, email, firstName, lastName, opts); err != nil {
 		t.Fatalf("registerUser unexpected error: %v", err)
 	}
 
-	userID, err := passwordlessStore.findUserByEmail(ctx, email, opts)
+	userID, err := otpStore.findUserByEmail(ctx, email, opts)
 	if err != nil {
 		t.Fatalf("findUserByEmail unexpected error: %v", err)
 	}
 
-	display := passwordlessStore.displayName(userID)
+	display := otpStore.displayName(userID)
 	if !strings.Contains(display, firstName) || !strings.Contains(display, lastName) {
 		t.Fatalf("expected display name to contain first and last name, got %q", display)
 	}
 }
 
-func TestPasswordlessDisplayNameFallbacks(t *testing.T) {
-	resetPasswordlessStore()
+func TestOtpDisplayNameFallbacks(t *testing.T) {
+	resetOtpStore()
 	ctx := context.Background()
 	opts := authtypes.UserAuthOptions{}
 
 	// User with no names falls back to email.
-	passwordlessStore.mu.Lock()
-	passwordlessStore.usersByEmail["noname@example.com"] = &passwordlessUser{ID: "u-noname", Email: "noname@example.com"}
-	passwordlessStore.mu.Unlock()
+	otpStore.mu.Lock()
+	otpStore.usersByEmail["noname@example.com"] = &otpUser{ID: "u-noname", Email: "noname@example.com"}
+	otpStore.mu.Unlock()
 
-	if got := passwordlessStore.displayName("u-noname"); got != "noname@example.com" {
+	if got := otpStore.displayName("u-noname"); got != "noname@example.com" {
 		t.Fatalf("expected email fallback, got %q", got)
 	}
-	if got := passwordlessStore.displayName("missing"); got != "missing" {
+	if got := otpStore.displayName("missing"); got != "missing" {
 		t.Fatalf("expected id fallback, got %q", got)
 	}
 
-	if err := passwordlessStore.registerUser(ctx, "named@example.com", "Jane", "Roe", opts); err != nil {
+	if err := otpStore.registerUser(ctx, "named@example.com", "Jane", "Roe", opts); err != nil {
 		t.Fatal(err)
 	}
-	id, err := passwordlessStore.findUserByEmail(ctx, "named@example.com", opts)
+	id, err := otpStore.findUserByEmail(ctx, "named@example.com", opts)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := passwordlessStore.displayName(id); got != "Jane Roe" {
+	if got := otpStore.displayName(id); got != "Jane Roe" {
 		t.Fatalf("expected full name, got %q", got)
 	}
 }
 
-func TestPasswordlessEmailSend(t *testing.T) {
+func TestOtpEmailSend(t *testing.T) {
 	// No local mail server — expect a dial error, not a panic.
-	err := passwordlessEmailSend(context.Background(), "a@b.com", "subj", "body")
+	err := otpEmailSend(context.Background(), "a@b.com", "subj", "body")
 	if err == nil {
 		t.Skip("local mail server is running; send succeeded")
 	}
 }
 
-func TestPasswordlessMuxServesPages(t *testing.T) {
-	resetPasswordlessStore()
+func TestOtpMuxServesPages(t *testing.T) {
+	resetOtpStore()
 
 	authInstance, err := newAuth()
 	if err != nil {

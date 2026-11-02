@@ -36,9 +36,9 @@ type Dependencies struct {
 
 	PasswordStrength *types.PasswordStrengthConfig
 
-	Passwordless bool
+	Otp bool
 
-	PasswordlessUserRegister func(ctx context.Context, email, firstName, lastName string) error
+	OtpUserRegister func(ctx context.Context, email, firstName, lastName string) error
 	UserRegister             func(ctx context.Context, email, password, firstName, lastName string) error
 
 	// AuthenticateViaUsername is called on successful registration to
@@ -160,7 +160,7 @@ func ApiRegisterCodeVerifyWithAuth(w http.ResponseWriter, r *http.Request, a typ
 		TemporaryKeyGet:  a.GetFuncTemporaryKeyGet(),
 		TemporaryKeySet:  a.GetFuncTemporaryKeySet(),
 		PasswordStrength: a.GetPasswordStrength(),
-		Passwordless:     a.IsPasswordless(),
+		Otp:     a.IsOtp(),
 		Logger:           a.GetLogger(),
 	}
 	if deleter, ok := a.(interface {
@@ -169,8 +169,8 @@ func ApiRegisterCodeVerifyWithAuth(w http.ResponseWriter, r *http.Request, a typ
 		deps.TemporaryKeyDelete = deleter.GetFuncTemporaryKeyDelete()
 	}
 
-	if fn := a.GetPasswordlessUserRegister(); fn != nil {
-		deps.PasswordlessUserRegister = func(ctx context.Context, email, firstName, lastName string) error {
+	if fn := a.GetOtpUserRegister(); fn != nil {
+		deps.OtpUserRegister = func(ctx context.Context, email, firstName, lastName string) error {
 			return fn(ctx, email, firstName, lastName, types.UserAuthOptions{
 				UserIp:    req.GetIP(r),
 				UserAgent: r.UserAgent(),
@@ -348,14 +348,14 @@ func RegisterCodeVerify(ctx context.Context, r *http.Request, deps Dependencies)
 	// Perform registration
 	var errRegister error
 
-	if deps.Passwordless {
-		if deps.PasswordlessUserRegister == nil {
+	if deps.Otp {
+		if deps.OtpUserRegister == nil {
 			return nil, &RegisterCodeVerifyError{
 				Code: RegisterCodeVerifyErrorCodeRegister,
-				Err:  errors.New("passwordless user register function is not configured"),
+				Err:  errors.New("otp user register function is not configured"),
 			}
 		}
-		errRegister = deps.PasswordlessUserRegister(ctx, email, firstName, lastName)
+		errRegister = deps.OtpUserRegister(ctx, email, firstName, lastName)
 	} else {
 		// Username/password flow with strength validation
 		if check := rules.NewPasswordStrengthRule(password, deps.PasswordStrength); check.Fails() {

@@ -81,9 +81,9 @@ func TestApiRegisterWithAuth(t *testing.T) {
 	}
 }
 
-func TestApiRegisterWithAuth_Passwordless(t *testing.T) {
+func TestApiRegisterWithAuth_Otp(t *testing.T) {
 	a := testutils.NewAuthSharedForTest()
-	testutils.SetPasswordlessForTest(a, true)
+	testutils.SetOtpForTest(a, true)
 
 	recorder, req := makeRegisterPost(t, url.Values{})
 	ApiRegisterWithAuth(recorder, req, a)
@@ -115,8 +115,8 @@ func TestApiRegisterWithAuth_ProfileUpdateHook(t *testing.T) {
 	}
 }
 
-func TestApiRegisterWithAuth_NonPasswordNonPasswordless(t *testing.T) {
-	// A shared-only impl that is neither password nor passwordless nor
+func TestApiRegisterWithAuth_NonPasswordNonOtp(t *testing.T) {
+	// A shared-only impl that is neither password nor otp nor
 	// authknight reaches the 500 guard.
 	a := sharedOnlyAuth{AuthSharedInterface: testutils.NewAuthSharedForTest()}
 

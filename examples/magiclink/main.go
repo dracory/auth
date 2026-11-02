@@ -160,7 +160,7 @@ func newMux() (*http.ServeMux, error) {
 		FuncTemporaryKeySet:     store.tempKeySet,
 	}
 
-	passwordlessAuth, err := auth.NewOtpAuth(types.ConfigOtp{
+	otpAuth, err := auth.NewOtpAuth(types.ConfigOtp{
 		ConfigShared:        shared,
 		FuncUserFindByEmail: store.findUserByEmail,
 		FuncEmailSend:       emailSend,
@@ -170,7 +170,7 @@ func newMux() (*http.ServeMux, error) {
 		return nil, err
 	}
 
-	magicLinkMethod := auth.NewMagicLinkMethodFromAuth(passwordlessAuth, nil, func(token string) string {
+	magicLinkMethod := auth.NewMagicLinkMethodFromAuth(otpAuth, nil, func(token string) string {
 		return "/auth/magiclink-callback?token=" + token
 	})
 
@@ -186,8 +186,8 @@ func newMux() (*http.ServeMux, error) {
 		fmt.Fprint(w, `<h1>Magic Link Demo</h1><p><a href="/auth/login">Login via Magic Link</a></p>`)
 	})
 
-	mux.Handle("/dashboard", passwordlessAuth.WebAuthOrRedirectMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userID := passwordlessAuth.GetCurrentUserID(r)
+	mux.Handle("/dashboard", otpAuth.WebAuthOrRedirectMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userID := otpAuth.GetCurrentUserID(r)
 		fmt.Fprintf(w, `<h1>Dashboard</h1><p>Welcome, %s (id: %s)!</p><p><a href="/auth/logout">Logout</a></p>`, store.displayName(userID), userID)
 	})))
 

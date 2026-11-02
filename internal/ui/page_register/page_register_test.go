@@ -14,7 +14,7 @@ import (
 func TestPageRegister_UsernameAndPassword(t *testing.T) {
 	a := testutils.NewAuthSharedForTest()
 	// Username/password branch with verification disabled.
-	testutils.SetPasswordlessForTest(a, false)
+	testutils.SetOtpForTest(a, false)
 	testutils.SetVerificationForTest(a, false)
 
 	req, err := http.NewRequest("GET", "/", nil)
@@ -48,9 +48,9 @@ func TestPageRegister_UsernameAndPassword(t *testing.T) {
 	}
 }
 
-func TestPageRegister_Passwordless(t *testing.T) {
+func TestPageRegister_Otp(t *testing.T) {
 	a := testutils.NewAuthSharedForTest()
-	testutils.SetPasswordlessForTest(a, true)
+	testutils.SetOtpForTest(a, true)
 	testutils.SetVerificationForTest(a, true)
 
 	req, err := http.NewRequest("GET", "/", nil)
@@ -85,7 +85,7 @@ func TestPageRegister_Passwordless(t *testing.T) {
 
 func TestPageRegister_AuthKnight(t *testing.T) {
 	a := testutils.NewAuthSharedForTest()
-	testutils.SetPasswordlessForTest(a, false)
+	testutils.SetOtpForTest(a, false)
 	testutils.SetVerificationForTest(a, false)
 	testutils.SetAuthKnightForTest(a, true)
 	testutils.SetTemporaryKeyGetForTest(a, func(key string) (string, error) {
@@ -132,7 +132,7 @@ func TestPageRegister_AuthKnight(t *testing.T) {
 // must render the same verified-email register form.
 func TestPageRegister_VerifiedKey(t *testing.T) {
 	a := testutils.NewAuthSharedForTest()
-	testutils.SetPasswordlessForTest(a, true)
+	testutils.SetOtpForTest(a, true)
 	testutils.SetVerificationForTest(a, true)
 	testutils.SetTemporaryKeyGetForTest(a, func(key string) (string, error) {
 		if key == "test-verified-key" {
@@ -171,7 +171,7 @@ func TestPageRegister_VerifiedKey(t *testing.T) {
 
 func TestPageRegister_Authenticated(t *testing.T) {
 	a := testutils.NewAuthSharedForTest()
-	testutils.SetPasswordlessForTest(a, true)
+	testutils.SetOtpForTest(a, true)
 	testutils.SetVerificationForTest(a, true)
 	a.SetUseCookies(true)
 	a.SetFuncUserFindByAuthToken(func(ctx context.Context, token string, options types.UserAuthOptions) (string, error) {
@@ -222,7 +222,7 @@ func TestPageRegister_Authenticated(t *testing.T) {
 
 func TestPageRegister_AuthKnightNoAkKey(t *testing.T) {
 	a := testutils.NewAuthSharedForTest()
-	testutils.SetPasswordlessForTest(a, false)
+	testutils.SetOtpForTest(a, false)
 	testutils.SetVerificationForTest(a, false)
 	testutils.SetAuthKnightForTest(a, true)
 

@@ -43,8 +43,8 @@ func TestPageLogin_UsernameAndPassword(t *testing.T) {
 	}
 }
 
-func TestPageLogin_Passwordless(t *testing.T) {
-	config := testutils.NewPasswordlessConfigForTest()
+func TestPageLogin_Otp(t *testing.T) {
+	config := testutils.NewOtpConfigForTest()
 	auth, errAuth := NewOtpAuth(config)
 	if errAuth != nil {
 		t.Fatal(errAuth)
@@ -123,8 +123,8 @@ func TestPageRegister_UsernameAndPassword(t *testing.T) {
 	}
 }
 
-func TestPageRegister_Passwordless(t *testing.T) {
-	config := testutils.NewPasswordlessConfigForTest()
+func TestPageRegister_Otp(t *testing.T) {
+	config := testutils.NewOtpConfigForTest()
 	authShared, err := NewOtpAuth(config)
 	if err != nil {
 		t.Fatal(err)
@@ -169,7 +169,7 @@ func TestPageRegister_Passwordless(t *testing.T) {
 }
 
 func TestPageRegisterCodeVerify(t *testing.T) {
-	config := testutils.NewPasswordlessConfigForTest()
+	config := testutils.NewOtpConfigForTest()
 	authShared, err := NewOtpAuth(config)
 	if err != nil {
 		t.Fatal(err)
@@ -364,7 +364,7 @@ func TestPagePasswordReset_MissingTokenShowsError(t *testing.T) {
 }
 
 func TestPageLoginCodeVerify(t *testing.T) {
-	config := testutils.NewPasswordlessConfigForTest()
+	config := testutils.NewOtpConfigForTest()
 	authInstance, err := NewOtpAuth(config)
 	if err != nil {
 		t.Fatal(err)

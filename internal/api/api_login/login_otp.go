@@ -13,19 +13,19 @@ import (
 	"github.com/dracory/auth/utils"
 )
 
-// LoginPasswordlessErrorCode categorizes the possible error sources in the passwordless login flow.
-type LoginPasswordlessErrorCode string
+// LoginOtpErrorCode categorizes the possible error sources in the otp login flow.
+type LoginOtpErrorCode string
 
-// LoginPasswordlessError represents a structured error for the passwordless login flow.
+// LoginOtpError represents a structured error for the otp login flow.
 // Message is intended to be user-facing for validation errors. For internal failures,
 // callers are expected to wrap Err into their own error types.
-type LoginPasswordlessError struct {
-	Code    LoginPasswordlessErrorCode
+type LoginOtpError struct {
+	Code    LoginOtpErrorCode
 	Message string
 	Err     error
 }
 
-func (e *LoginPasswordlessError) Error() string {
+func (e *LoginOtpError) Error() string {
 	if e == nil {
 		return ""
 	}
@@ -38,19 +38,19 @@ func (e *LoginPasswordlessError) Error() string {
 	return string(e.Code)
 }
 
-// LoginPasswordlessResult represents a successful passwordless login operation.
-type LoginPasswordlessResult struct {
+// LoginOtpResult represents a successful otp login operation.
+type LoginOtpResult struct {
 	SuccessMessage string
 	// Nonce identifies the temporary-key under which "email:code" is stored.
 	// The client must present it alongside the code on verification.
 	Nonce string
 }
 
-// LoginPasswordless contains the core business logic of the passwordless login API.
+// LoginOtp contains the core business logic of the otp login API.
 // It performs input validation, code generation, temporary token storage and prepares
 // the email contents. It does *not* perform logging; callers are responsible for
 // logging and mapping structured errors to their own error types.
-func loginPasswordless(ctx context.Context, r *http.Request, deps LoginPasswordlessDeps) (*LoginPasswordlessResult, *LoginPasswordlessError) {
+func loginOtp(ctx context.Context, r *http.Request, deps LoginOtpDeps) (*LoginOtpResult, *LoginOtpError) {
 	email := req.GetStringTrimmed(r, "email")
 
 	for _, check := range []rule.RuleInterface{
@@ -58,8 +58,8 @@ func loginPasswordless(ctx context.Context, r *http.Request, deps LoginPasswordl
 		rules.NewEmailFormatRule(email),
 	} {
 		if check.Fails() {
-			return nil, &LoginPasswordlessError{
-				Code:    LoginPasswordlessErrorCodeValidation,
+			return nil, &LoginOtpError{
+				Code:    LoginOtpErrorCodeValidation,
 				Message: check.FailMessageFirst(),
 			}
 		}
@@ -78,31 +78,31 @@ func loginPasswordless(ctx context.Context, r *http.Request, deps LoginPasswordl
 	// bombing; enforced before code generation so a blocked email never
 	// consumes a code or send quota.
 	if check := rules.NewEmailSendThrottleRule(deps.TemporaryKeyGet, email, deps.EmailSendThrottle); check.Fails() {
-		return nil, &LoginPasswordlessError{
-			Code:    LoginPasswordlessErrorCodeTooManySends,
+		return nil, &LoginOtpError{
+			Code:    LoginOtpErrorCodeTooManySends,
 			Message: check.FailMessageFirst(),
 		}
 	}
 
 	verificationCode, err := utils.GenerateVerificationCode(deps.DisableRateLimit)
 	if err != nil {
-		return nil, &LoginPasswordlessError{
-			Code: LoginPasswordlessErrorCodeCodeGeneration,
+		return nil, &LoginOtpError{
+			Code: LoginOtpErrorCodeCodeGeneration,
 			Err:  err,
 		}
 	}
 
 	nonce, err := utils.GenerateNonce()
 	if err != nil {
-		return nil, &LoginPasswordlessError{
-			Code: LoginPasswordlessErrorCodeCodeGeneration,
+		return nil, &LoginOtpError{
+			Code: LoginOtpErrorCodeCodeGeneration,
 			Err:  err,
 		}
 	}
 
 	if deps.TemporaryKeySet == nil {
-		return nil, &LoginPasswordlessError{
-			Code: LoginPasswordlessErrorCodeTokenStore,
+		return nil, &LoginOtpError{
+			Code: LoginOtpErrorCodeTokenStore,
 			Err:  errors.New("temporary key store is not configured"),
 		}
 	}
@@ -118,8 +118,8 @@ func loginPasswordless(ctx context.Context, r *http.Request, deps LoginPasswordl
 	// The nonce — not the code — is the storage key, so a guessed code alone
 	// cannot be redeemed; the client must also present the 128-bit nonce.
 	if errTemp := deps.TemporaryKeySet(utils.LoginCodeKeyPrefix+nonce, email+":"+verificationCode, expires); errTemp != nil {
-		return nil, &LoginPasswordlessError{
-			Code: LoginPasswordlessErrorCodeTokenStore,
+		return nil, &LoginOtpError{
+			Code: LoginOtpErrorCodeTokenStore,
 			Err:  errTemp,
 		}
 	}
@@ -127,15 +127,15 @@ func loginPasswordless(ctx context.Context, r *http.Request, deps LoginPasswordl
 	// Seed the per-nonce attempt counter alongside the code; verify enforces
 	// utils.MaxCodeAttempts before invalidating the code.
 	if errTemp := deps.TemporaryKeySet(utils.LoginCodeAttemptsKeyPrefix+nonce, "0", expires); errTemp != nil {
-		return nil, &LoginPasswordlessError{
-			Code: LoginPasswordlessErrorCodeTokenStore,
+		return nil, &LoginOtpError{
+			Code: LoginOtpErrorCodeTokenStore,
 			Err:  errTemp,
 		}
 	}
 
 	if deps.EmailTemplate == nil || deps.EmailSend == nil {
-		return nil, &LoginPasswordlessError{
-			Code: LoginPasswordlessErrorCodeEmailSend,
+		return nil, &LoginOtpError{
+			Code: LoginOtpErrorCodeEmailSend,
 			Err:  errors.New("email template or sender is not configured"),
 		}
 	}
@@ -149,8 +149,8 @@ func loginPasswordless(ctx context.Context, r *http.Request, deps LoginPasswordl
 		deps.EmailEnqueue, deps.EmailSend, email, verificationCode,
 		"Login Code", emailContent, expires)
 	if errEmail != nil {
-		return nil, &LoginPasswordlessError{
-			Code: LoginPasswordlessErrorCodeEmailSend,
+		return nil, &LoginOtpError{
+			Code: LoginOtpErrorCodeEmailSend,
 			Err:  errEmail,
 		}
 	}
@@ -161,7 +161,7 @@ func loginPasswordless(ctx context.Context, r *http.Request, deps LoginPasswordl
 		_ = utils.RecordEmailSend(deps.TemporaryKeyGet, deps.TemporaryKeySet, email, deps.EmailSendThrottle)
 	}
 
-	return &LoginPasswordlessResult{
+	return &LoginOtpResult{
 		SuccessMessage: types.MsgLoginCodeSent,
 		Nonce:          nonce,
 	}, nil

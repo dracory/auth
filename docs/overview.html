@@ -115,7 +115,7 @@
 <hr>
 <h2>🏗️ Architecture Overview</h2>
 <pre><code class="language-text">Entry points
-  ├── NewPasswordlessAuth(ConfigOtp)     → AuthPasswordlessInterface
+  ├── NewOtpAuth(ConfigOtp)     → AuthOtpInterface
   ├── NewUsernameAndPasswordAuth(ConfigUsernameAndPassword) → AuthPasswordInterface
   ├── NewAuthKnightAuth(ConfigAuthKnight)         → AuthAuthKnightInterface
   └── NewMultiMethodAuth(endpoint, []types.Method) → composed mux
@@ -134,7 +134,7 @@ authImplementation
 <hr>
 <h2>📦 Package Organization</h2>
 <h3><code>types/</code> — Public API types</h3>
-<ul><li><code>config_shared.go</code> — <code>ConfigShared</code> embedded by all method configs</li><li><code>config_passwordless.go</code>, <code>config_username_and_password.go</code>, <code>config_authknight.go</code> — per-method configs</li><li><code>auth_interfaces.go</code> — <code>AuthSharedInterface</code>, <code>AuthPasswordlessInterface</code>, <code>AuthPasswordInterface</code>, <code>AuthAuthKnightInterface</code></li><li><code>method.go</code> — <code>Method</code> interface (<code>Name</code>, <code>PageHandler</code>, <code>AjaxHandler</code>, <code>CallbackRoute</code>) + <code>RouteProvider</code> for extra routes</li><li><code>post_auth.go</code> — <code>PostAuthHooks</code> (EmailAllowed, UserFindByEmailOrCreate, UserIsActive, SessionCreate, SetAuthCookie, RedirectURL, RegisterRules)</li><li><code>session.go</code>, <code>cookie_config.go</code>, <code>observability.go</code>, <code>user_auth_options.go</code>, <code>messages.go</code></li></ul>
+<ul><li><code>config_shared.go</code> — <code>ConfigShared</code> embedded by all method configs</li><li><code>config_passwordless.go</code>, <code>config_username_and_password.go</code>, <code>config_authknight.go</code> — per-method configs</li><li><code>auth_interfaces.go</code> — <code>AuthSharedInterface</code>, <code>AuthOtpInterface</code>, <code>AuthPasswordInterface</code>, <code>AuthAuthKnightInterface</code></li><li><code>method.go</code> — <code>Method</code> interface (<code>Name</code>, <code>PageHandler</code>, <code>AjaxHandler</code>, <code>CallbackRoute</code>) + <code>RouteProvider</code> for extra routes</li><li><code>post_auth.go</code> — <code>PostAuthHooks</code> (EmailAllowed, UserFindByEmailOrCreate, UserIsActive, SessionCreate, SetAuthCookie, RedirectURL, RegisterRules)</li><li><code>session.go</code>, <code>cookie_config.go</code>, <code>observability.go</code>, <code>user_auth_options.go</code>, <code>messages.go</code></li></ul>
 <h3><code>internal/api/</code> — JSON endpoints (one subdirectory per endpoint)</h3>
 <p><code>api_login</code>, <code>api_login_code_verify</code>, <code>api_magic_link_send</code>, <code>api_magic_link_callback</code>, <code>api_register</code>, <code>api_register_code_verify</code>, <code>api_logout</code>, <code>api_password_restore</code>, <code>api_password_reset</code>, <code>api_authenticate_via_username</code>, <code>api_authknight_callback</code>, <code>api_impersonate_start</code>, <code>api_impersonate_stop</code></p>
 <h3><code>internal/ui/</code> — Server-rendered pages</h3>
@@ -142,10 +142,10 @@ authImplementation
 <h3><code>internal/</code> support packages</h3>
 <p><code>core</code> (post-auth pipeline), <code>rules</code> (email send throttle, validation), <code>links</code> (route paths), <code>emails</code>, <code>middlewares</code>, <code>helpers</code>, <code>testutils</code></p>
 <h3>Root package — public API</h3>
-<ul><li><strong>Constructors:</strong> <code>NewPasswordlessAuth</code>, <code>NewUsernameAndPasswordAuth</code>, <code>NewAuthKnightAuth</code>, <code>NewMultiMethodAuth</code></li><li><strong>Method adapters:</strong> <code>NewOTPMethod(WithPage)</code>, <code>NewMagicLinkMethod(FromAuth)</code>, <code>NewPasswordMethod</code>, <code>NewAuthKnightMethod</code></li><li><strong>Middleware:</strong> <code>WebAuthOrRedirectMiddleware</code>, <code>ApiAuthOrErrorMiddleware</code>, <code>WebAppendUserIdIfExistsMiddleware</code></li><li><strong>Cookies:</strong> <code>AuthCookieSet</code>, <code>AuthCookieRemove</code>, <code>CookieName</code> + <code>types.WithSecure</code> options</li></ul>
+<ul><li><strong>Constructors:</strong> <code>NewOtpAuth</code>, <code>NewUsernameAndPasswordAuth</code>, <code>NewAuthKnightAuth</code>, <code>NewMultiMethodAuth</code></li><li><strong>Method adapters:</strong> <code>NewOTPMethod(WithPage)</code>, <code>NewMagicLinkMethod(FromAuth)</code>, <code>NewPasswordMethod</code>, <code>NewAuthKnightMethod</code></li><li><strong>Middleware:</strong> <code>WebAuthOrRedirectMiddleware</code>, <code>ApiAuthOrErrorMiddleware</code>, <code>WebAppendUserIdIfExistsMiddleware</code></li><li><strong>Cookies:</strong> <code>AuthCookieSet</code>, <code>AuthCookieRemove</code>, <code>CookieName</code> + <code>types.WithSecure</code> options</li></ul>
 <hr>
 <h2>🔑 Multi-Method Composition</h2>
-<pre><code class="language-go">a, _ := auth.NewPasswordlessAuth(cfg)          // shared impl serves otp + magiclink
+<pre><code class="language-go">a, _ := auth.NewOtpAuth(cfg)          // shared impl serves otp + magiclink
 p, _ := auth.NewUsernameAndPasswordAuth(pcfg)  // password impl
 
 mma, err := auth.NewMultiMethodAuth(&quot;/auth&quot;, []types.Method{

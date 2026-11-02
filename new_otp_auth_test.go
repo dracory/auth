@@ -7,7 +7,7 @@ import (
 	"github.com/dracory/auth/types"
 )
 
-func TestNewPasswordlessAuth_EndpointRequired(t *testing.T) {
+func TestNewOtpAuth_EndpointRequired(t *testing.T) {
 	_, err := NewOtpAuth(types.ConfigOtp{})
 	if err == nil {
 		t.Fatal("Error SHOULD NOT BE NULL")
@@ -17,7 +17,7 @@ func TestNewPasswordlessAuth_EndpointRequired(t *testing.T) {
 	}
 }
 
-func TestNewPasswordlessAuth_UrlToRedirectOnSuccessIsRequired(t *testing.T) {
+func TestNewOtpAuth_UrlToRedirectOnSuccessIsRequired(t *testing.T) {
 	_, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint: "/auth",
@@ -31,7 +31,7 @@ func TestNewPasswordlessAuth_UrlToRedirectOnSuccessIsRequired(t *testing.T) {
 	}
 }
 
-func TestNewPasswordlessAuth_FuncTemporaryKeyGetIsRequired(t *testing.T) {
+func TestNewOtpAuth_FuncTemporaryKeyGetIsRequired(t *testing.T) {
 	_, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
@@ -46,7 +46,7 @@ func TestNewPasswordlessAuth_FuncTemporaryKeyGetIsRequired(t *testing.T) {
 	}
 }
 
-func TestNewPasswordlessAuth_FuncTemporaryKeySetIsRequired(t *testing.T) {
+func TestNewOtpAuth_FuncTemporaryKeySetIsRequired(t *testing.T) {
 	_, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
@@ -62,7 +62,7 @@ func TestNewPasswordlessAuth_FuncTemporaryKeySetIsRequired(t *testing.T) {
 	}
 }
 
-func TestNewPasswordlessAuth_FuncUserFindByAuthTokenIsRequired(t *testing.T) {
+func TestNewOtpAuth_FuncUserFindByAuthTokenIsRequired(t *testing.T) {
 	_, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
@@ -79,7 +79,7 @@ func TestNewPasswordlessAuth_FuncUserFindByAuthTokenIsRequired(t *testing.T) {
 	}
 }
 
-func TestNewPasswordlessAuth_FuncUserFindByEmailIsRequired(t *testing.T) {
+func TestNewOtpAuth_FuncUserFindByEmailIsRequired(t *testing.T) {
 	_, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
@@ -99,7 +99,7 @@ func TestNewPasswordlessAuth_FuncUserFindByEmailIsRequired(t *testing.T) {
 	}
 }
 
-func TestNewPasswordlessAuth_FuncUserLogoutIsRequired(t *testing.T) {
+func TestNewOtpAuth_FuncUserLogoutIsRequired(t *testing.T) {
 	_, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
@@ -122,7 +122,7 @@ func TestNewPasswordlessAuth_FuncUserLogoutIsRequired(t *testing.T) {
 	}
 }
 
-func TestNewPasswordlessAuth_FuncUserStoreTokenFuncUserStoreTokenIsRequired(t *testing.T) {
+func TestNewOtpAuth_FuncUserStoreTokenFuncUserStoreTokenIsRequired(t *testing.T) {
 	_, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
@@ -146,7 +146,7 @@ func TestNewPasswordlessAuth_FuncUserStoreTokenFuncUserStoreTokenIsRequired(t *t
 	}
 }
 
-func TestNewPasswordlessAuth_FuncEmailSendIsRequired(t *testing.T) {
+func TestNewOtpAuth_FuncEmailSendIsRequired(t *testing.T) {
 	_, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
@@ -171,7 +171,7 @@ func TestNewPasswordlessAuth_FuncEmailSendIsRequired(t *testing.T) {
 	}
 }
 
-func TestNewPasswordlessAuth_UseCookiesAndLocalStorageCannotBeBothFalse(t *testing.T) {
+func TestNewOtpAuth_UseCookiesAndLocalStorageCannotBeBothFalse(t *testing.T) {
 	_, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
@@ -197,7 +197,7 @@ func TestNewPasswordlessAuth_UseCookiesAndLocalStorageCannotBeBothFalse(t *testi
 	}
 }
 
-func TestNewPasswordlessAuth_UseCookiesAndLocalStorageCannotBeBothTrue(t *testing.T) {
+func TestNewOtpAuth_UseCookiesAndLocalStorageCannotBeBothTrue(t *testing.T) {
 	_, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
@@ -225,7 +225,7 @@ func TestNewPasswordlessAuth_UseCookiesAndLocalStorageCannotBeBothTrue(t *testin
 	}
 }
 
-func TestNewPasswordlessAuth_UseCookiesAndLocalStorageCannotBeBothTruee(t *testing.T) {
+func TestNewOtpAuth_UseCookiesAndLocalStorageCannotBeBothTruee(t *testing.T) {
 	auth, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
@@ -255,7 +255,7 @@ func TestNewPasswordlessAuth_UseCookiesAndLocalStorageCannotBeBothTruee(t *testi
 	}
 }
 
-func TestNewPasswordlessAuth_CookieConfigName(t *testing.T) {
+func TestNewOtpAuth_CookieConfigName(t *testing.T) {
 	auth, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
@@ -296,7 +296,7 @@ func TestNewPasswordlessAuth_CookieConfigName(t *testing.T) {
 	}
 }
 
-func TestNewPasswordlessAuth_CookieConfigInsecure(t *testing.T) {
+func TestNewOtpAuth_CookieConfigInsecure(t *testing.T) {
 	auth, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
@@ -334,7 +334,7 @@ func TestNewPasswordlessAuth_CookieConfigInsecure(t *testing.T) {
 	}
 }
 
-func TestNewPasswordlessAuth_CSRFSecretRequiredWhenEnabled(t *testing.T) {
+func TestNewOtpAuth_CSRFSecretRequiredWhenEnabled(t *testing.T) {
 	_, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
@@ -365,7 +365,7 @@ func TestNewPasswordlessAuth_CSRFSecretRequiredWhenEnabled(t *testing.T) {
 	}
 }
 
-func TestNewPasswordlessAuth_CSRFEnabledWithSecretSucceeds(t *testing.T) {
+func TestNewOtpAuth_CSRFEnabledWithSecretSucceeds(t *testing.T) {
 	auth, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
@@ -397,7 +397,7 @@ func TestNewPasswordlessAuth_CSRFEnabledWithSecretSucceeds(t *testing.T) {
 	}
 	concrete, ok := auth.(*authImplementation)
 	if !ok {
-		t.Fatal("expected *authImplementation concrete type from NewPasswordlessAuth")
+		t.Fatal("expected *authImplementation concrete type from NewOtpAuth")
 	}
 	if !concrete.enableCSRFProtection {
 		t.Fatal("enableCSRFProtection SHOULD be true")
@@ -413,7 +413,7 @@ func TestNewPasswordlessAuth_CSRFEnabledWithSecretSucceeds(t *testing.T) {
 	}
 }
 
-func TestNewPasswordlessAuth_FuncEmailTemplateRegisterCodeWired(t *testing.T) {
+func TestNewOtpAuth_FuncEmailTemplateRegisterCodeWired(t *testing.T) {
 	customTemplate := func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string {
 		return "custom-register-template"
 	}
@@ -444,16 +444,16 @@ func TestNewPasswordlessAuth_FuncEmailTemplateRegisterCodeWired(t *testing.T) {
 	if !ok {
 		t.Fatal("expected *authImplementation concrete type")
 	}
-	if concrete.passwordlessFuncEmailTemplateRegisterCode == nil {
-		t.Fatal("passwordlessFuncEmailTemplateRegisterCode SHOULD be set from config")
+	if concrete.otpFuncEmailTemplateRegisterCode == nil {
+		t.Fatal("otpFuncEmailTemplateRegisterCode SHOULD be set from config")
 	}
-	result := concrete.passwordlessFuncEmailTemplateRegisterCode(context.Background(), "test@test.com", "http://localhost/auth/register-code-verify?code=123", types.UserAuthOptions{})
+	result := concrete.otpFuncEmailTemplateRegisterCode(context.Background(), "test@test.com", "http://localhost/auth/register-code-verify?code=123", types.UserAuthOptions{})
 	if result != "custom-register-template" {
 		t.Fatalf("expected custom register template output, got %q", result)
 	}
 }
 
-func TestNewPasswordlessAuth_FuncEmailTemplateLoginCodeWired(t *testing.T) {
+func TestNewOtpAuth_FuncEmailTemplateLoginCodeWired(t *testing.T) {
 	customTemplate := func(ctx context.Context, email string, loginLink string, options types.UserAuthOptions) string {
 		return "custom-login-template"
 	}
@@ -484,10 +484,10 @@ func TestNewPasswordlessAuth_FuncEmailTemplateLoginCodeWired(t *testing.T) {
 	if !ok {
 		t.Fatal("expected *authImplementation concrete type")
 	}
-	if concrete.passwordlessFuncEmailTemplateLoginCode == nil {
-		t.Fatal("passwordlessFuncEmailTemplateLoginCode SHOULD be set from config")
+	if concrete.otpFuncEmailTemplateLoginCode == nil {
+		t.Fatal("otpFuncEmailTemplateLoginCode SHOULD be set from config")
 	}
-	result := concrete.passwordlessFuncEmailTemplateLoginCode(context.Background(), "test@test.com", "http://localhost/auth/login-code-verify?code=123", types.UserAuthOptions{})
+	result := concrete.otpFuncEmailTemplateLoginCode(context.Background(), "test@test.com", "http://localhost/auth/login-code-verify?code=123", types.UserAuthOptions{})
 	if result != "custom-login-template" {
 		t.Fatalf("expected custom login template output, got %q", result)
 	}

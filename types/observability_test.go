@@ -104,7 +104,7 @@ func TestMockObservabilityHooks(t *testing.T) {
 	m := &mockObservabilityHooks{}
 
 	m.RecordLoginAttempt(LoginMethodPassword, false, nil)
-	m.RecordLoginAttempt(LoginMethodPasswordless, true, nil)
+	m.RecordLoginAttempt(LoginMethodOtp, true, nil)
 	m.RecordRegistrationAttempt(true, nil)
 	m.RecordRateLimitHit("/login", "1.2.3.4")
 	m.RecordSessionCreated("user-abc")
@@ -116,7 +116,7 @@ func TestMockObservabilityHooks(t *testing.T) {
 	if m.LoginAttempts[0].Method != LoginMethodPassword || m.LoginAttempts[0].Success != false {
 		t.Errorf("unexpected first login attempt: %+v", m.LoginAttempts[0])
 	}
-	if m.LoginAttempts[1].Method != LoginMethodPasswordless || m.LoginAttempts[1].Success != true {
+	if m.LoginAttempts[1].Method != LoginMethodOtp || m.LoginAttempts[1].Success != true {
 		t.Errorf("unexpected second login attempt: %+v", m.LoginAttempts[1])
 	}
 

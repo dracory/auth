@@ -7,15 +7,15 @@ import (
 )
 
 // Dependencies aggregates all dependencies required for handling the /api/login
-// endpoint for both passwordless and username+password flows.
+// endpoint for both otp and username+password flows.
 type Dependencies struct {
-	// Passwordless controls which flow is executed. When true, the passwordless
+	// Otp controls which flow is executed. When true, the otp
 	// email-code flow is used; otherwise the username+password flow is used.
-	Passwordless bool
+	Otp bool
 
-	// PasswordlessDependencies contains the business-logic dependencies for the
-	// passwordless login flow.
-	PasswordlessDependencies LoginPasswordlessDeps
+	// OtpDependencies contains the business-logic dependencies for the
+	// otp login flow.
+	OtpDependencies LoginOtpDeps
 
 	// LoginWithUsernameAndPassword performs the username+password login flow
 	// and returns success message, token and error message. If error message is

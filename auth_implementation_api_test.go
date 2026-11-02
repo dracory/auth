@@ -35,8 +35,8 @@ func TestApiLogin_UsernameAndPassword_Smoke(t *testing.T) {
 	}
 }
 
-func TestApiLogin_Passwordless_Smoke(t *testing.T) {
-	config := testutils.NewPasswordlessConfigForTest()
+func TestApiLogin_Otp_Smoke(t *testing.T) {
+	config := testutils.NewOtpConfigForTest()
 	authShared, err := NewOtpAuth(config)
 	if err != nil {
 		t.Fatal(err)
@@ -86,8 +86,8 @@ func TestApiRegister_UsernameAndPassword_Smoke(t *testing.T) {
 	}
 }
 
-func TestApiRegister_Passwordless_Smoke(t *testing.T) {
-	config := testutils.NewPasswordlessConfigForTest()
+func TestApiRegister_Otp_Smoke(t *testing.T) {
+	config := testutils.NewOtpConfigForTest()
 	authShared, err := NewOtpAuth(config)
 	if err != nil {
 		t.Fatal(err)
@@ -190,7 +190,7 @@ func TestApiPasswordReset_Smoke(t *testing.T) {
 }
 
 func TestApiLoginCodeVerify_Smoke(t *testing.T) {
-	config := testutils.NewPasswordlessConfigForTest()
+	config := testutils.NewOtpConfigForTest()
 	authShared, err := NewOtpAuth(config)
 	if err != nil {
 		t.Fatal(err)
@@ -214,7 +214,7 @@ func TestApiLoginCodeVerify_Smoke(t *testing.T) {
 }
 
 func TestApiRegisterCodeVerify_Smoke(t *testing.T) {
-	config := testutils.NewPasswordlessConfigForTest()
+	config := testutils.NewOtpConfigForTest()
 	authShared, err := NewOtpAuth(config)
 	if err != nil {
 		t.Fatal(err)

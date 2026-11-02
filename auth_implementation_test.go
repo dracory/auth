@@ -349,65 +349,65 @@ func TestSetAndGetFuncTemporaryKeySet(t *testing.T) {
 	}
 }
 
-func TestSetAndGetPasswordlessUserRegister(t *testing.T) {
+func TestSetAndGetOtpUserRegister(t *testing.T) {
 	a := &authImplementation{}
 	fn := func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) error {
 		return nil
 	}
-	a.SetPasswordlessUserRegister(fn)
-	if a.GetPasswordlessUserRegister() == nil {
-		t.Fatal("expected non-nil passwordlessUserRegister")
+	a.SetOtpUserRegister(fn)
+	if a.GetOtpUserRegister() == nil {
+		t.Fatal("expected non-nil otpUserRegister")
 	}
 }
 
-func TestSetAndGetPasswordlessUserFindByEmail(t *testing.T) {
+func TestSetAndGetOtpUserFindByEmail(t *testing.T) {
 	a := &authImplementation{}
 	fn := func(ctx context.Context, email string, options types.UserAuthOptions) (string, error) {
 		return "user1", nil
 	}
-	a.SetPasswordlessUserFindByEmail(fn)
-	if a.GetPasswordlessUserFindByEmail() == nil {
-		t.Fatal("expected non-nil passwordlessUserFindByEmail")
+	a.SetOtpUserFindByEmail(fn)
+	if a.GetOtpUserFindByEmail() == nil {
+		t.Fatal("expected non-nil otpUserFindByEmail")
 	}
 }
 
-func TestSetAndGetPasswordlessFuncEmailTemplateLoginCode(t *testing.T) {
+func TestSetAndGetOtpFuncEmailTemplateLoginCode(t *testing.T) {
 	a := &authImplementation{}
 	fn := func(ctx context.Context, email, link string, options types.UserAuthOptions) string {
 		return "body"
 	}
-	a.SetPasswordlessFuncEmailTemplateLoginCode(fn)
-	if a.GetPasswordlessFuncEmailTemplateLoginCode() == nil {
-		t.Fatal("expected non-nil passwordlessFuncEmailTemplateLoginCode")
+	a.SetOtpFuncEmailTemplateLoginCode(fn)
+	if a.GetOtpFuncEmailTemplateLoginCode() == nil {
+		t.Fatal("expected non-nil otpFuncEmailTemplateLoginCode")
 	}
 }
 
-func TestSetAndGetPasswordlessFuncEmailTemplateRegisterCode(t *testing.T) {
+func TestSetAndGetOtpFuncEmailTemplateRegisterCode(t *testing.T) {
 	a := &authImplementation{}
 	fn := func(ctx context.Context, email, link string, options types.UserAuthOptions) string {
 		return "body"
 	}
-	a.SetPasswordlessFuncEmailTemplateRegisterCode(fn)
-	if a.GetPasswordlessFuncEmailTemplateRegisterCode() == nil {
-		t.Fatal("expected non-nil passwordlessFuncEmailTemplateRegisterCode")
+	a.SetOtpFuncEmailTemplateRegisterCode(fn)
+	if a.GetOtpFuncEmailTemplateRegisterCode() == nil {
+		t.Fatal("expected non-nil otpFuncEmailTemplateRegisterCode")
 	}
 }
 
-func TestSetAndGetPasswordlessFuncEmailSend(t *testing.T) {
+func TestSetAndGetOtpFuncEmailSend(t *testing.T) {
 	a := &authImplementation{}
 	fn := func(ctx context.Context, email, subject, body string) error {
 		return nil
 	}
-	a.SetPasswordlessFuncEmailSend(fn)
-	if a.GetPasswordlessFuncEmailSend() == nil {
-		t.Fatal("expected non-nil passwordlessFuncEmailSend")
+	a.SetOtpFuncEmailSend(fn)
+	if a.GetOtpFuncEmailSend() == nil {
+		t.Fatal("expected non-nil otpFuncEmailSend")
 	}
 }
 
-func TestIsPasswordless(t *testing.T) {
-	a := &authImplementation{passwordless: true}
-	if !a.IsPasswordless() {
-		t.Fatal("expected passwordless true")
+func TestIsOtp(t *testing.T) {
+	a := &authImplementation{otp: true}
+	if !a.IsOtp() {
+		t.Fatal("expected otp true")
 	}
 }
 

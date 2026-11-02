@@ -119,8 +119,8 @@ func TestApiRegisterCodeVerifyRegistrationFailed(t *testing.T) {
 		TemporaryKeyGet: func(key string) (string, error) {
 			return jsonPayload, nil
 		},
-		Passwordless: true,
-		PasswordlessUserRegister: func(ctx context.Context, email, firstName, lastName string) error {
+		Otp: true,
+		OtpUserRegister: func(ctx context.Context, email, firstName, lastName string) error {
 			return errors.New("db error")
 		},
 	}
@@ -146,8 +146,8 @@ func TestApiRegisterCodeVerifyAuthenticationError(t *testing.T) {
 		TemporaryKeyGet: func(key string) (string, error) {
 			return jsonPayload, nil
 		},
-		Passwordless: true,
-		PasswordlessUserRegister: func(ctx context.Context, email, firstName, lastName string) error {
+		Otp: true,
+		OtpUserRegister: func(ctx context.Context, email, firstName, lastName string) error {
 			return nil
 		},
 		AuthenticateViaUsername: func(w http.ResponseWriter, r *http.Request, email, firstName, lastName string) {
@@ -183,8 +183,8 @@ func TestApiRegisterCodeVerifyUserNotFound(t *testing.T) {
 		TemporaryKeyGet: func(key string) (string, error) {
 			return jsonPayload, nil
 		},
-		Passwordless: true,
-		PasswordlessUserRegister: func(ctx context.Context, email, firstName, lastName string) error {
+		Otp: true,
+		OtpUserRegister: func(ctx context.Context, email, firstName, lastName string) error {
 			return nil
 		},
 		AuthenticateViaUsername: func(w http.ResponseWriter, r *http.Request, email, firstName, lastName string) {
@@ -220,8 +220,8 @@ func TestApiRegisterCodeVerifyTokenStoreError(t *testing.T) {
 		TemporaryKeyGet: func(key string) (string, error) {
 			return jsonPayload, nil
 		},
-		Passwordless: true,
-		PasswordlessUserRegister: func(ctx context.Context, email, firstName, lastName string) error {
+		Otp: true,
+		OtpUserRegister: func(ctx context.Context, email, firstName, lastName string) error {
 			return nil
 		},
 		AuthenticateViaUsername: func(w http.ResponseWriter, r *http.Request, email, firstName, lastName string) {
@@ -257,8 +257,8 @@ func TestApiRegisterCodeVerifySuccess(t *testing.T) {
 		TemporaryKeyGet: func(key string) (string, error) {
 			return jsonPayload, nil
 		},
-		Passwordless: true,
-		PasswordlessUserRegister: func(ctx context.Context, email, firstName, lastName string) error {
+		Otp: true,
+		OtpUserRegister: func(ctx context.Context, email, firstName, lastName string) error {
 			return nil
 		},
 		AuthenticateViaUsername: func(w http.ResponseWriter, r *http.Request, email, firstName, lastName string) {
@@ -338,8 +338,8 @@ func TestApiRegisterCodeVerifyNilAuthenticateViaUsername(t *testing.T) {
 		TemporaryKeyGet: func(key string) (string, error) {
 			return jsonPayload, nil
 		},
-		Passwordless: true,
-		PasswordlessUserRegister: func(ctx context.Context, email, firstName, lastName string) error {
+		Otp: true,
+		OtpUserRegister: func(ctx context.Context, email, firstName, lastName string) error {
 			return nil
 		},
 		AuthenticateViaUsername: nil,
@@ -358,15 +358,15 @@ func TestApiRegisterCodeVerifyNilAuthenticateViaUsername(t *testing.T) {
 	}
 }
 
-func TestApiRegisterCodeVerifyPasswordlessNilUserRegister(t *testing.T) {
+func TestApiRegisterCodeVerifyOtpNilUserRegister(t *testing.T) {
 	jsonPayload := `{"code":"BCDFGHJK","email":"test@test.com","first_name":"John","last_name":"Doe"}`
 
 	deps := Dependencies{
 		TemporaryKeyGet: func(key string) (string, error) {
 			return jsonPayload, nil
 		},
-		Passwordless:             true,
-		PasswordlessUserRegister: nil,
+		Otp:             true,
+		OtpUserRegister: nil,
 	}
 
 	values := url.Values{
@@ -389,7 +389,7 @@ func TestApiRegisterCodeVerifyUsernamePasswordNilUserRegister(t *testing.T) {
 		TemporaryKeyGet: func(key string) (string, error) {
 			return jsonPayload, nil
 		},
-		Passwordless: false,
+		Otp: false,
 		UserRegister: nil,
 	}
 
@@ -413,7 +413,7 @@ func TestApiRegisterCodeVerifyUsernamePasswordStrengthError(t *testing.T) {
 		TemporaryKeyGet: func(key string) (string, error) {
 			return jsonPayload, nil
 		},
-		Passwordless: false,
+		Otp: false,
 		PasswordStrength: &types.PasswordStrengthConfig{
 			MinLength:        12,
 			RequireUppercase: true,
@@ -447,7 +447,7 @@ func TestApiRegisterCodeVerifyUsernamePasswordSuccess(t *testing.T) {
 		TemporaryKeyGet: func(key string) (string, error) {
 			return jsonPayload, nil
 		},
-		Passwordless: false,
+		Otp: false,
 		UserRegister: func(ctx context.Context, email, password, firstName, lastName string) error {
 			return nil
 		},
@@ -491,8 +491,8 @@ func TestApiRegisterCodeVerifyNonceKeyedLookup(t *testing.T) {
 			}
 			return jsonPayload, nil
 		},
-		Passwordless: true,
-		PasswordlessUserRegister: func(ctx context.Context, email, firstName, lastName string) error {
+		Otp: true,
+		OtpUserRegister: func(ctx context.Context, email, firstName, lastName string) error {
 			return nil
 		},
 		AuthenticateViaUsername: func(w http.ResponseWriter, r *http.Request, email, firstName, lastName string) {
@@ -521,8 +521,8 @@ func TestApiRegisterCodeVerifyWrongCodeFails(t *testing.T) {
 		TemporaryKeyGet: func(key string) (string, error) {
 			return jsonPayload, nil
 		},
-		Passwordless: true,
-		PasswordlessUserRegister: func(ctx context.Context, email, firstName, lastName string) error {
+		Otp: true,
+		OtpUserRegister: func(ctx context.Context, email, firstName, lastName string) error {
 			return nil
 		},
 	}

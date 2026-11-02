@@ -3,7 +3,7 @@ package utils
 // Temporary-key prefixes — keep every key namespace here so the flat
 // keyspace shared by the temp store cannot collide silently.
 const (
-	// LoginCodeKeyPrefix prefixes the temporary keys under which passwordless
+	// LoginCodeKeyPrefix prefixes the temporary keys under which otp
 	// login codes are stored. The nonce — not the code — is the storage key so
 	// that guessing a code does not reveal or consume it.
 	LoginCodeKeyPrefix = "logincode:"
@@ -13,7 +13,7 @@ const (
 	RegisterCodeKeyPrefix = "registercode:"
 
 	// LoginCodeAttemptsKeyPrefix prefixes the per-nonce failed-attempt counters
-	// for passwordless login codes.
+	// for otp login codes.
 	LoginCodeAttemptsKeyPrefix = "logincode_attempts:"
 
 	// RegisterCodeAttemptsKeyPrefix prefixes the per-nonce failed-attempt

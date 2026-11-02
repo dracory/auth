@@ -21,7 +21,7 @@ const (
 	// hook configured, existence check error, or token store missing) the
 	// flows fall back to session-first behavior — availability over
 	// strictness — and log a Warn. Hosts whose threat model requires
-	// fail-closed should ensure GetFuncUserExists (or the passwordless
+	// fail-closed should ensure GetFuncUserExists (or the otp
 	// find-by-email fallback) is configured and monitor the warnings.
 	CreateUserOnRegister UserCreationPolicy = "on_register"
 )

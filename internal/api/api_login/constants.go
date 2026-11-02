@@ -1,10 +1,10 @@
 package api_login
 
 const (
-	LoginPasswordlessErrorCodeNone           LoginPasswordlessErrorCode = ""
-	LoginPasswordlessErrorCodeValidation     LoginPasswordlessErrorCode = "validation"
-	LoginPasswordlessErrorCodeCodeGeneration LoginPasswordlessErrorCode = "code_generation"
-	LoginPasswordlessErrorCodeTokenStore     LoginPasswordlessErrorCode = "token_store"
-	LoginPasswordlessErrorCodeEmailSend      LoginPasswordlessErrorCode = "email_send"
-	LoginPasswordlessErrorCodeTooManySends   LoginPasswordlessErrorCode = "too_many_sends"
+	LoginOtpErrorCodeNone           LoginOtpErrorCode = ""
+	LoginOtpErrorCodeValidation     LoginOtpErrorCode = "validation"
+	LoginOtpErrorCodeCodeGeneration LoginOtpErrorCode = "code_generation"
+	LoginOtpErrorCodeTokenStore     LoginOtpErrorCode = "token_store"
+	LoginOtpErrorCodeEmailSend      LoginOtpErrorCode = "email_send"
+	LoginOtpErrorCodeTooManySends   LoginOtpErrorCode = "too_many_sends"
 )

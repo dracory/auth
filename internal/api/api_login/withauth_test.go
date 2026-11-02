@@ -22,7 +22,7 @@ func (a sharedOnlyAuth) GetLogger() *slog.Logger { return slog.Default() }
 
 func TestApiLoginWithAuth_UsernamePassword(t *testing.T) {
 	a := testutils.NewAuthSharedForTest()
-	testutils.SetPasswordlessForTest(a, false)
+	testutils.SetOtpForTest(a, false)
 
 	recorder, req := makePostRequest(t, "/api/login", url.Values{})
 	ApiLoginWithAuth(recorder, req, a)
@@ -32,9 +32,9 @@ func TestApiLoginWithAuth_UsernamePassword(t *testing.T) {
 	}
 }
 
-func TestApiLoginWithAuth_Passwordless(t *testing.T) {
+func TestApiLoginWithAuth_Otp(t *testing.T) {
 	a := testutils.NewAuthSharedForTest()
-	testutils.SetPasswordlessForTest(a, true)
+	testutils.SetOtpForTest(a, true)
 
 	recorder, req := makePostRequest(t, "/api/login", url.Values{
 		"email": {"test@example.com"},

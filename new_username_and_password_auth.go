@@ -22,7 +22,7 @@ func NewUsernameAndPasswordAuth(config types.ConfigUsernameAndPassword) (types.A
 	auth.enableRegistration = config.EnableRegistration
 	auth.enableVerification = config.EnableVerification
 	auth.endpoint = config.Endpoint
-	auth.passwordless = false
+	auth.otp = false
 	auth.urlRedirectOnSuccess = config.UrlRedirectOnSuccess
 	auth.useCookies = config.UseCookies
 	auth.useLocalStorage = config.UseLocalStorage

@@ -19,7 +19,7 @@ These fields are opt-in — developers enable them via config. When enabled, the
 
 | Mode | Fields |
 |------|--------|
-| Passwordless | `first_name`, `last_name`, `email` |
+| Otp | `first_name`, `last_name`, `email` |
 | Username/Password | `first_name`, `last_name`, `email`, `password` |
 
 ### Current Data Flow
@@ -37,7 +37,7 @@ These fields are opt-in — developers enable them via config. When enabled, the
 func(ctx context.Context, username string, password string, first_name string, last_name string, options UserAuthOptions) error
 ```
 
-**Passwordless:**
+**Otp:**
 ```go
 func(ctx context.Context, email string, firstName string, lastName string, options UserAuthOptions) error
 ```
@@ -127,14 +127,14 @@ SetRegistrationFields(cfg *RegistrationFieldsConfig)
 
 ### 6. UI Changes — `internal/ui/page_register/content.go`
 
-Both `RegisterPasswordlessContent` and `RegisterUsernameAndPasswordContent` gain a new parameter:
+Both `RegisterOtpContent` and `RegisterUsernameAndPasswordContent` gain a new parameter:
 
 ```go
 // Current signature:
-func RegisterPasswordlessContent(urlLogin string) string
+func RegisterOtpContent(urlLogin string) string
 
 // New signature:
-func RegisterPasswordlessContent(urlLogin string, fieldsConfig *types.RegistrationFieldsConfig) string
+func RegisterOtpContent(urlLogin string, fieldsConfig *types.RegistrationFieldsConfig) string
 ```
 
 When `fieldsConfig` is non-nil and a field is enabled, the function appends the corresponding form group to the card body:
@@ -155,7 +155,7 @@ When `fieldsConfig` is non-nil and a field is enabled, the function appends the 
 
 ### 7. JS Changes — Form Validation and Submission
 
-The `registerFormValidate()` function in both `RegisterPasswordlessScripts` and `RegisterUsernameAndPasswordScripts` is updated to:
+The `registerFormValidate()` function in both `RegisterOtpScripts` and `RegisterUsernameAndPasswordScripts` is updated to:
 
 1. **Read** the extra field values from the DOM (only if the fields exist in the form)
 2. **Validate** — all extra fields are optional, so no required-field checks. However, basic format validation is added:
@@ -237,8 +237,8 @@ Pass the fields config from the auth instance to the content builder:
 func PageRegister(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) {
     fieldsConfig := a.GetRegistrationFields()
 
-    if a.IsPasswordless() {
-        content = RegisterPasswordlessContent(links.Login(a.GetEndpoint()), fieldsConfig)
+    if a.IsOtp() {
+        content = RegisterOtpContent(links.Login(a.GetEndpoint()), fieldsConfig)
         // ...
     } else {
         content = RegisterUsernameAndPasswordContent(
@@ -412,10 +412,10 @@ authInstance, err := auth.NewUsernameAndPasswordAuth(types.ConfigUsernameAndPass
 })
 ```
 
-### Passwordless with Extra Fields
+### Otp with Extra Fields
 
 ```go
-authInstance, err := auth.NewPasswordlessAuth(types.ConfigOtp{
+authInstance, err := auth.NewOtpAuth(types.ConfigOtp{
     Endpoint:             "/auth",
     UrlRedirectOnSuccess: "/dashboard",
     UseCookies:           true,
@@ -514,8 +514,8 @@ Making them required in the library would reduce flexibility — different proje
 - **`internal/ui/page_register/countries_test.go`** — country list not empty, no duplicates, contains common countries
 - **`internal/ui/page_register/timezones_test.go`** — timezone list not empty, no duplicates, contains UTC
 - **`internal/ui/page_register/content_test.go`** (new or updated) —
-  - Passwordless content with no extra fields (current behavior)
-  - Passwordless content with all extra fields enabled
+  - Otp content with no extra fields (current behavior)
+  - Otp content with all extra fields enabled
   - Username/password content with no extra fields (current behavior)
   - Username/password content with all extra fields enabled
   - Username/password content with partial fields (only phone + country)

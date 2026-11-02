@@ -14,9 +14,9 @@ import (
 // Dependencies defines the dependencies required for authenticating a user by
 // username (or email) and returning an auth token.
 type Dependencies struct {
-	Passwordless bool
+	Otp bool
 
-	PasswordlessUserFindByEmail func(ctx context.Context, email string) (string, error)
+	OtpUserFindByEmail func(ctx context.Context, email string) (string, error)
 	UserFindByUsername          func(ctx context.Context, username, firstName, lastName string) (string, error)
 
 	UserStoreAuthToken func(ctx context.Context, token, userID string) error
@@ -102,13 +102,13 @@ func ApiAuthenticateViaUsername(w http.ResponseWriter, r *http.Request, username
 // struct using the interface accessors and preserves the existing behaviour.
 func ApiAuthenticateViaUsernameWithAuth(w http.ResponseWriter, r *http.Request, username, firstName, lastName string, a types.AuthSharedInterface) {
 	deps := Dependencies{
-		Passwordless: a.IsPasswordless(),
+		Otp: a.IsOtp(),
 		UseCookies:   a.GetUseCookies(),
 		Logger:       a.GetLogger(),
 	}
 
-	if fn := a.GetPasswordlessUserFindByEmail(); fn != nil {
-		deps.PasswordlessUserFindByEmail = func(ctx context.Context, email string) (string, error) {
+	if fn := a.GetOtpUserFindByEmail(); fn != nil {
+		deps.OtpUserFindByEmail = func(ctx context.Context, email string) (string, error) {
 			return fn(ctx, email, types.UserAuthOptions{
 				UserIp:    req.GetIP(r),
 				UserAgent: r.UserAgent(),
@@ -148,14 +148,14 @@ func AuthenticateViaUsername(ctx context.Context, username, firstName, lastName 
 	var userID string
 	var errUser error
 
-	if deps.Passwordless {
-		if deps.PasswordlessUserFindByEmail == nil {
+	if deps.Otp {
+		if deps.OtpUserFindByEmail == nil {
 			return nil, &AuthenticateError{
 				Code:    AuthenticateErrorCodeUserLookup,
 				Message: types.MsgInvalidCredentials,
 			}
 		}
-		userID, errUser = deps.PasswordlessUserFindByEmail(ctx, username)
+		userID, errUser = deps.OtpUserFindByEmail(ctx, username)
 	} else {
 		if deps.UserFindByUsername == nil {
 			return nil, &AuthenticateError{

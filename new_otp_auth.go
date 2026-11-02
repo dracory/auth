@@ -14,14 +14,14 @@ import (
 )
 
 func NewOtpAuth(config types.ConfigOtp) (types.AuthOtpInterface, error) {
-	if err := validatePasswordlessConfig(config); err != nil {
+	if err := validateOtpConfig(config); err != nil {
 		return nil, err
 	}
 
 	auth := &authImplementation{}
 	auth.enableRegistration = config.EnableRegistration
 	auth.endpoint = config.Endpoint
-	auth.passwordless = true
+	auth.otp = true
 	auth.urlRedirectOnSuccess = config.UrlRedirectOnSuccess
 	auth.useCookies = config.UseCookies
 	auth.useLocalStorage = config.UseLocalStorage
@@ -64,24 +64,24 @@ func NewOtpAuth(config types.ConfigOtp) (types.AuthOtpInterface, error) {
 	auth.funcUserLogout = config.FuncUserLogout
 	auth.funcUserFindByAuthToken = config.FuncUserFindByAuthToken
 	auth.funcUserStoreAuthToken = config.FuncUserStoreAuthToken
-	auth.passwordlessFuncEmailTemplateLoginCode = config.FuncEmailTemplateLoginCode
-	auth.passwordlessFuncEmailTemplateRegisterCode = config.FuncEmailTemplateRegisterCode
-	auth.passwordlessFuncEmailSend = config.FuncEmailSend
-	auth.passwordlessFuncUserFindByEmail = config.FuncUserFindByEmail
-	auth.passwordlessFuncUserRegister = config.FuncUserRegister
+	auth.otpFuncEmailTemplateLoginCode = config.FuncEmailTemplateLoginCode
+	auth.otpFuncEmailTemplateRegisterCode = config.FuncEmailTemplateRegisterCode
+	auth.otpFuncEmailSend = config.FuncEmailSend
+	auth.otpFuncUserFindByEmail = config.FuncUserFindByEmail
+	auth.otpFuncUserRegister = config.FuncUserRegister
 	auth.userCreationPolicy = config.UserCreationPolicy
 	auth.funcEmailCaptured = config.FuncEmailCaptured
 
 	// If no user defined email template is set, use default
-	if auth.passwordlessFuncEmailTemplateLoginCode == nil {
-		auth.passwordlessFuncEmailTemplateLoginCode = func(ctx context.Context, email string, code string, options types.UserAuthOptions) string {
+	if auth.otpFuncEmailTemplateLoginCode == nil {
+		auth.otpFuncEmailTemplateLoginCode = func(ctx context.Context, email string, code string, options types.UserAuthOptions) string {
 			return emails.EmailLoginCodeTemplate(email, code)
 		}
 	}
 
 	// If no user defined email template is set, use default
-	if auth.passwordlessFuncEmailTemplateRegisterCode == nil {
-		auth.passwordlessFuncEmailTemplateRegisterCode = func(ctx context.Context, email string, code string, options types.UserAuthOptions) string {
+	if auth.otpFuncEmailTemplateRegisterCode == nil {
+		auth.otpFuncEmailTemplateRegisterCode = func(ctx context.Context, email string, code string, options types.UserAuthOptions) string {
 			return emails.EmailRegisterCodeTemplate(email, code)
 		}
 	}
@@ -150,10 +150,10 @@ func NewOtpAuth(config types.ConfigOtp) (types.AuthOtpInterface, error) {
 	return auth, nil
 }
 
-// validatePasswordlessConfig performs validation of the ConfigOtp
+// validateOtpConfig performs validation of the ConfigOtp
 // values and returns a descriptive error if any required field is missing
 // or invalid.
-func validatePasswordlessConfig(config types.ConfigOtp) error {
+func validateOtpConfig(config types.ConfigOtp) error {
 	if config.Endpoint == "" {
 		return errors.New("auth: endpoint is required")
 	}

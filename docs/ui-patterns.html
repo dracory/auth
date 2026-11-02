@@ -149,7 +149,7 @@
 <p><strong>Problematic Code Example (<code>auth_implementation_pages.go</code>)</strong>:</p>
 <pre><code class="language-go">func (a authImplementation) pageLogin(w http.ResponseWriter, r *http.Request) {
     page_login.PageLogin(w, r, page_login.Dependencies{
-        Passwordless:       a.passwordless,
+        Otp:       a.passwordless,
         EnableRegistration: a.enableRegistration,
         Endpoint:           a.endpoint,
         RedirectOnSuccess:  a.LinkRedirectOnSuccess(),

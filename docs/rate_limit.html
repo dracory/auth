@@ -132,8 +132,8 @@ FuncCheckRateLimit func(ip string, endpoint string) (allowed bool, retryAfter ti
 MaxLoginAttempts   int                                                                                  // Maximum attempts before lockout (default: 5)
 LockoutDuration    time.Duration                                                                        // Duration for sliding window and lockout (default: 15 minutes)</code></pre>
 <h3>Examples</h3>
-<h4>Passwordless Flow</h4>
-<pre><code class="language-go">authInstance, err := auth.NewPasswordlessAuth(auth.ConfigOtp{
+<h4>Otp Flow</h4>
+<pre><code class="language-go">authInstance, err := auth.NewOtpAuth(auth.ConfigOtp{
     Endpoint:             &quot;/auth&quot;,
     UrlRedirectOnSuccess: &quot;/dashboard&quot;,
 

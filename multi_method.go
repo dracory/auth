@@ -194,7 +194,7 @@ type implSwapper interface {
 
 // altAuthImpl decorates an auth impl with a fixed alternatives list, so
 // each method page links to its siblings even when several methods share
-// one impl (e.g. OTP + magic-link on the same passwordless auth).
+// one impl (e.g. OTP + magic-link on the same otp auth).
 type altAuthImpl struct {
 	types.AuthSharedInterface
 	alts []types.LoginAlternative
@@ -286,13 +286,13 @@ func (m *MultiMethodAuth) LoginAlternativesHTML(currentMethod string) string {
 // Built-in method adapters
 // ============================================================================
 
-// otpMethod wraps the passwordless (email code) flow.
+// otpMethod wraps the otp (email code) flow.
 type otpMethod struct {
 	a    types.AuthSharedInterface
 	page http.HandlerFunc // optional override; nil = package page
 }
 
-// NewOTPMethod adapts the passwordless email-code login to types.Method.
+// NewOTPMethod adapts the otp email-code login to types.Method.
 func NewOTPMethod(a types.AuthSharedInterface) types.Method {
 	return &otpMethod{a: a}
 }
@@ -396,7 +396,7 @@ func NewMagicLinkMethodFromAuth(
 		TemporaryKeyGet:       a.GetFuncTemporaryKeyGet(),
 		TemporaryKeySet:       a.GetFuncTemporaryKeySet(),
 		EmailSendThrottle:     utils.EmailSendThrottleFromAuth(a),
-		EmailSend:             a.GetPasswordlessFuncEmailSend(),
+		EmailSend:             a.GetOtpFuncEmailSend(),
 		LinkMagicLinkCallback: linkCallback,
 		Logger:                a.GetLogger(),
 	}
@@ -419,9 +419,9 @@ func NewMagicLinkMethodFromAuth(
 		callbackDeps.UserExists = exists.GetFuncUserExists()
 	}
 	if callbackDeps.UserExists == nil {
-		// Fall back to the passwordless lookup — same convention as
+		// Fall back to the otp lookup — same convention as
 		// api_login_code_verify: a found userID means the account exists.
-		if fn := a.GetPasswordlessUserFindByEmail(); fn != nil {
+		if fn := a.GetOtpUserFindByEmail(); fn != nil {
 			callbackDeps.UserExists = func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error) {
 				userID, err := fn(ctx, email, options)
 				return err == nil && userID != "", nil

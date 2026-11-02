@@ -39,9 +39,9 @@ func PageLoginWithAPI(w http.ResponseWriter, r *http.Request, a types.AuthShared
 
 	content := ""
 	scripts := ""
-	if a.IsPasswordless() {
-		content = LoginPasswordlessContentX(a.IsRegistrationEnabled(), links.Register(a.GetEndpoint()), x)
-		scripts = LoginPasswordlessScripts(
+	if a.IsOtp() {
+		content = LoginOtpContentX(a.IsRegistrationEnabled(), links.Register(a.GetEndpoint()), x)
+		scripts = LoginOtpScripts(
 			apiLoginURL,
 			links.LoginCodeVerify(a.GetEndpoint()),
 		)

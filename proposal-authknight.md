@@ -100,7 +100,7 @@ In `new_authknight_auth.go`:
 func NewAuthKnightAuth(config types.ConfigAuthKnight) (types.AuthAuthKnightInterface, error)
 ```
 
-This follows the same pattern as `NewPasswordlessAuth` and `NewUsernameAndPasswordAuth`:
+This follows the same pattern as `NewOtpAuth` and `NewUsernameAndPasswordAuth`:
 - Validates the config
 - Creates an `authImplementation` with AuthKnight-specific fields
 - Returns the typed interface
@@ -134,7 +134,7 @@ This handler:
 ### 5b. Reuse Existing Register Page (`PathRegister`)
 
 The existing register page (`internal/ui/page_register/page_register.go`) already has two branches:
-- Passwordless: email + verification code
+- Otp: email + verification code
 - Username/password: username, password, email
 
 We add a **third branch for AuthKnight mode** that:
@@ -467,7 +467,7 @@ Maintain the existing ~90% coverage standard. All new files must have correspond
 
 This is a purely additive change. No existing code is modified in a breaking way:
 - No changes to `ConfigOtp` or `ConfigUsernameAndPassword`
-- No changes to `AuthPasswordInterface` or `AuthPasswordlessInterface`
+- No changes to `AuthPasswordInterface` or `AuthOtpInterface`
 - New interface, config, constructor, and routes are added alongside existing ones
 - Existing users of the library are unaffected
 

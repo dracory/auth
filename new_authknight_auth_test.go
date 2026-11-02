@@ -230,15 +230,15 @@ func TestNewAuthKnightAuth_LinkAuthKnightLogin(t *testing.T) {
 	}
 }
 
-func TestNewAuthKnightAuth_NotPasswordless(t *testing.T) {
+func TestNewAuthKnightAuth_NotOtp(t *testing.T) {
 	config := newValidAuthKnightConfig()
 	a, err := NewAuthKnightAuth(config)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if a.IsPasswordless() {
-		t.Fatal("expected IsPasswordless to be false for AuthKnight")
+	if a.IsOtp() {
+		t.Fatal("expected IsOtp to be false for AuthKnight")
 	}
 }
 

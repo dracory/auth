@@ -15,7 +15,7 @@
 ## ✨ Features
 
 - 🔐 **Four Composable Login Methods**
-  - **Email OTP** - Passwordless verification codes
+  - **Email OTP** - Otp verification codes
   - **Magic Link** - Single-use emailed sign-in links
   - **Username/Password** - Traditional authentication with password storage
   - **AuthKnight** - Delegated hosted login (external service verifies the user)
@@ -86,7 +86,7 @@ For detailed information about the package organization, see [docs/project-struc
 <table>
 <tr>
 <th>AuthKnight (Recommended)</th>
-<th>Passwordless</th>
+<th>Otp</th>
 <th>Username/Password</th>
 </tr>
 <tr>
@@ -120,7 +120,7 @@ import (
   "github.com/dracory/auth/types"
 )
 
-auth, err := auth.NewPasswordlessAuth(
+auth, err := auth.NewOtpAuth(
   types.ConfigOtp{
     Endpoint: "/auth",
     UrlRedirectOnSuccess: "/dashboard",
@@ -182,7 +182,7 @@ func dashboardHandler(w http.ResponseWriter, r *http.Request) {
 
 ## 📚 Complete Examples
 
-### Passwordless Flow
+### Otp Flow
 
 #### Step 1: Implement Required Functions
 
@@ -245,7 +245,7 @@ func tempKeyGet(key string) (value string, err error) {
 #### Step 2: Configure Authentication
 
 ```go
-authInstance, err := auth.NewPasswordlessAuth(types.ConfigOtp{
+authInstance, err := auth.NewOtpAuth(types.ConfigOtp{
     // Required
     Endpoint:                "/auth",
     UrlRedirectOnSuccess:    "/dashboard",
@@ -590,7 +590,7 @@ auth.AuthCookieRemove(w, r, types.WithCookieConfig(cfg))
 The same `CookieConfig` can also be configured once when creating the auth instance. Unset string fields (`""`) fall back to secure defaults, so you only need to set what you want to override:
 
 ```go
-authInstance, err := auth.NewPasswordlessAuth(types.ConfigOtp{
+authInstance, err := auth.NewOtpAuth(types.ConfigOtp{
     Endpoint:     "/auth",
     UseCookies:   true,
     CookieConfig: &types.CookieConfig{
@@ -782,7 +782,7 @@ A: Yes! You can have separate instances for different user types:
 
 ```go
 // Regular users with passwordless
-userAuth, _ := auth.NewPasswordlessAuth(...)
+userAuth, _ := auth.NewOtpAuth(...)
 mux.HandleFunc("/auth/", userAuth.Router().ServeHTTP)
 
 // Admins with username/password
@@ -831,7 +831,7 @@ go test -cover ./...
 The [examples](./examples) directory contains complete working applications. Each example includes unit tests (`main_test.go`) and screenshots (`screenshot.png`, `screenshot_login.png`, `screenshot_code_verify.png`, etc.) for every step/screen of the authentication flow:
 
 ### [AuthKnight Example](./examples/authknight)
-- Passwordless authentication via AuthKnight hosted login
+- Otp authentication via AuthKnight hosted login
 - New user registration with verified email
 - Screenshots: `screenshot_home.png`
 - Run with: `cd examples/authknight && go run main.go`
@@ -843,7 +843,7 @@ The [examples](./examples) directory contains complete working applications. Eac
 - Run with: `cd examples/multimethod && go run main.go`
 - Available at: `http://localhost:8084`
 
-### [Passwordless Example](./examples/passwordless)
+### [Otp Example](./examples/passwordless)
 - Email-based authentication with verification codes
 - Screenshots: `screenshot_login.png`, `screenshot_code_verify.png`, `screenshot_register.png`, `screenshot_register_code_verify.png`
 - Run with: `cd examples/passwordless && go run main.go`
@@ -893,7 +893,7 @@ See [LICENSE](LICENSE) file for details.
 
 - [authorizerdev/authorizer](https://github.com/authorizerdev/authorizer) - Open source authentication and authorization
 - [markbates/goth](https://github.com/markbates/goth) - Multi-provider authentication
-- [teamhanko/hanko](https://github.com/teamhanko/hanko) - Passwordless authentication
+- [teamhanko/hanko](https://github.com/teamhanko/hanko) - Otp authentication
 - [go-pkgz/auth](https://github.com/go-pkgz/auth) - Authentication service
 
 ---

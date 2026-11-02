@@ -229,7 +229,7 @@ callbackPath := authInstance.LinkAuthKnightCallback()</code></pre>
 <h2>Multi-Method Usage</h2>
 <p>AuthKnight can run alongside other login methods via <code>NewMultiMethodAuth</code>:</p>
 <pre><code class="language-go">knight, _ := auth.NewAuthKnightAuth(cfgKnight)
-a, _ := auth.NewPasswordlessAuth(cfgOtp)
+a, _ := auth.NewOtpAuth(cfgOtp)
 
 mma, _ := auth.NewMultiMethodAuth(&quot;/auth&quot;, []types.Method{
     auth.NewAuthKnightMethod(knight), // primary → /auth/login redirects out

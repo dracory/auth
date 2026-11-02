@@ -19,13 +19,13 @@ import (
 func TestMagicLinkFlow(t *testing.T) {
 	store := newTempKeyStore()
 
-	cfg := testutils.NewPasswordlessConfigForTest()
+	cfg := testutils.NewOtpConfigForTest()
 	cfg.FuncTemporaryKeyGet = store.get
 	cfg.FuncTemporaryKeySet = store.set
 
 	a, err := auth.NewOtpAuth(cfg)
 	if err != nil {
-		t.Fatalf("NewPasswordlessAuth: %v", err)
+		t.Fatalf("NewOtpAuth: %v", err)
 	}
 
 	method := auth.NewMagicLinkMethodFromAuth(a, nil, func(token string) string {

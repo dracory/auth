@@ -8,8 +8,8 @@ import (
 	"github.com/dracory/hb"
 )
 
-// RegisterPasswordlessContent builds the HTML for the passwordless registration page.
-func RegisterPasswordlessContent(urlLogin string) string {
+// RegisterOtpContent builds the HTML for the otp registration page.
+func RegisterOtpContent(urlLogin string) string {
 	emailInput := hb.NewInput().
 		Class("form-control form-control-lg").
 		Name("email").
@@ -31,13 +31,13 @@ func RegisterPasswordlessContent(urlLogin string) string {
 	}).ToHTML()
 }
 
-// RegisterPasswordlessScripts builds the JS for the passwordless registration page.
+// RegisterOtpScripts builds the JS for the otp registration page.
 //
-//go:embed register_passwordless.js
-var registerPasswordlessJS string
+//go:embed register_otp.js
+var registerOtpJS string
 
-func RegisterPasswordlessScripts(urlApiRegister, urlOnSuccess string) string {
-	s := registerPasswordlessJS
+func RegisterOtpScripts(urlApiRegister, urlOnSuccess string) string {
+	s := registerOtpJS
 	s = strings.ReplaceAll(s, "__URL_API_REGISTER__", urlApiRegister)
 	s = strings.ReplaceAll(s, "__URL_ON_SUCCESS__", urlOnSuccess)
 	return s

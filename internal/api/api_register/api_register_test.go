@@ -92,7 +92,7 @@ func TestApiRegister_AuthenticatedMissingUpdateFn(t *testing.T) {
 
 func TestApiRegisterUsernameAndPasswordRequiresFirstName(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: false,
+		Otp: false,
 		RegisterWithUsernameAndPassword: func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string, string) {
 			if firstName == "" {
 				return "", "", "First name is required field"
@@ -115,7 +115,7 @@ func TestApiRegisterUsernameAndPasswordRequiresFirstName(t *testing.T) {
 
 func TestApiRegisterUsernameAndPasswordRequiresLastName(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: false,
+		Otp: false,
 		RegisterWithUsernameAndPassword: func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string, string) {
 			if lastName == "" {
 				return "", "", "Last name is required field"
@@ -138,7 +138,7 @@ func TestApiRegisterUsernameAndPasswordRequiresLastName(t *testing.T) {
 
 func TestApiRegisterUsernameAndPasswordRequiresEmail(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: false,
+		Otp: false,
 		RegisterWithUsernameAndPassword: func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string, string) {
 			if email == "" {
 				return "", "", "Email is required field"
@@ -162,7 +162,7 @@ func TestApiRegisterUsernameAndPasswordRequiresEmail(t *testing.T) {
 
 func TestApiRegisterUsernameAndPasswordRequiresPassword(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: false,
+		Otp: false,
 		RegisterWithUsernameAndPassword: func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string, string) {
 			if password == "" {
 				return "", "", "Password is required field"
@@ -187,7 +187,7 @@ func TestApiRegisterUsernameAndPasswordRequiresPassword(t *testing.T) {
 
 func TestApiRegisterUsernameAndPasswordInvalidEmail(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: false,
+		Otp: false,
 		RegisterWithUsernameAndPassword: func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string, string) {
 			if email == "invalid-email" {
 				return "", "", "This is not a valid email: invalid-email"
@@ -213,7 +213,7 @@ func TestApiRegisterUsernameAndPasswordInvalidEmail(t *testing.T) {
 
 func TestApiRegisterUsernameAndPasswordFuncUserRegisterNotDefined(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: false,
+		Otp: false,
 		RegisterWithUsernameAndPassword: func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string, string) {
 			return "", "", "registration failed. FuncUserRegister function not defined"
 		},
@@ -236,7 +236,7 @@ func TestApiRegisterUsernameAndPasswordFuncUserRegisterNotDefined(t *testing.T) 
 
 func TestApiRegisterUsernameAndPasswordRegistrationFailed(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: false,
+		Otp: false,
 		RegisterWithUsernameAndPassword: func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string, string) {
 			return "", "", "registration failed."
 		},
@@ -259,7 +259,7 @@ func TestApiRegisterUsernameAndPasswordRegistrationFailed(t *testing.T) {
 
 func TestApiRegisterUsernameAndPasswordSuccess(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: false,
+		Otp: false,
 		RegisterWithUsernameAndPassword: func(ctx context.Context, email, password, firstName, lastName, ip, userAgent string) (string, string, string) {
 			return "registration success", "testnonce", ""
 		},
@@ -283,11 +283,11 @@ func TestApiRegisterUsernameAndPasswordSuccess(t *testing.T) {
 	}
 }
 
-// Passwordless registration tests
+// Otp registration tests
 
-func TestApiRegisterPasswordlessRequiresFirstName(t *testing.T) {
+func TestApiRegisterOtpRequiresFirstName(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: true,
+		Otp: true,
 	}
 
 	recorder, req := makePostRequest(t, "/api/register", url.Values{})
@@ -302,9 +302,9 @@ func TestApiRegisterPasswordlessRequiresFirstName(t *testing.T) {
 	}
 }
 
-func TestApiRegisterPasswordlessRequiresLastName(t *testing.T) {
+func TestApiRegisterOtpRequiresLastName(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: true,
+		Otp: true,
 	}
 
 	values := url.Values{
@@ -319,9 +319,9 @@ func TestApiRegisterPasswordlessRequiresLastName(t *testing.T) {
 	}
 }
 
-func TestApiRegisterPasswordlessRequiresEmail(t *testing.T) {
+func TestApiRegisterOtpRequiresEmail(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: true,
+		Otp: true,
 	}
 
 	values := url.Values{
@@ -337,10 +337,10 @@ func TestApiRegisterPasswordlessRequiresEmail(t *testing.T) {
 	}
 }
 
-func TestApiRegisterPasswordlessTokenStoreError(t *testing.T) {
+func TestApiRegisterOtpTokenStoreError(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: true,
-		RegisterPasswordlessInitDependencies: RegisterPasswordlessInitDependencies{
+		Otp: true,
+		RegisterOtpInitDependencies: RegisterOtpInitDependencies{
 			TemporaryKeySet: func(key string, value string, expiresSeconds int) error {
 				return errors.New("db error")
 			},
@@ -362,10 +362,10 @@ func TestApiRegisterPasswordlessTokenStoreError(t *testing.T) {
 	}
 }
 
-func TestApiRegisterPasswordlessEmailSendError(t *testing.T) {
+func TestApiRegisterOtpEmailSendError(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: true,
-		RegisterPasswordlessInitDependencies: RegisterPasswordlessInitDependencies{
+		Otp: true,
+		RegisterOtpInitDependencies: RegisterOtpInitDependencies{
 			TemporaryKeySet: func(key string, value string, expiresSeconds int) error {
 				return nil
 			},
@@ -393,10 +393,10 @@ func TestApiRegisterPasswordlessEmailSendError(t *testing.T) {
 	}
 }
 
-func TestApiRegisterPasswordlessSuccess(t *testing.T) {
+func TestApiRegisterOtpSuccess(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: true,
-		RegisterPasswordlessInitDependencies: RegisterPasswordlessInitDependencies{
+		Otp: true,
+		RegisterOtpInitDependencies: RegisterOtpInitDependencies{
 			TemporaryKeySet: func(key string, value string, expiresSeconds int) error {
 				return nil
 			},
@@ -427,23 +427,23 @@ func TestApiRegisterPasswordlessSuccess(t *testing.T) {
 	}
 }
 
-func TestRegisterPasswordlessInitError_Error(t *testing.T) {
-	var e *RegisterPasswordlessInitError
+func TestRegisterOtpInitError_Error(t *testing.T) {
+	var e *RegisterOtpInitError
 	if e.Error() != "" {
 		t.Fatalf("expected empty string for nil receiver, got %q", e.Error())
 	}
 
-	e = &RegisterPasswordlessInitError{Message: "custom message"}
+	e = &RegisterOtpInitError{Message: "custom message"}
 	if e.Error() != "custom message" {
 		t.Fatalf("expected 'custom message', got %q", e.Error())
 	}
 
-	e = &RegisterPasswordlessInitError{Err: errors.New("inner error")}
+	e = &RegisterOtpInitError{Err: errors.New("inner error")}
 	if e.Error() != "inner error" {
 		t.Fatalf("expected 'inner error', got %q", e.Error())
 	}
 
-	e = &RegisterPasswordlessInitError{Code: "some_code"}
+	e = &RegisterOtpInitError{Code: "some_code"}
 	if e.Error() != "some_code" {
 		t.Fatalf("expected 'some_code', got %q", e.Error())
 	}
@@ -451,7 +451,7 @@ func TestRegisterPasswordlessInitError_Error(t *testing.T) {
 
 func TestApiRegisterNilRegisterWithUsernameAndPassword(t *testing.T) {
 	deps := Dependencies{
-		Passwordless:                    false,
+		Otp:                    false,
 		RegisterWithUsernameAndPassword: nil,
 	}
 
@@ -470,9 +470,9 @@ func TestApiRegisterNilRegisterWithUsernameAndPassword(t *testing.T) {
 	}
 }
 
-func TestApiRegisterPasswordlessInvalidEmail(t *testing.T) {
+func TestApiRegisterOtpInvalidEmail(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: true,
+		Otp: true,
 	}
 
 	values := url.Values{
@@ -489,10 +489,10 @@ func TestApiRegisterPasswordlessInvalidEmail(t *testing.T) {
 	}
 }
 
-func TestApiRegisterPasswordlessNilTemporaryKeySet(t *testing.T) {
+func TestApiRegisterOtpNilTemporaryKeySet(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: true,
-		RegisterPasswordlessInitDependencies: RegisterPasswordlessInitDependencies{
+		Otp: true,
+		RegisterOtpInitDependencies: RegisterOtpInitDependencies{
 			TemporaryKeySet: nil,
 		},
 	}
@@ -511,10 +511,10 @@ func TestApiRegisterPasswordlessNilTemporaryKeySet(t *testing.T) {
 	}
 }
 
-func TestApiRegisterPasswordlessNilEmailTemplateAndSend(t *testing.T) {
+func TestApiRegisterOtpNilEmailTemplateAndSend(t *testing.T) {
 	deps := Dependencies{
-		Passwordless: true,
-		RegisterPasswordlessInitDependencies: RegisterPasswordlessInitDependencies{
+		Otp: true,
+		RegisterOtpInitDependencies: RegisterOtpInitDependencies{
 			TemporaryKeySet: func(key string, value string, expiresSeconds int) error {
 				return nil
 			},
@@ -538,11 +538,11 @@ func TestApiRegisterPasswordlessNilEmailTemplateAndSend(t *testing.T) {
 	}
 }
 
-func TestApiRegisterPasswordlessDefaultExpiration(t *testing.T) {
+func TestApiRegisterOtpDefaultExpiration(t *testing.T) {
 	keySetExpires := 0
 	deps := Dependencies{
-		Passwordless: true,
-		RegisterPasswordlessInitDependencies: RegisterPasswordlessInitDependencies{
+		Otp: true,
+		RegisterOtpInitDependencies: RegisterOtpInitDependencies{
 			TemporaryKeySet: func(key string, value string, expiresSeconds int) error {
 				keySetExpires = expiresSeconds
 				return nil
