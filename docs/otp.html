@@ -141,7 +141,7 @@
 <li><code>CreateUserOnRegister</code> — a verified email with no account receives a <code>verified_key</code> token and lands on the register form instead; the single INSERT happens on form submit. Requires <code>FuncUserExists</code> (or the passwordless find-by-email fallback)</li>
 </ul>
 <h2>Setup</h2>
-<pre><code class="language-go">a, err := auth.NewPasswordlessAuth(types.ConfigPasswordless{
+<pre><code class="language-go">a, err := auth.NewPasswordlessAuth(types.ConfigOtp{
     ConfigShared: types.ConfigShared{
         Endpoint:                "/auth",
         UrlRedirectOnSuccess:    "/",

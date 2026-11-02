@@ -4,7 +4,7 @@ import (
 	"context"
 )
 
-type ConfigPasswordless struct {
+type ConfigOtp struct {
 	ConfigShared
 	ConfigRateLimiting
 	ConfigCSRF

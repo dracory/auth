@@ -8,7 +8,7 @@ import (
 )
 
 func TestNewPasswordlessAuth_EndpointRequired(t *testing.T) {
-	_, err := NewPasswordlessAuth(types.ConfigPasswordless{})
+	_, err := NewOtpAuth(types.ConfigOtp{})
 	if err == nil {
 		t.Fatal("Error SHOULD NOT BE NULL")
 	}
@@ -18,7 +18,7 @@ func TestNewPasswordlessAuth_EndpointRequired(t *testing.T) {
 }
 
 func TestNewPasswordlessAuth_UrlToRedirectOnSuccessIsRequired(t *testing.T) {
-	_, err := NewPasswordlessAuth(types.ConfigPasswordless{
+	_, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint: "/auth",
 		},
@@ -32,7 +32,7 @@ func TestNewPasswordlessAuth_UrlToRedirectOnSuccessIsRequired(t *testing.T) {
 }
 
 func TestNewPasswordlessAuth_FuncTemporaryKeyGetIsRequired(t *testing.T) {
-	_, err := NewPasswordlessAuth(types.ConfigPasswordless{
+	_, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
 			UrlRedirectOnSuccess: "/user",
@@ -47,7 +47,7 @@ func TestNewPasswordlessAuth_FuncTemporaryKeyGetIsRequired(t *testing.T) {
 }
 
 func TestNewPasswordlessAuth_FuncTemporaryKeySetIsRequired(t *testing.T) {
-	_, err := NewPasswordlessAuth(types.ConfigPasswordless{
+	_, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
 			UrlRedirectOnSuccess: "/user",
@@ -63,7 +63,7 @@ func TestNewPasswordlessAuth_FuncTemporaryKeySetIsRequired(t *testing.T) {
 }
 
 func TestNewPasswordlessAuth_FuncUserFindByAuthTokenIsRequired(t *testing.T) {
-	_, err := NewPasswordlessAuth(types.ConfigPasswordless{
+	_, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
 			UrlRedirectOnSuccess: "/user",
@@ -80,7 +80,7 @@ func TestNewPasswordlessAuth_FuncUserFindByAuthTokenIsRequired(t *testing.T) {
 }
 
 func TestNewPasswordlessAuth_FuncUserFindByEmailIsRequired(t *testing.T) {
-	_, err := NewPasswordlessAuth(types.ConfigPasswordless{
+	_, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
 			UrlRedirectOnSuccess: "/user",
@@ -100,7 +100,7 @@ func TestNewPasswordlessAuth_FuncUserFindByEmailIsRequired(t *testing.T) {
 }
 
 func TestNewPasswordlessAuth_FuncUserLogoutIsRequired(t *testing.T) {
-	_, err := NewPasswordlessAuth(types.ConfigPasswordless{
+	_, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
 			UrlRedirectOnSuccess: "/user",
@@ -123,7 +123,7 @@ func TestNewPasswordlessAuth_FuncUserLogoutIsRequired(t *testing.T) {
 }
 
 func TestNewPasswordlessAuth_FuncUserStoreTokenFuncUserStoreTokenIsRequired(t *testing.T) {
-	_, err := NewPasswordlessAuth(types.ConfigPasswordless{
+	_, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
 			UrlRedirectOnSuccess: "/user",
@@ -147,7 +147,7 @@ func TestNewPasswordlessAuth_FuncUserStoreTokenFuncUserStoreTokenIsRequired(t *t
 }
 
 func TestNewPasswordlessAuth_FuncEmailSendIsRequired(t *testing.T) {
-	_, err := NewPasswordlessAuth(types.ConfigPasswordless{
+	_, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
 			UrlRedirectOnSuccess: "/user",
@@ -172,7 +172,7 @@ func TestNewPasswordlessAuth_FuncEmailSendIsRequired(t *testing.T) {
 }
 
 func TestNewPasswordlessAuth_UseCookiesAndLocalStorageCannotBeBothFalse(t *testing.T) {
-	_, err := NewPasswordlessAuth(types.ConfigPasswordless{
+	_, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
 			UrlRedirectOnSuccess: "/user",
@@ -198,7 +198,7 @@ func TestNewPasswordlessAuth_UseCookiesAndLocalStorageCannotBeBothFalse(t *testi
 }
 
 func TestNewPasswordlessAuth_UseCookiesAndLocalStorageCannotBeBothTrue(t *testing.T) {
-	_, err := NewPasswordlessAuth(types.ConfigPasswordless{
+	_, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
 			UrlRedirectOnSuccess: "/user",
@@ -226,7 +226,7 @@ func TestNewPasswordlessAuth_UseCookiesAndLocalStorageCannotBeBothTrue(t *testin
 }
 
 func TestNewPasswordlessAuth_UseCookiesAndLocalStorageCannotBeBothTruee(t *testing.T) {
-	auth, err := NewPasswordlessAuth(types.ConfigPasswordless{
+	auth, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
 			UrlRedirectOnSuccess: "/user",
@@ -256,7 +256,7 @@ func TestNewPasswordlessAuth_UseCookiesAndLocalStorageCannotBeBothTruee(t *testi
 }
 
 func TestNewPasswordlessAuth_CookieConfigName(t *testing.T) {
-	auth, err := NewPasswordlessAuth(types.ConfigPasswordless{
+	auth, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
 			UrlRedirectOnSuccess: "/user",
@@ -297,7 +297,7 @@ func TestNewPasswordlessAuth_CookieConfigName(t *testing.T) {
 }
 
 func TestNewPasswordlessAuth_CookieConfigInsecure(t *testing.T) {
-	auth, err := NewPasswordlessAuth(types.ConfigPasswordless{
+	auth, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
 			UrlRedirectOnSuccess: "/user",
@@ -335,7 +335,7 @@ func TestNewPasswordlessAuth_CookieConfigInsecure(t *testing.T) {
 }
 
 func TestNewPasswordlessAuth_CSRFSecretRequiredWhenEnabled(t *testing.T) {
-	_, err := NewPasswordlessAuth(types.ConfigPasswordless{
+	_, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
 			UrlRedirectOnSuccess: "/user",
@@ -366,7 +366,7 @@ func TestNewPasswordlessAuth_CSRFSecretRequiredWhenEnabled(t *testing.T) {
 }
 
 func TestNewPasswordlessAuth_CSRFEnabledWithSecretSucceeds(t *testing.T) {
-	auth, err := NewPasswordlessAuth(types.ConfigPasswordless{
+	auth, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
 			UrlRedirectOnSuccess: "/user",
@@ -417,7 +417,7 @@ func TestNewPasswordlessAuth_FuncEmailTemplateRegisterCodeWired(t *testing.T) {
 	customTemplate := func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string {
 		return "custom-register-template"
 	}
-	auth, err := NewPasswordlessAuth(types.ConfigPasswordless{
+	auth, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
 			UrlRedirectOnSuccess: "/user",
@@ -457,7 +457,7 @@ func TestNewPasswordlessAuth_FuncEmailTemplateLoginCodeWired(t *testing.T) {
 	customTemplate := func(ctx context.Context, email string, loginLink string, options types.UserAuthOptions) string {
 		return "custom-login-template"
 	}
-	auth, err := NewPasswordlessAuth(types.ConfigPasswordless{
+	auth, err := NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
 			UrlRedirectOnSuccess: "/user",

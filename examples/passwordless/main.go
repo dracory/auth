@@ -152,8 +152,8 @@ func passwordlessEmailSend(_ context.Context, to, subject, body string) error {
 }
 
 // newAuth builds the configured auth instance for the example.
-func newAuth() (types.AuthPasswordlessInterface, error) {
-	return auth.NewPasswordlessAuth(types.ConfigPasswordless{
+func newAuth() (types.AuthOtpInterface, error) {
+	return auth.NewOtpAuth(types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             "/auth",
 			UrlRedirectOnSuccess: "/dashboard",
@@ -175,7 +175,7 @@ func newAuth() (types.AuthPasswordlessInterface, error) {
 
 // newMux builds the example's HTTP handler tree: the auth mux under
 // /auth, a public home page, and a middleware-protected dashboard.
-func newMux(authInstance types.AuthPasswordlessInterface) *http.ServeMux {
+func newMux(authInstance types.AuthOtpInterface) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	// Mount auth under /auth

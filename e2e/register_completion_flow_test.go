@@ -33,7 +33,7 @@ func TestRegisterCompletionFlow(t *testing.T) {
 		return "", nil
 	}
 
-	a, err := auth.NewPasswordlessAuth(cfg)
+	a, err := auth.NewOtpAuth(cfg)
 	if err != nil {
 		t.Fatalf("NewPasswordlessAuth: %v", err)
 	}

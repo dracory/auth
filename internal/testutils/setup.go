@@ -42,11 +42,11 @@ func NewUsernameAndPasswordConfigForTest() types.ConfigUsernameAndPassword {
 	}
 }
 
-// NewPasswordlessConfigForTest returns a ConfigPasswordless pre-populated
+// NewPasswordlessConfigForTest returns a ConfigOtp pre-populated
 // with safe defaults for tests.
-func NewPasswordlessConfigForTest() types.ConfigPasswordless {
+func NewPasswordlessConfigForTest() types.ConfigOtp {
 	endpoint := "http://localhost/auth"
-	return types.ConfigPasswordless{
+	return types.ConfigOtp{
 		ConfigShared: types.ConfigShared{
 			Endpoint:             endpoint,
 			UrlRedirectOnSuccess: "http://localhost/dashboard",

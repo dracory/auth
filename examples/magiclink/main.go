@@ -160,7 +160,7 @@ func newMux() (*http.ServeMux, error) {
 		FuncTemporaryKeySet:     store.tempKeySet,
 	}
 
-	passwordlessAuth, err := auth.NewPasswordlessAuth(types.ConfigPasswordless{
+	passwordlessAuth, err := auth.NewOtpAuth(types.ConfigOtp{
 		ConfigShared:        shared,
 		FuncUserFindByEmail: store.findUserByEmail,
 		FuncEmailSend:       emailSend,

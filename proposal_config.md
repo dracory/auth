@@ -4,7 +4,7 @@
 
 ## Summary
 
-Currently `ConfigPasswordless` and `ConfigUsernameAndPassword` duplicate ~30 shared fields. Before adding any new auth mode (e.g. AuthKnight), we extract these into small reusable structs that can be embedded via Go struct embedding.
+Currently `ConfigOtp` and `ConfigUsernameAndPassword` duplicate ~30 shared fields. Before adding any new auth mode (e.g. AuthKnight), we extract these into small reusable structs that can be embedded via Go struct embedding.
 
 This is a prerequisite refactoring that must be completed first.
 
@@ -12,7 +12,7 @@ This is a prerequisite refactoring that must be completed first.
 
 ## Problem
 
-Both `ConfigPasswordless` and `ConfigUsernameAndPassword` copy-paste the same ~30 fields:
+Both `ConfigOtp` and `ConfigUsernameAndPassword` copy-paste the same ~30 fields:
 
 - Endpoint, layout, temp keys, auth token store/find, logout, cookies, logger, observability
 - Rate limiting (disable flag, check function, max attempts, lockout)
@@ -74,7 +74,7 @@ type ConfigImpersonation struct {
 ### 2. Refactor Existing Configs
 
 ```go
-type ConfigPasswordless struct {
+type ConfigOtp struct {
     ConfigShared
     ConfigRateLimiting
     ConfigCSRF
@@ -139,7 +139,7 @@ No changes to constructors (`NewPasswordlessAuth`, `NewUsernameAndPasswordAuth`)
 ## Testing Strategy
 
 - **Shared config structs**: `ConfigShared`, `ConfigRateLimiting`, `ConfigCSRF`, `ConfigImpersonation` in `types/config_shared_test.go`
-- **Existing configs**: Verify `ConfigPasswordless` and `ConfigUsernameAndPassword` still compile and all existing tests pass unchanged (field promotion means `config.Endpoint` etc. still works)
+- **Existing configs**: Verify `ConfigOtp` and `ConfigUsernameAndPassword` still compile and all existing tests pass unchanged (field promotion means `config.Endpoint` etc. still works)
 - **Constructors**: `NewPasswordlessAuth` and `NewUsernameAndPasswordAuth` must still work without changes
 - Run full test suite: `go test -v ./...`
 - Check coverage: `go test -cover ./...`

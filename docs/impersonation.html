@@ -116,7 +116,7 @@
 <ul><li><strong>Opt-in only</strong>: Routes are not registered unless <code>EnableImpersonation</code> is <code>true</code>.</li><li><strong>Permission check required</strong>: <code>FuncCanImpersonate</code> is mandatory when enabled. The library never decides who can impersonate.</li><li><strong>One-level only</strong>: Nested impersonation is rejected by the chain guard.</li><li><strong>CSRF protected</strong>: Both endpoints are wrapped with CSRF middleware (same as other POST endpoints).</li><li><strong>Rate limited</strong>: Both endpoints participate in the standard per-IP rate limiting.</li><li><strong>Session bound</strong>: The admin's original token is stored under a temporary key with the same expiry as a normal session.</li><li><strong>Audit trail</strong>: Optional callbacks and observability hooks capture start/stop events.</li></ul>
 <hr>
 <h2>Configuration</h2>
-<p>Add the following fields to <code>types.ConfigPasswordless</code>, <code>types.ConfigUsernameAndPassword</code>, or <code>types.ConfigAuthKnight</code>:</p>
+<p>Add the following fields to <code>types.ConfigOtp</code>, <code>types.ConfigUsernameAndPassword</code>, or <code>types.ConfigAuthKnight</code>:</p>
 <pre><code class="language-go">EnableImpersonation: true,
 FuncCanImpersonate: func(ctx context.Context, adminUserID, targetUserID string) (bool, error) {
     // Implement your permission logic here.

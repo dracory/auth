@@ -229,7 +229,7 @@ func newMux() (*http.ServeMux, error) {
 	}
 
 	// Passwordless impl — shared by the OTP and magic-link methods.
-	passwordlessAuth, err := auth.NewPasswordlessAuth(types.ConfigPasswordless{
+	passwordlessAuth, err := auth.NewOtpAuth(types.ConfigOtp{
 		ConfigShared:        shared,
 		FuncUserFindByEmail: store.userFindByEmail,
 		FuncEmailSend:       emailSend,

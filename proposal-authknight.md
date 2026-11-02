@@ -396,7 +396,7 @@ AuthKnight has a fundamentally different flow from the existing passwordless and
 - Requires an outbound HTTP call to verify the `once` token
 - The login page is hosted externally (not served by the library)
 
-Mixing this into `ConfigPasswordless` or `ConfigUsernameAndPassword` would pollute those configs with irrelevant fields. A clean separation follows the existing pattern where each auth mode has its own config and interface.
+Mixing this into `ConfigOtp` or `ConfigUsernameAndPassword` would pollute those configs with irrelevant fields. A clean separation follows the existing pattern where each auth mode has its own config and interface.
 
 ### Why Keep the Same `authImplementation` Struct?
 
@@ -466,7 +466,7 @@ Maintain the existing ~90% coverage standard. All new files must have correspond
 ## Migration Path
 
 This is a purely additive change. No existing code is modified in a breaking way:
-- No changes to `ConfigPasswordless` or `ConfigUsernameAndPassword`
+- No changes to `ConfigOtp` or `ConfigUsernameAndPassword`
 - No changes to `AuthPasswordInterface` or `AuthPasswordlessInterface`
 - New interface, config, constructor, and routes are added alongside existing ones
 - Existing users of the library are unaffected

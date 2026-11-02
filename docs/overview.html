@@ -115,7 +115,7 @@
 <hr>
 <h2>🏗️ Architecture Overview</h2>
 <pre><code class="language-text">Entry points
-  ├── NewPasswordlessAuth(ConfigPasswordless)     → AuthPasswordlessInterface
+  ├── NewPasswordlessAuth(ConfigOtp)     → AuthPasswordlessInterface
   ├── NewUsernameAndPasswordAuth(ConfigUsernameAndPassword) → AuthPasswordInterface
   ├── NewAuthKnightAuth(ConfigAuthKnight)         → AuthAuthKnightInterface
   └── NewMultiMethodAuth(endpoint, []types.Method) → composed mux

@@ -241,7 +241,7 @@ const (
 <p><strong>Hook signatures flattened — breaking (decision 2026-11-02).</strong>
 All <code>FuncUserRegister</code> variants collapse to one signature:</p>
 
-<pre><code class="language-go">// ConfigPasswordless — was: (ctx, email, firstName, lastName, options) (err)
+<pre><code class="language-go">// ConfigOtp — was: (ctx, email, firstName, lastName, options) (err)
 // ConfigUsernameAndPassword — was: (ctx, username, password, firstName, lastName, options) (err)
 // ConfigAuthKnight — was: (ctx, email, firstName, lastName, options) (userID, err)
 FuncUserRegister func(ctx context.Context, fields map[string]string, options UserAuthOptions) (userID string, err error)</code></pre>

@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proposal: Unified FuncUserRegister Hook — dracory/auth</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+ html{font-size:112.5%}
+ body{padding-top:4.5rem;font-size:1.125rem}
+ .doc{max-width:1040px;margin:0 auto}
+ pre{background:var(--bs-tertiary-bg);padding:1rem;border-radius:.375rem;overflow-x:auto;font-size:1rem}
+ code{font-size:1em}
+ table{font-size:1.05rem}
+ .navbar-brand{font-weight:700}
+ h2{margin-top:2.5rem;border-bottom:1px solid var(--bs-border-color);padding-bottom:.4rem}
+ h3{margin-top:1.6rem}
+</style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-md fixed-top border-bottom bg-body-tertiary">
+ <div class="container-fluid px-3">
+  <a class="navbar-brand" href="#">dracory/auth — proposal</a>
+  <div class="d-flex align-items-center gap-2">
+   <div class="btn-group btn-group-sm" role="group">
+    <button type="button" class="btn btn-outline-secondary" id="modeLight" title="Light">&#9728;</button>
+    <button type="button" class="btn btn-outline-secondary" id="modeDark" title="Dark">&#9790;</button>
+   </div>
+  </div>
+ </div>
+</nav>
+
+<div class="doc">
+
+<div class="card mb-4">
+ <div class="card-body">
+  <h1 class="card-title h3 mb-3">Unified <code>FuncUserRegister</code> — One Hook for Create &amp; Complete</h1>
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+   <span class="badge text-bg-warning">Status: Draft</span>
+   <span class="badge text-bg-light border">Date: 2026-11-02</span>
+   <span class="badge text-bg-light border">Depends on: <code>2026-11-02-user-lookup-key-naming.html</code>, <code>2026-10-31-extensible-registration-and-profile-fields.html</code></span>
+   <span class="badge text-bg-light border">Scope: <code>types/</code>, <code>auth_implementation.go</code>, <code>internal/api/api_register</code>, <code>internal/api/api_register_code_verify</code>, <code>internal/core</code>, <code>new_*.go</code></span>
+  </div>
+ </div>
+</div>
+
+<h2>Motivation</h2>
+
+<p>The package currently carries <strong>four</strong> host callbacks that all do
+the same thing — persist the registration form against a user record:</p>
+
+<pre><code class="language-go">// ConfigUsernameAndPassword — create with credentials
+FuncUserRegister func(ctx, username, password, firstName, lastName string, options) (err error)
+
+// ConfigOtp — create without credentials
+FuncUserRegister func(ctx, email, firstName, lastName string, options) (err error)
+
+// ConfigAuthKnight — create, already email-verified; returns the new ID
+FuncUserRegister func(ctx, email, firstName, lastName string, options) (userID string, err error)
+
+// ConfigShared — update an existing user (profile completion)
+FuncUserProfileUpdate func(ctx, userID, firstName, lastName string, options) (err error)</code></pre>
+
+<p>From the host's perspective there is no meaningful difference between the
+four: in every case the host <em>registers the user</em> — writes the submitted
+profile fields to a row. Whether that row is inserted or updated is an
+implementation detail of the same operation. Profile completion is literally
+called "registration" by the package itself: incomplete users are bounced to
+<code>/auth/register</code> and shown a registration form — they simply happen to
+already have a row (created implicitly at first OTP/magic-link login).</p>
+
+<p>Splitting this into four hooks has real costs:</p>
+
+<ul>
+<li><strong>Host duplication.</strong> A host supporting passwordless
+  registration + completion must implement the same persistence code twice —
+  once as <code>FuncUserRegister</code> (find-or-create by email) and once as
+  <code>FuncUserProfileUpdate</code> (update by ID). The fields map proposal makes
+  this even more obvious: both hooks would receive the identical
+  <code>map[string]string</code> payload.</li>
+<li><strong>Signature drift.</strong> The three register variants already differ
+  for no good reason — only AuthKnight returns <code>userID</code>. The password
+  variant returns nothing and forces the package to re-look-up the user via
+  <code>FuncUserFindByUsername</code> right after registration, a second query
+  that exists only because the hook can't hand the ID back.</li>
+<li><strong>Config sprawl.</strong> The same conceptual hook is declared in four
+  different config structs with four different shapes.</li>
+</ul>
+
+<h2>Design Principles</h2>
+
+<ul>
+<li><strong>Registration is upsert.</strong> One hook serves create and update:
+  <code>userID == ""</code> → create a new record and return its ID;
+  <code>userID != ""</code> → update that record and return the same ID. The
+  host decides how (INSERT vs UPDATE); the package just delivers identity +
+  fields.</li>
+<li><strong>Builds on the fields-map proposal.</strong> This proposal assumes —
+  and composes with — <code>2026-10-31-extensible-registration-and-profile-fields.html</code>:
+  the hook takes <code>fields map[string]string</code> with the reserved-key
+  taxonomy (<code>email</code>, <code>username</code>, <code>password</code>,
+  <code>first_name</code>, <code>last_name</code>) plus host-declared
+  <code>RegistrationFields</code>/<code>ProfileFields</code>. If that proposal
+  lands first this is a pure merge; the two can also land together as one
+  break.</li>
+<li><strong>One consistent break.</strong> All four hooks collapse into a single
+  <code>ConfigShared</code> hook. Breaking, deliberately — same reasoning as the
+  fields-map flattening: a uniform contract outweighs a mechanical host
+  migration.</li>
+<li><strong><code>userID</code> stays positional.</strong> It is row identity, not
+  a form field — never travels in the map (consistent with the existing
+  decision on <code>FuncUserProfileUpdate</code>).</li>
+<li><strong>Positional parameter is <code>userID</code>.</strong> The value
+  is the user record's primary key — the honest name, per the naming
+  proposal (see §7). The sign-in lookup key (<code>userLookupKey</code>)
+  and email are different values that travel inside <code>fields</code>,
+  never positionally.</li>
+</ul>
+
+<h2>Proposed Changes</h2>
+
+<h3>1. The unified hook — <code>types.ConfigShared</code></h3>
+
+<pre><code class="language-go">// FuncUserRegister persists the registration form for a user.
+//
+// userID == ""  → create a new user record from fields and return
+//                 its identifier.
+// userID != ""  → update the existing user (profile-completion path:
+//                 the user is authenticated; fields contain ProfileFields
+//                 values, never credentials) and return the same identifier.
+//
+// Reserved keys populated per method (all required — validated before
+// the hook runs):
+//   username+password : user_lookup_key, password, first_name, last_name
+//   passwordless      : email, first_name, last_name
+//   AuthKnight        : email, first_name, last_name   (email pre-verified)
+//   completion        : ProfileFields values only (email belongs to the
+//                       existing row; shown read-only, never submitted)
+FuncUserRegister func(ctx context.Context, userID string, fields map[string]string, options UserAuthOptions) (registeredUserID string, err error)</code></pre>
+
+<p>Replaces — the following are <strong>deleted</strong>:</p>
+
+<ul>
+<li><code>ConfigUsernameAndPassword.FuncUserRegister</code></li>
+<li><code>ConfigOtp.FuncUserRegister</code></li>
+<li><code>ConfigAuthKnight.FuncUserRegister</code></li>
+<li><code>ConfigShared.FuncUserProfileUpdate</code> (and
+  <code>authImplementation.funcUserProfileUpdate</code> +
+  <code>Get/SetFuncUserProfileUpdate</code>)</li>
+</ul>
+
+<p>One hook, one signature, one place in config (<code>ConfigShared</code>) —
+registration semantics are a shared concern, not a per-method one.</p>
+
+<h3>2. Caller changes</h3>
+
+<table class="table table-striped table-hover align-middle">
+<thead class="table-light"><tr><th>Call site</th><th>Before</th><th>After</th></tr></thead>
+<tbody>
+<tr>
+  <td><code>api_register</code> — <code>ProfileCompletionRule</code> branch</td>
+  <td><code>deps.UserProfileUpdate(ctx, userID, first, last, options)</code></td>
+  <td><code>deps.UserRegister(ctx, userID, fields, options)</code> — same call, unified name</td>
+</tr>
+<tr>
+  <td><code>api_register</code> — verified-token branch (AuthKnight / <code>CreateUserOnRegister</code>)</td>
+  <td><code>vDeps.UserRegister(ctx, email, first, last, options)</code> (AK hook / passwordless adapter + <code>findByEmail</code>)</td>
+  <td><code>vDeps.UserRegister(ctx, "", fields, options)</code> — <code>email</code> injected into the map from the resolved token. The passwordless "register then find-by-email" adapter disappears: the hook returns the ID directly.</td>
+</tr>
+<tr>
+  <td><code>core/register_with_username_and_password.go</code> + passwordless verify path</td>
+  <td><code>FuncUserRegister(ctx, username, password, first, last, options)</code> then <code>FuncUserFindByUsername</code> to recover the ID</td>
+  <td><code>FuncUserRegister(ctx, "", fields, options)</code> → <code>registeredUserID</code>; the follow-up <code>FuncUserFindByUsername</code> call is only a fallback when the hook returns an empty ID with nil error (see §4).</td>
+</tr>
+<tr>
+  <td><code>api_register_code_verify</code></td>
+  <td>passwordless <code>UserRegister(ctx, email, first, last, options)</code> + <code>findByEmail</code></td>
+  <td><code>UserRegister(ctx, "", fields, options)</code>; email comes from the payload map</td>
+</tr>
+</tbody>
+</table>
+
+<h3>3. <code>authImplementation</code> storage</h3>
+
+<pre><code class="language-go">// ===== shared by all implementations =====
+funcUserRegister func(ctx context.Context, userID string, fields map[string]string, options types.UserAuthOptions) (string, error)
+
+// deleted: funcUserProfileUpdate
+// deleted: funcUserRegister        (username/password variant field)
+// deleted: passwordlessFuncUserRegister
+// deleted: authKnightFuncUserRegister</code></pre>
+
+<p>Accessors collapse to one pair on <code>auth_implementation.go</code> /
+<code>auth_implementation_setters.go</code>:</p>
+
+<pre><code class="language-go">GetFuncUserRegister() func(ctx context.Context, userID string, fields map[string]string, options types.UserAuthOptions) (string, error)
+SetFuncUserRegister(fn ...)</code></pre>
+
+<p><code>GetPasswordlessUserRegister</code>/<code>SetPasswordlessUserRegister</code>,
+<code>GetAuthKnightUserRegister</code>/<code>SetAuthKnightUserRegister</code>,
+<code>GetFuncUserProfileUpdate</code>/<code>SetFuncUserProfileUpdate</code> are removed.
+Callers that resolved them via optional interface assertions
+(<code>api_register.go</code>) resolve the single hook instead — no assertion
+needed for the deps-struct path since it lives on
+<code>AuthSharedInterface</code>-adjacent config... <em>except</em>: to keep
+<code>AuthSharedInterface</code> stable, the getter is still resolved via type
+assertion, exactly like <code>FuncEmailEnqueue</code> today.</p>
+
+<h3>4. Constructor + validation changes</h3>
+
+<ul>
+<li><code>new_passwordless_auth.go</code>, <code>new_username_and_password_auth.go</code>:
+  <code>config.EnableRegistration &amp;&amp; config.ConfigShared.FuncUserRegister == nil</code>
+  → error (message reused: <code>MsgRegistrationFailedFn</code>). The check moves
+  from the method config to the shared config.</li>
+<li><code>new_authknight_auth.go</code>: <code>config.ConfigShared.FuncUserRegister == nil</code> → error.</li>
+<li><strong>Empty <code>registeredUserID</code> on the create path:</strong> if
+  <code>userID == ""</code> and the hook returns <code>("", nil)</code>, the
+  password method falls back to <code>FuncUserFindByUsername</code> /
+  <code>FuncUserFindByEmail</code> (one release cycle of tolerance); all other
+  methods treat it as an error (<code>"user register returned empty id"</code>).
+  Long-term the fallback is removed — the contract is "return the ID".</li>
+<li><strong>Completion path stays optional:</strong> <code>userID != ""</code> with
+  the hook unset keeps today's behaviour — request rejected with a clear
+  message (<code>MsgInternalServer</code> + logged), since the host opted into
+  completion by enabling <code>CreateUserOnAuth</code> incomplete accounts but
+  provided no persistence hook.</li>
+</ul>
+
+<h3>5. Semantics hosts implement</h3>
+
+<pre><code class="language-go">// Canonical host implementation — one function for both paths.
+FuncUserRegister: func(ctx context.Context, userID string, fields map[string]string, options types.UserAuthOptions) (string, error) {
+    if userID == "" {
+        return userStore.Create(ctx, fields)   // insert, return new ID
+    }
+    return userID, userStore.Update(ctx, userID, fields) // update, return ID
+},</code></pre>
+
+<ul>
+<li>Hosts that store credentials separately (password column vs profile
+  columns) branch on <code>fields[types.FieldPassword] != ""</code> — only ever
+  set on the username+password create path, never on completion.</li>
+<li>Hosts whose register form collects a credential the completion form must
+  never touch are protected structurally: the completion branch's
+  <code>CollectFields(r, ProfileFields)</code> only reads declared names, so a
+  forged <code>password=...</code> form key never reaches the hook on the
+  update path.</li>
+<li>Hosts wanting strictly create-only or update-only behaviour return an
+  error on the unwanted branch — the API surfaces it as a normal error
+  response.</li>
+</ul>
+
+<h3>6. Relationship to the fields-map proposal</h3>
+
+<p>The two proposals compose but are separable:</p>
+
+<ul>
+<li><strong>Fields-map first, merge second:</strong> the 2026-10-31 proposal
+  leaves <code>FuncUserProfileUpdate(ctx, userID, fields, options)</code> and
+  three <code>FuncUserRegister(ctx, fields, options)</code> variants; this
+  proposal then deletes three of the four and adds the <code>userID</code>
+  parameter to the survivor. A second, smaller breaking pass.</li>
+<li><strong>Together:</strong> one breaking release where all user-write hooks
+  collapse straight to the final signature. Recommended — host code is
+  migrated once, not twice.</li>
+<li><strong>Merge only, no fields map:</strong> also coherent —
+  <code>FuncUserRegister(ctx, userID, firstName, lastName, options)</code> with
+  credentials via <code>options</code> — but re-opens the positional-parameter
+  problem the fields map solves; not recommended.</li>
+</ul>
+
+<h3>7. Naming</h3>
+
+<p>This proposal is written in the vocabulary of
+<code>2026-11-02-user-lookup-key-naming.html</code>, which lands first.
+Under that vocabulary <code>userID</code> is the user record's primary key
+(the positional parameter and return value of this hook),
+<code>userLookupKey</code> is the sign-in lookup key (a
+<code>fields</code> key, <code>FieldUserLookupKey</code>), and
+<code>email</code> names genuine emails. The unified hook is specified with
+that final naming — no second rename pass over brand-new signatures.</p>
+
+<h2>Explicitly Out of Scope</h2>
+
+<ul>
+<li>Changing <em>when</em> the hooks fire — <code>ProfileCompletionRule</code>,
+  <code>RegisterFirstRule</code>, verification policies all unchanged.</li>
+<li><code>FuncUserExists</code>/<code>FuncUserFindBy*</code> hooks — still needed
+  for login paths; only their post-registration re-lookup use shrinks.</li>
+<li>Profile <em>editing</em> (settings page) — a future <code>FuncUserUpdate</code>
+  concern; the unified hook is strictly for the registration flows
+  (<code>/auth/register</code>).</li>
+<li>Removing the <code>FuncUserFindByUsername</code>/<code>findByEmail</code>
+  fallback for empty returned IDs — one release of tolerance, then removal.</li>
+</ul>
+
+<h2>Test Matrix</h2>
+
+<table class="table table-striped table-hover align-middle">
+<thead class="table-light"><tr><th>Area</th><th>Cases</th></tr></thead>
+<tbody>
+<tr><td>create path (all 3 methods)</td><td>hook receives <code>userID == ""</code> + full fields map; returned ID used for session/token without a second lookup; <code>("", nil)</code> → findBy* fallback (password method) / error (others)</td></tr>
+<tr><td>completion path</td><td>hook receives authenticated <code>userID</code> + ProfileFields map; no <code>email</code>/<code>password</code> keys present even if forged in the POST; unset hook → clear error</td></tr>
+<tr><td>constructor validation</td><td>each <code>new_*</code> errors when registration enabled / AuthKnight and shared <code>FuncUserRegister</code> nil</td></tr>
+<tr><td>deps wrappers</td><td><code>api_register</code>, <code>api_register_code_verify</code>, <code>core</code> invoke the single signature; old four-hook tests deleted</td></tr>
+<tr><td>config types</td><td>per-method <code>FuncUserRegister</code> fields removed — stale references no longer compile</td></tr>
+<tr><td>e2e</td><td>register → login → incomplete-profile bounce → completion, all through the one hook (extend <code>e2e/register_completion_flow_test.go</code>)</td></tr>
+</tbody>
+</table>
+
+<h2>Suggested Order</h2>
+
+<ol class="list-group list-group-numbered mb-3">
+<li class="list-group-item"><code>ConfigShared.FuncUserRegister</code> (unified signature) + <code>authImplementation.funcUserRegister</code> + Get/Set; delete the four old fields/hooks.</li>
+<li class="list-group-item">Constructors ×3: shared-config validation; delete per-method wiring.</li>
+<li class="list-group-item"><code>api_register</code>: completion branch + verified-token branch → unified call; drop the passwordless register/findByEmail adapter.</li>
+<li class="list-group-item"><code>core/register_with_username_and_password.go</code> + <code>api_register_code_verify</code>: use returned ID; findBy* fallback for <code>("", nil)</code>.</li>
+<li class="list-group-item"><code>internal/testutils/auth_shared.go</code>, examples, docs (<code>docs/*.html</code> tables), CHANGELOG entry.</li>
+</ol>
+
+<h2>Risks / Open Questions</h2>
+
+<ul>
+<li><strong>Breaking — accepted:</strong> every host migrates all four hooks to
+  one. Migration is mechanical and usually a <em>deletion</em>: hosts currently
+  implement register + completion as near-identical bodies and can now share
+  them.</li>
+<li><strong>Upsert is a stronger contract than create:</strong> the host must
+  handle <code>userID != ""</code> even if it believes completion never fires.
+  Mitigation: documented contract + the hook can error on the branch it
+  doesn't support; the API surfaces it cleanly.</li>
+<li><strong><code>password</code> in the fields map on update:</strong>
+  structurally impossible on the completion path (declared-keys-only
+  collection), but a host that ALSO wires the hook elsewhere must still
+  branch on <code>userID</code>, not on key presence, for create-vs-update.</li>
+<li><strong>Naming:</strong> <code>FuncUserRegister</code> chosen because both
+  paths are "registration" in package vocabulary (the completion form <em>is</em>
+  the register page). Alternatives considered: <code>FuncUserSave</code>,
+  <code>FuncUserUpsert</code> — rejected: vaguer, and "register" already covers
+  the semantics including first/last-name-only writes.</li>
+<li><strong>Return value on update:</strong> returning <code>userID</code> (not
+  just error) keeps the signature uniform; callers ignore it on the update
+  branch.</li>
+<li><strong><code>UserAuthOptions.UserExists</code> bool — considered,
+  rejected (decision 2026-11-02):</strong> a flag duplicating
+  <code>userID != ""</code> would create two sources of truth that can
+  disagree (<code>userID="u1", UserExists=false</code>), and
+  <code>UserAuthOptions</code> is delivered to every hook — a field only
+  meaningful inside <code>FuncUserRegister</code> invites misreading
+  elsewhere (a <code>false</code> zero-value in a logout hook looks like a
+  bug). <code>userID == ""</code> remains the single discriminator; the
+  host's <code>if userID == "" { create } else { update }</code> idiom is
+  documented in §5.</li>
+</ul>
+
+</div>
+
+<script>
+(function(){
+  var root=document.documentElement;
+  function set(m){root.setAttribute('data-bs-theme',m);try{localStorage.setItem('theme',m)}catch(e){}}
+  document.getElementById('modeLight').onclick=function(){set('light')};
+  document.getElementById('modeDark').onclick=function(){set('dark')};
+  try{var s=localStorage.getItem('theme');if(s)set(s)}catch(e){}
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

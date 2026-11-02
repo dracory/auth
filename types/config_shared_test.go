@@ -178,8 +178,8 @@ func TestConfigImpersonation_ZeroValue(t *testing.T) {
 	}
 }
 
-func TestConfigPasswordless_FieldPromotion(t *testing.T) {
-	c := ConfigPasswordless{
+func TestConfigOtp_FieldPromotion(t *testing.T) {
+	c := ConfigOtp{
 		ConfigShared: ConfigShared{
 			Endpoint:             "/auth",
 			UrlRedirectOnSuccess: "/dashboard",

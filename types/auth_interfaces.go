@@ -14,8 +14,13 @@ type AuthSharedInterface interface {
 	// Router returns an HTTP mux that serves all auth routes.
 	Router() *http.ServeMux
 
+	// IsRegistrationEnabled returns true if registration is enabled.
 	IsRegistrationEnabled() bool
+
+	// IsPasswordless returns true if passwordless login is enabled.
 	IsPasswordless() bool
+
+	// IsVerificationEnabled returns true if email verification is enabled.
 	IsVerificationEnabled() bool
 
 	// Middlewares for protecting or enriching routes.
@@ -156,12 +161,12 @@ type AuthPasswordInterface interface {
 	LinkApiPasswordReset() string
 }
 
-// AuthPasswordlessInterface represents passwordless authentication flows.
+// AuthOtpInterface represents OTP-based authentication flows.
 // It extends the shared interface with login/verification code helpers.
-type AuthPasswordlessInterface interface {
+type AuthOtpInterface interface {
 	AuthSharedInterface
 
-	// Passwordless-only URL helpers.
+	// OTP-only URL helpers.
 	LinkLoginCodeVerify() string
 	LinkApiLoginCodeVerify() string
 }

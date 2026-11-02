@@ -13,7 +13,7 @@ import (
 	"github.com/dracory/req"
 )
 
-func NewPasswordlessAuth(config types.ConfigPasswordless) (types.AuthPasswordlessInterface, error) {
+func NewOtpAuth(config types.ConfigOtp) (types.AuthOtpInterface, error) {
 	if err := validatePasswordlessConfig(config); err != nil {
 		return nil, err
 	}
@@ -150,10 +150,10 @@ func NewPasswordlessAuth(config types.ConfigPasswordless) (types.AuthPasswordles
 	return auth, nil
 }
 
-// validatePasswordlessConfig performs validation of the ConfigPasswordless
+// validatePasswordlessConfig performs validation of the ConfigOtp
 // values and returns a descriptive error if any required field is missing
 // or invalid.
-func validatePasswordlessConfig(config types.ConfigPasswordless) error {
+func validatePasswordlessConfig(config types.ConfigOtp) error {
 	if config.Endpoint == "" {
 		return errors.New("auth: endpoint is required")
 	}

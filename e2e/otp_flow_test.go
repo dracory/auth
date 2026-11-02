@@ -34,7 +34,7 @@ func newOTPAuth(t *testing.T, store *tempKeyStore, registerCalls *[]struct {
 		return nil
 	}
 
-	a, err := auth.NewPasswordlessAuth(cfg)
+	a, err := auth.NewOtpAuth(cfg)
 	if err != nil {
 		t.Fatalf("NewPasswordlessAuth: %v", err)
 	}

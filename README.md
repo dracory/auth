@@ -121,7 +121,7 @@ import (
 )
 
 auth, err := auth.NewPasswordlessAuth(
-  types.ConfigPasswordless{
+  types.ConfigOtp{
     Endpoint: "/auth",
     UrlRedirectOnSuccess: "/dashboard",
     UseCookies: true,
@@ -245,7 +245,7 @@ func tempKeyGet(key string) (value string, err error) {
 #### Step 2: Configure Authentication
 
 ```go
-authInstance, err := auth.NewPasswordlessAuth(types.ConfigPasswordless{
+authInstance, err := auth.NewPasswordlessAuth(types.ConfigOtp{
     // Required
     Endpoint:                "/auth",
     UrlRedirectOnSuccess:    "/dashboard",
@@ -590,7 +590,7 @@ auth.AuthCookieRemove(w, r, types.WithCookieConfig(cfg))
 The same `CookieConfig` can also be configured once when creating the auth instance. Unset string fields (`""`) fall back to secure defaults, so you only need to set what you want to override:
 
 ```go
-authInstance, err := auth.NewPasswordlessAuth(types.ConfigPasswordless{
+authInstance, err := auth.NewPasswordlessAuth(types.ConfigOtp{
     Endpoint:     "/auth",
     UseCookies:   true,
     CookieConfig: &types.CookieConfig{
@@ -637,7 +637,7 @@ All authentication endpoints (login, registration, password restore/reset, verif
 - 5 attempts per IP and endpoint within a 15-minute sliding window
 - Further attempts are blocked for 15 minutes (HTTP 429 with `Retry-After` header)
 
-These options are shared by both `ConfigPasswordless` and `ConfigUsernameAndPassword`:
+These options are shared by both `ConfigOtp` and `ConfigUsernameAndPassword`:
 
 ```go
 // Rate limiting options (shared by both configs)
@@ -696,7 +696,7 @@ The library uses Go's `log/slog` package for structured logging in core flows.
 - Both configuration structs accept an optional logger:
 
   ```go
-  type ConfigPasswordless struct {
+  type ConfigOtp struct {
       // ... other fields ...
       Logger *slog.Logger // Optional: structured logger
   }

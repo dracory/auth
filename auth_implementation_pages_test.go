@@ -45,7 +45,7 @@ func TestPageLogin_UsernameAndPassword(t *testing.T) {
 
 func TestPageLogin_Passwordless(t *testing.T) {
 	config := testutils.NewPasswordlessConfigForTest()
-	auth, errAuth := NewPasswordlessAuth(config)
+	auth, errAuth := NewOtpAuth(config)
 	if errAuth != nil {
 		t.Fatal(errAuth)
 	}
@@ -125,14 +125,14 @@ func TestPageRegister_UsernameAndPassword(t *testing.T) {
 
 func TestPageRegister_Passwordless(t *testing.T) {
 	config := testutils.NewPasswordlessConfigForTest()
-	authShared, err := NewPasswordlessAuth(config)
+	authShared, err := NewOtpAuth(config)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	authInstance, ok := authShared.(*authImplementation)
 	if !ok {
-		t.Fatalf("expected *authImplementation from NewPasswordlessAuthForTest")
+		t.Fatalf("expected *authImplementation from NewOtpAuth")
 	}
 
 	// Enable registration so the router exposes registration routes.
@@ -170,14 +170,14 @@ func TestPageRegister_Passwordless(t *testing.T) {
 
 func TestPageRegisterCodeVerify(t *testing.T) {
 	config := testutils.NewPasswordlessConfigForTest()
-	authShared, err := NewPasswordlessAuth(config)
+	authShared, err := NewOtpAuth(config)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	authInstance, ok := authShared.(*authImplementation)
 	if !ok {
-		t.Fatalf("expected *authImplementation from NewPasswordlessAuthForTest")
+		t.Fatalf("expected *authImplementation from NewOtpAuth")
 	}
 
 	// Enable registration so the router exposes registration code verify route.
@@ -365,7 +365,7 @@ func TestPagePasswordReset_MissingTokenShowsError(t *testing.T) {
 
 func TestPageLoginCodeVerify(t *testing.T) {
 	config := testutils.NewPasswordlessConfigForTest()
-	authInstance, err := NewPasswordlessAuth(config)
+	authInstance, err := NewOtpAuth(config)
 	if err != nil {
 		t.Fatal(err)
 	}

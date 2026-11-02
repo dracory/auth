@@ -88,7 +88,7 @@ type RegistrationFieldsConfig struct {
 
 ### 3. Add `RegistrationFields` to Existing Configs
 
-Add a new field to both `ConfigUsernameAndPassword` and `ConfigPasswordless`:
+Add a new field to both `ConfigUsernameAndPassword` and `ConfigOtp`:
 
 ```go
 // RegistrationFields controls which optional fields appear on the
@@ -415,7 +415,7 @@ authInstance, err := auth.NewUsernameAndPasswordAuth(types.ConfigUsernameAndPass
 ### Passwordless with Extra Fields
 
 ```go
-authInstance, err := auth.NewPasswordlessAuth(types.ConfigPasswordless{
+authInstance, err := auth.NewPasswordlessAuth(types.ConfigOtp{
     Endpoint:             "/auth",
     UrlRedirectOnSuccess: "/dashboard",
     UseCookies:           true,

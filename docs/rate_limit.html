@@ -125,7 +125,7 @@
 <blockquote class="blockquote border-start border-3 ps-3 text-secondary"><p>Note: The built-in limiter is <strong>in-memory and per-process</strong>. In a multi-instance deployment, each instance maintains its own counters.</p></blockquote>
 <hr>
 <h2>Configuration Options</h2>
-<p>Rate limiting is configured via shared fields on <code>ConfigPasswordless</code>, <code>ConfigUsernameAndPassword</code>, and <code>ConfigAuthKnight</code>.</p>
+<p>Rate limiting is configured via shared fields on <code>ConfigOtp</code>, <code>ConfigUsernameAndPassword</code>, and <code>ConfigAuthKnight</code>.</p>
 <pre><code class="language-go">// Shared rate limiting options (for both configs)
 DisableRateLimit   bool                                                                                 // Set to true to disable rate limiting (not recommended for production)
 FuncCheckRateLimit func(ip string, endpoint string) (allowed bool, retryAfter time.Duration, err error) // Optional: override default rate limiter
@@ -133,7 +133,7 @@ MaxLoginAttempts   int                                                          
 LockoutDuration    time.Duration                                                                        // Duration for sliding window and lockout (default: 15 minutes)</code></pre>
 <h3>Examples</h3>
 <h4>Passwordless Flow</h4>
-<pre><code class="language-go">authInstance, err := auth.NewPasswordlessAuth(auth.ConfigPasswordless{
+<pre><code class="language-go">authInstance, err := auth.NewPasswordlessAuth(auth.ConfigOtp{
     Endpoint:             &quot;/auth&quot;,
     UrlRedirectOnSuccess: &quot;/dashboard&quot;,
 
