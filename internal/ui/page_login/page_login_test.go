@@ -146,7 +146,7 @@ func TestLoginContentX_OptionsOverride(t *testing.T) {
 		EmailLabel:          "E-mail address",
 		ForgotPasswordLabel: "Lost it?",
 		FooterPrompt:        "New here?",
-	})
+	}, types.LegalLinks{})
 	for _, v := range []string{"E-mail address", "Lost it?", "New here?"} {
 		if !strings.Contains(html, v) {
 			t.Fatalf("expected %q in content %q", v, html)

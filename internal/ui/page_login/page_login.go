@@ -36,14 +36,13 @@ func PageLoginWithAPI(w http.ResponseWriter, r *http.Request, a types.AuthShared
 	if g, ok := a.(interface{ GetRememberMeEnabled() bool }); ok {
 		x.RememberMe = g.GetRememberMeEnabled()
 	}
-	x.Legal = shared.LegalLinksOf(a)
-
 	pageOpts := shared.PageOptionsOf(a)
+	legal := shared.LegalLinksOf(a)
 
 	content := ""
 	scripts := ""
 	if a.IsOtp() {
-		content = LoginOtpContentX(a.IsRegistrationEnabled(), links.Register(a.GetEndpoint()), x, pageOpts.LoginOtp)
+		content = LoginOtpContentX(a.IsRegistrationEnabled(), links.Register(a.GetEndpoint()), x, pageOpts.LoginOtp, legal)
 		scripts = LoginOtpScripts(
 			apiLoginURL,
 			links.LoginCodeVerify(a.GetEndpoint()),
@@ -55,6 +54,7 @@ func PageLoginWithAPI(w http.ResponseWriter, r *http.Request, a types.AuthShared
 			links.PasswordRestore(a.GetEndpoint()),
 			x,
 			pageOpts.Login,
+			legal,
 		)
 		scripts = LoginScripts(
 			apiLoginURL,
