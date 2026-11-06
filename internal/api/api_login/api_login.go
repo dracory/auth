@@ -168,8 +168,8 @@ func ApiLoginWithAuth(w http.ResponseWriter, r *http.Request, a types.AuthShared
 	}
 
 	deps := Dependencies{
-		Otp: a.IsOtp(),
-		Logger:       a.GetLogger(),
+		Otp:    a.IsOtp(),
+		Logger: a.GetLogger(),
 		OtpDependencies: LoginOtpDeps{
 			DisableRateLimit:  a.GetDisableRateLimit(),
 			EmailSendThrottle: utils.EmailSendThrottleFromAuth(a),

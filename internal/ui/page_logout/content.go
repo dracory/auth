@@ -5,15 +5,19 @@ import (
 	"strings"
 
 	"github.com/dracory/auth/internal/ui/shared"
+	"github.com/dracory/auth/types"
 	"github.com/dracory/hb"
 )
 
 // LogoutContent builds the HTML for the logout page.
-func LogoutContent() string {
+// Zero-value options render the built-in copy.
+func LogoutContent(opts types.LogoutPageOptions) string {
 	card := shared.Card(
-		shared.PageHeader("Sign out", "Are you sure you want to sign out of your account?"),
+		shared.PageHeader(
+			shared.OrDefault(opts.Title, "Sign out"),
+			shared.OrDefault(opts.Subtitle, "Are you sure you want to sign out of your account?")),
 		shared.AlertGroup(),
-		shared.PrimaryButton("ButtonLogout", "bi-box-arrow-right", "Logout", "logoutFormValidate()"),
+		shared.PrimaryButton("ButtonLogout", "bi-box-arrow-right", shared.OrDefault(opts.SubmitLabel, "Logout"), "logoutFormValidate()"),
 	)
 
 	return hb.NewDiv().Children([]hb.TagInterface{

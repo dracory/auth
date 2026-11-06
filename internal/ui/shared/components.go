@@ -52,8 +52,9 @@ func FieldGroup(label string, input hb.TagInterface) hb.TagInterface {
 
 // NameRow renders first/last name inputs side by side. required adds the
 // HTML5 required attribute — the registration flows enforce names client-
-// side, password restore sends them but does not gate on them.
-func NameRow(required bool) hb.TagInterface {
+// side, password restore sends them but does not gate on them. The label
+// and placeholder arguments accept "" to fall back to the built-in copy.
+func NameRow(required bool, firstLabel, firstPlaceholder, lastLabel, lastPlaceholder string) hb.TagInterface {
 	nameField := func(label, name, placeholder string) hb.TagInterface {
 		input := hb.NewInput().Class("form-control form-control-lg").Name(name).Placeholder(placeholder)
 		if required {
@@ -65,8 +66,8 @@ func NameRow(required bool) hb.TagInterface {
 		}))
 	}
 	return hb.NewDiv().Class("row g-3 mb-3").Children([]hb.TagInterface{
-		nameField("First name", "first_name", "Your first name"),
-		nameField("Last name", "last_name", "Your last name"),
+		nameField(OrDefault(firstLabel, "First name"), "first_name", OrDefault(firstPlaceholder, "Your first name")),
+		nameField(OrDefault(lastLabel, "Last name"), "last_name", OrDefault(lastPlaceholder, "Your last name")),
 	})
 }
 

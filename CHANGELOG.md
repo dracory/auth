@@ -21,6 +21,16 @@
   `js-syntax-check` CI job running `node --check` over all of them.
 - `MultiMethodAuth` now mounts `GET /logout` and `POST /api/logout`
   (previously absent — the routes 404'd under a multi-method mux).
+- Per-page copy customization: `types.PageOptions` (one `*PageOptions`
+  struct per built-in page — title, subtitle, field labels/placeholders,
+  button and footer text) on `ConfigShared.PageOptions`, plus
+  `SetPageOptions`/`Set<Page>PageOptions` setters. Empty fields render
+  the built-in copy, so the zero value is today's pages.
+- Global legal links: `ConfigShared.LegalLinks` (`Terms`/`Privacy`
+  `LegalLink{Label, URL, Target}`) renders "By continuing, you agree to
+  …" inside the card on login/register-type pages. `LinkTargetModal`
+  opens the page in an iframe overlay (requires the target to permit
+  framing — `X-Frame-Options`/CSP `frame-ancestors` apply).
 
 ### Fixed
 - `altAuthImpl` (the multi-method alternatives decorator) hid the wrapped

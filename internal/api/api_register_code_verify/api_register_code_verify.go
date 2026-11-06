@@ -39,7 +39,7 @@ type Dependencies struct {
 	Otp bool
 
 	OtpUserRegister func(ctx context.Context, email, firstName, lastName string) error
-	UserRegister             func(ctx context.Context, email, password, firstName, lastName string) error
+	UserRegister    func(ctx context.Context, email, password, firstName, lastName string) error
 
 	// AuthenticateViaUsername is called on successful registration to
 	// authenticate the user and produce the final HTTP response.
@@ -160,7 +160,7 @@ func ApiRegisterCodeVerifyWithAuth(w http.ResponseWriter, r *http.Request, a typ
 		TemporaryKeyGet:  a.GetFuncTemporaryKeyGet(),
 		TemporaryKeySet:  a.GetFuncTemporaryKeySet(),
 		PasswordStrength: a.GetPasswordStrength(),
-		Otp:     a.IsOtp(),
+		Otp:              a.IsOtp(),
 		Logger:           a.GetLogger(),
 	}
 	if deleter, ok := a.(interface {

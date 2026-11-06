@@ -23,3 +23,9 @@ var ensureAssetsJS string
 //
 //go:embed page_helpers.js
 var pageHelpersJS string
+
+// legalModalJS intercepts clicks on legal links configured with
+// LinkTargetModal and opens them in an iframe overlay.
+//
+//go:embed legal_modal.js
+var legalModalJS string

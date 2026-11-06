@@ -451,7 +451,7 @@ func TestRegisterOtpInitError_Error(t *testing.T) {
 
 func TestApiRegisterNilRegisterWithUsernameAndPassword(t *testing.T) {
 	deps := Dependencies{
-		Otp:                    false,
+		Otp:                             false,
 		RegisterWithUsernameAndPassword: nil,
 	}
 

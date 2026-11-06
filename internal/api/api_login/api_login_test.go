@@ -140,8 +140,8 @@ func TestApiLoginUsernameAndPasswordTokenStoreError(t *testing.T) {
 
 func TestApiLoginUsernameAndPasswordSuccess(t *testing.T) {
 	deps := Dependencies{
-		Otp: false,
-		UseCookies:   false,
+		Otp:        false,
+		UseCookies: false,
 		LoginWithUsernameAndPassword: func(ctx context.Context, email, password, ip, userAgent string) (string, string, string) {
 			return "login success", "token-123", ""
 		},
@@ -408,7 +408,7 @@ func TestLoginOtpError_Error(t *testing.T) {
 
 func TestApiLoginNilLoginWithUsernameAndPassword(t *testing.T) {
 	deps := Dependencies{
-		Otp:                 false,
+		Otp:                          false,
 		LoginWithUsernameAndPassword: nil,
 	}
 
@@ -428,8 +428,8 @@ func TestApiLoginNilLoginWithUsernameAndPassword(t *testing.T) {
 func TestApiLoginSuccessWithCookies(t *testing.T) {
 	cookieSet := false
 	deps := Dependencies{
-		Otp: false,
-		UseCookies:   true,
+		Otp:        false,
+		UseCookies: true,
 		LoginWithUsernameAndPassword: func(ctx context.Context, email, password, ip, userAgent string) (string, string, string) {
 			return "login success", "token-123", ""
 		},

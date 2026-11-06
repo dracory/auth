@@ -18,44 +18,50 @@ func NewAuthSharedForTest() types.AuthSharedInterface {
 }
 
 type authSharedTest struct {
-	endpoint                              string
-	layout                                shared.LayoutFunc
-	logger                                *slog.Logger
-	registration                          bool
+	endpoint                     string
+	layout                       shared.LayoutFunc
+	logger                       *slog.Logger
+	registration                 bool
 	otp                          bool
-	verification                          bool
-	authKnight                            bool
-	temporaryKeyGet                       func(key string) (string, error)
-	temporaryKeySet                       func(key string, value string, expiresSeconds int) error
-	funcUserExists                        func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error)
-	funcSessionCreate                     func(ctx context.Context, userID string, options types.UserAuthOptions) (types.SessionInterface, error)
-	funcUserFindByAuthToken               func(ctx context.Context, token string, options types.UserAuthOptions) (string, error)
-	redirectOnSuccess                     string
-	loginURL                              string
-	useCookies                            bool
-	disableRateLimit                      bool
-	passwordStrength                      *types.PasswordStrengthConfig
-	postAuthHooks                         types.PostAuthHooks
-	observabilityHooks                    types.ObservabilityHooks
-	rememberMeEnabled                     bool
-	rememberMeDays                        int
-	rememberCookieName                    string
-	secureCookies                         bool
-	funcUserLogin                         func(ctx context.Context, username, password string, options types.UserAuthOptions) (string, error)
+	verification                 bool
+	authKnight                   bool
+	temporaryKeyGet              func(key string) (string, error)
+	temporaryKeySet              func(key string, value string, expiresSeconds int) error
+	funcUserExists               func(ctx context.Context, email string, options types.UserAuthOptions) (bool, error)
+	funcSessionCreate            func(ctx context.Context, userID string, options types.UserAuthOptions) (types.SessionInterface, error)
+	funcUserFindByAuthToken      func(ctx context.Context, token string, options types.UserAuthOptions) (string, error)
+	redirectOnSuccess            string
+	loginURL                     string
+	useCookies                   bool
+	disableRateLimit             bool
+	passwordStrength             *types.PasswordStrengthConfig
+	postAuthHooks                types.PostAuthHooks
+	observabilityHooks           types.ObservabilityHooks
+	rememberMeEnabled            bool
+	rememberMeDays               int
+	rememberCookieName           string
+	secureCookies                bool
+	funcUserLogin                func(ctx context.Context, username, password string, options types.UserAuthOptions) (string, error)
 	otpUserRegister              func(ctx context.Context, email, firstName, lastName string, options types.UserAuthOptions) error
-	funcUserRegister                      func(ctx context.Context, username, password, firstName, lastName string, options types.UserAuthOptions) error
-	funcUserPasswordChange                func(ctx context.Context, userID, password string, options types.UserAuthOptions) error
-	funcUserLogout                        func(ctx context.Context, userID string, options types.UserAuthOptions) error
+	funcUserRegister             func(ctx context.Context, username, password, firstName, lastName string, options types.UserAuthOptions) error
+	funcUserPasswordChange       func(ctx context.Context, userID, password string, options types.UserAuthOptions) error
+	funcUserLogout               func(ctx context.Context, userID string, options types.UserAuthOptions) error
 	otpUserFindByEmail           func(ctx context.Context, email string, options types.UserAuthOptions) (string, error)
-	funcUserFindByUsername                func(ctx context.Context, username, firstName, lastName string, options types.UserAuthOptions) (string, error)
-	funcUserStoreAuthToken                func(ctx context.Context, token, userID string, options types.UserAuthOptions) error
-	emailTemplatePasswordRestore          func(ctx context.Context, userID string, passwordRestoreLink string, options types.UserAuthOptions) string
-	emailTemplateRegisterCode             func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string
-	emailSend                             func(ctx context.Context, userID, emailSubject, emailBody string) error
+	funcUserFindByUsername       func(ctx context.Context, username, firstName, lastName string, options types.UserAuthOptions) (string, error)
+	funcUserStoreAuthToken       func(ctx context.Context, token, userID string, options types.UserAuthOptions) error
+	emailTemplatePasswordRestore func(ctx context.Context, userID string, passwordRestoreLink string, options types.UserAuthOptions) string
+	emailTemplateRegisterCode    func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string
+	emailSend                    func(ctx context.Context, userID, emailSubject, emailBody string) error
 	otpEmailTemplateLoginCode    func(ctx context.Context, email string, loginLink string, options types.UserAuthOptions) string
 	otpEmailTemplateRegisterCode func(ctx context.Context, email string, registerLink string, options types.UserAuthOptions) string
 	otpEmailSend                 func(ctx context.Context, email string, emailSubject, emailBody string) error
+	pageOptions                  types.PageOptions
+	legalLinks                   types.LegalLinks
 }
+
+func (a *authSharedTest) GetPageOptions() types.PageOptions { return a.pageOptions }
+
+func (a *authSharedTest) GetLegalLinks() types.LegalLinks { return a.legalLinks }
 
 func (a *authSharedTest) Router() *http.ServeMux { return http.NewServeMux() }
 
@@ -466,6 +472,20 @@ func SetPostAuthHooksForTest(a types.AuthSharedInterface, hooks types.PostAuthHo
 func SetObservabilityHooksForTest(a types.AuthSharedInterface, hooks types.ObservabilityHooks) {
 	if v, ok := a.(*authSharedTest); ok {
 		v.observabilityHooks = hooks
+	}
+}
+
+// SetPageOptionsForTest allows tests to control per-page copy customization.
+func SetPageOptionsForTest(a types.AuthSharedInterface, options types.PageOptions) {
+	if v, ok := a.(*authSharedTest); ok {
+		v.pageOptions = options
+	}
+}
+
+// SetLegalLinksForTest allows tests to control the global legal links.
+func SetLegalLinksForTest(a types.AuthSharedInterface, links types.LegalLinks) {
+	if v, ok := a.(*authSharedTest); ok {
+		v.legalLinks = links
 	}
 }
 

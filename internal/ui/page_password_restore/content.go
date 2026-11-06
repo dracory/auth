@@ -5,33 +5,45 @@ import (
 	"strings"
 
 	"github.com/dracory/auth/internal/ui/shared"
+	"github.com/dracory/auth/types"
 	"github.com/dracory/hb"
 )
 
 // PasswordRestoreContent builds the HTML for the password restore page.
-func PasswordRestoreContent(enableRegistration bool, urlLogin, urlRegister string) string {
+// Zero-value options render the built-in copy.
+func PasswordRestoreContent(enableRegistration bool, urlLogin, urlRegister string, opts types.PasswordRestorePageOptions) string {
 	emailInput := hb.NewInput().
 		Class("form-control form-control-lg").
 		Name("email").
-		Placeholder("you@example.com").
+		Placeholder(shared.OrDefault(opts.EmailPlaceholder, "you@example.com")).
 		Attr("autocomplete", "username").
 		Attr("required", "required")
 
 	card := shared.Card(
-		shared.PageHeader("Forgot your password?", "Enter your email and we'll send you a reset link."),
+		shared.PageHeader(
+			shared.OrDefault(opts.Title, "Forgot your password?"),
+			shared.OrDefault(opts.Subtitle, "Enter your email and we'll send you a reset link.")),
 		shared.AlertGroup(),
-		shared.NameRow(false),
-		shared.FieldGroup("Email", emailInput),
-		shared.PrimaryButton("ButtonContinue", "bi-envelope", "Send reset link", "passwordRestoreFormValidate()"),
+		shared.NameRow(false,
+			opts.FirstNameLabel, opts.FirstNamePlaceholder,
+			opts.LastNameLabel, opts.LastNamePlaceholder),
+		shared.FieldGroup(shared.OrDefault(opts.EmailLabel, "Email"), emailInput),
+		shared.PrimaryButton("ButtonContinue", "bi-envelope", shared.OrDefault(opts.SubmitLabel, "Send reset link"), "passwordRestoreFormValidate()"),
 	)
 
 	container := hb.NewDiv().Children([]hb.TagInterface{
 		card,
-		shared.FooterText("Remembered it?", urlLogin, "Login"),
+		shared.FooterText(
+			shared.OrDefault(opts.FooterPrompt, "Remembered it?"),
+			urlLogin,
+			shared.OrDefault(opts.FooterLinkLabel, "Login")),
 	})
 
 	if enableRegistration {
-		container.Child(shared.FooterText("Don't have an account?", urlRegister, "Register"))
+		container.Child(shared.FooterText(
+			shared.OrDefault(opts.RegisterPrompt, "Don't have an account?"),
+			urlRegister,
+			shared.OrDefault(opts.RegisterLinkLabel, "Register")))
 	}
 
 	return container.ToHTML()

@@ -5,11 +5,13 @@ import (
 	"strings"
 
 	"github.com/dracory/auth/internal/ui/shared"
+	"github.com/dracory/auth/types"
 	"github.com/dracory/hb"
 )
 
 // PasswordResetContent builds the HTML for the password reset page.
-func PasswordResetContent(token, errorMessage, urlPasswordRestore, urlLogin, urlRegister string, enableRegistration bool) string {
+// Zero-value options render the built-in copy.
+func PasswordResetContent(token, errorMessage, urlPasswordRestore, urlLogin, urlRegister string, enableRegistration bool, opts types.PasswordResetPageOptions) string {
 	alertSuccess := hb.NewDiv().Class("alert alert-success").Style("display:none")
 	alertDanger := hb.NewDiv().Class("alert alert-danger")
 	if errorMessage != "" {
@@ -19,39 +21,49 @@ func PasswordResetContent(token, errorMessage, urlPasswordRestore, urlLogin, url
 	}
 	alertGroup := hb.NewDiv().Class("alert-group").AddChild(alertSuccess).AddChild(alertDanger)
 
+	header := shared.PageHeader(
+		shared.OrDefault(opts.Title, "Set a new password"),
+		shared.OrDefault(opts.Subtitle, "Choose a strong password for your account."))
+
 	var cardBody hb.TagInterface
 	if errorMessage == "" {
 		tokenInput := hb.NewInput().Name("token").Value(token)
 		passwordInput := hb.NewInput().Class("form-control form-control-lg").Name("password").Type(hb.TYPE_PASSWORD).
-			Placeholder("Min 8 characters").Attr("autocomplete", "new-password").Attr("required", "required")
+			Placeholder(shared.OrDefault(opts.NewPasswordPlaceholder, "Min 8 characters")).Attr("autocomplete", "new-password").Attr("required", "required")
 		passwordConfirmInput := hb.NewInput().Class("form-control form-control-lg").Name("password_confirm").Type(hb.TYPE_PASSWORD).
-			Placeholder("Repeat password").Attr("autocomplete", "new-password").Attr("required", "required")
+			Placeholder(shared.OrDefault(opts.ConfirmPasswordPlaceholder, "Repeat password")).Attr("autocomplete", "new-password").Attr("required", "required")
 		cardBody = shared.Card(
-			shared.PageHeader("Set a new password", "Choose a strong password for your account."),
+			header,
 			alertGroup,
 			tokenInput,
-			shared.FieldGroup("New password", passwordInput),
-			shared.FieldGroup("Confirm new password", passwordConfirmInput),
-			shared.PrimaryButton("ButtonContinue", "bi-shield-check", "Reset password", "resetFormValidate()"),
+			shared.FieldGroup(shared.OrDefault(opts.NewPasswordLabel, "New password"), passwordInput),
+			shared.FieldGroup(shared.OrDefault(opts.ConfirmPasswordLabel, "Confirm new password"), passwordConfirmInput),
+			shared.PrimaryButton("ButtonContinue", "bi-shield-check", shared.OrDefault(opts.SubmitLabel, "Reset password"), "resetFormValidate()"),
 		)
 	} else {
 		cardBody = shared.Card(
-			shared.PageHeader("Set a new password", "Choose a strong password for your account."),
+			header,
 			alertGroup,
-			hb.NewParagraph().Text("Sorry, there was an error processing your request. Please select one of the following options:"),
-			hb.NewParagraph().AddChild(hb.NewHyperlink().Href(urlPasswordRestore).Text("request a reset of your password")),
-			hb.NewParagraph().AddChild(hb.NewHyperlink().Href(urlLogin).Text("login to the system")),
-			hb.NewParagraph().AddChild(hb.NewHyperlink().Href(urlRegister).Text("create a new account")),
+			hb.NewParagraph().Text(shared.OrDefault(opts.ErrorText, "Sorry, there was an error processing your request. Please select one of the following options:")),
+			hb.NewParagraph().AddChild(hb.NewHyperlink().Href(urlPasswordRestore).Text(shared.OrDefault(opts.ErrorRestoreLabel, "request a reset of your password"))),
+			hb.NewParagraph().AddChild(hb.NewHyperlink().Href(urlLogin).Text(shared.OrDefault(opts.ErrorLoginLabel, "login to the system"))),
+			hb.NewParagraph().AddChild(hb.NewHyperlink().Href(urlRegister).Text(shared.OrDefault(opts.ErrorRegisterLabel, "create a new account"))),
 		)
 	}
 
 	container := hb.NewDiv().Children([]hb.TagInterface{
 		cardBody,
-		shared.FooterText("Remembered it?", urlLogin, "Login"),
+		shared.FooterText(
+			shared.OrDefault(opts.FooterPrompt, "Remembered it?"),
+			urlLogin,
+			shared.OrDefault(opts.FooterLinkLabel, "Login")),
 	})
 
 	if enableRegistration {
-		container.Child(shared.FooterText("Don't have an account?", urlRegister, "Register"))
+		container.Child(shared.FooterText(
+			shared.OrDefault(opts.RegisterPrompt, "Don't have an account?"),
+			urlRegister,
+			shared.OrDefault(opts.RegisterLinkLabel, "Register")))
 	}
 
 	return container.ToHTML()

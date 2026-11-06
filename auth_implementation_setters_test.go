@@ -380,3 +380,30 @@ func TestSetters_EmailCaptured(t *testing.T) {
 		t.Fatal("expected capture hook invoked with verified=true")
 	}
 }
+
+func TestSetters_PageOptions(t *testing.T) {
+	a := &authImplementation{}
+
+	a.SetPageOptions(types.PageOptions{Login: types.LoginPageOptions{Title: "Welcome"}})
+	if a.GetPageOptions().Login.Title != "Welcome" {
+		t.Fatal("expected SetPageOptions to store the aggregate")
+	}
+
+	a.SetLoginPageOptions(types.LoginPageOptions{Title: "Sign in please"})
+	a.SetLogoutPageOptions(types.LogoutPageOptions{SubmitLabel: "Bye"})
+	if a.GetPageOptions().Login.Title != "Sign in please" || a.GetPageOptions().Logout.SubmitLabel != "Bye" {
+		t.Fatal("expected per-page setters to update the aggregate")
+	}
+}
+
+func TestSetters_LegalLinks(t *testing.T) {
+	a := &authImplementation{}
+
+	a.SetLegalLinks(types.LegalLinks{
+		Terms:   types.LegalLink{URL: "/terms", Target: types.LinkTargetNewTab},
+		Privacy: types.LegalLink{URL: "/privacy"},
+	})
+	if a.GetLegalLinks().Terms.URL != "/terms" || a.GetLegalLinks().Privacy.URL != "/privacy" {
+		t.Fatal("expected legal links round-trip")
+	}
+}

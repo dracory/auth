@@ -8,7 +8,7 @@ import (
 
 // Dependencies contains the dependencies required to render the login page.
 type Dependencies struct {
-	Otp       bool
+	Otp                bool
 	EnableRegistration bool
 
 	Endpoint          string

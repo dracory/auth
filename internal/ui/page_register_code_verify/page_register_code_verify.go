@@ -16,7 +16,11 @@ func PageRegisterCodeVerify(w http.ResponseWriter, r *http.Request, a types.Auth
 		return
 	}
 
-	content := RegisterCodeVerifyContent(links.Register(a.GetEndpoint()))
+	content := RegisterCodeVerifyContent(
+		links.Register(a.GetEndpoint()),
+		shared.PageOptionsOf(a).RegisterCodeVerify,
+		shared.LegalLinksOf(a),
+	)
 	scripts := RegisterCodeVerifyScripts(
 		links.ApiRegisterCodeVerify(a.GetEndpoint()),
 		a.LinkRedirectOnSuccess(),

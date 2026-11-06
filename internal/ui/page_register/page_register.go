@@ -16,6 +16,9 @@ import (
 // writes the result to the ResponseWriter.
 
 func PageRegister(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) {
+	registerOpts := shared.PageOptionsOf(a).Register
+	legal := shared.LegalLinksOf(a)
+
 	// With a verified-email key (verified_key issued by an OTP/magic-link
 	// verification or the AuthKnight callback): render the verified-email
 	// register form. Checked first — before the AuthKnight redirect guard.
@@ -26,7 +29,7 @@ func PageRegister(w http.ResponseWriter, r *http.Request, a types.AuthSharedInte
 			// The URL carries a bearer credential — do not leak it via
 			// Referer to any subresource on this page.
 			w.Header().Set("Referrer-Policy", "no-referrer")
-			content := RegisterVerifiedEmailContent(links.Login(a.GetEndpoint()), email, verifiedKey)
+			content := RegisterVerifiedEmailContent(links.Login(a.GetEndpoint()), email, verifiedKey, registerOpts, legal)
 			scripts := RegisterVerifiedEmailScripts(
 				links.ApiRegister(a.GetEndpoint()),
 				a.LinkRedirectOnSuccess(),
@@ -62,7 +65,7 @@ func PageRegister(w http.ResponseWriter, r *http.Request, a types.AuthSharedInte
 				})
 			}
 		}
-		content := RegisterCompletionContent(links.Login(a.GetEndpoint()), email)
+		content := RegisterCompletionContent(links.Login(a.GetEndpoint()), email, registerOpts, legal)
 		scripts := RegisterCompletionScripts(
 			links.ApiRegister(a.GetEndpoint()),
 			a.LinkRedirectOnSuccess(),
@@ -87,7 +90,7 @@ func PageRegister(w http.ResponseWriter, r *http.Request, a types.AuthSharedInte
 	scripts := ""
 
 	if a.IsOtp() {
-		content = RegisterOtpContent(links.Login(a.GetEndpoint()))
+		content = RegisterOtpContent(links.Login(a.GetEndpoint()), registerOpts, legal)
 		scripts = RegisterOtpScripts(
 			links.ApiRegister(a.GetEndpoint()),
 			links.RegisterCodeVerify(a.GetEndpoint()),
@@ -96,6 +99,8 @@ func PageRegister(w http.ResponseWriter, r *http.Request, a types.AuthSharedInte
 		content = RegisterUsernameAndPasswordContent(
 			links.Login(a.GetEndpoint()),
 			links.PasswordRestore(a.GetEndpoint()),
+			registerOpts,
+			legal,
 		)
 		urlSuccess := links.Login(a.GetEndpoint())
 		if a.IsVerificationEnabled() {

@@ -42,8 +42,8 @@ type ObservabilityHooks interface {
 
 // Login method identifiers used by RecordLoginAttempt.
 const (
-	LoginMethodPassword     = "password"
-	LoginMethodOtp = "otp"
+	LoginMethodPassword = "password"
+	LoginMethodOtp      = "otp"
 )
 
 // NoopObservabilityHooks is a no-op implementation of ObservabilityHooks.

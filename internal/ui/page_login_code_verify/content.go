@@ -7,11 +7,13 @@ import (
 	"fmt"
 
 	"github.com/dracory/auth/internal/ui/shared"
+	"github.com/dracory/auth/types"
 	"github.com/dracory/hb"
 )
 
 // LoginCodeVerifyContent builds the HTML for the login code verification page.
-func LoginCodeVerifyContent(urlBack string) string {
+// Zero-value options render the built-in copy.
+func LoginCodeVerifyContent(urlBack string, opts types.CodeVerifyPageOptions) string {
 	// Segmented input — one box per code character, synced into a hidden
 	// field so the verify JS keeps posting `verification_code` unchanged.
 	// Login codes are 8 uppercase consonants (see utils.LoginCodeLength),
@@ -34,16 +36,21 @@ func LoginCodeVerifyContent(urlBack string) string {
 	}
 
 	card := shared.Card(
-		shared.PageHeader("Check your email", "We sent you a code by email. Enter it below to sign in."),
+		shared.PageHeader(
+			shared.OrDefault(opts.Title, "Check your email"),
+			shared.OrDefault(opts.Subtitle, "We sent you a code by email. Enter it below to sign in.")),
 		shared.AlertGroup(),
 		digitInputs,
 		verificationCodeInput,
-		shared.PrimaryButton("ButtonLogin", "bi-check2-circle", "Verify code", "loginFormValidate()"),
+		shared.PrimaryButton("ButtonLogin", "bi-check2-circle", shared.OrDefault(opts.SubmitLabel, "Verify code"), "loginFormValidate()"),
 	)
 
 	return hb.NewDiv().Children([]hb.TagInterface{
 		card,
-		shared.FooterText("Didn't get a code?", urlBack, "Resend"),
+		shared.FooterText(
+			shared.OrDefault(opts.ResendPrompt, "Didn't get a code?"),
+			urlBack,
+			shared.OrDefault(opts.ResendLabel, "Resend")),
 	}).ToHTML()
 }
 

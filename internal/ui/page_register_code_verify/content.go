@@ -5,11 +5,13 @@ import (
 	"strings"
 
 	"github.com/dracory/auth/internal/ui/shared"
+	"github.com/dracory/auth/types"
 	"github.com/dracory/hb"
 )
 
 // RegisterCodeVerifyContent builds the HTML for the registration code verification page.
-func RegisterCodeVerifyContent(urlBack string) string {
+// Zero-value options render the built-in copy.
+func RegisterCodeVerifyContent(urlBack string, opts types.CodeVerifyPageOptions, legal types.LegalLinks) string {
 	verificationCodeInput := hb.NewInput().
 		Class("form-control form-control-lg").
 		Name("verification_code").
@@ -17,15 +19,21 @@ func RegisterCodeVerifyContent(urlBack string) string {
 		Attr("required", "required")
 
 	card := shared.Card(
-		shared.PageHeader("Check your email", "We sent a verification code to your email to confirm your new account."),
+		shared.PageHeader(
+			shared.OrDefault(opts.Title, "Check your email"),
+			shared.OrDefault(opts.Subtitle, "We sent a verification code to your email to confirm your new account.")),
 		shared.AlertGroup(),
-		shared.FieldGroup("Verification code", verificationCodeInput),
-		shared.PrimaryButton("buttonVerify", "bi-check2-circle", "Verify registration", "registerCodeFormValidate()"),
+		shared.FieldGroup(shared.OrDefault(opts.CodeLabel, "Verification code"), verificationCodeInput),
+		shared.PrimaryButton("buttonVerify", "bi-check2-circle", shared.OrDefault(opts.SubmitLabel, "Verify registration"), "registerCodeFormValidate()"),
+		hb.NewHTML(shared.LegalLine(legal)),
 	)
 
 	return hb.NewDiv().Children([]hb.TagInterface{
 		card,
-		shared.FooterText("Didn't get a code?", urlBack, "Resend"),
+		shared.FooterText(
+			shared.OrDefault(opts.ResendPrompt, "Didn't get a code?"),
+			urlBack,
+			shared.OrDefault(opts.ResendLabel, "Resend")),
 	}).ToHTML()
 }
 

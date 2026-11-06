@@ -58,7 +58,7 @@ func layoutOptionsFor(opts PageOptions) types.LayoutOptions {
 		"NOTIFLIX_CSS", notiflixCssURL,
 		"NOTIFLIX_JS", notiflixJsURL,
 	).Replace(ensureAssetsJS)
-	options.Scripts = append(options.Scripts, ensure, pageHelpersJS)
+	options.Scripts = append(options.Scripts, ensure, pageHelpersJS, legalModalJS)
 	if opts.Scripts != "" {
 		options.Scripts = append(options.Scripts, opts.Scripts)
 	}
@@ -141,6 +141,24 @@ func customCSSOf(a types.AuthSharedInterface) string {
 		return t.GetCustomCSS()
 	}
 	return ""
+}
+
+// PageOptionsOf reads the per-page customization aggregate from the auth
+// implementation via an optional interface (nil-safe for tests).
+func PageOptionsOf(a types.AuthSharedInterface) types.PageOptions {
+	if g, ok := a.(interface{ GetPageOptions() types.PageOptions }); ok {
+		return g.GetPageOptions()
+	}
+	return types.PageOptions{}
+}
+
+// LegalLinksOf reads the global Terms/Privacy links from the auth
+// implementation via an optional interface (nil-safe for tests).
+func LegalLinksOf(a types.AuthSharedInterface) types.LegalLinks {
+	if g, ok := a.(interface{ GetLegalLinks() types.LegalLinks }); ok {
+		return g.GetLegalLinks()
+	}
+	return types.LegalLinks{}
 }
 
 type authKnightChecker interface {

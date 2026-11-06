@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/dracory/auth/internal/testutils"
+	"github.com/dracory/auth/types"
 	"github.com/dracory/auth/utils"
 )
 
@@ -88,5 +89,17 @@ func TestPagePasswordReset_MissingTokenShowsError(t *testing.T) {
 
 	if !strings.Contains(body, "Link is invalid") {
 		t.Errorf("expected error message %q in body, got %s", "Link is invalid", body)
+	}
+}
+
+func TestPasswordResetContent_OptionsOverride(t *testing.T) {
+	html := PasswordResetContent("tok", "", "/restore", "/login", "/register", true, types.PasswordResetPageOptions{
+		Title:                  "Pick a password",
+		NewPasswordPlaceholder: "At least 8 chars",
+	})
+	for _, v := range []string{"Pick a password", "At least 8 chars", "Confirm new password"} {
+		if !strings.Contains(html, v) {
+			t.Fatalf("expected %q in content %q", v, html)
+		}
 	}
 }

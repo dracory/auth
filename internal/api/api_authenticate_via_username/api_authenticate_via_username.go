@@ -17,7 +17,7 @@ type Dependencies struct {
 	Otp bool
 
 	OtpUserFindByEmail func(ctx context.Context, email string) (string, error)
-	UserFindByUsername          func(ctx context.Context, username, firstName, lastName string) (string, error)
+	UserFindByUsername func(ctx context.Context, username, firstName, lastName string) (string, error)
 
 	UserStoreAuthToken func(ctx context.Context, token, userID string) error
 
@@ -102,9 +102,9 @@ func ApiAuthenticateViaUsername(w http.ResponseWriter, r *http.Request, username
 // struct using the interface accessors and preserves the existing behaviour.
 func ApiAuthenticateViaUsernameWithAuth(w http.ResponseWriter, r *http.Request, username, firstName, lastName string, a types.AuthSharedInterface) {
 	deps := Dependencies{
-		Otp: a.IsOtp(),
-		UseCookies:   a.GetUseCookies(),
-		Logger:       a.GetLogger(),
+		Otp:        a.IsOtp(),
+		UseCookies: a.GetUseCookies(),
+		Logger:     a.GetLogger(),
 	}
 
 	if fn := a.GetOtpUserFindByEmail(); fn != nil {

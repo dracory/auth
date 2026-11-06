@@ -389,7 +389,7 @@ func TestApiRegisterCodeVerifyUsernamePasswordNilUserRegister(t *testing.T) {
 		TemporaryKeyGet: func(key string) (string, error) {
 			return jsonPayload, nil
 		},
-		Otp: false,
+		Otp:          false,
 		UserRegister: nil,
 	}
 

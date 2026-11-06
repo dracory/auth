@@ -244,3 +244,37 @@ func TestPageRegister_AuthKnightNoAkKey(t *testing.T) {
 		t.Errorf("expected redirect to authknight.com, got: %s", location)
 	}
 }
+
+func TestRegisterOtpContent_OptionsOverride(t *testing.T) {
+	html := RegisterOtpContent("/auth/login", types.RegisterPageOptions{
+		Title:          "Join us",
+		FirstNameLabel: "Given name",
+		SubmitLabel:    "Sign up",
+	}, types.LegalLinks{Terms: types.LegalLink{URL: "/terms"}})
+	for _, v := range []string{"Join us", "Given name", "Sign up", "By continuing, you agree to", "/terms"} {
+		if !strings.Contains(html, v) {
+			t.Fatalf("expected %q in content %q", v, html)
+		}
+	}
+}
+
+func TestRegisterUsernameAndPasswordContent_OptionsOverride(t *testing.T) {
+	html := RegisterUsernameAndPasswordContent("/auth/login", "/auth/password-restore", types.RegisterPageOptions{
+		PasswordLabel:       "Secret",
+		ForgotPasswordLabel: "Lost it?",
+	}, types.LegalLinks{})
+	for _, v := range []string{"Secret", "Lost it?", "Create your account"} {
+		if !strings.Contains(html, v) {
+			t.Fatalf("expected %q in content %q", v, html)
+		}
+	}
+}
+
+func TestRegisterCompletionContent_PerVariantDefaults(t *testing.T) {
+	html := RegisterCompletionContent("/auth/login", "me@example.com", types.RegisterPageOptions{}, types.LegalLinks{})
+	for _, v := range []string{"Complete your registration", "Save &amp; continue", "me@example.com"} {
+		if !strings.Contains(html, v) {
+			t.Fatalf("expected %q in content %q", v, html)
+		}
+	}
+}

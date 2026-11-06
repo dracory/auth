@@ -8,7 +8,7 @@ import (
 
 // Dependencies contains the dependencies required to render the register page.
 type Dependencies struct {
-	Otp       bool
+	Otp                bool
 	EnableVerification bool
 
 	Endpoint string

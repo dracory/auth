@@ -39,16 +39,67 @@ func TestFieldGroup(t *testing.T) {
 }
 
 func TestNameRow(t *testing.T) {
-	html := NameRow(true).ToHTML()
+	html := NameRow(true, "", "", "", "").ToHTML()
 	if !strings.Contains(html, `name="first_name"`) || !strings.Contains(html, `name="last_name"`) {
 		t.Fatalf("unexpected name row %q", html)
 	}
 	if !strings.Contains(html, "required") {
 		t.Fatalf("expected required attributes %q", html)
 	}
-	html = NameRow(false).ToHTML()
+	html = NameRow(false, "", "", "", "").ToHTML()
 	if strings.Contains(html, "required") {
 		t.Fatalf("expected no required attributes %q", html)
+	}
+	html = NameRow(true, "Given name", "Your given name", "Family name", "Your family name").ToHTML()
+	for _, v := range []string{"Given name", "Your given name", "Family name", "Your family name"} {
+		if !strings.Contains(html, v) {
+			t.Fatalf("expected %q in name row %q", v, html)
+		}
+	}
+}
+
+func TestOrDefault(t *testing.T) {
+	if got := OrDefault("", "fallback"); got != "fallback" {
+		t.Fatalf("expected fallback, got %q", got)
+	}
+	if got := OrDefault("override", "fallback"); got != "override" {
+		t.Fatalf("expected override, got %q", got)
+	}
+}
+
+func TestLegalLine(t *testing.T) {
+	// No URLs → no line.
+	if html := LegalLine(types.LegalLinks{}); html != "" {
+		t.Fatalf("expected empty legal line, got %q", html)
+	}
+
+	// Both links, default labels, same tab.
+	html := LegalLine(types.LegalLinks{
+		Terms:   types.LegalLink{URL: "/terms"},
+		Privacy: types.LegalLink{URL: "/privacy"},
+	})
+	for _, v := range []string{"By continuing, you agree to", "/terms", "/privacy", "Terms", "Privacy Policy"} {
+		if !strings.Contains(html, v) {
+			t.Fatalf("expected %q in legal line %q", v, html)
+		}
+	}
+
+	// One link only.
+	html = LegalLine(types.LegalLinks{Terms: types.LegalLink{URL: "/terms", Label: "Terms of Use"}})
+	if !strings.Contains(html, "Terms of Use") || strings.Contains(html, "Privacy") {
+		t.Fatalf("unexpected single-link legal line %q", html)
+	}
+
+	// New tab → target + noopener.
+	html = LegalLine(types.LegalLinks{Terms: types.LegalLink{URL: "/t", Target: types.LinkTargetNewTab}})
+	if !strings.Contains(html, `target="_blank"`) || !strings.Contains(html, "noopener") {
+		t.Fatalf("expected new-tab attributes in %q", html)
+	}
+
+	// Modal → data attribute for legal_modal.js.
+	html = LegalLine(types.LegalLinks{Terms: types.LegalLink{URL: "/t", Target: types.LinkTargetModal}})
+	if !strings.Contains(html, `data-legal-modal="true"`) {
+		t.Fatalf("expected modal attribute in %q", html)
 	}
 }
 

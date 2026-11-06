@@ -537,6 +537,45 @@ func customPageLayout(w http.ResponseWriter, r *http.Request, title string, body
 FuncLayout: customPageLayout,
 ```
 
+### Page Copy & Legal Links
+
+Every built-in page's copy can be overridden field-by-field — empty
+fields fall back to the package defaults, so you only set what you want
+to change:
+
+```go
+PageOptions: types.PageOptions{
+    Login: types.LoginPageOptions{
+        Title:       "Welcome back",
+        SubmitLabel: "Let me in",
+    },
+    MagicLink: types.MagicLinkPageOptions{
+        SubmitLabel: "Email me a sign-in link",
+    },
+},
+```
+
+Or push customization after construction via setters:
+
+```go
+auth.SetLoginPageOptions(types.LoginPageOptions{Title: "Welcome back"})
+auth.SetPageOptions(pageOptions) // whole aggregate in one call
+```
+
+Terms/Privacy links render as "By continuing, you agree to {Terms} and
+{Privacy Policy}." inside the form card on login/register-type pages:
+
+```go
+LegalLinks: types.LegalLinks{
+    Terms:   types.LegalLink{URL: "/terms", Target: types.LinkTargetNewTab},
+    Privacy: types.LegalLink{URL: "/privacy"},
+},
+```
+
+`LinkTargetModal` opens the link in an iframe overlay instead of
+navigating — the target page must permit framing (its `X-Frame-Options`
+header / CSP `frame-ancestors` can block the iframe).
+
 ### Cookie Configuration
 
 When using cookies, the library defaults to secure settings:

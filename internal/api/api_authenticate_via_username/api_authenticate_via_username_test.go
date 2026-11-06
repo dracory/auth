@@ -191,7 +191,7 @@ func TestAuthenticateViaUsername_Otp_Success(t *testing.T) {
 // username/password mode is enabled but the required dependency is nil, an error is returned.
 func TestAuthenticateViaUsername_UsernamePassword_MissingDependency(t *testing.T) {
 	deps := Dependencies{
-		Otp:       false,
+		Otp:                false,
 		UserFindByUsername: nil, // Missing required dependency
 	}
 

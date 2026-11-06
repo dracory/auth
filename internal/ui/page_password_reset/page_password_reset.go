@@ -43,6 +43,7 @@ func PagePasswordReset(w http.ResponseWriter, r *http.Request, a types.AuthShare
 		urlLogin,
 		urlRegister,
 		a.IsRegistrationEnabled(),
+		shared.PageOptionsOf(a).PasswordReset,
 	)
 	scripts := PasswordResetScripts(
 		links.ApiPasswordReset(a.GetEndpoint()),

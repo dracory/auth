@@ -31,6 +31,8 @@ type authImplementation struct {
 	brandTagline            string
 	brandLogoURL            string
 	loginAlternatives       []types.LoginAlternative
+	pageOptions             types.PageOptions
+	legalLinks              types.LegalLinks
 	funcTemporaryKeyGet     func(key string) (value string, err error)
 	funcTemporaryKeySet     func(key string, value string, expiresSeconds int) (err error)
 	funcTemporaryKeyDelete  func(key string) (err error)
@@ -172,6 +174,81 @@ func (a authImplementation) GetLoginAlternatives() []types.LoginAlternative {
 // SetLoginAlternatives sets cross-links to sibling login methods.
 func (a *authImplementation) SetLoginAlternatives(v []types.LoginAlternative) {
 	a.loginAlternatives = v
+}
+
+// GetPageOptions returns the per-page copy customization for the
+// built-in pages. Accessed through an optional interface.
+func (a authImplementation) GetPageOptions() types.PageOptions {
+	return a.pageOptions
+}
+
+// SetPageOptions replaces the whole per-page customization aggregate in
+// one call.
+func (a *authImplementation) SetPageOptions(v types.PageOptions) {
+	a.pageOptions = v
+}
+
+// SetLoginPageOptions sets the customization for the password login page.
+func (a *authImplementation) SetLoginPageOptions(v types.LoginPageOptions) {
+	a.pageOptions.Login = v
+}
+
+// SetLoginOtpPageOptions sets the customization for the OTP login page.
+func (a *authImplementation) SetLoginOtpPageOptions(v types.OtpPageOptions) {
+	a.pageOptions.LoginOtp = v
+}
+
+// SetLoginCodeVerifyPageOptions sets the customization for the login
+// code-verification page.
+func (a *authImplementation) SetLoginCodeVerifyPageOptions(v types.CodeVerifyPageOptions) {
+	a.pageOptions.LoginCodeVerify = v
+}
+
+// SetRegisterPageOptions sets the customization shared by the register
+// page variants.
+func (a *authImplementation) SetRegisterPageOptions(v types.RegisterPageOptions) {
+	a.pageOptions.Register = v
+}
+
+// SetRegisterCodeVerifyPageOptions sets the customization for the
+// register code-verification page.
+func (a *authImplementation) SetRegisterCodeVerifyPageOptions(v types.CodeVerifyPageOptions) {
+	a.pageOptions.RegisterCodeVerify = v
+}
+
+// SetMagicLinkPageOptions sets the customization for the magic-link
+// login page.
+func (a *authImplementation) SetMagicLinkPageOptions(v types.MagicLinkPageOptions) {
+	a.pageOptions.MagicLink = v
+}
+
+// SetPasswordRestorePageOptions sets the customization for the password
+// restore page.
+func (a *authImplementation) SetPasswordRestorePageOptions(v types.PasswordRestorePageOptions) {
+	a.pageOptions.PasswordRestore = v
+}
+
+// SetPasswordResetPageOptions sets the customization for the password
+// reset page.
+func (a *authImplementation) SetPasswordResetPageOptions(v types.PasswordResetPageOptions) {
+	a.pageOptions.PasswordReset = v
+}
+
+// SetLogoutPageOptions sets the customization for the logout page.
+func (a *authImplementation) SetLogoutPageOptions(v types.LogoutPageOptions) {
+	a.pageOptions.Logout = v
+}
+
+// GetLegalLinks returns the global Terms/Privacy links rendered under
+// the form on login/register-type pages. Accessed through an optional
+// interface.
+func (a authImplementation) GetLegalLinks() types.LegalLinks {
+	return a.legalLinks
+}
+
+// SetLegalLinks sets the global Terms/Privacy links.
+func (a *authImplementation) SetLegalLinks(v types.LegalLinks) {
+	a.legalLinks = v
 }
 
 func (a authImplementation) IsRegistrationEnabled() bool {

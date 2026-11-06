@@ -28,6 +28,41 @@ func alternativesBlock(a types.AuthSharedInterface) string {
 	return shared.OrDivider().ToHTML() + btns
 }
 
+// MagicLinkContent builds the HTML for the "email me a sign-in link"
+// form. Zero-value options render the built-in copy.
+func MagicLinkContent(urlRegister string, enableRegistration bool, opts types.MagicLinkPageOptions, legal types.LegalLinks, alternatives string) string {
+	emailInput := hb.NewInput().
+		Class("form-control form-control-lg").
+		Name("email").
+		Placeholder(shared.OrDefault(opts.EmailPlaceholder, "you@example.com")).
+		Attr("autocomplete", "username").
+		Attr("required", "required")
+
+	card := shared.Card(
+		shared.PageHeader(
+			shared.OrDefault(opts.Title, "Login to your account"),
+			shared.OrDefault(opts.Subtitle, "We'll email you a secure link to log in instantly — no password needed.")),
+		shared.AlertGroup(),
+		shared.FieldGroup(shared.OrDefault(opts.EmailLabel, "Email"), emailInput),
+		shared.PrimaryButton("ButtonLogin", "bi-envelope", shared.OrDefault(opts.SubmitLabel, "Send me a quick login link"), "loginFormValidate()"),
+		hb.NewHTML(alternatives),
+		hb.NewHTML(shared.LegalLine(legal)),
+	)
+
+	container := hb.NewDiv().Children([]hb.TagInterface{
+		card,
+	})
+
+	if enableRegistration {
+		container.Child(shared.FooterText(
+			shared.OrDefault(opts.FooterPrompt, "Don't have an account?"),
+			urlRegister,
+			shared.OrDefault(opts.FooterLinkLabel, "Register")))
+	}
+
+	return container.ToHTML()
+}
+
 // PageMagicLink renders a minimal "email me a sign-in link" form. The form
 // posts to window.location.pathname so it works whether the method is
 // mounted as the primary (/login) or a secondary (/login-magiclink) route.
@@ -36,33 +71,13 @@ func PageMagicLink(w http.ResponseWriter, r *http.Request, a types.AuthSharedInt
 		return
 	}
 
-	urlRegister := links.Register(a.GetEndpoint())
-	enableRegistration := a.IsRegistrationEnabled()
-
-	emailInput := hb.NewInput().
-		Class("form-control form-control-lg").
-		Name("email").
-		Placeholder("you@example.com").
-		Attr("autocomplete", "username").
-		Attr("required", "required")
-
-	card := shared.Card(
-		shared.PageHeader("Login to your account", "We'll email you a secure link to log in instantly — no password needed."),
-		shared.AlertGroup(),
-		shared.FieldGroup("Email", emailInput),
-		shared.PrimaryButton("ButtonLogin", "bi-envelope", "Send me a quick login link", "loginFormValidate()"),
-		hb.NewHTML(alternativesBlock(a)),
+	content := MagicLinkContent(
+		links.Register(a.GetEndpoint()),
+		a.IsRegistrationEnabled(),
+		shared.PageOptionsOf(a).MagicLink,
+		shared.LegalLinksOf(a),
+		alternativesBlock(a),
 	)
-
-	container := hb.NewDiv().Children([]hb.TagInterface{
-		card,
-	})
-
-	if enableRegistration {
-		container.Child(shared.FooterText("Don't have an account?", urlRegister, "Register"))
-	}
-
-	content := container.ToHTML()
 
 	scripts := `
 

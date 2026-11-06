@@ -16,7 +16,7 @@ func PageLoginCodeVerify(w http.ResponseWriter, r *http.Request, a types.AuthSha
 		return
 	}
 
-	content := LoginCodeVerifyContent(links.Login(a.GetEndpoint()))
+	content := LoginCodeVerifyContent(links.Login(a.GetEndpoint()), shared.PageOptionsOf(a).LoginCodeVerify)
 	scripts := LoginCodeVerifyScripts(
 		links.ApiLoginCodeVerify(a.GetEndpoint()),
 		a.LinkRedirectOnSuccess(),

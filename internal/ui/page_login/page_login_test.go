@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/dracory/auth/internal/testutils"
+	"github.com/dracory/auth/types"
 )
 
 func TestPageLogin_UsernameAndPassword(t *testing.T) {
@@ -103,6 +104,53 @@ func TestPageLogin_AuthKnight(t *testing.T) {
 	}
 	if !strings.Contains(location, "authknight/callback") {
 		t.Errorf("expected next_url to contain callback path, got: %s", location)
+	}
+}
+
+func TestPageLogin_PageOptionsAndLegalLinks(t *testing.T) {
+	a := testutils.NewAuthSharedForTest()
+	testutils.SetRegistrationForTest(a, true)
+	testutils.SetPageOptionsForTest(a, types.PageOptions{
+		Login: types.LoginPageOptions{
+			Title:       "Welcome back",
+			SubmitLabel: "Let me in",
+		},
+	})
+	testutils.SetLegalLinksForTest(a, types.LegalLinks{
+		Terms:   types.LegalLink{URL: "/terms"},
+		Privacy: types.LegalLink{URL: "/privacy"},
+	})
+
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	recorder := httptest.NewRecorder()
+	PageLogin(recorder, req, a)
+
+	body := recorder.Body.String()
+	for _, v := range []string{"Welcome back", "Let me in", "By continuing, you agree to", `/terms`, `/privacy`} {
+		if !strings.Contains(body, v) {
+			t.Errorf("expected %q in login page body", v)
+		}
+	}
+	// Untouched fields still render the built-in copy.
+	if !strings.Contains(body, "Enter your email and password to sign in.") {
+		t.Error("expected default subtitle")
+	}
+}
+
+func TestLoginContentX_OptionsOverride(t *testing.T) {
+	html := LoginContentX(true, "/auth/register", "/auth/password-restore", LoginExtras{}, types.LoginPageOptions{
+		EmailLabel:          "E-mail address",
+		ForgotPasswordLabel: "Lost it?",
+		FooterPrompt:        "New here?",
+	})
+	for _, v := range []string{"E-mail address", "Lost it?", "New here?"} {
+		if !strings.Contains(html, v) {
+			t.Fatalf("expected %q in content %q", v, html)
+		}
 	}
 }
 

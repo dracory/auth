@@ -62,6 +62,8 @@ func NewAuthKnightAuth(config types.ConfigAuthKnight) (types.AuthAuthKnightInter
 	a.brandTagline = config.BrandTagline
 	a.brandLogoURL = config.BrandLogoURL
 	a.loginAlternatives = config.LoginAlternatives
+	a.pageOptions = config.PageOptions
+	a.legalLinks = config.LegalLinks
 
 	// Shared callbacks
 	a.funcUserFindByAuthToken = config.FuncUserFindByAuthToken

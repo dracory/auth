@@ -49,7 +49,14 @@ type ConfigShared struct {
 	// LoginAlternatives renders an "OR" divider with one outlined button
 	// per entry under the primary form — used to cross-link sibling
 	// login methods (e.g. "USE MAGIC LINK INSTEAD" → /auth/login-magiclink).
-	LoginAlternatives       []LoginAlternative
+	LoginAlternatives []LoginAlternative
+	// PageOptions customizes the copy on each built-in page — one struct
+	// per page, empty fields fall back to the package defaults.
+	PageOptions PageOptions
+	// LegalLinks renders "By continuing, you agree to {Terms} and
+	// {Privacy Policy}." under the form on login/register-type pages.
+	// An empty URL hides that clause.
+	LegalLinks              LegalLinks
 	FuncTemporaryKeyGet     func(key string) (value string, err error)
 	FuncTemporaryKeySet     func(key string, value string, expiresSeconds int) (err error)
 	FuncUserStoreAuthToken  func(ctx context.Context, sessionID string, userID string, options UserAuthOptions) error

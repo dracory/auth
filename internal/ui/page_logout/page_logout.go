@@ -30,7 +30,7 @@ import (
 // PageLogout renders the logout page using the provided dependencies and
 // writes the result to the ResponseWriter.
 func PageLogout(w http.ResponseWriter, r *http.Request, a types.AuthSharedInterface) {
-	content := LogoutContent()
+	content := LogoutContent(shared.PageOptionsOf(a).Logout)
 	scripts := LogoutScripts(
 		links.ApiLogout(a.GetEndpoint()),
 		links.Login(a.GetEndpoint()),

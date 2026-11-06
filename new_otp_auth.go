@@ -59,6 +59,8 @@ func NewOtpAuth(config types.ConfigOtp) (types.AuthOtpInterface, error) {
 	auth.brandTagline = config.BrandTagline
 	auth.brandLogoURL = config.BrandLogoURL
 	auth.loginAlternatives = config.LoginAlternatives
+	auth.pageOptions = config.PageOptions
+	auth.legalLinks = config.LegalLinks
 	auth.funcTemporaryKeyGet = config.FuncTemporaryKeyGet
 	auth.funcTemporaryKeySet = config.FuncTemporaryKeySet
 	auth.funcUserLogout = config.FuncUserLogout

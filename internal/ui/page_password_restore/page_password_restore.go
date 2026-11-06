@@ -19,6 +19,7 @@ func PagePasswordRestore(w http.ResponseWriter, r *http.Request, a types.AuthSha
 		a.IsRegistrationEnabled(),
 		links.Login(a.GetEndpoint()),
 		links.Register(a.GetEndpoint()),
+		shared.PageOptionsOf(a).PasswordRestore,
 	)
 	scripts := PasswordRestoreScripts(
 		links.ApiPasswordRestore(a.GetEndpoint()),

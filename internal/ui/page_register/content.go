@@ -5,29 +5,45 @@ import (
 	"strings"
 
 	"github.com/dracory/auth/internal/ui/shared"
+	"github.com/dracory/auth/types"
 	"github.com/dracory/hb"
 )
 
+// nameRow renders the shared first/last name inputs using the register
+// page options (required gates the HTML5 attribute per variant).
+func nameRow(required bool, opts types.RegisterPageOptions) hb.TagInterface {
+	return shared.NameRow(required,
+		opts.FirstNameLabel, opts.FirstNamePlaceholder,
+		opts.LastNameLabel, opts.LastNamePlaceholder)
+}
+
 // RegisterOtpContent builds the HTML for the otp registration page.
-func RegisterOtpContent(urlLogin string) string {
+// Zero-value options render the built-in copy.
+func RegisterOtpContent(urlLogin string, opts types.RegisterPageOptions, legal types.LegalLinks) string {
 	emailInput := hb.NewInput().
 		Class("form-control form-control-lg").
 		Name("email").
-		Placeholder("you@example.com").
+		Placeholder(shared.OrDefault(opts.EmailPlaceholder, "you@example.com")).
 		Attr("autocomplete", "username").
 		Attr("required", "required")
 
 	card := shared.Card(
-		shared.PageHeader("Create your account", "A few details and you're in."),
+		shared.PageHeader(
+			shared.OrDefault(opts.Title, "Create your account"),
+			shared.OrDefault(opts.Subtitle, "A few details and you're in.")),
 		shared.AlertGroup(),
-		shared.NameRow(true),
-		shared.FieldGroup("Email", emailInput),
-		shared.PrimaryButton("buttonRegister", "bi-person-plus", "Create account", "registerFormValidate()"),
+		nameRow(true, opts),
+		shared.FieldGroup(shared.OrDefault(opts.EmailLabel, "Email"), emailInput),
+		shared.PrimaryButton("buttonRegister", "bi-person-plus", shared.OrDefault(opts.SubmitLabel, "Create account"), "registerFormValidate()"),
+		hb.NewHTML(shared.LegalLine(legal)),
 	)
 
 	return hb.NewDiv().Children([]hb.TagInterface{
 		card,
-		shared.FooterText("Already have an account?", urlLogin, "Login"),
+		shared.FooterText(
+			shared.OrDefault(opts.FooterPrompt, "Already have an account?"),
+			urlLogin,
+			shared.OrDefault(opts.FooterLinkLabel, "Login")),
 	}).ToHTML()
 }
 
@@ -44,35 +60,42 @@ func RegisterOtpScripts(urlApiRegister, urlOnSuccess string) string {
 }
 
 // RegisterUsernameAndPasswordContent builds the HTML for the username/password registration page.
-func RegisterUsernameAndPasswordContent(urlLogin, urlPasswordRestore string) string {
+// Zero-value options render the built-in copy.
+func RegisterUsernameAndPasswordContent(urlLogin, urlPasswordRestore string, opts types.RegisterPageOptions, legal types.LegalLinks) string {
 	emailInput := hb.NewInput().
 		Class("form-control form-control-lg").
 		Name("email").
-		Placeholder("you@example.com").
+		Placeholder(shared.OrDefault(opts.EmailPlaceholder, "you@example.com")).
 		Attr("autocomplete", "username").
 		Attr("required", "required")
 	passwordInput := hb.NewInput().
 		Class("form-control form-control-lg").
 		Name("password").
 		Type(hb.TYPE_PASSWORD).
-		Placeholder("Min 8 characters").
+		Placeholder(shared.OrDefault(opts.PasswordPlaceholder, "Min 8 characters")).
 		Attr("autocomplete", "new-password").
 		Attr("required", "required")
 
 	card := shared.Card(
-		shared.PageHeader("Create your account", "A few details and you're in."),
+		shared.PageHeader(
+			shared.OrDefault(opts.Title, "Create your account"),
+			shared.OrDefault(opts.Subtitle, "A few details and you're in.")),
 		shared.AlertGroup(),
-		shared.NameRow(true),
-		shared.FieldGroup("Email", emailInput),
-		shared.FieldGroup("Password", passwordInput),
-		shared.PrimaryButton("buttonRegister", "bi-person-plus", "Create account", "registerFormValidate()"),
+		nameRow(true, opts),
+		shared.FieldGroup(shared.OrDefault(opts.EmailLabel, "Email"), emailInput),
+		shared.FieldGroup(shared.OrDefault(opts.PasswordLabel, "Password"), passwordInput),
+		shared.PrimaryButton("buttonRegister", "bi-person-plus", shared.OrDefault(opts.SubmitLabel, "Create account"), "registerFormValidate()"),
 		hb.NewDiv().Class("text-center small mt-3").Child(
-			hb.NewHyperlink().Href(urlPasswordRestore).Text("Forgot password?")),
+			hb.NewHyperlink().Href(urlPasswordRestore).Text(shared.OrDefault(opts.ForgotPasswordLabel, "Forgot password?"))),
+		hb.NewHTML(shared.LegalLine(legal)),
 	)
 
 	return hb.NewDiv().Children([]hb.TagInterface{
 		card,
-		shared.FooterText("Already have an account?", urlLogin, "Login"),
+		shared.FooterText(
+			shared.OrDefault(opts.FooterPrompt, "Already have an account?"),
+			urlLogin,
+			shared.OrDefault(opts.FooterLinkLabel, "Login")),
 	}).ToHTML()
 }
 
@@ -93,9 +116,10 @@ func RegisterUsernameAndPasswordScripts(urlApiRegister, urlOnSuccess string) str
 // OTP, magic-link, and AuthKnight flows. The email field is read-only
 // (pre-populated from the verified email); verifiedKey is the temporary
 // key that maps to that email in the temp key store.
-func RegisterVerifiedEmailContent(urlLogin string, verifiedEmail string, verifiedKey string) string {
+// Zero-value options render the built-in copy.
+func RegisterVerifiedEmailContent(urlLogin string, verifiedEmail string, verifiedKey string, opts types.RegisterPageOptions, legal types.LegalLinks) string {
 	emailGroup := hb.NewDiv().Class("mb-3").Children([]hb.TagInterface{
-		hb.NewLabel().Class("form-label small fw-bold text-uppercase text-secondary").Text("Email (verified)"),
+		hb.NewLabel().Class("form-label small fw-bold text-uppercase text-secondary").Text(shared.OrDefault(opts.EmailLabel, "Email (verified)")),
 		hb.NewDiv().Class("form-control-plaintext text-muted").Text(verifiedEmail),
 		hb.NewInput().Type("hidden").Name("email").Value(verifiedEmail),
 	})
@@ -103,17 +127,23 @@ func RegisterVerifiedEmailContent(urlLogin string, verifiedEmail string, verifie
 	verifiedKeyInput := hb.NewInput().Type("hidden").Name("verified_key").Value(verifiedKey)
 
 	card := shared.Card(
-		shared.PageHeader("Create your account", "Confirm your details to finish registration."),
+		shared.PageHeader(
+			shared.OrDefault(opts.Title, "Create your account"),
+			shared.OrDefault(opts.Subtitle, "Confirm your details to finish registration.")),
 		shared.AlertGroup(),
-		shared.NameRow(true),
+		nameRow(true, opts),
 		emailGroup,
 		verifiedKeyInput,
-		shared.PrimaryButton("buttonRegister", "bi-person-plus", "Create account", "registerFormValidate()"),
+		shared.PrimaryButton("buttonRegister", "bi-person-plus", shared.OrDefault(opts.SubmitLabel, "Create account"), "registerFormValidate()"),
+		hb.NewHTML(shared.LegalLine(legal)),
 	)
 
 	return hb.NewDiv().Children([]hb.TagInterface{
 		card,
-		shared.FooterText("Already have an account?", urlLogin, "Login"),
+		shared.FooterText(
+			shared.OrDefault(opts.FooterPrompt, "Already have an account?"),
+			urlLogin,
+			shared.OrDefault(opts.FooterLinkLabel, "Login")),
 	}).ToHTML()
 }
 
@@ -136,28 +166,35 @@ func RegisterVerifiedEmailScripts(urlApiRegister, urlOnSuccess string) string {
 // email was already verified so it is rendered read-only and is never
 // read back from the form. verifiedEmail may be empty when the host
 // provides no FuncUserEmailGet hook — a generic label is shown then.
-func RegisterCompletionContent(urlLogin string, verifiedEmail string) string {
+// Zero-value options render the built-in copy.
+func RegisterCompletionContent(urlLogin string, verifiedEmail string, opts types.RegisterPageOptions, legal types.LegalLinks) string {
 	emailDisplay := verifiedEmail
 	if emailDisplay == "" {
 		emailDisplay = "Your verified email"
 	}
 
 	emailGroup := hb.NewDiv().Class("mb-3").Children([]hb.TagInterface{
-		hb.NewLabel().Class("form-label small fw-bold text-uppercase text-secondary").Text("Email (verified)"),
+		hb.NewLabel().Class("form-label small fw-bold text-uppercase text-secondary").Text(shared.OrDefault(opts.EmailLabel, "Email (verified)")),
 		hb.NewDiv().Class("form-control-plaintext text-muted").Text(emailDisplay),
 	})
 
 	card := shared.Card(
-		shared.PageHeader("Complete your registration", "Confirm your details to finish setting up your account."),
+		shared.PageHeader(
+			shared.OrDefault(opts.Title, "Complete your registration"),
+			shared.OrDefault(opts.Subtitle, "Confirm your details to finish setting up your account.")),
 		shared.AlertGroup(),
-		shared.NameRow(true),
+		nameRow(true, opts),
 		emailGroup,
-		shared.PrimaryButton("buttonRegister", "bi-check-circle", "Save & continue", "registerFormValidate()"),
+		shared.PrimaryButton("buttonRegister", "bi-check-circle", shared.OrDefault(opts.SubmitLabel, "Save & continue"), "registerFormValidate()"),
+		hb.NewHTML(shared.LegalLine(legal)),
 	)
 
 	return hb.NewDiv().Children([]hb.TagInterface{
 		card,
-		shared.FooterText("Already have an account?", urlLogin, "Login"),
+		shared.FooterText(
+			shared.OrDefault(opts.FooterPrompt, "Already have an account?"),
+			urlLogin,
+			shared.OrDefault(opts.FooterLinkLabel, "Login")),
 	}).ToHTML()
 }
 
