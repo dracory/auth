@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proposal: Token Service — Bearer API Tokens — dracory/auth</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+ html{font-size:112.5%}
+ body{padding-top:4.5rem;font-size:1.125rem}
+ .doc{max-width:1040px;margin:0 auto}
+ pre{background:var(--bs-tertiary-bg);padding:1rem;border-radius:.375rem;overflow-x:auto;font-size:1rem}
+ code{font-size:1em}
+ table{font-size:1.05rem}
+ .navbar-brand{font-weight:700}
+ h2{margin-top:2.5rem;border-bottom:1px solid var(--bs-border-color);padding-bottom:.4rem}
+ h3{margin-top:1.6rem}
+</style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-md fixed-top border-bottom bg-body-tertiary">
+ <div class="container-fluid px-3">
+  <a class="navbar-brand" href="#">dracory/auth — proposal</a>
+  <div class="d-flex align-items-center gap-2">
+   <div class="btn-group btn-group-sm" role="group">
+    <button type="button" class="btn btn-outline-secondary" id="modeLight" title="Light">&#9728;</button>
+    <button type="button" class="btn btn-outline-secondary" id="modeDark" title="Dark">&#9790;</button>
+   </div>
+  </div>
+ </div>
+</nav>
+
+<div class="doc">
+
+<div class="card mb-4">
+ <div class="card-body">
+  <h1 class="card-title h3 mb-3">Token Service — Access/Refresh Bearer Tokens for SPAs and Mobile</h1>
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+   <span class="badge text-bg-secondary">Status: Proposed</span>
+   <span class="badge text-bg-light border">Date: 2026-11-15</span>
+   <span class="badge text-bg-light border">Scope: <code>types</code>, <code>internal/api</code>, new <code>internal/tokens</code>, <code>middlewares</code></span>
+   <span class="badge text-bg-light border">Inspired by: MadAppGang/identifo — <code>token_service.go</code>, <code>token_storage.go</code>, <code>key_storage.go</code></span>
+  </div>
+ </div>
+</div>
+
+<div class="alert alert-danger mb-4" role="alert">
+ <strong>⚠ POSSIBLY NOT NEEDED — largest speculative build (2026-11-15)</strong><br>
+ This is the largest speculative proposal in the set: a full token
+ subsystem (service interface, 4 storage callbacks, refresh rotation with
+ reuse detection, bearer middleware, 3 endpoints) for SPA/mobile clients the
+ library has no confirmed consumer for. <strong>Gate this on a real
+ consumer</strong> — a project that actually needs Bearer transport —
+ before building. Note the callback contract also cannot deliver reuse
+ detection as written (FuncRefreshTokenDelete destroys the evidence);
+ a token-family model is required first.
+</div>
+
+<h2>Motivation</h2>
+
+<p>dracory/auth is cookie-session based, which fits server-rendered apps perfectly.
+But the JSON API (<code>api_login</code>, <code>api_register</code>, …) is already
+consumable by SPAs and mobile clients — where cookies are awkward (cross-site
+<code>SameSite</code> rules, no cookie jar on native, multi-tab edge cases).
+identifo solves this cleanly with a first-class <em>token service</em> abstraction —
+issue, validate, refresh, revoke — keeping signing keys and token persistence
+behind small storage interfaces.</p>
+
+<p>Today a consumer of our JSON API must still depend on the auth cookie. A token
+service adds <code>Authorization: Bearer</code> as an <strong>opt-in second
+transport</strong> without disturbing the existing cookie flow.</p>
+
+<h2>Design</h2>
+
+<h3>1. TokenService interface</h3>
+
+<pre><code>// internal/tokens/service.go
+type TokenService interface {
+    // Issue creates a token pair for the given user.
+    Issue(ctx context.Context, userID string, meta TokenMeta) (TokenPair, error)
+    // Validate parses and validates an access token, returning its claims.
+    Validate(ctx context.Context, token string) (Claims, error)
+    // Refresh exchanges a refresh token for a new pair and rotates it.
+    Refresh(ctx context.Context, refreshToken string) (TokenPair, error)
+    // Revoke invalidates one token; RevokeAll invalidates all of a user's tokens.
+    Revoke(ctx context.Context, token string) error
+    RevokeAll(ctx context.Context, userID string) error
+}
+
+type TokenPair struct {
+    AccessToken  string    `json:"access_token"`
+    RefreshToken string    `json:"refresh_token"`
+    ExpiresAt    time.Time `json:"expires_at"`
+    TokenType    string    `json:"token_type"` // "Bearer"
+}</code></pre>
+
+<h3>2. Callback-based persistence (consistent with existing style)</h3>
+
+<p>Following the library's bring-your-own-database convention, refresh tokens are
+stored via config callbacks — no concrete store is bundled:</p>
+
+<pre><code>// types/config_tokens.go
+type ConfigTokens struct {
+    Enabled         bool
+    Issuer          string        // iss claim; defaults to the site name
+    AccessTokenTTL  time.Duration // default 15m
+    RefreshTokenTTL time.Duration // default 720h (30d)
+    SigningKey      []byte        // HS256 to start
+
+    FuncRefreshTokenStore     func(ctx context.Context, userID, tokenID string, expiresAt time.Time) error
+    FuncRefreshTokenExists    func(ctx context.Context, tokenID string) (userID string, err error)
+    FuncRefreshTokenDelete    func(ctx context.Context, tokenID string) error
+    FuncRefreshTokenDeleteAll func(ctx context.Context, userID string) error
+}</code></pre>
+
+<h3>3. Endpoints (opt-in)</h3>
+
+<ul>
+<li><code>POST /api/auth/login</code> — gains a <code>tokens</code> object in the JSON
+  response when <code>ConfigTokens.Enabled</code>; the cookie is still set for web
+  clients, or omitted with <code>?transport=bearer</code></li>
+<li><code>POST /api/auth/token/refresh</code> — rotates the refresh token, returns a
+  new pair</li>
+<li><code>POST /api/auth/token/revoke</code> — revokes the presented token</li>
+<li>New middleware <code>ApiAuthBearerMiddleware</code> — accepts either the auth
+  cookie or a valid <code>Authorization: Bearer</code> access token</li>
+</ul>
+
+<h3>4. Refresh-token rotation with reuse detection</h3>
+
+<p>Every refresh issues a new refresh token and deletes the old one. Presenting a
+deleted-but-unexpired token indicates theft — the entire user token chain is
+revoked (per the OAuth 2.0 Security BCP).</p>
+
+<h2>Security</h2>
+
+<ul>
+<li>Refresh tokens are opaque random IDs, never JWTs — revocable server-side</li>
+<li>Access tokens are short-lived (≤15m) so revocation lag is bounded</li>
+<li>Refresh/revoke endpoints run under <code>ConfigRateLimiting</code></li>
+<li>Token JSON is never emitted on cookie-based HTML flows</li>
+<li>Password reset already invalidates sessions — extend it to <code>RevokeAll</code></li>
+</ul>
+
+<h2>Out of Scope (v1)</h2>
+
+<ul>
+<li>Acting as an OIDC provider (JWKS endpoint, <code>/.well-known</code>) — identifo
+  does this, but AuthKnight already covers delegated OIDC for us</li>
+<li>Asymmetric signing (RS256) — the interface permits it later via a key-getter callback</li>
+<li>Token introspection endpoint for third parties</li>
+</ul>
+
+</div>
+
+<script>
+(function(){
+  var root=document.documentElement;
+  function set(m){root.setAttribute('data-bs-theme',m);try{localStorage.setItem('theme',m)}catch(e){}}
+  document.getElementById('modeLight').onclick=function(){set('light')};
+  document.getElementById('modeDark').onclick=function(){set('dark')};
+  try{var s=localStorage.getItem('theme');if(s)set(s)}catch(e){}
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

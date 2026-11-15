@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proposal: Message Catalog / i18n — dracory/auth</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+ html{font-size:112.5%}
+ body{padding-top:4.5rem;font-size:1.125rem}
+ .doc{max-width:1040px;margin:0 auto}
+ pre{background:var(--bs-tertiary-bg);padding:1rem;border-radius:.375rem;overflow-x:auto;font-size:1rem}
+ code{font-size:1em}
+ table{font-size:1.05rem}
+ .navbar-brand{font-weight:700}
+ h2{margin-top:2.5rem;border-bottom:1px solid var(--bs-border-color);padding-bottom:.4rem}
+ h3{margin-top:1.6rem}
+</style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-md fixed-top border-bottom bg-body-tertiary">
+ <div class="container-fluid px-3">
+  <a class="navbar-brand" href="#">dracory/auth — proposal</a>
+  <div class="d-flex align-items-center gap-2">
+   <div class="btn-group btn-group-sm" role="group">
+    <button type="button" class="btn btn-outline-secondary" id="modeLight" title="Light">&#9728;</button>
+    <button type="button" class="btn btn-outline-secondary" id="modeDark" title="Dark">&#9790;</button>
+   </div>
+  </div>
+ </div>
+</nav>
+
+<div class="doc">
+
+<div class="card mb-4">
+ <div class="card-body">
+  <h1 class="card-title h3 mb-3">Message Catalog — Externalized UI &amp; Email Strings</h1>
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+   <span class="badge text-bg-warning">Status: Draft — revised 2026-11-15 (page copy now covered by PageOptions; scope narrows)</span>
+   <span class="badge text-bg-light border">Date: 2026-11-15</span>
+   <span class="badge text-bg-light border">Scope: <code>internal/ui/*</code>, <code>internal/emails</code>, <code>internal/api</code> responses, <code>types</code></span>
+   <span class="badge text-bg-light border">Inspired by: MadAppGang/identifo — <code>localization/</code></span>
+  </div>
+ </div>
+</div>
+
+<div class="alert alert-danger mb-4" role="alert">
+ <strong>⚠ POSSIBLY NOT NEEDED — review before implementing (2026-11-15)</strong><br>
+ Most of this proposal's value was absorbed by <code>ConfigShared.PageOptions</code>
+ + <code>LegalLinks</code>, which shipped 2026-11 and cover page-copy
+ relabeling. What remains (API error strings, email templates, per-request
+ locale) may not justify a full <code>Messages</code> map + fallback
+ machinery + per-locale resolution. No host has requested i18n. A much
+ smaller "override these N error strings" config would cover the actual
+ need — <strong>shrink or defer until a real consumer asks for it.</strong>
+</div>
+
+<h2>Motivation</h2>
+
+<p>identifo externalizes all user-facing strings into a localization layer.
+dracory/auth's UI pages (<code>internal/ui/page_*</code>), email templates, and
+API error messages are hardcoded English. Hosts that need another language —
+or simply want to reword "Sign in" → "Log in" — must fork the pages.</p>
+
+<p>Doing this now is cheap: the string set is small and page templates already
+funnel through shared helpers. Doing it later means touching every label
+retroactively.</p>
+
+<p><em>Update 2026-11-15 — partial overlap resolved:</em> since this
+proposal was drafted, <code>ConfigShared.PageOptions</code> +
+<code>LegalLinks</code> shipped (2026-11, see
+2026-11-06-page-customization-and-legal-links.html) and cover most page-copy
+relabeling needs. The remaining scope for a message catalog is:
+public-facing error strings returned by <code>internal/api</code>,
+email templates in <code>internal/emails</code>, and any copy hosts need to
+vary per-request (per-locale) rather than per-deployment.
+<code>types/messages.go</code> already centralises the constants but they are
+not yet overridable — this proposal is what makes them so.</p>
+
+<h2>Design</h2>
+
+<h3>1. A flat message map, not an i18n framework</h3>
+
+<pre><code>// types/messages.go
+type Messages map[string]string
+
+// Keys are stable, namespaced constants:
+//   ui.login.title, ui.login.submit, ui.register.email_label,
+//   email.password_reset.subject, error.invalid_credentials, ...
+
+func (m Messages) Get(key string) string {
+    if s, ok := m[key]; ok { return s }
+    return DefaultMessages[key] // English fallback — never a missing key
+}</code></pre>
+
+<h3>2. Config hook</h3>
+
+<pre><code>type ConfigShared struct {
+    // ...
+    // Messages overrides DefaultMessages per key. Optional.
+    Messages Messages
+    // FuncLocale resolves a request to a locale tag. Optional;
+    // used only when FuncMessages per-locale is configured.
+    FuncLocale func(r *http.Request) string
+}</code></pre>
+
+<h3>3. Plural/locale strategy</h3>
+
+<ul>
+<li><strong>v1:</strong> one <code>Messages</code> map per instance — covers relabeling and
+  single-language non-English deployments (the realistic case for our hosts)</li>
+<li><strong>v1.1 (optional):</strong> <code>Messages map[string]Messages</code> keyed by
+  locale + <code>FuncLocale</code> request resolution — added only if a host asks</li>
+<li>Strings that need interpolation use <code>text/template</code>-style
+  <code>{{.Code}}</code> placeholders, rendered at use site</li>
+</ul>
+
+<h2>Scope of Strings</h2>
+
+<ul>
+<li>All labels, headings, buttons, flash messages in <code>internal/ui/page_*</code></li>
+<li>Email subject + body templates in <code>internal/emails</code></li>
+<li>Public-facing error strings returned by <code>internal/api</code>
+  (error <em>codes</em> stay fixed — they're the machine-readable contract)</li>
+</ul>
+
+<h2>Compatibility</h2>
+
+<p>Fully additive: default map equals today's strings, so existing hosts see no
+change. Templates receive <code>msg "ui.login.title"</code> instead of literals —
+internal refactor only.</p>
+
+<h2>Out of Scope</h2>
+
+<ul>
+<li>Pluralization rules, CLDR data, date/number formatting</li>
+<li>RTL layout variants</li>
+<li>Loading translations from files (hosts embed or hardcode the map)</li>
+</ul>
+
+</div>
+
+<script>
+(function(){
+  var root=document.documentElement;
+  function set(m){root.setAttribute('data-bs-theme',m);try{localStorage.setItem('theme',m)}catch(e){}}
+  document.getElementById('modeLight').onclick=function(){set('light')};
+  document.getElementById('modeDark').onclick=function(){set('dark')};
+  try{var s=localStorage.getItem('theme');if(s)set(s)}catch(e){}
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

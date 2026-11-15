@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proposal: Startup Dependency Check — dracory/auth</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+ html{font-size:112.5%}
+ body{padding-top:4.5rem;font-size:1.125rem}
+ .doc{max-width:1040px;margin:0 auto}
+ pre{background:var(--bs-tertiary-bg);padding:1rem;border-radius:.375rem;overflow-x:auto;font-size:1rem}
+ code{font-size:1em}
+ table{font-size:1.05rem}
+ .navbar-brand{font-weight:700}
+ h2{margin-top:2.5rem;border-bottom:1px solid var(--bs-border-color);padding-bottom:.4rem}
+ h3{margin-top:1.6rem}
+</style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-md fixed-top border-bottom bg-body-tertiary">
+ <div class="container-fluid px-3">
+  <a class="navbar-brand" href="#">dracory/auth — proposal</a>
+  <div class="d-flex align-items-center gap-2">
+   <div class="btn-group btn-group-sm" role="group">
+    <button type="button" class="btn btn-outline-secondary" id="modeLight" title="Light">&#9728;</button>
+    <button type="button" class="btn btn-outline-secondary" id="modeDark" title="Dark">&#9790;</button>
+   </div>
+  </div>
+ </div>
+</nav>
+
+<div class="doc">
+
+<div class="card mb-4">
+ <div class="card-body">
+  <h1 class="card-title h3 mb-3">Startup Dependency Check — <code>Ping</code> the Critical Callbacks</h1>
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+   <span class="badge text-bg-secondary">Status: Proposed</span>
+   <span class="badge text-bg-light border">Date: 2026-11-15</span>
+   <span class="badge text-bg-light border">Scope: <code>types</code>, constructors, docs</span>
+   <span class="badge text-bg-light border">Inspired by: MadAppGang/identifo — <code>connection_tester.go</code></span>
+  </div>
+ </div>
+</div>
+
+<div class="alert alert-danger mb-4" role="alert">
+ <strong>⚠ POSSIBLY NOT NEEDED — thin library value (2026-11-15)</strong><br>
+ <code>FuncHealthCheck</code> is a passthrough: the library cannot probe
+ opaque host callbacks, so this adds little a host couldn't do in
+ <code>main()</code> — call its own ping functions and
+ <code>log.Fatal</code>. The only real addition is the
+ <code>/api/auth/health</code> endpoint, which is ~20 lines the host can
+ also write itself. Build only if a concrete consumer needs the mounted
+ endpoint.
+</div>
+
+<h2>Motivation</h2>
+
+<p>identifo runs a <em>connection tester</em> at boot: it probes storage and
+mail transport so a broken dependency fails the deploy at startup — visibly in
+logs — instead of failing the first real login attempt in production.</p>
+
+<p>dracory/auth is callback-driven, so "dependencies" are the host's functions:
+user store, auth-token store, email sender, temporary-key store. A host whose
+DB or mail provider is down currently discovers it on the first
+<code>POST /api/login</code>.</p>
+
+<h2>Design</h2>
+
+<h3>1. Optional health-probe callbacks</h3>
+
+<pre><code>// types/config_health.go
+type ConfigHealth struct {
+    // FuncHealthCheck probes host dependencies at startup. Optional.
+    // Return nil when healthy; the error is surfaced by CheckDependencies.
+    FuncHealthCheck func(ctx context.Context) error
+}</code></pre>
+
+<p>Rather than the library inventing probes for callbacks it cannot introspect,
+the host supplies <em>one</em> function that pings whatever it wired in (DB pool,
+SMTP, KV store). Keeps the library dependency-free.</p>
+
+<h3>2. Explicit check, not automatic</h3>
+
+<pre><code>auth, err := NewUsernameAndPasswordAuth(cfg)
+if err != nil { log.Fatal(err) }
+
+// Optional — host decides when/whether to probe:
+ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+defer cancel()
+if err := auth.CheckDependencies(ctx); err != nil {
+    log.Fatal("auth dependencies unhealthy: ", err)
+}</code></pre>
+
+<p>Deliberately <strong>not</strong> automatic in the constructor: the library must
+never block or do network I/O unexpectedly, and tests must construct instances
+without live dependencies.</p>
+
+<h3>3. Readiness endpoint</h3>
+
+<p>When <code>ConfigHealth.Enabled</code> and the endpoint is mounted, expose
+<code>GET /api/auth/health</code> (unauthenticated, rate-limited) returning
+<code>200 {"status":"ok"}</code> or <code>503</code> with no internal detail — for
+load-balancer/orchestrator readiness probes.</p>
+
+<h2>Security</h2>
+
+<ul>
+<li>Health endpoint returns no dependency names, versions, or error details</li>
+<li>Rate-limited to prevent use as a cheap ping/oracle</li>
+<li><code>CheckDependencies</code> is never invoked implicitly — no surprise I/O</li>
+</ul>
+
+<h2>Out of Scope</h2>
+
+<ul>
+<li>Per-callback probing interfaces (e.g. requiring <code>Ping()</code> on stores) —
+  callbacks are opaque funcs, not interfaces</li>
+<li>Periodic re-checks / circuit breakers — host orchestration territory</li>
+</ul>
+
+</div>
+
+<script>
+(function(){
+  var root=document.documentElement;
+  function set(m){root.setAttribute('data-bs-theme',m);try{localStorage.setItem('theme',m)}catch(e){}}
+  document.getElementById('modeLight').onclick=function(){set('light')};
+  document.getElementById('modeDark').onclick=function(){set('dark')};
+  try{var s=localStorage.getItem('theme');if(s)set(s)}catch(e){}
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

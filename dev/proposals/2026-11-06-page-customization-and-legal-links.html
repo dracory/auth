@@ -37,8 +37,8 @@
  <div class="card-body">
   <h1 class="card-title h3 mb-3">Per-Page Options &amp; Legal Links</h1>
   <div class="d-flex flex-wrap gap-2 align-items-center">
-   <span class="badge text-bg-secondary">Status: Proposed</span>
-   <span class="badge text-bg-light border">Date: 2026-11-06</span>
+   <span class="badge text-bg-success">Status: Implemented</span>
+   <span class="badge text-bg-light border">Date: 2026-11-06, implemented 2026-11 (<code>types/options.go</code>, <code>types/legal_link.go</code>)</span>
    <span class="badge text-bg-light border">Scope: <code>types</code>, <code>internal/ui/page_*</code>, <code>internal/ui/shared</code></span>
   </div>
  </div>
@@ -160,22 +160,34 @@ type LogoutPageOptions struct {
 <pre><code class="language-go">type ConfigShared struct {
     // ... existing fields ...
 
-    // Page customizations — empty fields fall back to package defaults.
-    LoginOptions            LoginPageOptions
-    LoginOtpOptions         OtpPageOptions
-    LoginCodeVerifyOptions  CodeVerifyPageOptions
-    RegisterOptions         RegisterPageOptions
-    RegisterCodeVerifyOptions CodeVerifyPageOptions
-    MagicLinkOptions        MagicLinkPageOptions
-    PasswordRestoreOptions  PasswordRestorePageOptions
-    PasswordResetOptions    PasswordResetPageOptions
-    LogoutOptions           LogoutPageOptions
+    // PageOptions customizes the copy on each built-in page — one
+    // struct-of-structs, so a single field configures all pages.
+    // Empty fields fall back to package defaults.
+    PageOptions PageOptions
 
-    // Legal links rendered as "By continuing, you agree to {Terms} and
+    // LegalLinks renders "By continuing, you agree to {Terms} and
     // {Privacy}." under the form. Empty URL hides that clause.
-    Terms   LegalLink
-    Privacy LegalLink
+    LegalLinks LegalLinks
+}
+
+// PageOptions (shipped shape): one slot per built-in page.
+type PageOptions struct {
+    Login              LoginPageOptions
+    LoginOtp           OtpPageOptions
+    LoginCodeVerify    CodeVerifyPageOptions
+    Register           RegisterPageOptions
+    RegisterCodeVerify CodeVerifyPageOptions
+    MagicLink          MagicLinkPageOptions
+    PasswordRestore    PasswordRestorePageOptions
+    PasswordReset      PasswordResetPageOptions
+    Logout             LogoutPageOptions
 }</code></pre>
+
+<p><em>Shipped shape (2026-11):</em> the per-page structs were merged as
+proposed, but <code>ConfigShared</code> carries them inside a single
+<code>PageOptions</code> field rather than nine separate fields, and the two
+legal links are grouped into a <code>LegalLinks</code> struct rather than
+top-level <code>Terms</code>/<code>Privacy</code> fields.</p>
 
 <p><code>CodeVerify</code> is split into login/register variants — the two
 pages share the component but projects commonly want different subtitles

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proposal: Uniform Lifecycle Hooks — dracory/auth</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+ html{font-size:112.5%}
+ body{padding-top:4.5rem;font-size:1.125rem}
+ .doc{max-width:1040px;margin:0 auto}
+ pre{background:var(--bs-tertiary-bg);padding:1rem;border-radius:.375rem;overflow-x:auto;font-size:1rem}
+ code{font-size:1em}
+ table{font-size:1.05rem}
+ .navbar-brand{font-weight:700}
+ h2{margin-top:2.5rem;border-bottom:1px solid var(--bs-border-color);padding-bottom:.4rem}
+ h3{margin-top:1.6rem}
+</style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-md fixed-top border-bottom bg-body-tertiary">
+ <div class="container-fluid px-3">
+  <a class="navbar-brand" href="#">dracory/auth — proposal</a>
+  <div class="d-flex align-items-center gap-2">
+   <div class="btn-group btn-group-sm" role="group">
+    <button type="button" class="btn btn-outline-secondary" id="modeLight" title="Light">&#9728;</button>
+    <button type="button" class="btn btn-outline-secondary" id="modeDark" title="Dark">&#9790;</button>
+   </div>
+  </div>
+ </div>
+</nav>
+
+<div class="doc">
+
+<div class="card mb-4">
+ <div class="card-body">
+  <h1 class="card-title h3 mb-3">Uniform Lifecycle Hooks — Consistent Pre/Post Callbacks Across Methods</h1>
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+   <span class="badge text-bg-warning">Status: Draft — revised 2026-11-15 (acknowledges existing ObservabilityHooks)</span>
+   <span class="badge text-bg-light border">Date: 2026-11-15</span>
+   <span class="badge text-bg-light border">Scope: <code>types</code>, <code>internal/api/*</code></span>
+   <span class="badge text-bg-light border">Inspired by: MadAppGang/identifo — <code>plugins/</code>, <code>user_data_provider.go</code></span>
+  </div>
+ </div>
+</div>
+
+<div class="alert alert-danger mb-4" role="alert">
+ <strong>⚠ POSSIBLY NOT NEEDED — overlaps ObservabilityHooks (2026-11-15)</strong><br>
+ <code>types.ObservabilityHooks</code> already records login, registration,
+ rate-limit, session, password-reset and impersonation attempts. Adding a
+ second notification surface doing ~80% the same work is duplication, not
+ extension. If this proceeds it should <strong>replace</strong>
+ <code>ObservabilityHooks</code> (one surface), not coexist with it —
+ otherwise the package ends up with three hook surfaces.
+</div>
+
+<h2>Motivation</h2>
+
+<p>identifo exposes plugin extension points where host code runs at defined
+lifecycle moments — after login, after register, on password change — so hosts
+can attach side effects (audit logs, analytics, CRM sync, welcome emails)
+without the library knowing about them.</p>
+
+<p>dracory/auth's extension points today are per-method and asymmetric: some
+flows have observability hooks (impersonation audit, structured logging),
+others end silently. A host that wants "log every successful auth event" must
+wrap handlers or infer it from session writes.</p>
+
+<p><em>Update 2026-11-15 — correction:</em> the "ends silently" framing
+below predates <code>types.ObservabilityHooks</code>, which already provides
+<code>RecordLoginAttempt</code>, <code>RecordRegistrationAttempt</code>,
+<code>RecordRateLimitHit</code>, <code>RecordSessionCreated</code>,
+<code>RecordPasswordReset</code> and <code>RecordImpersonation*</code>
+(metrics-oriented, success/error pairs, no event payload). This proposal
+should therefore be read as <em>unifying and enriching</em> that surface —
+one event struct carrying context the flat Record* methods cannot express —
+not as filling a void.</p>
+
+<h2>Design</h2>
+
+<h3>1. A single event surface</h3>
+
+<pre><code>// types/hooks.go
+type AuthEvent struct {
+    Kind    AuthEventKind // AuthEventLogin, Register, Logout,
+                          // PasswordReset, ImpersonateStart, ImpersonateStop, ...
+    Method  string        // "password" | "otp" | "magic_link" | "authknight" | "oidc"
+    UserID  string
+    Email   string
+    Success bool
+    Err     error  // set on failed attempts
+    Meta    map[string]string
+}
+
+// FuncOnAuthEvent is invoked after each auth lifecycle event,
+// success or failure. Errors returned are logged, never propagated
+// (a hook failure must not break authentication).
+type ConfigHooks struct {
+    FuncOnAuthEvent func(ctx context.Context, event AuthEvent)
+}</code></pre>
+
+<h3>2. Invariant: every auth-affecting endpoint emits exactly one event</h3>
+
+<table class="table table-sm">
+<thead><tr><th>Endpoint</th><th>Kind</th><th>Emitted on failure too?</th></tr></thead>
+<tbody>
+<tr><td>login (all methods)</td><td><code>AuthEventLogin</code></td><td>Yes — <code>Success=false</code>, feeds audit/brute-force detection</td></tr>
+<tr><td>register</td><td><code>AuthEventRegister</code></td><td>Yes</td></tr>
+<tr><td>logout</td><td><code>AuthEventLogout</code></td><td>No (nothing to deny)</td></tr>
+<tr><td>password restore/reset</td><td><code>AuthEventPasswordReset</code></td><td>Yes</td></tr>
+<tr><td>impersonate start/stop</td><td><code>AuthEventImpersonate*</code></td><td>Yes — already audited; unified under this surface</td></tr>
+</tbody>
+</table>
+
+<h3>3. Non-blocking, never fatal</h3>
+
+<p>Hooks run synchronously after the response is prepared but errors only log —
+the auth outcome is already decided. Hosts needing async work spawn their own
+goroutine inside the hook.</p>
+
+<h2>Relationship to Existing Callbacks</h2>
+
+<p>This does <em>not</em> replace data callbacks (<code>FuncUserStoreAuthToken</code>
+etc.) — those are required reads/writes. Hooks are pure notification: the
+library works identically with <code>FuncOnAuthEvent = nil</code>. Existing
+impersonation audit hooks fold into the unified event for v2, keeping the old
+fields for compatibility.</p>
+
+<h2>Security</h2>
+
+<ul>
+<li><code>AuthEvent</code> never carries passwords, codes, or tokens</li>
+<li>Failed-login events include <code>Err</code> but hosts must not echo it to users
+  (documented)</li>
+<li>Hook panics are recovered — a buggy hook cannot take down auth</li>
+</ul>
+
+<h2>Out of Scope</h2>
+
+<ul>
+<li>Mutating hooks (e.g. "veto this login") — notification only in v1;
+  a <code>FuncBeforeLogin</code> gate can be proposed separately if needed</li>
+<li>Event persistence/queueing — the host's hook can write wherever it wants</li>
+</ul>
+
+</div>
+
+<script>
+(function(){
+  var root=document.documentElement;
+  function set(m){root.setAttribute('data-bs-theme',m);try{localStorage.setItem('theme',m)}catch(e){}}
+  document.getElementById('modeLight').onclick=function(){set('light')};
+  document.getElementById('modeDark').onclick=function(){set('dark')};
+  try{var s=localStorage.getItem('theme');if(s)set(s)}catch(e){}
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

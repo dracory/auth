@@ -37,7 +37,7 @@
  <div class="card-body">
   <h1 class="card-title h3 mb-3">Unified <code>FuncUserRegister</code> — One Hook for Create &amp; Complete</h1>
   <div class="d-flex flex-wrap gap-2 align-items-center">
-   <span class="badge text-bg-warning">Status: Draft</span>
+   <span class="badge text-bg-warning">Status: Draft — revised 2026-11-15 (rebased on <code>verified_key</code> + find-or-create lookups)</span>
    <span class="badge text-bg-light border">Date: 2026-11-02</span>
    <span class="badge text-bg-light border">Depends on: <code>2026-11-02-user-lookup-key-naming.html</code>, <code>2026-10-31-extensible-registration-and-profile-fields.html</code></span>
    <span class="badge text-bg-light border">Scope: <code>types/</code>, <code>auth_implementation.go</code>, <code>internal/api/api_register</code>, <code>internal/api/api_register_code_verify</code>, <code>internal/core</code>, <code>new_*.go</code></span>
@@ -86,6 +86,22 @@ already have a row (created implicitly at first OTP/magic-link login).</p>
   that exists only because the hook can't hand the ID back.</li>
 <li><strong>Config sprawl.</strong> The same conceptual hook is declared in four
   different config structs with four different shapes.</li>
+</ul>
+
+<p><em>Update 2026-11-15 — code drift since this draft:</em></p>
+
+<ul>
+<li>The AuthKnight <code>ak_key</code> token parameter was renamed and
+  generalised to <code>verified_key</code>, resolved by
+  <code>VerifiedEmailKeyRule</code> — the "verified-token branch" rows below
+  describe that mechanism.</li>
+<li><code>FuncUserFindByUsername</code> is no longer a pure lookup: its
+  signature is now
+  <code>(ctx, username, firstName, lastName, options) (userID, err)</code>,
+  i.e. a find-or-create hook used by the register-first flow. That
+  strengthens the motivation below (four callbacks, drifting signatures) and
+  means the "before" column of the caller table no longer matches the code
+  exactly — the post-registration re-lookup problem it describes is unchanged.</li>
 </ul>
 
 <h2>Design Principles</h2>

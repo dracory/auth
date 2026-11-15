@@ -37,7 +37,7 @@
  <div class="card-body">
   <h1 class="card-title h3 mb-3">OIDC / OAuth2 Social Login Method</h1>
   <div class="d-flex flex-wrap gap-2 align-items-center">
-   <span class="badge text-bg-secondary">Status: Proposed</span>
+   <span class="badge text-bg-warning">Status: Draft — needs rebase (<code>verified_key</code> landed; hook signatures pending the fields-map proposal)</span>
    <span class="badge text-bg-light border">Date: 2026-11-02</span>
    <span class="badge text-bg-light border">Scope: <code>types</code>, <code>internal/api</code>, <code>internal/ui/page_register</code>, <code>constants.go</code></span>
   </div>
@@ -79,7 +79,7 @@ provider.</p>
 <li class="list-group-item"><strong>Existing user</strong>: session + auth cookie + success redirect</li>
 <li class="list-group-item"><strong>New user</strong>: verified email → <code>FuncTemporaryKeySet</code> (1h), redirect to
    <code>PathRegister</code> with read-only pre-populated email + first/last name
-   form — identical to the AuthKnight <code>ak_key</code> handoff</li>
+   form — identical to the AuthKnight <code>verified_key</code> handoff (<code>ak_key</code> was renamed <code>verified_key</code> when the verified-email flow generalised, 2026-11)</li>
 </ol>
 
 <div class="alert alert-info">Steps 5–7 are exactly the existing AuthKnight post-verification path.</div>
@@ -146,6 +146,9 @@ that match this design directly.
 
     // User resolution — same contract as ConfigAuthKnight
     FuncUserFindByEmail func(ctx context.Context, email string, options UserAuthOptions) (userID string, err error)
+    // NOTE (2026-11-15): signature shown pre-fields-map. Once the
+    // extensible-fields / unified-register proposals land this adopts the
+    // flat (ctx, userID, fields, options) (userID, err) form.
     FuncUserRegister    func(ctx context.Context, email, firstName, lastName string, options UserAuthOptions) (userID string, err error)
     FuncRedirectURL     func(ctx context.Context, userID string) string
 
@@ -182,7 +185,7 @@ password/OTP <strong>plus</strong> Google/GitHub:</p>
    <code>FuncEmailFromUserInfo</code> with token client</li>
 <li class="list-group-item">Reject empty/unverified email</li>
 <li class="list-group-item"><strong>Exists</strong> → auth token + <code>FuncUserStoreAuthToken</code> + cookie + success
-   redirect; <strong>new</strong> → <code>FuncTemporaryKeySet</code> + <code>PathRegister?oidc_key=</code></li>
+   redirect; <strong>new</strong> → <code>FuncTemporaryKeySet</code> + <code>PathRegister?verified_key=</code></li>
 </ol>
 
 <h3>4. Shared Post-Auth Extraction</h3>
@@ -190,8 +193,10 @@ password/OTP <strong>plus</strong> Google/GitHub:</p>
 <p>Extract the post-verification tail of <code>apiAuthKnightCallbackPostAuth</code>
 into a shared helper (e.g. <code>internal/api/postauth/</code>) used by both
 AuthKnight and OIDC — provider code ends at "produce a verified email".
-The register page's <code>ak_key</code> branch generalizes to also accept
-<code>oidc_key</code> (or unify under one param name at implementation time).</p>
+The register page's verified-token branch was already generalised
+(2026-11): a posted <code>verified_key</code> resolves via
+<code>VerifiedEmailKeyRule</code> regardless of issuer. OIDC therefore reuses
+the same <code>verified_key</code> parameter — no new param name is needed.</p>
 
 <h2>Security</h2>
 
