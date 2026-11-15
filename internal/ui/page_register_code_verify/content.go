@@ -28,13 +28,13 @@ func RegisterCodeVerifyContent(urlBack string, opts types.CodeVerifyPageOptions,
 		hb.NewHTML(shared.LegalLine(legal)),
 	)
 
-	return hb.NewDiv().Children([]hb.TagInterface{
+	return shared.BoxContainer(
 		card,
 		shared.FooterText(
 			shared.OrDefault(opts.ResendPrompt, "Didn't get a code?"),
 			urlBack,
 			shared.OrDefault(opts.ResendLabel, "Resend")),
-	}).ToHTML()
+	).ToHTML()
 }
 
 // RegisterCodeVerifyScripts builds the JS for the registration code verification page.

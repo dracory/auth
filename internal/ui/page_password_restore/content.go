@@ -31,13 +31,13 @@ func PasswordRestoreContent(enableRegistration bool, urlLogin, urlRegister strin
 		shared.PrimaryButton("ButtonContinue", "bi-envelope", shared.OrDefault(opts.SubmitLabel, "Send reset link"), "passwordRestoreFormValidate()"),
 	)
 
-	container := hb.NewDiv().Children([]hb.TagInterface{
+	container := shared.BoxContainer(
 		card,
 		shared.FooterText(
 			shared.OrDefault(opts.FooterPrompt, "Remembered it?"),
 			urlLogin,
 			shared.OrDefault(opts.FooterLinkLabel, "Login")),
-	})
+	)
 
 	if enableRegistration {
 		container.Child(shared.FooterText(

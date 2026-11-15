@@ -49,9 +49,9 @@ func MagicLinkContent(urlRegister string, enableRegistration bool, opts types.Ma
 		hb.NewHTML(shared.LegalLine(legal)),
 	)
 
-	container := hb.NewDiv().Children([]hb.TagInterface{
+	container := shared.BoxContainer(
 		card,
-	})
+	)
 
 	if enableRegistration {
 		container.Child(shared.FooterText(

@@ -6,7 +6,6 @@ import (
 
 	"github.com/dracory/auth/internal/ui/shared"
 	"github.com/dracory/auth/types"
-	"github.com/dracory/hb"
 )
 
 // LogoutContent builds the HTML for the logout page.
@@ -20,9 +19,9 @@ func LogoutContent(opts types.LogoutPageOptions) string {
 		shared.PrimaryButton("ButtonLogout", "bi-box-arrow-right", shared.OrDefault(opts.SubmitLabel, "Logout"), "logoutFormValidate()"),
 	)
 
-	return hb.NewDiv().Children([]hb.TagInterface{
+	return shared.BoxContainer(
 		card,
-	}).ToHTML()
+	).ToHTML()
 }
 
 // LogoutScripts builds the JS for the logout page.

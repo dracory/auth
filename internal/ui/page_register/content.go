@@ -38,13 +38,13 @@ func RegisterOtpContent(urlLogin string, opts types.RegisterPageOptions, legal t
 		hb.NewHTML(shared.LegalLine(legal)),
 	)
 
-	return hb.NewDiv().Children([]hb.TagInterface{
+	return shared.BoxContainer(
 		card,
 		shared.FooterText(
 			shared.OrDefault(opts.FooterPrompt, "Already have an account?"),
 			urlLogin,
 			shared.OrDefault(opts.FooterLinkLabel, "Login")),
-	}).ToHTML()
+	).ToHTML()
 }
 
 // RegisterOtpScripts builds the JS for the otp registration page.
@@ -90,13 +90,13 @@ func RegisterUsernameAndPasswordContent(urlLogin, urlPasswordRestore string, opt
 		hb.NewHTML(shared.LegalLine(legal)),
 	)
 
-	return hb.NewDiv().Children([]hb.TagInterface{
+	return shared.BoxContainer(
 		card,
 		shared.FooterText(
 			shared.OrDefault(opts.FooterPrompt, "Already have an account?"),
 			urlLogin,
 			shared.OrDefault(opts.FooterLinkLabel, "Login")),
-	}).ToHTML()
+	).ToHTML()
 }
 
 // RegisterUsernameAndPasswordScripts builds the JS for the username/password registration page.
@@ -138,13 +138,13 @@ func RegisterVerifiedEmailContent(urlLogin string, verifiedEmail string, verifie
 		hb.NewHTML(shared.LegalLine(legal)),
 	)
 
-	return hb.NewDiv().Children([]hb.TagInterface{
+	return shared.BoxContainer(
 		card,
 		shared.FooterText(
 			shared.OrDefault(opts.FooterPrompt, "Already have an account?"),
 			urlLogin,
 			shared.OrDefault(opts.FooterLinkLabel, "Login")),
-	}).ToHTML()
+	).ToHTML()
 }
 
 // RegisterVerifiedEmailScripts builds the JS for the verified-email
@@ -189,13 +189,13 @@ func RegisterCompletionContent(urlLogin string, verifiedEmail string, opts types
 		hb.NewHTML(shared.LegalLine(legal)),
 	)
 
-	return hb.NewDiv().Children([]hb.TagInterface{
+	return shared.BoxContainer(
 		card,
 		shared.FooterText(
 			shared.OrDefault(opts.FooterPrompt, "Already have an account?"),
 			urlLogin,
 			shared.OrDefault(opts.FooterLinkLabel, "Login")),
-	}).ToHTML()
+	).ToHTML()
 }
 
 // RegisterCompletionScripts builds the JS for the completion page.

@@ -51,13 +51,13 @@ func PasswordResetContent(token, errorMessage, urlPasswordRestore, urlLogin, url
 		)
 	}
 
-	container := hb.NewDiv().Children([]hb.TagInterface{
+	container := shared.BoxContainer(
 		cardBody,
 		shared.FooterText(
 			shared.OrDefault(opts.FooterPrompt, "Remembered it?"),
 			urlLogin,
 			shared.OrDefault(opts.FooterLinkLabel, "Login")),
-	})
+	)
 
 	if enableRegistration {
 		container.Child(shared.FooterText(

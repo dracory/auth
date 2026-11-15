@@ -45,13 +45,13 @@ func LoginCodeVerifyContent(urlBack string, opts types.CodeVerifyPageOptions) st
 		shared.PrimaryButton("ButtonLogin", "bi-check2-circle", shared.OrDefault(opts.SubmitLabel, "Verify code"), "loginFormValidate()"),
 	)
 
-	return hb.NewDiv().Children([]hb.TagInterface{
+	return shared.BoxContainer(
 		card,
 		shared.FooterText(
 			shared.OrDefault(opts.ResendPrompt, "Didn't get a code?"),
 			urlBack,
 			shared.OrDefault(opts.ResendLabel, "Resend")),
-	}).ToHTML()
+	).ToHTML()
 }
 
 // LoginCodeVerifyScripts builds the JS for the login code verification page.

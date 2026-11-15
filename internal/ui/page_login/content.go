@@ -106,10 +106,10 @@ func LoginOtpContentX(enableRegistration bool, urlRegister string, x LoginExtras
 		hb.NewHTML(shared.LegalLine(legal)),
 	)
 
-	container := hb.NewDiv().Children([]hb.TagInterface{
+	container := shared.BoxContainer(
 		hb.NewHTML(brandBlock(x)),
 		card,
-	})
+	)
 
 	if enableRegistration {
 		container.Child(shared.FooterText(
@@ -171,10 +171,10 @@ func LoginContentX(enableRegistration bool, urlRegister, urlPasswordRestore stri
 		hb.NewHTML(shared.LegalLine(legal)),
 	)
 
-	container := hb.NewDiv().Children([]hb.TagInterface{
+	container := shared.BoxContainer(
 		hb.NewHTML(brandBlock(x)),
 		card,
-	})
+	)
 
 	if enableRegistration {
 		container.Child(shared.FooterText(

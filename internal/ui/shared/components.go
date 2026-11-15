@@ -13,6 +13,15 @@ import (
 // uppercase small labels, lg inputs/buttons, an "or" divider before
 // alternative-method links, and centered muted footer links.
 
+// BoxContainer wraps the fragments a built-in page renders inside the
+// layout column (brand header, card, footer links) in a single div
+// carrying the stable "auth-box" class, so consumers can style the
+// whole block (e.g. give it a shared panel background) without relying
+// on structural selectors.
+func BoxContainer(children ...hb.TagInterface) *hb.Tag {
+	return hb.NewDiv().Class("auth-box").Children(children)
+}
+
 // PageHeader renders the page title and muted helper line shown above the
 // card on every built-in page.
 func PageHeader(title, subtitle string) hb.TagInterface {
